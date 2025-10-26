@@ -1,0 +1,48 @@
+[
+  {
+    "meta": {
+      "name": "Untitled Page",
+      "slug": "untitled-page"
+    },
+    "config": {}
+  },
+  {
+    "meta": {
+      "name": "Website Packages",
+      "slug": "website-packages"
+    },
+    "template": "web-agency-packages",
+    "config": {}
+  },
+  {
+    "meta": {
+      "name": "PT Pricelist",
+      "slug": "pt-pricelist-2"
+    },
+    "template": "personal-trainer-list",
+    "config": {}
+  },
+  {
+    "meta": {
+      "name": "Website Packages",
+      "slug": "website-packages-2"
+    },
+    "template": "web-agency-packages",
+    "config": {}
+  },
+  {
+    "meta": {
+      "name": "Untitled Page",
+      "slug": "untitled-page-2"
+    },
+    "config": {}
+  },
+  {
+    "meta": {
+      "name": "Cleaning Plans",
+      "slug": "cleaning-plans"
+    },
+    "template": "cleaning-service-packages",
+    "config": {}
+  }
+]

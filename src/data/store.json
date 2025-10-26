@@ -1,0 +1,229 @@
+{
+  "calculators": {
+    "untitled-page": {
+      "meta": {
+        "name": "Untitled Page",
+        "slug": "untitled-page",
+        "branding": {
+          "theme": "dark",
+          "accent": "#14b8a6",
+          "layout": "cards"
+        }
+      },
+      "i18n": {
+        "locale": "en",
+        "currency": "EUR",
+        "decimals": 0
+      },
+      "pricingMode": "packages",
+      "packages": [
+        {
+          "id": "basic",
+          "label": "Basic",
+          "basePrice": 0,
+          "featured": true
+        }
+      ],
+      "items": [],
+      "addons": [],
+      "fields": [],
+      "blocks": [
+        {
+          "id": "b_pkgs",
+          "type": "packages",
+          "title": "Plans",
+          "layout": "cards"
+        }
+      ]
+    },
+    "website-packages": {
+      "meta": {
+        "name": "Website Packages",
+        "slug": "website-packages",
+        "branding": {
+          "theme": "dark",
+          "accent": "#7c3aed",
+          "layout": "cards",
+          "hideBadge": false
+        }
+      },
+      "i18n": {
+        "locale": "en",
+        "currency": "EUR",
+        "decimals": 0
+      },
+      "pricingMode": "packages",
+      "packages": [
+        {
+          "id": "basic",
+          "label": "Basic",
+          "description": "",
+          "basePrice": 0,
+          "featured": true
+        }
+      ],
+      "items": [],
+      "addons": [],
+      "fields": [],
+      "blocks": [
+        {
+          "id": "b_pkgs",
+          "type": "packages",
+          "title": "Plans",
+          "layout": "cards"
+        }
+      ]
+    },
+    "pt-pricelist-2": {
+      "meta": {
+        "name": "PT Pricelist",
+        "slug": "pt-pricelist-2",
+        "branding": {
+          "theme": "dark",
+          "accent": "#7c3aed",
+          "layout": "cards",
+          "hideBadge": false
+        }
+      },
+      "i18n": {
+        "locale": "en",
+        "currency": "EUR",
+        "decimals": 0
+      },
+      "pricingMode": "packages",
+      "packages": [
+        {
+          "id": "basic",
+          "label": "Basic",
+          "description": "",
+          "basePrice": 0,
+          "featured": true
+        }
+      ],
+      "items": [],
+      "addons": [],
+      "fields": [],
+      "blocks": [
+        {
+          "id": "b_pkgs",
+          "type": "packages",
+          "title": "Plans",
+          "layout": "cards"
+        }
+      ]
+    },
+    "website-packages-2": {
+      "meta": {
+        "name": "Website Packages",
+        "slug": "website-packages-2",
+        "branding": {
+          "theme": "dark",
+          "accent": "#7c3aed",
+          "layout": "cards",
+          "hideBadge": false
+        }
+      },
+      "i18n": {
+        "locale": "en",
+        "currency": "EUR",
+        "decimals": 0
+      },
+      "pricingMode": "packages",
+      "packages": [
+        {
+          "id": "basic",
+          "label": "Basic",
+          "description": "",
+          "basePrice": 0,
+          "featured": true
+        }
+      ],
+      "items": [],
+      "addons": [],
+      "fields": [],
+      "blocks": [
+        {
+          "id": "b_pkgs",
+          "type": "packages",
+          "title": "Plans",
+          "layout": "cards"
+        }
+      ]
+    },
+    "untitled-page-2": {
+      "meta": {
+        "name": "Untitled Page",
+        "slug": "untitled-page-2",
+        "branding": {
+          "theme": "dark",
+          "accent": "#14b8a6",
+          "layout": "cards",
+          "hideBadge": false
+        }
+      },
+      "i18n": {
+        "locale": "en",
+        "currency": "EUR",
+        "decimals": 0
+      },
+      "pricingMode": "packages",
+      "packages": [
+        {
+          "id": "basic",
+          "label": "Basic",
+          "basePrice": 0,
+          "featured": true
+        }
+      ],
+      "items": [],
+      "addons": [],
+      "fields": [],
+      "blocks": [
+        {
+          "id": "b_pkgs",
+          "type": "packages",
+          "title": "Plans",
+          "layout": "cards"
+        }
+      ]
+    },
+    "cleaning-plans": {
+      "meta": {
+        "name": "Cleaning Plans",
+        "slug": "cleaning-plans",
+        "branding": {
+          "theme": "dark",
+          "accent": "#7c3aed",
+          "layout": "cards",
+          "hideBadge": false
+        }
+      },
+      "i18n": {
+        "locale": "en",
+        "currency": "EUR",
+        "decimals": 0
+      },
+      "pricingMode": "packages",
+      "packages": [
+        {
+          "id": "basic",
+          "label": "Basic",
+          "description": "",
+          "basePrice": 0,
+          "featured": true
+        }
+      ],
+      "items": [],
+      "addons": [],
+      "fields": [],
+      "blocks": [
+        {
+          "id": "b_pkgs",
+          "type": "packages",
+          "title": "Plans",
+          "layout": "cards"
+        }
+      ]
+    }
+  }
+}

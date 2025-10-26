@@ -1,26 +1,178 @@
+/* Tailwind v4 import */
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* =========================================
+   Design tokens / brand (Tierless)
+========================================= */
+:root{
+  --radius:14px;
+
+  /* Brand core */
+  --brand-1:#8b5cf6;   /* purple */
+  --brand-2:#f59e0b;   /* amber/yellow */
+
+  /* Brand outline (solid fallback) */
+  --brand-outline: color-mix(in srgb, var(--brand-1) 72%, white 28%);
+
+  /* Button tokens (light defaults) */
+  --btn-bg: #0f0f12;
+  --btn-fg: #ffffff;
+  --btn-border: rgba(255,255,255,.14);
+  --btn-outline: var(--brand-outline);
+  --btn-outline-hover: color-mix(in srgb, var(--brand-1) 65%, var(--brand-2) 35%);
+  --btn-outline-active: color-mix(in srgb, var(--brand-2) 70%, var(--brand-1) 30%);
+
+  /* Subtle / nav */
+  --btn-subtle-bg: rgba(255,255,255,.04);
+  --btn-subtle-border: rgba(255,255,255,.10);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root.light{
+  --btn-bg: #ffffff;
+  --btn-fg: #0e0f12;
+  --btn-border: rgba(0,0,0,.10);
+  --btn-subtle-bg: rgba(0,0,0,.03);
+  --btn-subtle-border: rgba(0,0,0,.08);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* =========================================
+   Base reset bits
+========================================= */
+* { box-sizing: border-box; }
+html,body { height:100%; }
+body { margin:0; background:#0a0b0f; color:#e5e7eb; font-synthesis-weight: none; }
+
+/* Avoid native title tooltips */
+[title] { pointer-events: auto; }
+
+/* =========================================
+   Global .btn system (permanent outline)
+   - .btn               : baza
+   - .btn--solid        : puni brendirani (default)
+   - .btn--subtle       : suptilniji (npr. navbar)
+   - .btn--ghost        : bez ispune, samo outline
+   - .btn--grad-outline : gradient outline preko pseudo-elementa
+========================================= */
+.btn{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .625rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--btn-border);
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease, color .15s ease;
+  text-decoration: none;
+  outline: none; /* mi radimo naš outline */
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+
+  /* Permanentni SOLID outline: koristi se kao uvek vidljiv ring */
+  box-shadow: 0 0 0 1.6px var(--btn-outline); /* crisp outside border */
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Focus ring + hover/active nijanse (preko box-shadow) */
+.btn:hover{
+  transform: translateY(-.5px);
+  box-shadow: 0 0 0 2px var(--btn-outline-hover);
+}
+.btn:active{
+  transform: translateY(0);
+  box-shadow: 0 0 0 2.5px var(--btn-outline-active);
+}
+.btn:focus-visible{
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-1) 55%, transparent);
+}
+
+/* Disabled */
+.btn[disabled],
+.btn:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============ Varijante ============ */
+
+/* 1) Solid (default): puni brandy feel */
+.btn--solid{
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.00)) padding-box,
+              linear-gradient(180deg, var(--brand-1), var(--brand-2)) border-box;
+  border: 1px solid transparent; /* koristi gradient na borderu */
+  color: var(--btn-fg);
+}
+
+/* 2) Subtle: laganija pozadina (idealno za navbar) */
+.btn--subtle{
+  background: var(--btn-subtle-bg);
+  border-color: var(--btn-subtle-border);
+  color: var(--btn-fg);
+  box-shadow: 0 0 0 1.2px color-mix(in srgb, var(--brand-1) 30%, transparent);
+}
+.btn--subtle:hover{
+  background: color-mix(in srgb, var(--btn-subtle-bg) 70%, white 30%);
+}
+
+/* 3) Ghost: samo outline, čista pozadina */
+.btn--ghost{
+  background: transparent;
+  border-color: transparent;
+  color: var(--btn-fg);
+  box-shadow: 0 0 0 1.6px var(--btn-outline);
+}
+.btn--ghost:hover{
+  background: rgba(255,255,255,.06);
+}
+
+/* 4) Gradient outline preko pseudo-elementa (za hero/primarna CTA) */
+.btn--grad-outline{
+  border-color: transparent; /* outline rešavamo ispod */
+}
+.btn--grad-outline::after{
+  content:"";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  /* "šupalj" centar, ostavlja samo prsten */
+  -webkit-mask: 
+    linear-gradient(#000 0 0) content-box, 
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  padding: 2px; /* širina outline-a */
+}
+.btn--grad-outline:hover::after{
+  filter: saturate(1.15);
+}
+
+/* ============ Dimenzije ============ */
+.btn--sm { padding: .5rem .75rem; font-size: .9rem; }
+.btn--md { padding: .625rem 1rem; font-size: .95rem; } /* default */
+.btn--lg { padding: .75rem 1.25rem; font-size: 1rem; }
+
+/* Ikonice levo/desno */
+.btn .icon{ display:inline-flex; align-items:center; }
+
+/* Utility: stalan brand outline za bilo koji element */
+.brand-outline{
+  box-shadow: 0 0 0 1.6px var(--brand-outline);
+  border-radius: var(--radius);
+}
+.brand-outline:hover{
+  box-shadow: 0 0 0 2px var(--btn-outline-hover);
+}
+
+/* =========================================
+   Tailwind layers (po želji dodaš svoje)
+========================================= */
+@layer utilities {
+  .text-balance { text-wrap: balance; }
 }
