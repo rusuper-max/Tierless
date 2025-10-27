@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "name": "Test Package Katalog",
+    "slug": "untitled-page",
+    "branding": {
+      "theme": "dark",
+      "accent": "#7c3aed",
+      "layout": "cards",
+      "hideBadge": false
+    }
+  },
+  "i18n": {
+    "locale": "en",
+    "currency": "EUR",
+    "decimals": 0
+  },
+  "pricingMode": "packages",
+  "packages": [
+    {
+      "id": "basic",
+      "label": "Basic",
+      "description": "",
+      "basePrice": 0,
+      "featured": true
+    }
+  ],
+  "items": [],
+  "addons": [],
+  "fields": [],
+  "blocks": [
+    {
+      "id": "b_pkgs",
+      "type": "packages",
+      "title": "Plans",
+      "layout": "cards"
+    }
+  ]
+}

@@ -27,6 +27,9 @@ export default function EditorClient({ slug }: { slug: string }) {
   const [dupLoading, setDupLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // whoami → za Public link (?u=<userId>)
+  const [ownerId, setOwnerId] = useState<string>("");
+
   // toasts
   const [toast, setToast] = useState<{ text: string; kind: "ok" | "err" } | null>(null);
   function showToast(text: string, kind: "ok" | "err" = "ok") {
@@ -52,6 +55,12 @@ export default function EditorClient({ slug }: { slug: string }) {
         setPlan(p === "starter" || p === "pro" || p === "business" ? p : "free");
       })
       .catch(() => { setPlan("free"); });
+
+    // ko je owner (za Public ?u=)
+    fetch("/api/whoami", { credentials: "same-origin", cache: "no-store" })
+      .then(r => (r.ok ? r.json() : null))
+      .then(j => { if (alive && j?.userId) setOwnerId(j.userId); })
+      .catch(() => {});
 
     fetch(`/api/calculators/${slug}`, {
       method: "GET", credentials: "same-origin", headers: { "cache-control": "no-store" },
@@ -89,12 +98,20 @@ export default function EditorClient({ slug }: { slug: string }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) {
-        const json = await res.json().catch(() => null);
-        if (json?.error === "plan_limit") showToast(json?.detail ?? "Plan limit reached.", "err");
-        else showToast("Save failed.", "err");
-        throw new Error(`PUT ${res.status}`);
-      }
+      const payload = await res.text();
+if (!res.ok) {
+  let reason = "save_failed";
+  try {
+    const j = JSON.parse(payload);
+    if (j?.error) reason = j.error;
+    if (j?.detail && typeof j.detail === "string") console.error("SAVE detail:", j.detail);
+  } catch {
+    // payload nije JSON
+  }
+  console.error("SAVE /api/calculators/", slug, "->", payload);
+  showToast(`Save failed: ${reason}`, "err");
+  throw new Error(`PUT ${res.status}: ${payload}`);
+}
       showToast("Saved.");
     } catch (e) {
       console.error(e); setError("Save failed.");
@@ -165,6 +182,9 @@ export default function EditorClient({ slug }: { slug: string }) {
     return acc + price * qty;
   }, 0);
 
+  // Public href sa owner-om (sprečava 404 na /p/[slug])
+  const publicHref = `/p/${data.meta.slug}${ownerId ? `?u=${encodeURIComponent(ownerId)}` : ""}`;
+
   return (
     <main className="container-page space-y-6" style={{ ["--accent" as any]: branding.accent }}
       data-theme={branding.theme === "light" ? "light" : undefined}
@@ -182,7 +202,8 @@ export default function EditorClient({ slug }: { slug: string }) {
           <p className="text-xs text-neutral-500">/editor/{data.meta.slug}</p>
         </div>
         <div className="flex items-center gap-2">
-          <a href={`/p/${data.meta.slug}`} className="btn">Public</a>
+          {/* Public sa ?u=ownerId */}
+          <a href={publicHref} className="btn">Public</a>
           <button onClick={handleDuplicate} disabled={dupLoading} className="btn accent-border">
             {dupLoading ? "Duplicating…" : "Duplicate"}
           </button>

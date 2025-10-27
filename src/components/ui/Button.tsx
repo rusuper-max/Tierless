@@ -1,60 +1,120 @@
 "use client";
 
-import Link from "next/link";
-import React from "react";
+import React, { forwardRef } from "react";
 
-type Variant = "default" | "brand" | "light" | "ghost" | "nav" | "plain" | "danger";
-type Size = "sm" | "md" | "lg";
+/** Minimalan util (umesto clsx) */
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
 
 type CommonProps = {
-  variant?: Variant;
-  size?: Size;
+  /** outline (default), solid, plain, danger, dangerSolid, nav */
+  variant?: "outline" | "solid" | "plain" | "danger" | "dangerSolid" | "nav";
+  /** sm | md | lg */
+  size?: "sm" | "md" | "lg";
+  /** zaobljeno kao pilula */
   pill?: boolean;
+  /** dodatne klase */
   className?: string;
+  /** popuni blagom bojom na hover (za outline) */
+  fillOnHover?: boolean;
+  /** CSS-only text swap (potreban i global.css blok) */
+  textSwap?: boolean;
+  /** tekst koji se pojavljuje na hover; ako nije zadat, koristi children */
+  swapTo?: string;
   children?: React.ReactNode;
-};
+} & React.HTMLAttributes<HTMLElement>;
 
-type AnchorProps = CommonProps &
-  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
+type ButtonAsAnchor = CommonProps &
+  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "className" | "children"> & {
     href: string;
+    as?: "a";
   };
 
-type NativeButtonProps = CommonProps &
-  React.ButtonHTMLAttributes<HTMLButtonElement> & {
-    href?: undefined;
+type ButtonAsButton = CommonProps &
+  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children"> & {
+    href?: never;
+    as?: "button";
   };
 
-function cls(variant: Variant = "default", size: Size = "md", pill?: boolean, extra?: string) {
-  const base = ["btn"];                         // globalna .btn (outline via ::after)
-  if (variant === "nav") base.push("btn-nav");
-  if (variant === "brand") base.push("btn-brand");
-  if (variant === "light") base.push("btn-light");
-  if (variant === "ghost") base.push("btn-ghost");
-  if (variant === "plain") base.push("btn-plain");
-  if (variant === "danger") base.push("btn-danger");  // NOVO: crvena varijanta
+type Props = ButtonAsAnchor | ButtonAsButton;
 
-  if (size === "lg") base.push("btn-lg");
-  if (pill) base.push("btn-pill");
+const Button = forwardRef<HTMLElement, Props>(function Button(props, ref) {
+  const {
+    as,
+    href,
+    variant = "outline",
+    size = "md",
+    pill,
+    className,
+    fillOnHover,
+    textSwap,
+    swapTo,
+    children,
+    ...rest
+  } = props as any;
 
-  if (extra) base.push(extra);
-  return base.join(" ");
-}
+  const isLink = !!href || as === "a";
+  const Comp: any = isLink ? "a" : "button";
 
-export default function Button(props: AnchorProps | NativeButtonProps) {
-  const { variant = "default", size = "md", pill, className, children, ...rest } = props as any;
+  const sizeCls =
+    size === "lg" ? "btn-lg" : size === "sm" ? "px-2 py-1 text-[13px]" : "";
 
-  if ("href" in props && props.href) {
-    const { href, ...aProps } = rest as AnchorProps;
-    return (
-      <Link href={href} className={cls(variant, size, pill, className)} {...aProps}>
-        {children}
-      </Link>
-    );
-  }
+  const variantCls =
+    variant === "solid"
+      ? "btn-brand"
+      : variant === "plain"
+      ? "btn-plain"
+      : variant === "nav"
+      ? "btn-nav"
+      : variant === "danger"
+      ? "btn-danger"
+      : variant === "dangerSolid"
+      ? "btn-danger btn-danger--solid"
+      : "btn"; // outline (default)
+
+  const hoverFillCls = fillOnHover ? "btn-fill" : "";
+
+  const pillCls = pill ? "btn-pill" : "";
+
+  // Ako je textSwap aktivan, dodaj strukturu koju očekuje CSS
+  const labelForSwap =
+    typeof swapTo === "string"
+      ? swapTo
+      : typeof children === "string"
+      ? children
+      : "";
+
+  const swapAttrs =
+    textSwap && labelForSwap
+      ? {
+          "data-label": labelForSwap,
+          "data-swap": "1",
+        }
+      : {};
+
+  const content = textSwap ? <span className="btn-text">{children}</span> : children;
 
   return (
-    <button className={cls(variant, size, pill, className)} {...(rest as NativeButtonProps)}>
-      {children}
-    </button>
+    <Comp
+      ref={ref as any}
+      href={href as any}
+      className={cx(
+        "inline-flex items-center justify-center",
+        "no-underline select-none",
+        variantCls,
+        sizeCls,
+        pillCls,
+        hoverFillCls,
+        textSwap && "btn-swap",
+        className
+      )}
+      {...swapAttrs}
+      {...rest}
+    >
+      {content}
+    </Comp>
   );
-}
+});
+
+export default Button;

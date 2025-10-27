@@ -8,8 +8,8 @@
   --radius:14px;
 
   /* Brand: purple → yellow */
-  --brand-1:#7c3aed;                         /* ljubičasta */
-  --brand-2:#facc15;                         /* žuta */
+  --brand-1:#7c3aed;                     /* ljubičasta */
+  --brand-2:#facc15;                     /* žuta */
   --brand-gradient: linear-gradient(90deg, var(--brand-1), var(--brand-2));
 
   /* RGB pomoćne */
@@ -17,8 +17,8 @@
   --brand-2-rgb:250,204,21;
 
   /* Danger (crveno) */
-  --danger-1:#ef4444;      /* red-500 */
-  --danger-2:#b91c1c;      /* red-700 */
+  --danger-1:#ef4444;                    /* red-500 */
+  --danger-2:#b91c1c;                    /* red-700 */
   --danger-1-rgb:239,68,68;
 
   /* Površine */
@@ -28,11 +28,11 @@
   --card-dark:#111113;
 
   /* Dugmad */
-  --btn-outline-w: 2px;        /* širina prstena/ivice */
+  --btn-outline-w: 2px;
 
-  /* Hover fill (brand default) */
-  --btn-hover-fill-light: rgba(124,58,237,.36);
-  --btn-hover-fill-dark:  rgba(124,58,237,.46);
+  /* Aura/Neon intenzitet (možeš fino da podesiš) */
+  --aura-opacity: .32;        /* koliko “svetli” panel */
+  --aura-blur: 24px;          /* mekoća glowa */
 }
 
 /* Global surface (next-themes dodaje .dark na <html>) */
@@ -63,38 +63,33 @@ html.dark{       --border: var(--border-dark);  --card: var(--card-dark);  --btn
 }
 .field:focus{
   outline:none;
-  /* ljubičasti ring */
   box-shadow: 0 0 0 3px rgba(var(--brand-1-rgb), .35);
 }
 
 /* =========================================
-   Buttons — STALNI outline preko ::after
+   BUTTONS — gradient outline prsten preko ::after
 ========================================= */
 .btn{
   position:relative; z-index:0; isolation:isolate;
   -webkit-tap-highlight-color:transparent;
-  display:inline-flex; align-items:center; gap:.5rem;
-  padding:.45rem .7rem; font-size:.875rem; line-height:1;
-
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  padding:.48rem .78rem; font-size:.875rem; line-height:1;
   border: var(--btn-outline-w) solid transparent;   /* realni border je transparentan */
   border-radius: calc(var(--radius) - 6px);
-
-  --btn-bg: transparent;                             /* ispunu menjaju varijante */
+  --btn-bg: transparent;
   background: var(--btn-bg);
   background-clip: padding-box;                      /* fill ostaje unutar prstena */
   color: inherit;
-
-  /* default gradient za prsten; varijante ga mogu promeniti */
   --btn-outline-gradient: var(--brand-gradient);
-
   transition:
-    background .18s ease,
-    box-shadow .22s ease,
     transform .18s ease,
-    filter .22s ease;
+    box-shadow .22s ease,
+    filter .22s ease,
+    background .18s ease,
+    color .18s ease;
 }
 
-/* Prsten */
+/* Prsten (uvek prisutan) */
 .btn::after{
   content:"";
   position:absolute; inset:0;
@@ -109,58 +104,28 @@ html.dark{       --border: var(--border-dark);  --card: var(--card-dark);  --btn
   pointer-events:none;
 }
 
-/* BRAND generic hover — NE diraj .btn-brand i .btn-danger */
-html:not(.dark) .btn:not(.btn-brand):not(.btn-danger):not([disabled]):hover{
-  background-color: var(--btn-hover-fill-light) !important;
-  background-image: none !important;
+/* Suptilan hover lift (bez ljubičastog fill-a) */
+.btn:not(.btn-brand):not(.btn-danger--solid):not([disabled]):hover{
   transform: translateY(-1px);
-  filter: saturate(1.05);
+  filter: saturate(1.04);
   box-shadow:
     0 1px 0 rgba(0,0,0,.06) inset,
-    0 10px 26px rgba(var(--brand-1-rgb), .20),
-    0 8px 20px rgba(var(--brand-2-rgb), .16);
+    0 10px 26px rgba(var(--brand-1-rgb), .18),
+    0 8px 20px rgba(var(--brand-2-rgb), .14);
 }
-html.dark .btn:not(.btn-brand):not(.btn-danger):not([disabled]):hover{
-  background-color: var(--btn-hover-fill-dark) !important;
-  background-image: none !important;
-  transform: translateY(-1px);
-  filter: saturate(1.07);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,.05) inset,
-    0 12px 28px rgba(var(--brand-1-rgb), .26),
-    0 10px 24px rgba(var(--brand-2-rgb), .20);
-}
-
-.btn:active{
-  transform: translateY(0);
-  filter: saturate(1.02);
-  box-shadow:
-    0 6px 18px rgba(var(--brand-1-rgb), .16),
-    0 4px 12px rgba(var(--brand-2-rgb), .12);
-}
-
+.btn:active{ transform: translateY(0); filter: saturate(1.02); }
 .btn:focus-visible{
   outline: none;
-  box-shadow:
-    0 0 0 3px rgba(var(--brand-1-rgb), .35),
-    0 10px 30px rgba(var(--brand-1-rgb), .18);
+  box-shadow: 0 0 0 3px rgba(var(--brand-1-rgb), .35), 0 10px 30px rgba(var(--brand-1-rgb), .18);
 }
-
 @media (prefers-reduced-motion: reduce){
-  .btn{ transition: background .18s ease, box-shadow .22s ease, filter .22s ease; }
+  .btn{ transition: box-shadow .22s ease, filter .22s ease, background .18s ease; }
   .btn:hover, .btn:active{ transform:none; }
 }
 
-/* ===== Varijante (brand) ===== */
-.btn-light{ --btn-bg:#ffffff; color:#111827; }
-.btn-light:hover{ background:#f5f5f5 !important; color:#111827; }
-
-.btn-ghost{ --btn-bg: transparent; }
-.btn-ghost:hover{ background: rgba(255,255,255,.06) !important; }
-
+/* Brand (solid gradijent) */
 .btn-brand{
-  color:#111;
-  border-color: transparent;
+  color:#111; border-color: transparent;
   background: var(--brand-gradient);
   background-clip: padding-box;
   box-shadow: 0 2px 10px rgba(0,0,0,.18);
@@ -169,97 +134,71 @@ html.dark .btn:not(.btn-brand):not(.btn-danger):not([disabled]):hover{
 .btn-brand:hover{
   filter: brightness(1.02) saturate(1.06);
   transform: translateY(-1px);
-  box-shadow:
-    0 12px 30px rgba(var(--brand-1-rgb), .24),
-    0 10px 24px rgba(var(--brand-2-rgb), .20);
-}
-.btn-brand:active{
-  filter: brightness(1) saturate(1.02);
-  transform: translateY(0);
+  box-shadow: 0 12px 30px rgba(var(--brand-1-rgb), .24), 0 10px 24px rgba(var(--brand-2-rgb), .20);
 }
 
-/* Neutral — bez brand prstena (npr. navbar) */
-.btn-plain{
-  border-color: var(--btn-outline);
-}
+/* Neutral — bez našeg prstena (npr. navbar) */
+.btn-plain{ border-color: var(--btn-outline); }
 .btn-plain::after{ display:none; }
-.btn-plain:hover{
-  background: rgba(255,255,255,.06) !important;
-}
+.btn-plain:hover{ background: rgba(255,255,255,.06) !important; }
 
-/* Nav (kompaktno) */
-.btn-nav{
-  padding:.35rem .6rem;
-  border-radius:999px;
-  border-width:1px;
-}
+/* Nav (kompaktnije) */
+.btn-nav{ padding:.35rem .6rem; border-radius:999px; border-width:1px; }
 .btn-nav::after{ display:none; }
-.btn-nav:hover{
-  background: rgba(255,255,255,.06) !important;
-}
+.btn-nav:hover{ background: rgba(255,255,255,.06) !important; }
 
-/* =========================================
-   DANGER varijanta (crveno)
-   - crveni prsten (outline)
-   - crveni fill na hover
-   - fokus/active u crvenim nijansama
-========================================= */
+/* Danger (outline) + solid */
 .btn-danger{
-  /* promeni prsten u crveni gradijent */
   --btn-outline-gradient: linear-gradient(90deg, var(--danger-1), var(--danger-2));
-  /* tekst crven, dok je idle transparent pozadina */
   color: var(--danger-1);
-  /* ne diramo --btn-bg (ostaje transparent dok je idle) */
 }
-
-/* Hover — PUNI crveno i prebacuje tekst na belo */
-html:not(.dark) .btn-danger:not([disabled]):hover{
-  background-color: rgba(var(--danger-1-rgb), .22) !important;
-  background-image: none !important;
-  color:#fff !important;
-  transform: translateY(-1px);
-  box-shadow:
-    0 1px 0 rgba(0,0,0,.06) inset,
-    0 10px 26px rgba(var(--danger-1-rgb), .22);
-}
-html.dark .btn-danger:not([disabled]):hover{
-  background-color: rgba(var(--danger-1-rgb), .32) !important;
-  background-image: none !important;
-  color:#fff !important;
-  transform: translateY(-1px);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,.05) inset,
-    0 12px 28px rgba(var(--danger-1-rgb), .28);
-}
-
-/* Active / Focus u crvenom tonu */
-.btn-danger:active{
-  transform: translateY(0);
-  box-shadow:
-    0 6px 18px rgba(var(--danger-1-rgb), .20);
-}
-.btn-danger:focus-visible{
-  outline:none;
-  box-shadow:
-    0 0 0 3px rgba(var(--danger-1-rgb), .45),
-    0 10px 30px rgba(var(--danger-1-rgb), .22);
-}
-
-/* (opciono) Ako želiš odmah PUNO crveno (bez čekanja hovera), dodaj klasu .btn-danger--solid */
-.btn-danger--solid{
-  --btn-bg: var(--danger-1);
-  color:#fff;
-}
-.btn-danger--solid:hover{
-  filter: brightness(1.04);
-}
+.btn-danger--solid{ --btn-bg: var(--danger-1); color:#fff; }
+.btn-danger--solid::after{ background: linear-gradient(90deg, var(--danger-1), var(--danger-2)); }
+.btn-danger--solid:hover{ filter: brightness(1.04); }
 
 /* Veličine/oblici */
 .btn-lg{ padding:.7rem 1.1rem; font-size:1rem; border-radius:calc(var(--radius) - 4px); }
+.btn-sm{ padding:.35rem .55rem; font-size:.8125rem; border-radius:calc(var(--radius) - 8px); }
 .btn-pill{ border-radius:999px; }
 
+/* Fill na hover (za outline dugmad) */
+.btn-fill{
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.btn-fill:hover{
+  background: var(--brand-gradient);
+  color: #111;
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 28px rgba(var(--brand-1-rgb), .22),
+    0 8px 22px rgba(var(--brand-2-rgb), .18);
+}
+
+/* Chip (accent dugmići u editoru; bez dodatnih ring/shadow klasa) */
+.btn-chip{
+  --chip: var(--brand-1);
+  --btn-outline-gradient: linear-gradient(90deg, var(--chip), color-mix(in srgb, var(--chip), white 30%));
+}
+
 /* =========================================
-   Tables
+   CSS-only TEXT SWAP (radi uz data-label)
+========================================= */
+.btn-swap{ position: relative; overflow: hidden; }
+.btn-swap .btn-text{
+  display:inline-block;
+  transition: transform .24s cubic-bezier(.23,.86,.24,1);
+}
+.btn-swap::after{
+  content: attr(data-label);     /* <<< usklađeno sa Button.tsx */
+  position:absolute; left:50%; top:100%;
+  transform: translate(-50%,0);
+  transition: transform .24s cubic-bezier(.23,.86,.24,1);
+}
+.btn-swap:hover .btn-text{ transform: translateY(-120%); }
+.btn-swap:hover::after{ transform: translate(-50%,-100%); }
+
+/* =========================================
+   Tables / list panels
 ========================================= */
 .table{
   width:100%;
@@ -274,18 +213,15 @@ html.dark .btn-danger:not([disabled]):hover{
 }
 .table tbody td{ padding:.6rem .75rem; border-top:1px solid var(--border); }
 .table tfoot td{ padding:.6rem .75rem; border-top:1px solid var(--border); }
-
-/* Tuning */
 html.dark .table{ background:#0f1012; border-color:#2b2f36; }
 html.dark .table thead th{ background:#16181c; color:#e7e7ea; }
 html.dark .table tbody td{ color:#e2e2e6; }
 html.dark .table tbody tr:hover td{ background:#16181c; }
-
 html:not(.dark) .table{ background:#ffffff; border-color:#e5e7eb; }
 html:not(.dark) .table thead th{ background:#fafafa; color:#111827; }
 
 /* =========================================
-   Badge
+   Badges
 ========================================= */
 .badge{
   display:inline-flex; align-items:center; gap:.35rem;
@@ -308,18 +244,13 @@ html:not(.dark) .table thead th{ background:#fafafa; color:#111827; }
   box-shadow:0 2px 10px rgba(var(--brand-1-rgb), .30);
 }
 .brand-label{
-  display:inline-block;
-  font-weight:600; letter-spacing:-.01em; line-height:1;
+  display:inline-block; font-weight:600; letter-spacing:-.01em; line-height:1;
   background: var(--brand-gradient);
   -webkit-background-clip:text; background-clip:text;
   -webkit-text-fill-color: transparent; color: transparent;
-
   max-width:0; opacity:0; transform: translateX(-18px);
   overflow:hidden; white-space:nowrap;
-  transition:
-    max-width .90s cubic-bezier(.2,0,0,1),
-    opacity   .65s ease-out,
-    transform .90s cubic-bezier(.2,0,0,1);
+  transition: max-width .90s cubic-bezier(.2,0,0,1), opacity .65s ease-out, transform .90s cubic-bezier(.2,0,0,1);
   transition-delay: 60ms;
 }
 .brand-link:hover .brand-label,
@@ -347,33 +278,49 @@ html:not(.dark) .table thead th{ background:#fafafa; color:#111827; }
 }
 
 /* =========================================
-   Ambient shadow helper
+   Ambient shadow helper + NEON/AURA PANEL
 ========================================= */
 .shadow-ambient{ box-shadow: 0 12px 48px rgba(0,0,0,.28); }
 
-/* === DANGER hover override (jarko crveno punjenje) === */
+/* Dodaj ovu klasu pored .table (npr. <div class="table neon-surface">) */
+.neon-surface{ position: relative; }
+.neon-surface::before{
+  content:"";
+  position:absolute; inset:-10px -14px;
+  border-radius: calc(var(--radius) + 10px);
+  z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(42% 62% at 12% 22%, rgba(var(--brand-1-rgb), .28), transparent 70%),
+    radial-gradient(52% 62% at 88% 64%, rgba(var(--brand-2-rgb), .26), transparent 72%);
+  filter: blur(var(--aura-blur)) saturate(1.05);
+  opacity: var(--aura-opacity);
+}
+html.dark .neon-surface::before{
+  opacity: calc(var(--aura-opacity) + .06);
+}
+
+/* == Neon glow koji NE seče overflow tabele == */
+.neon-wrap{ position: relative; z-index:0; filter: drop-shadow(0 12px 40px rgba(0,0,0,.18)); }
+.neon-wrap::before{
+  content:"";
+  position:absolute; inset:-12px -16px;
+  border-radius: calc(var(--radius) + 12px);
+  z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(42% 62% at 15% 25%, rgba(var(--brand-1-rgb), .26), transparent 70%),
+    radial-gradient(52% 62% at 85% 65%, rgba(var(--brand-2-rgb), .24), transparent 72%);
+  filter: blur(var(--aura-blur)) saturate(1.04);
+  opacity: var(--aura-opacity);
+}
+/* Canvas preko cele strane (za efekat u pozadini) */
+.neon-canvas{
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  mix-blend-mode: soft-light; /* dark: screen; light: soft-light */
+}
+html.dark .neon-canvas{ mix-blend-mode: screen; }
+
 :root{
-  --danger-1:#ef4444;        /* ako već postoji, možeš preskočiti */
-  --danger-2:#b91c1c;
-  --danger-1-rgb:239,68,68;
+  --aurora-speed: 0.00024;   /* sporije = manji broj (default 0.00028) */
+  --aurora-intensity: 0.44;  /* slabije = manji broj */
+  --aurora-scale: 0.60;      /* niže = brže (render u manjoj rezoluciji) */
 }
-
-html:not(.dark) .btn-danger:not([disabled]):hover{
-  background-color: rgba(var(--danger-1-rgb), .30) !important;
-  background-image: none !important;
-  color:#fff !important;
-  box-shadow:
-    0 1px 0 rgba(0,0,0,.06) inset,
-    0 10px 26px rgba(var(--danger-1-rgb), .22);
-}
-html.dark .btn-danger:not([disabled]):hover{
-  background-color: rgba(var(--danger-1-rgb), .38) !important;
-  background-image: none !important;
-  color:#fff !important;
-  box-shadow:
-    0 1px 0 rgba(255,255,255,.05) inset,
-    0 12px 28px rgba(var(--danger-1-rgb), .28);
-}
-
-/* Ako želiš DA JE UVEK PUNO CRVENO: dodaj i ovu klasu na dugme */
-.btn-danger--solid{ --btn-bg: var(--danger-1); color:#fff; }

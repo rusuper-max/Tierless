@@ -10,13 +10,11 @@ export default function HomePage() {
         </p>
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          {/* Outline uvek vidljiv, brand tek na hover */}
-          <Button href="/dashboard" size="lg" pill>
+          <Button as="a" href="/dashboard" size="lg" pill>
             Go to Dashboard
           </Button>
 
-          {/* Primer jakog outline-a sa “ink” tekstom (po želji ukloni) */}
-          <Button size="lg" pill className="btn-ink">
+          <Button size="lg" pill>
             Buy
           </Button>
         </div>

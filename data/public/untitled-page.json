@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "name": "Untitled Page",
+    "slug": "untitled-page",
+    "branding": {
+      "theme": "dark",
+      "accent": "#7c3aed",
+      "layout": "cards",
+      "hideBadge": false
+    }
+  },
+  "i18n": {
+    "locale": "en",
+    "currency": "EUR",
+    "decimals": 0
+  },
+  "pricingMode": "packages",
+  "packages": [],
+  "items": [],
+  "addons": [],
+  "fields": [],
+  "blocks": []
+}

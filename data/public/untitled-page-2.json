@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "name": "Test List Katalog",
+    "slug": "untitled-page-2",
+    "branding": {
+      "theme": "dark",
+      "accent": "#7c3aed",
+      "layout": "cards",
+      "hideBadge": false
+    }
+  },
+  "i18n": {
+    "locale": "en",
+    "currency": "EUR",
+    "decimals": 0
+  },
+  "pricingMode": "list",
+  "packages": [
+    {
+      "id": "basic",
+      "label": "Basic",
+      "description": "",
+      "basePrice": 0,
+      "featured": true
+    }
+  ],
+  "items": [
+    {
+      "id": "item1761573143527",
+      "label": "New item",
+      "price": 0,
+      "qty": 1
+    },
+    {
+      "id": "item1761573144035",
+      "label": "New item",
+      "price": 0,
+      "qty": 1
+    },
+    {
+      "id": "item1761573144455",
+      "label": "New item",
+      "price": 0,
+      "qty": 1
+    }
+  ],
+  "addons": [],
+  "fields": [],
+  "blocks": [
+    {
+      "id": "b_items",
+      "type": "items",
+      "title": "Price list",
+      "showTotals": true
+    }
+  ]
+}

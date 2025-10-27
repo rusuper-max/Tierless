@@ -1,0 +1,37 @@
+[
+  {
+    "meta": {
+      "name": "Test Package Katalog",
+      "slug": "untitled-page"
+    },
+    "config": {}
+  },
+  {
+    "meta": {
+      "name": "Copy of Test List Katalog",
+      "slug": "copy-of-test-list-katalog"
+    },
+    "config": {}
+  },
+  {
+    "meta": {
+      "name": "Copy of Copy of Test List Katalog",
+      "slug": "copy-of-copy-of-test-list-katalog"
+    },
+    "config": {}
+  },
+  {
+    "meta": {
+      "name": "PT Pricelist",
+      "slug": "pt-pricelist"
+    },
+    "config": {}
+  },
+  {
+    "meta": {
+      "name": "PT Pricelist",
+      "slug": "pt-pricelist-2"
+    },
+    "config": {}
+  }
+]

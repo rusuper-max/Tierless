@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { getSessionOnRoute } from "@/lib/session";
-import { getCalc, deleteCalc, updateCalcName } from "@/lib/calcsStore";
-import { getCalculator, putCalculator, deleteCalculator } from "@/lib/store";
-import { calcFromMetaConfig, calcBlank } from "@/lib/calc-init";
-import { getPlanFromSession, validateAgainstPlan } from "@/lib/plans";
+import { getUserIdFromRequest } from "@/lib/auth";
+import * as fullStore from "@/lib/fullStore";      // tvoj full JSON store (FS/Blob unutar)
+import * as mini from "@/lib/data/calcs";          // ⬅️ router ka mini store-u (local/Blob)
+import { putPublic /*, deletePublic */ } from "@/lib/publicStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +17,6 @@ function extractSlug(req: Request, params?: { slug?: string }) {
   return s;
 }
 
-// helper: generiši blocks iz aktuelnog modela
 function autoBlocksFrom(calc: any) {
   const hasPackages = Array.isArray(calc?.packages) && calc.packages.length > 0;
   const hasItems    = Array.isArray(calc?.items) && calc.items.length > 0;
@@ -39,79 +37,81 @@ function autoBlocksFrom(calc: any) {
   return blocks;
 }
 
+function jsonNoCache(data: any, status = 200) {
+  const res = NextResponse.json(data, { status });
+  res.headers.set("cache-control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+  return res;
+}
+
 export async function GET(req: Request, ctx: { params: { slug?: string } }) {
-  const tmp = NextResponse.json({});
-  await getSessionOnRoute(req, tmp).catch(() => null);
-
+  const userId = getUserIdFromRequest(req);
   const slug = extractSlug(req, ctx?.params);
-  if (!slug) return NextResponse.json({ error: "bad_slug" }, { status: 400 });
+  if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
-  const full = await getCalculator(slug);
-  if (full) return NextResponse.json(full, { status: 200 });
+  try {
+    const full = await fullStore.getFull(userId, slug);
+    if (full) return jsonNoCache({ ...full, meta: { ...full.meta, slug } });
 
-  const mini = await getCalc(slug);
-  if (mini) {
-    const seeded = calcFromMetaConfig(mini);
-    await putCalculator(seeded);
-    return NextResponse.json(seeded, { status: 200 });
+    const miniRow = await mini.get(userId, slug);
+    if (miniRow) {
+      const { calcFromMetaConfig } = await import("@/lib/calc-init");
+      const seeded = calcFromMetaConfig(miniRow);
+      const normalized = { ...seeded, blocks: autoBlocksFrom(seeded), meta: { ...seeded.meta, slug } };
+      await fullStore.putFull(userId, slug, normalized);
+      return jsonNoCache(normalized);
+    }
+
+    return jsonNoCache({ error: "not_found", slug }, 404);
+  } catch (e: any) {
+    console.error("GET full error:", e);
+    return jsonNoCache({ error: "get_failed", detail: e?.stack ?? String(e) }, 500);
   }
-
-  return NextResponse.json({ error: "not_found", slug }, { status: 404 });
 }
 
 export async function PUT(req: Request, ctx: { params: { slug?: string } }) {
-  const tmp = NextResponse.json({});
-  const s = await getSessionOnRoute(req, tmp);
-  if (!s.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
+  const userId = getUserIdFromRequest(req);
   const slug = extractSlug(req, ctx?.params);
-  if (!slug) return NextResponse.json({ error: "bad_slug" }, { status: 400 });
+  if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
   try {
     const body = await req.json();
+
     if (!body?.meta?.slug || body.meta.slug !== slug) {
-      return NextResponse.json({ error: "slug_mismatch" }, { status: 400 });
+      return jsonNoCache({ error: "slug_mismatch" }, 400);
     }
 
-    const plan = getPlanFromSession(s);
-    const v = validateAgainstPlan(plan, body);
-    if (v.ok !== true) {
-      return NextResponse.json({ error: v.error, detail: v.detail, limits: v.limits, plan }, { status: 403 });
-    }
+    const normalized = { ...body, blocks: autoBlocksFrom(body), meta: { ...body.meta, slug } };
+    await fullStore.putFull(userId, slug, normalized);
 
-    // normalizuj blocks prema aktuelnom modelu
-    const normalized = { ...body, blocks: autoBlocksFrom(body) };
+    // sinhronizuj ime u mini listingu
+    const newName = String(body?.meta?.name ?? "").trim();
+    if (newName) await mini.updateName(userId, slug, newName);
 
-    await putCalculator(normalized);
+    // auto publish
+    await putPublic(slug, normalized);
 
-    // ⇣⇣⇣ NOVO: sinhronizuj "name" u mini listingu (dashboard)
-    try {
-      const newName = String(body?.meta?.name ?? "").trim();
-      if (newName) await updateCalcName(slug, newName);
-    } catch {}
-
-    const res = NextResponse.json({ ok: true, slug }, { status: 200 });
-    const sc = tmp.headers.get("set-cookie");
-    if (sc) res.headers.set("set-cookie", sc);
-    return res;
+    return jsonNoCache({ ok: true, slug });
   } catch (e: any) {
-    return NextResponse.json({ error: "invalid_payload", detail: String(e?.message ?? e) }, { status: 400 });
+    console.error("PUT full error:", e);
+    return jsonNoCache({ error: "invalid_payload", detail: e?.stack ?? String(e) }, 400);
   }
 }
 
 export async function DELETE(req: Request, ctx: { params: { slug?: string } }) {
-  const tmp = NextResponse.json({});
-  const s = await getSessionOnRoute(req, tmp);
-  if (!s.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
+  const userId = getUserIdFromRequest(req);
   const slug = extractSlug(req, ctx?.params);
-  if (!slug) return NextResponse.json({ error: "bad_slug" }, { status: 400 });
+  if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
-  await deleteCalculator(slug).catch(() => {});
-  const removedMini = await deleteCalc(slug).catch(() => false);
+  try {
+    await fullStore.deleteFull(userId, slug).catch(() => {});
+    const removedMini = await mini.remove(userId, slug).catch(() => false);
 
-  const res = NextResponse.json({ ok: true, removed: slug, mini: removedMini }, { status: 200 });
-  const sc = tmp.headers.get("set-cookie");
-  if (sc) res.headers.set("set-cookie", sc);
-  return res;
+    // opcionalno, obriši i public kopiju (ako imaš deletePublic u publicStore)
+    // try { await deletePublic(slug); } catch {}
+
+    return jsonNoCache({ ok: true, removed: slug, mini: removedMini });
+  } catch (e: any) {
+    console.error("DELETE full error:", e);
+    return jsonNoCache({ error: "delete_failed", detail: e?.stack ?? String(e) }, 500);
+  }
 }

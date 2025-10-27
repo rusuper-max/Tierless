@@ -1,24 +1,34 @@
 import { NextResponse } from "next/server";
-import { getSessionOnRoute } from "@/lib/session";
+import { getUserIdFromRequest } from "@/lib/auth";
+import { getDevProfileByUserId } from "@/lib/team";
 
-export const dynamic = "force-dynamic"; // da nema keširanja
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  // koristimo isti req/res pristup kao u debug ruti
-  const tmp = NextResponse.json({});
-  const s = await getSessionOnRoute(req, tmp);
+  const userId = getUserIdFromRequest(req); // "dev:email" ili "anon:token"
 
-  return new NextResponse(
-    JSON.stringify({ user: s.user ?? null }),
-    {
-      status: 200,
-      headers: {
-        "content-type": "application/json",
-        // propagiraj eventualni Set-Cookie iz tmp (nije nužno, ali bezbedno je)
-        ...(tmp.headers.get("set-cookie")
-          ? { "set-cookie": tmp.headers.get("set-cookie") as string }
-          : {}),
-      },
-    }
-  );
+  // default user (anon/fallback)
+  let user: any = {
+    id: userId,
+    isDev: false,
+    plan: "free",
+    name: "user",
+  };
+
+  // ako je dev:email → dodaj profil/ulogu/pozdrav
+  const { email, profile } = getDevProfileByUserId(userId);
+  if (email && profile) {
+    user = {
+      ...user,
+      isDev: true,
+      email,
+      plan: profile.plan,
+      role: profile.role,
+      name: profile.displayName,     // koristi se u pozdravu
+      title: profile.title,          // dodatni opis
+    };
+  }
+
+  return NextResponse.json({ user }, { headers: { "cache-control": "no-store" } });
 }
