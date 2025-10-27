@@ -2,177 +2,378 @@
 @import "tailwindcss";
 
 /* =========================================
-   Design tokens / brand (Tierless)
+   Design tokens / brand
 ========================================= */
 :root{
   --radius:14px;
 
-  /* Brand core */
-  --brand-1:#8b5cf6;   /* purple */
-  --brand-2:#f59e0b;   /* amber/yellow */
+  /* Brand: purple → yellow */
+  --brand-1:#7c3aed;                         /* ljubičasta */
+  --brand-2:#facc15;                         /* žuta */
+  --brand-gradient: linear-gradient(90deg, var(--brand-1), var(--brand-2));
 
-  /* Brand outline (solid fallback) */
-  --brand-outline: color-mix(in srgb, var(--brand-1) 72%, white 28%);
+  /* RGB pomoćne */
+  --brand-1-rgb:124,58,237;
+  --brand-2-rgb:250,204,21;
 
-  /* Button tokens (light defaults) */
-  --btn-bg: #0f0f12;
-  --btn-fg: #ffffff;
-  --btn-border: rgba(255,255,255,.14);
-  --btn-outline: var(--brand-outline);
-  --btn-outline-hover: color-mix(in srgb, var(--brand-1) 65%, var(--brand-2) 35%);
-  --btn-outline-active: color-mix(in srgb, var(--brand-2) 70%, var(--brand-1) 30%);
+  /* Danger (crveno) */
+  --danger-1:#ef4444;      /* red-500 */
+  --danger-2:#b91c1c;      /* red-700 */
+  --danger-1-rgb:239,68,68;
 
-  /* Subtle / nav */
-  --btn-subtle-bg: rgba(255,255,255,.04);
-  --btn-subtle-border: rgba(255,255,255,.10);
+  /* Površine */
+  --border-light:#e5e7eb;
+  --border-dark:#26262b;
+  --card-light:#fafafa;
+  --card-dark:#111113;
+
+  /* Dugmad */
+  --btn-outline-w: 2px;        /* širina prstena/ivice */
+
+  /* Hover fill (brand default) */
+  --btn-hover-fill-light: rgba(124,58,237,.36);
+  --btn-hover-fill-dark:  rgba(124,58,237,.46);
 }
 
-:root.light{
-  --btn-bg: #ffffff;
-  --btn-fg: #0e0f12;
-  --btn-border: rgba(0,0,0,.10);
-  --btn-subtle-bg: rgba(0,0,0,.03);
-  --btn-subtle-border: rgba(0,0,0,.08);
-}
+/* Global surface (next-themes dodaje .dark na <html>) */
+html{ background:#ffffff; color:#111827; color-scheme: light; }
+html.dark{ background:#0b0b0c; color:#f5f5f6; color-scheme: dark; }
+
+/* Mapiranje po temi + neutral outline za "plain" varijante */
+html:not(.dark){ --border: var(--border-light); --card: var(--card-light); --btn-outline:#cbd5e1; }
+html.dark{       --border: var(--border-dark);  --card: var(--card-dark);  --btn-outline:#3b3f46; }
 
 /* =========================================
-   Base reset bits
+   Layout helpers
 ========================================= */
-* { box-sizing: border-box; }
-html,body { height:100%; }
-body { margin:0; background:#0a0b0f; color:#e5e7eb; font-synthesis-weight: none; }
-
-/* Avoid native title tooltips */
-[title] { pointer-events: auto; }
+.container-page{ margin:0 auto; max-width:80rem; padding:1.5rem; }
+.card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.field{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius: calc(var(--radius) - 8px);
+  background: transparent;
+  color: inherit;
+  padding:.45rem .6rem;
+  font-size:.875rem;
+}
+.field:focus{
+  outline:none;
+  /* ljubičasti ring */
+  box-shadow: 0 0 0 3px rgba(var(--brand-1-rgb), .35);
+}
 
 /* =========================================
-   Global .btn system (permanent outline)
-   - .btn               : baza
-   - .btn--solid        : puni brendirani (default)
-   - .btn--subtle       : suptilniji (npr. navbar)
-   - .btn--ghost        : bez ispune, samo outline
-   - .btn--grad-outline : gradient outline preko pseudo-elementa
+   Buttons — STALNI outline preko ::after
 ========================================= */
 .btn{
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .5rem;
-  padding: .625rem 1rem;
-  border-radius: var(--radius);
-  border: 1px solid var(--btn-border);
-  font-weight: 600;
-  line-height: 1.2;
-  cursor: pointer;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease, color .15s ease;
-  text-decoration: none;
-  outline: none; /* mi radimo naš outline */
-  color: var(--btn-fg);
+  position:relative; z-index:0; isolation:isolate;
+  -webkit-tap-highlight-color:transparent;
+  display:inline-flex; align-items:center; gap:.5rem;
+  padding:.45rem .7rem; font-size:.875rem; line-height:1;
+
+  border: var(--btn-outline-w) solid transparent;   /* realni border je transparentan */
+  border-radius: calc(var(--radius) - 6px);
+
+  --btn-bg: transparent;                             /* ispunu menjaju varijante */
   background: var(--btn-bg);
+  background-clip: padding-box;                      /* fill ostaje unutar prstena */
+  color: inherit;
 
-  /* Permanentni SOLID outline: koristi se kao uvek vidljiv ring */
-  box-shadow: 0 0 0 1.6px var(--btn-outline); /* crisp outside border */
-}
+  /* default gradient za prsten; varijante ga mogu promeniti */
+  --btn-outline-gradient: var(--brand-gradient);
 
-/* Focus ring + hover/active nijanse (preko box-shadow) */
-.btn:hover{
-  transform: translateY(-.5px);
-  box-shadow: 0 0 0 2px var(--btn-outline-hover);
-}
-.btn:active{
-  transform: translateY(0);
-  box-shadow: 0 0 0 2.5px var(--btn-outline-active);
-}
-.btn:focus-visible{
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-1) 55%, transparent);
+  transition:
+    background .18s ease,
+    box-shadow .22s ease,
+    transform .18s ease,
+    filter .22s ease;
 }
 
-/* Disabled */
-.btn[disabled],
-.btn:disabled{
-  opacity: .55;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ============ Varijante ============ */
-
-/* 1) Solid (default): puni brandy feel */
-.btn--solid{
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.00)) padding-box,
-              linear-gradient(180deg, var(--brand-1), var(--brand-2)) border-box;
-  border: 1px solid transparent; /* koristi gradient na borderu */
-  color: var(--btn-fg);
-}
-
-/* 2) Subtle: laganija pozadina (idealno za navbar) */
-.btn--subtle{
-  background: var(--btn-subtle-bg);
-  border-color: var(--btn-subtle-border);
-  color: var(--btn-fg);
-  box-shadow: 0 0 0 1.2px color-mix(in srgb, var(--brand-1) 30%, transparent);
-}
-.btn--subtle:hover{
-  background: color-mix(in srgb, var(--btn-subtle-bg) 70%, white 30%);
-}
-
-/* 3) Ghost: samo outline, čista pozadina */
-.btn--ghost{
-  background: transparent;
-  border-color: transparent;
-  color: var(--btn-fg);
-  box-shadow: 0 0 0 1.6px var(--btn-outline);
-}
-.btn--ghost:hover{
-  background: rgba(255,255,255,.06);
-}
-
-/* 4) Gradient outline preko pseudo-elementa (za hero/primarna CTA) */
-.btn--grad-outline{
-  border-color: transparent; /* outline rešavamo ispod */
-}
-.btn--grad-outline::after{
+/* Prsten */
+.btn::after{
   content:"";
-  position: absolute;
-  inset: -2px;
+  position:absolute; inset:0;
   border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-  /* "šupalj" centar, ostavlja samo prsten */
-  -webkit-mask: 
-    linear-gradient(#000 0 0) content-box, 
-    linear-gradient(#000 0 0);
+  padding: var(--btn-outline-w);
+  background: var(--btn-outline-gradient);
+  -webkit-mask:
+     linear-gradient(#000 0 0) content-box,
+     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask-composite: exclude;
-  padding: 2px; /* širina outline-a */
-}
-.btn--grad-outline:hover::after{
-  filter: saturate(1.15);
+  pointer-events:none;
 }
 
-/* ============ Dimenzije ============ */
-.btn--sm { padding: .5rem .75rem; font-size: .9rem; }
-.btn--md { padding: .625rem 1rem; font-size: .95rem; } /* default */
-.btn--lg { padding: .75rem 1.25rem; font-size: 1rem; }
-
-/* Ikonice levo/desno */
-.btn .icon{ display:inline-flex; align-items:center; }
-
-/* Utility: stalan brand outline za bilo koji element */
-.brand-outline{
-  box-shadow: 0 0 0 1.6px var(--brand-outline);
-  border-radius: var(--radius);
+/* BRAND generic hover — NE diraj .btn-brand i .btn-danger */
+html:not(.dark) .btn:not(.btn-brand):not(.btn-danger):not([disabled]):hover{
+  background-color: var(--btn-hover-fill-light) !important;
+  background-image: none !important;
+  transform: translateY(-1px);
+  filter: saturate(1.05);
+  box-shadow:
+    0 1px 0 rgba(0,0,0,.06) inset,
+    0 10px 26px rgba(var(--brand-1-rgb), .20),
+    0 8px 20px rgba(var(--brand-2-rgb), .16);
 }
-.brand-outline:hover{
-  box-shadow: 0 0 0 2px var(--btn-outline-hover);
+html.dark .btn:not(.btn-brand):not(.btn-danger):not([disabled]):hover{
+  background-color: var(--btn-hover-fill-dark) !important;
+  background-image: none !important;
+  transform: translateY(-1px);
+  filter: saturate(1.07);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.05) inset,
+    0 12px 28px rgba(var(--brand-1-rgb), .26),
+    0 10px 24px rgba(var(--brand-2-rgb), .20);
+}
+
+.btn:active{
+  transform: translateY(0);
+  filter: saturate(1.02);
+  box-shadow:
+    0 6px 18px rgba(var(--brand-1-rgb), .16),
+    0 4px 12px rgba(var(--brand-2-rgb), .12);
+}
+
+.btn:focus-visible{
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(var(--brand-1-rgb), .35),
+    0 10px 30px rgba(var(--brand-1-rgb), .18);
+}
+
+@media (prefers-reduced-motion: reduce){
+  .btn{ transition: background .18s ease, box-shadow .22s ease, filter .22s ease; }
+  .btn:hover, .btn:active{ transform:none; }
+}
+
+/* ===== Varijante (brand) ===== */
+.btn-light{ --btn-bg:#ffffff; color:#111827; }
+.btn-light:hover{ background:#f5f5f5 !important; color:#111827; }
+
+.btn-ghost{ --btn-bg: transparent; }
+.btn-ghost:hover{ background: rgba(255,255,255,.06) !important; }
+
+.btn-brand{
+  color:#111;
+  border-color: transparent;
+  background: var(--brand-gradient);
+  background-clip: padding-box;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.btn-brand::after{ display:none; }
+.btn-brand:hover{
+  filter: brightness(1.02) saturate(1.06);
+  transform: translateY(-1px);
+  box-shadow:
+    0 12px 30px rgba(var(--brand-1-rgb), .24),
+    0 10px 24px rgba(var(--brand-2-rgb), .20);
+}
+.btn-brand:active{
+  filter: brightness(1) saturate(1.02);
+  transform: translateY(0);
+}
+
+/* Neutral — bez brand prstena (npr. navbar) */
+.btn-plain{
+  border-color: var(--btn-outline);
+}
+.btn-plain::after{ display:none; }
+.btn-plain:hover{
+  background: rgba(255,255,255,.06) !important;
+}
+
+/* Nav (kompaktno) */
+.btn-nav{
+  padding:.35rem .6rem;
+  border-radius:999px;
+  border-width:1px;
+}
+.btn-nav::after{ display:none; }
+.btn-nav:hover{
+  background: rgba(255,255,255,.06) !important;
 }
 
 /* =========================================
-   Tailwind layers (po želji dodaš svoje)
+   DANGER varijanta (crveno)
+   - crveni prsten (outline)
+   - crveni fill na hover
+   - fokus/active u crvenim nijansama
 ========================================= */
-@layer utilities {
-  .text-balance { text-wrap: balance; }
+.btn-danger{
+  /* promeni prsten u crveni gradijent */
+  --btn-outline-gradient: linear-gradient(90deg, var(--danger-1), var(--danger-2));
+  /* tekst crven, dok je idle transparent pozadina */
+  color: var(--danger-1);
+  /* ne diramo --btn-bg (ostaje transparent dok je idle) */
 }
+
+/* Hover — PUNI crveno i prebacuje tekst na belo */
+html:not(.dark) .btn-danger:not([disabled]):hover{
+  background-color: rgba(var(--danger-1-rgb), .22) !important;
+  background-image: none !important;
+  color:#fff !important;
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(0,0,0,.06) inset,
+    0 10px 26px rgba(var(--danger-1-rgb), .22);
+}
+html.dark .btn-danger:not([disabled]):hover{
+  background-color: rgba(var(--danger-1-rgb), .32) !important;
+  background-image: none !important;
+  color:#fff !important;
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.05) inset,
+    0 12px 28px rgba(var(--danger-1-rgb), .28);
+}
+
+/* Active / Focus u crvenom tonu */
+.btn-danger:active{
+  transform: translateY(0);
+  box-shadow:
+    0 6px 18px rgba(var(--danger-1-rgb), .20);
+}
+.btn-danger:focus-visible{
+  outline:none;
+  box-shadow:
+    0 0 0 3px rgba(var(--danger-1-rgb), .45),
+    0 10px 30px rgba(var(--danger-1-rgb), .22);
+}
+
+/* (opciono) Ako želiš odmah PUNO crveno (bez čekanja hovera), dodaj klasu .btn-danger--solid */
+.btn-danger--solid{
+  --btn-bg: var(--danger-1);
+  color:#fff;
+}
+.btn-danger--solid:hover{
+  filter: brightness(1.04);
+}
+
+/* Veličine/oblici */
+.btn-lg{ padding:.7rem 1.1rem; font-size:1rem; border-radius:calc(var(--radius) - 4px); }
+.btn-pill{ border-radius:999px; }
+
+/* =========================================
+   Tables
+========================================= */
+.table{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius: var(--radius);
+  overflow:hidden;
+  background: var(--card);
+}
+.table thead th{
+  padding:.6rem .75rem; text-align:left; font-weight:600;
+  border-bottom:1px solid var(--border);
+}
+.table tbody td{ padding:.6rem .75rem; border-top:1px solid var(--border); }
+.table tfoot td{ padding:.6rem .75rem; border-top:1px solid var(--border); }
+
+/* Tuning */
+html.dark .table{ background:#0f1012; border-color:#2b2f36; }
+html.dark .table thead th{ background:#16181c; color:#e7e7ea; }
+html.dark .table tbody td{ color:#e2e2e6; }
+html.dark .table tbody tr:hover td{ background:#16181c; }
+
+html:not(.dark) .table{ background:#ffffff; border-color:#e5e7eb; }
+html:not(.dark) .table thead th{ background:#fafafa; color:#111827; }
+
+/* =========================================
+   Badge
+========================================= */
+.badge{
+  display:inline-flex; align-items:center; gap:.35rem;
+  border:1px solid var(--border); border-radius:999px;
+  padding:.22rem .55rem; font-size:.75rem; opacity:.9;
+}
+.badge:hover{ opacity:1; }
+
+/* =========================================
+   Brand text + logo reveal
+========================================= */
+.brand-text{
+  background: var(--brand-gradient);
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent;
+}
+.brand-link{ display:inline-flex; align-items:center; gap:.35rem; }
+.brand-logo{
+  width:34px; height:34px; border-radius:8px;
+  box-shadow:0 2px 10px rgba(var(--brand-1-rgb), .30);
+}
+.brand-label{
+  display:inline-block;
+  font-weight:600; letter-spacing:-.01em; line-height:1;
+  background: var(--brand-gradient);
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color: transparent; color: transparent;
+
+  max-width:0; opacity:0; transform: translateX(-18px);
+  overflow:hidden; white-space:nowrap;
+  transition:
+    max-width .90s cubic-bezier(.2,0,0,1),
+    opacity   .65s ease-out,
+    transform .90s cubic-bezier(.2,0,0,1);
+  transition-delay: 60ms;
+}
+.brand-link:hover .brand-label,
+.brand-link:focus-visible .brand-label{ max-width:160px; opacity:1; transform:none; }
+@media (prefers-reduced-motion: reduce){
+  .brand-label{ transition:none; transform:none; }
+}
+
+/* =========================================
+   Choice grid / cards (Plans)
+========================================= */
+.choice-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.choice-card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  transition: background-color .15s, border-color .15s, box-shadow .15s, transform .15s;
+}
+.choice-card:hover{
+  border-color: rgba(var(--brand-1-rgb), .35);
+  background:
+    linear-gradient(0deg, rgba(var(--brand-1-rgb), .08), transparent),
+    var(--card);
+}
+
+/* =========================================
+   Ambient shadow helper
+========================================= */
+.shadow-ambient{ box-shadow: 0 12px 48px rgba(0,0,0,.28); }
+
+/* === DANGER hover override (jarko crveno punjenje) === */
+:root{
+  --danger-1:#ef4444;        /* ako već postoji, možeš preskočiti */
+  --danger-2:#b91c1c;
+  --danger-1-rgb:239,68,68;
+}
+
+html:not(.dark) .btn-danger:not([disabled]):hover{
+  background-color: rgba(var(--danger-1-rgb), .30) !important;
+  background-image: none !important;
+  color:#fff !important;
+  box-shadow:
+    0 1px 0 rgba(0,0,0,.06) inset,
+    0 10px 26px rgba(var(--danger-1-rgb), .22);
+}
+html.dark .btn-danger:not([disabled]):hover{
+  background-color: rgba(var(--danger-1-rgb), .38) !important;
+  background-image: none !important;
+  color:#fff !important;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.05) inset,
+    0 12px 28px rgba(var(--danger-1-rgb), .28);
+}
+
+/* Ako želiš DA JE UVEK PUNO CRVENO: dodaj i ovu klasu na dugme */
+.btn-danger--solid{ --btn-bg: var(--danger-1); color:#fff; }
