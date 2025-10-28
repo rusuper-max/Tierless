@@ -20,23 +20,21 @@ export default function MarketingHeader() {
 
   // Brand
   const brandSolid = "var(--brand-1, #4F46E5)"; // T (uvek solid)
-  // Mekši početak gradijenta: zadrži brand-1 prvih X%
-  const GRAD_HOLD_PCT = 40; // po tvom poslednjem štimovanju
+  const GRAD_HOLD_PCT = 40;
   const grad = `linear-gradient(90deg,
     var(--brand-1, #4F46E5) 0%,
     var(--brand-1, #4F46E5) ${GRAD_HOLD_PCT}%,
     var(--brand-2, #22D3EE) 100%)`;
 
-  // Podesivo
-  const fontSize = "60px";
-  const wrapWidth = "18.5ch"; // dovoljno za “ierless”
-  const DURATION = 800;       // ms po slovu
-  const STAGGER  = 260;       // ms razmak i→e→r→l→e→s→s
-  const EASE     = "cubic-bezier(0.22, 1, 0.36, 1)";
+  // Fluid font-size da bude pravilno i na mobilu
+  const fontSize = "clamp(36px, 10vw, 60px)";
+  const wrapWidth = "18.5ch";
+  const DURATION = 800;
+  const STAGGER = 260;
+  const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
   const letters = useMemo(() => "ierless".split(""), []);
 
-  // Izmeri širine/pomak slova za jedinstveni gradijent
   const wrapRef = useRef<HTMLSpanElement | null>(null);
   const letterRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const [totalW, setTotalW] = useState<number>(0);
@@ -45,7 +43,7 @@ export default function MarketingHeader() {
   useLayoutEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
-    const offs = letterRefs.current.map(el => (el ? el.offsetLeft : 0));
+    const offs = letterRefs.current.map((el) => (el ? el.offsetLeft : 0));
     const last = letterRefs.current[letterRefs.current.length - 1];
     const total = last ? last.offsetLeft + last.offsetWidth : 0;
     if (total > 0) {
@@ -56,11 +54,26 @@ export default function MarketingHeader() {
 
   return (
     <header className="absolute inset-x-0 top-0 z-30">
-      <div className="mx-auto w-full max-w-7xl px-4 py-5 flex items-center justify-between">
+      {/* Safe-area padding levo/desno na celom headeru (sprečava sečenje) */}
+      <div
+        className="mx-auto w-full max-w-7xl px-4 py-5 flex items-center justify-between"
+        style={{
+          paddingInlineStart: "calc(env(safe-area-inset-left, 0px) + 8px)",
+          paddingInlineEnd: "calc(env(safe-area-inset-right, 0px) + 8px)",
+        }}
+      >
         <Link
           href="/"
           aria-label={`${t("brand.name")} — home`}
-          className="inline-flex select-none -ml-12 sm:-ml-16 lg:-ml-20"
+          className={
+            [
+              "inline-flex select-none",
+              // Uklonjeni negativni margini na mobilu – da ništa ne izađe iz viewporta
+              "ml-0",
+              // Ako želiš da i dalje blago vučemo ulevo na većim ekranima, aktiviraj sledeće:
+              // "sm:-ml-6 lg:-ml-10",
+            ].join(" ")
+          }
           style={{ lineHeight: 1, alignItems: "baseline" }}
           onMouseEnter={onEnter}
           onMouseLeave={onLeave}
@@ -74,7 +87,7 @@ export default function MarketingHeader() {
               fontWeight: 700,
               letterSpacing: "-0.01em",
               lineHeight: 1,
-              fontSize,
+              fontSize, // fluid
               color: brandSolid,
             }}
           >
@@ -90,7 +103,7 @@ export default function MarketingHeader() {
               verticalAlign: "baseline",
               width: wrapWidth,
               overflow: "hidden",
-              paddingLeft: "0.15ch",   // mrvu manji razmak T↔i
+              paddingLeft: "0.15ch", // mrvu manji razmak T↔i
               whiteSpace: "nowrap",
             }}
           >
@@ -100,8 +113,7 @@ export default function MarketingHeader() {
                 fontWeight: 700,
                 letterSpacing: "-0.01em",
                 lineHeight: 1,
-                fontSize,
-                // jedinstveni gradijent: ista background-size, različit background-position
+                fontSize, // fluid
                 backgroundImage: grad,
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
@@ -109,8 +121,9 @@ export default function MarketingHeader() {
                 WebkitTextFillColor: "transparent",
                 backgroundSize: totalW ? `${totalW}px 100%` : "100% 100%",
                 backgroundPosition: totalW ? `-${offsets[i] || 0}px 0` : "0 0",
-                // stagger ulaz
-                transform: hovered ? "translateX(0) translateY(0)" : "translateX(-0.6ch) translateY(0.15em)",
+                transform: hovered
+                  ? "translateX(0) translateY(0)"
+                  : "translateX(-0.6ch) translateY(0.15em)",
                 opacity: hovered ? 1 : 0,
                 transitionProperty: "transform, opacity",
                 transitionDuration: `${DURATION}ms`,
@@ -121,7 +134,9 @@ export default function MarketingHeader() {
               return (
                 <span
                   key={i}
-                  ref={(el: HTMLSpanElement | null) => { letterRefs.current[i] = el; }}
+                  ref={(el: HTMLSpanElement | null) => {
+                    letterRefs.current[i] = el;
+                  }}
                   style={style}
                 >
                   {ch}
@@ -133,7 +148,6 @@ export default function MarketingHeader() {
 
         {/* Desno: auth dugmad */}
         <nav className="flex items-center gap-3">
-          {/* Log in — hairline outline */}
           <CTAButton
             fx="swap-up"
             variant="outline"
@@ -143,7 +157,6 @@ export default function MarketingHeader() {
             href="/signin"
             label={t("nav.signin")}
           />
-          {/* Sign up — unified gradient tekst */}
           <CTAButton
             fx="swap-up"
             variant="brand"
