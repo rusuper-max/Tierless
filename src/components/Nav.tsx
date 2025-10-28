@@ -3,7 +3,6 @@
 
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
-import MistToggle from "@/components/MistToggle";
 
 type MeUser = { id: string; isDev?: boolean; name?: string; title?: string };
 type MeResp = { user?: MeUser };
@@ -12,13 +11,11 @@ type WhoAmI = { userId?: string };
 type NavProps = {
   brandHref?: string;
   showThemeToggle?: boolean;
-  showMistToggle?: boolean;
 };
 
 export default function Nav({
   brandHref = "/",
   showThemeToggle = true,
-  showMistToggle = true,
 }: NavProps) {
   const [me, setMe] = useState<MeUser | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -108,7 +105,6 @@ export default function Nav({
           </div>
 
           <div className="flex items-center gap-2 relative">
-            {showMistToggle ? <MistToggle /> : null}
 
             {signedIn ? (
               <>

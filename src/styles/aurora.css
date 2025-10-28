@@ -1,0 +1,81 @@
+:root{
+  --tl-indigo: #6366f1; /* indigo-500 */
+  --tl-sky:    #38bdf8; /* sky-400  */
+  --tl-teal:   #14b8a6; /* teal-500 */
+}
+
+/* Anti-drift osnove */
+html, body { overflow-x: clip; transform: none !important; }
+
+/* AURORA (HeroFX) — fiksna, ne putuje sa scrollom */
+html::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:6;              /* ispod maske, iznad pozadine */
+  pointer-events:none;
+  /* >>> Ovde je glow (možeš kasnije fino doterati koordinate i jačine) */
+  background:
+    radial-gradient(120vmax 80vmax at 10% 20%, color-mix(in oklab, var(--tl-indigo) 22%, transparent) 0 60%, transparent 60% 100%),
+    radial-gradient( 95vmax 65vmax at 82% 28%, color-mix(in oklab, var(--tl-sky)    22%, transparent) 0 58%, transparent 58% 100%),
+    radial-gradient(105vmax 75vmax at 60% 78%, color-mix(in oklab, var(--tl-teal)   20%, transparent) 0 62%, transparent 62% 100%),
+    radial-gradient(70vmax  50vmax at 18% 70%, color-mix(in oklab, var(--tl-indigo) 12%, transparent) 0 55%, transparent 55% 100%);
+  background-repeat:no-repeat;
+  filter:saturate(120%);
+  animation: tl-aurora-drift 36s ease-in-out infinite alternate;
+}
+@keyframes tl-aurora-drift{
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(1.5vmax, -1vmax, 0) scale(1.015); }
+}
+@media (prefers-reduced-motion: reduce){ html::before{ animation:none; } }
+
+/* LIGHT STREAKS — zamena za .l1 .l2 .l3 */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:7;              /* iznad glowa (6), ispod maske (9) */
+  pointer-events:none;
+  background-image:
+    linear-gradient(115deg, color-mix(in oklab, var(--tl-indigo) 18%, transparent) 0 2px, transparent 2px 100%),
+    linear-gradient(115deg, color-mix(in oklab, var(--tl-sky)    18%, transparent) 0 2px, transparent 2px 100%),
+    linear-gradient(115deg, color-mix(in oklab, var(--tl-teal)   18%, transparent) 0 2px, transparent 2px 100%);
+  background-size: 140vmax 2px, 120vmax 2px, 160vmax 2px;
+  background-position: -10vmax 22vh, 110vmax 38vh, -10vmax 76vh;
+  background-repeat:no-repeat;
+  animation: tl-lines 22s linear infinite;
+}
+@keyframes tl-lines{
+  0%  { background-position: -10vmax 22vh, 110vmax 38vh, -10vmax 76vh; }
+  100%{ background-position: 110vmax 16vh,  -10vmax 50vh, 110vmax 86vh; }
+}
+@media (prefers-reduced-motion: reduce){ body::before{ animation:none; } }
+
+/* LOGO SAFE-ZONE maska — fiksna, iznad Aurore i linija, ispod sadržaja */
+html::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:9;              /* sadržaj će biti z>=12 */
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse 60vmin 5vmin at 0rem 3.5rem,
+      rgba(255,255,255,.98) 0 70%,
+      rgba(255,255,255,.85) 70% 83%,
+      rgba(255,255,255,0) 100%);
+  -webkit-mask-image:
+    linear-gradient(to right,
+      transparent 0 10rem,
+      rgba(0,0,0,.8) 12rem 18rem,
+      transparent 28rem);
+          mask-image:
+    linear-gradient(to right,
+      transparent 0 10rem,
+      rgba(0,0,0,.8) 12rem 18rem,
+      transparent 28rem);
+}
+
+/* Sadržaj iznad maske */
+.marketing-shell { position: relative; z-index: 12; }
+header.marketing { position: relative; z-index: 20; }

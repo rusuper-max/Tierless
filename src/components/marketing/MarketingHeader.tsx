@@ -10,17 +10,18 @@ import {
   useLayoutEffect,
   CSSProperties,
 } from "react";
-import BrandButton from "@/components/BrandButton";
+import CTAButton from "@/components/marketing/CTAButton";
+import { t } from "@/i18n/t";
 
 export default function MarketingHeader() {
   const [hovered, setHovered] = useState(false);
   const onEnter = useCallback(() => setHovered(true), []);
-  const onLeave  = useCallback(() => setHovered(false), []);
+  const onLeave = useCallback(() => setHovered(false), []);
 
   // Brand
   const brandSolid = "var(--brand-1, #4F46E5)"; // T (uvek solid)
   // Mekši početak gradijenta: zadrži brand-1 prvih X%
-  const GRAD_HOLD_PCT = 40; // probaj 10–16 po ukusu
+  const GRAD_HOLD_PCT = 40; // po tvom poslednjem štimovanju
   const grad = `linear-gradient(90deg,
     var(--brand-1, #4F46E5) 0%,
     var(--brand-1, #4F46E5) ${GRAD_HOLD_PCT}%,
@@ -37,7 +38,7 @@ export default function MarketingHeader() {
 
   // Izmeri širine/pomak slova za jedinstveni gradijent
   const wrapRef = useRef<HTMLSpanElement | null>(null);
-  const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const letterRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const [totalW, setTotalW] = useState<number>(0);
   const [offsets, setOffsets] = useState<number[]>([]);
 
@@ -58,7 +59,7 @@ export default function MarketingHeader() {
       <div className="mx-auto w-full max-w-7xl px-4 py-5 flex items-center justify-between">
         <Link
           href="/"
-          aria-label="Tierless — home"
+          aria-label={`${t("brand.name")} — home`}
           className="inline-flex select-none -ml-12 sm:-ml-16 lg:-ml-20"
           style={{ lineHeight: 1, alignItems: "baseline" }}
           onMouseEnter={onEnter}
@@ -89,7 +90,7 @@ export default function MarketingHeader() {
               verticalAlign: "baseline",
               width: wrapWidth,
               overflow: "hidden",
-              paddingLeft: "0.15ch",   // (2) mrvu manji razmak T↔i
+              paddingLeft: "0.15ch",   // mrvu manji razmak T↔i
               whiteSpace: "nowrap",
             }}
           >
@@ -120,7 +121,7 @@ export default function MarketingHeader() {
               return (
                 <span
                   key={i}
-                  ref={el => (letterRefs.current[i] = el)}
+                  ref={(el: HTMLSpanElement | null) => { letterRefs.current[i] = el; }}
                   style={style}
                 >
                   {ch}
@@ -132,15 +133,26 @@ export default function MarketingHeader() {
 
         {/* Desno: auth dugmad */}
         <nav className="flex items-center gap-3">
-          <Link
+          {/* Log in — hairline outline */}
+          <CTAButton
+            fx="swap-up"
+            variant="outline"
+            size="md"
+            pill
+            hairlineOutline
             href="/signin"
-            className="h-10 px-4 rounded-2xl border text-sm inline-flex items-center border-[color:var(--border,#e5e7eb)] text-neutral-800 hover:bg-[#fafafa] transition-colors"
-          >
-            Log in
-          </Link>
-          <BrandButton variant="brand" size="md" pill className="btn-fill">
-            Sign up
-          </BrandButton>
+            label={t("nav.signin")}
+          />
+          {/* Sign up — unified gradient tekst */}
+          <CTAButton
+            fx="swap-up"
+            variant="brand"
+            size="md"
+            pill
+            textGradientUnified
+            href="/signup"
+            label={t("nav.signup")}
+          />
         </nav>
       </div>
     </header>

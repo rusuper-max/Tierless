@@ -1,0 +1,43 @@
+{
+  "brand": {
+    "name": "Tierless"
+  },
+  "nav": {
+    "pages": "Pages",
+    "templates": "Templates",
+    "signin": "Log in",
+    "signup": "Sign up",
+    "account": "Account",
+    "billing": "Billing",
+    "signout": "Sign out"
+  },
+  "hero": {
+    "title": "Build a pricing page in minutes",
+    "subtitle": "A clean, embeddable one-page calculator for your business.",
+    "ctaPrimary": "Start free",
+    "ctaSecondary": "See templates"
+  },
+  "features": {
+    "block1Title": "No code required",
+    "block1Body": "Configure plans, add-ons and rules without touching code.",
+    "block2Title": "Share anywhere",
+    "block2Body": "Send a link or embed on your site. Works great on mobile.",
+    "block3Title": "Brand it your way",
+    "block3Body": "Colors, copy and structure fully under your control."
+  },
+  "pricing": {
+    "title": "Simple plans",
+    "subtitle": "Transparent pricing with optional add-ons.",
+    "from": "from {price}/mo"
+  },
+  "cta": {
+    "finalTitle": "Ready to launch?",
+    "finalButton": "Create your page"
+  },
+  "meta": {
+    "home": {
+      "title": "Tierless — One-page pricing calculators",
+      "description": "Create a beautiful pricing page without a website. Share a link or embed it anywhere."
+    }
+  }
+}

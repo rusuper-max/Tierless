@@ -1,18 +1,23 @@
 /* src/styles/marketing.css */
 
-/* ========= Brand tokens (light) ========= */
+/* ========= Tokens (light) ========= */
 :root{
-  --brand-1: #4F46E5;      /* indigo (T solid) */
-  --brand-2: #22D3EE;      /* cyan   */
+  --brand-1: #4F46E5;
+  --brand-2: #22D3EE;
+  --brand-1-rgb: 79 70 229;
+  --brand-2-rgb: 34 211 238;
+
   --bg: #ffffff;
   --card: #ffffff;
+  --ink: #0b1020;
+
   --border: #e5e7eb;
   --radius: 16px;
 }
 
-.marketing-root{ color-scheme: light; background:#fff; }
+.marketing-root{ color-scheme: light; background: var(--bg); }
 
-/* Blagi light-bath iza heroa (može ostati) */
+/* Blagi light hero bg */
 .marketing-hero-bg{
   background:
     radial-gradient(1200px 520px at 12% -10%, #EEF2FF 0%, transparent 60%),
@@ -20,82 +25,183 @@
     #fff;
 }
 
-/* CTA util: stalni outline + blag fill na hover */
-.btn-fill{ position:relative; overflow:hidden; }
+/* Util: suptilan fill preko outline-a */
+.btn-fill { position: relative; overflow: hidden; }
 .btn-fill::after{
   content:""; position:absolute; inset:0;
   background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
-  opacity:0; transition:opacity .25s ease; z-index:-1;
+  opacity: 0; transition: opacity .25s ease; z-index: -1;
 }
-.btn-fill:hover::after{ opacity:.10; }
-.btn-fill:active::after{ opacity:.16; }
+.btn-fill:hover::after { opacity: .10; }
+.btn-fill:active::after { opacity: .16; }
 
-/* ======================= */
-/* Header brand animacija  */
-/* ======================= */
+/* ========= CTA BUTTONS ========= */
 
-.mkt-brand{
+.mkt-btn{
+  --btn-h: 50px;
+  --btn-px: 22px;
+  --ring: color-mix(in oklab, var(--brand-1) 58%, transparent);
+  --text: #0f172a;
+
+  display:inline-flex; align-items:center; justify-content:center;
+  height: var(--btn-h); padding: 0 var(--btn-px);
+  border-radius: calc(var(--radius) - 4px);
+  border: 1px solid var(--ring);
+  background: #fff; color: var(--text);
+  box-shadow:
+    0 0 0 1px var(--ring) inset,
+    0 1px 0 rgba(16,24,40,.04),
+    0 2px 8px rgba(2,6,23,.04);
+  transition: transform .18s ease, box-shadow .25s ease, background .25s ease, color .25s ease;
+  text-decoration: none; white-space: nowrap; -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+
+.mkt-btn--hairline{
+  /* jedva primetan, tanji outline */
+  --ring: color-mix(in oklab, var(--brand-1) 32%, transparent);
+  border-color: transparent;
+  box-shadow:
+    0 0 0 0.5px var(--ring) inset,
+    0 1px 0 rgba(16,24,40,.03),
+    0 1px 6px rgba(2,6,23,.03);
+}
+
+.mkt-btn--pill{ border-radius: 9999px; }
+
+.mkt-btn--sm{ --btn-h: 36px; --btn-px: 14px; font-size: 13px; }
+.mkt-btn--md{ --btn-h: 42px; --btn-px: 18px; font-size: 14px; }
+.mkt-btn--lg{ --btn-h: 50px; --btn-px: 22px; font-size: 15px; }
+
+.mkt-btn:hover{ transform: translateY(-1px); }
+.mkt-btn:active{ transform: translateY(0); }
+
+/* Primarno (brand) — belo dugme sa ringom */
+.mkt-btn--brand{
+  color: var(--text);
+  background: #fff;
+}
+.mkt-btn--brand:hover{
+  box-shadow:
+    0 0 0 1px var(--ring) inset,
+    0 6px 18px rgba(79,70,229,.18),
+    0 2px 8px rgba(2,6,23,.05);
+  background:
+    linear-gradient(0deg, rgba(255,255,255,.85), rgba(255,255,255,.85)) padding-box,
+    linear-gradient(90deg, var(--brand-1), var(--brand-2)) border-box;
+}
+
+/* Sekundarno (outline) */
+.mkt-btn--outline{ background:#fff; color:#0f172a; }
+.mkt-btn--outline:hover{ background:#fafafa; }
+
+/* Tekst wrapper */
+.mkt-btn-label{
   position: relative;
-  display: inline-block;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  margin-left: -2.5rem; /* blago ulevo, po želji koriguj */
+  display:inline-flex;
+  align-items:baseline;
+  gap: .02em;
   line-height: 1;
 }
 
-/* 1) GRADIENT TEKST (donji sloj) – otkrivamo ga clip-path-om sleva nadesno */
-.mkt-brand__reveal{
-  display: inline-block;
+/* ========= SWAP-UP FX (sporije + veći razmak) ========= */
+.mkt-btn--swapup{
+  --swap-dur: 560ms;      /* trajanje animacije */
+  --swap-stagger: 55ms;   /* kašnjenje po slovu */
+  --swap-gap: 120ms;      /* veći razmak: A ode → pa tek onda B dolazi */
+  --swap-out: -180%;      /* koliko A leti nagore */
+  --swap-in:  180%;       /* odakle B dolazi odozdo */
+}
+
+.mkt-btn--swapup .mkt-chwrap{
+  position: relative;
+  display:inline-block;
+  height: 1em; line-height: 1em;
+  overflow: visible;
+}
+
+.mkt-btn--swapup .mkt-ch{
+  display:block;
   font-weight: 700;
   letter-spacing: -0.01em;
-  font-size: 56px;
-  background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
-
-  /* inicijalno prikaži ~1ch širine (T); otkrivanje = animiranje “right” inset-a ka 0 */
-  clip-path: inset(0  calc(100% - 1ch)  0  0);
-  transition: clip-path 2400ms cubic-bezier(0.22,1,0.36,1);
-  will-change: clip-path;
-}
-@media (min-width: 640px){ .mkt-brand__reveal{ font-size: 72px; } }
-@media (min-width: 768px){ .mkt-brand__reveal{ font-size: 84px; } }
-@media (min-width: 1024px){ .mkt-brand__reveal{ font-size: 96px; } }
-
-/* 2) SOLID “T” (gornji sloj) – pun indigo; na hover posle malo vremena izblijedi */
-.mkt-brand__T{
-  position: absolute; inset: 0 auto auto 0; /* levo gore */
-  display: inline-block;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1;
-  font-size: 56px;
-  color: var(--brand-1);
-  transition: opacity 1200ms cubic-bezier(0.22,1,0.36,1);
-  pointer-events: none;
-}
-@media (min-width: 640px){ .mkt-brand__T{ font-size: 72px; } }
-@media (min-width: 768px){ .mkt-brand__T{ font-size: 84px; } }
-@media (min-width: 1024px){ .mkt-brand__T{ font-size: 96px; } }
-
-/* HOVER STATES – elegantno i sporo */
-.mkt-brand:hover .mkt-brand__reveal,
-.mkt-brand:focus-visible .mkt-brand__reveal{
-  clip-path: inset(0 0 0 0); /* otkrij ceo gradient tekst */
-}
-.mkt-brand:hover .mkt-brand__T,
-.mkt-brand:focus-visible .mkt-brand__T{
-  opacity: 0; /* T solid se nežno gasi, ostaje T iz gradient sloja ispod */
+  line-height: 1em;
+  color: var(--text); /* podrazumevano obična boja */
+  text-rendering: optimizeLegibility;
+  will-change: transform, opacity;
+  transform: translateY(0);
 }
 
-/* Respect “reduce motion” (a11y) */
-@media (prefers-reduced-motion: reduce){
-  .mkt-brand__reveal{ transition: none; clip-path: inset(0 0 0 0); }
-  .mkt-brand__T{ transition: none; opacity: 0; }
+/* A — početni sloj */
+.mkt-btn--swapup .mkt-ch--A{
+  position: relative;
+  opacity: 1;
+  transition:
+    transform var(--swap-dur) cubic-bezier(.22,1,.36,1),
+    opacity   var(--swap-dur) cubic-bezier(.22,1,.36,1);
+  transition-delay: calc(var(--i) * var(--swap-stagger));
 }
 
-/* Uređaji bez hovera – zadrži samo T (bez otkrivanja) */
+/* B — čeka ispod, stiže kasnije (gap) */
+.mkt-btn--swapup .mkt-ch--B{
+  position: absolute; left:0; top:0;
+  transform: translateY(var(--swap-in));
+  opacity: 0;
+  transition:
+    transform var(--swap-dur) cubic-bezier(.22,1,.36,1),
+    opacity   var(--swap-dur) cubic-bezier(.22,1,.36,1);
+  transition-delay: calc(var(--i) * var(--swap-stagger) + var(--swap-gap));
+}
+
+/* Hover state */
+.mkt-btn--swapup:hover .mkt-ch--A,
+.mkt-btn--swapup:focus-visible .mkt-ch--A{
+  transform: translateY(var(--swap-out));
+  opacity: 0;
+}
+.mkt-btn--swapup:hover .mkt-ch--B,
+.mkt-btn--swapup:focus-visible .mkt-ch--B{
+  transform: translateY(0%);
+  opacity: 1;
+}
+
+/* Touch: bez animacije */
 @media (hover: none){
-  .mkt-brand__reveal{ clip-path: inset(0 calc(100% - 1ch) 0 0); }
-  .mkt-brand__T{ opacity: 1; }
+  .mkt-btn--swapup .mkt-ch--A,
+  .mkt-btn--swapup .mkt-ch--B{
+    transition: none;
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
+
+/* =========================
+   Global scroll FX (CSS-only)
+   ========================= */
+
+/* Anti-drift osnove: bez horizontalnog skrola i bez transform na korenu */
+html, body {
+  overflow-x: clip;
+  transform: none !important;
+}
+
+/* AURORA (HeroFX) — fiksna, ne putuje sa scrollom */
+html::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 6;            /* ispod maske, iznad bilo kog bg-a */
+  pointer-events: none;
+
+  /* >>> PREBACI OVDE TVOJ TAČAN FX IZ .fx-aurora <<< 
+     Privremeni “približan” efekat: */
+  background:
+    radial-gradient(120vmax 80vmax at 10% 20%, rgba(99,102,241,.18), transparent 60%),
+    radial-gradient(90vmax 60vmax at 80% 30%, rgba(56,189,248,.18), transparent 60%),
+    radial-gradient(100vmax 70vmax at 60% 80%, rgba(45,212,191,.16), transparent 65%);
+  filter: saturate(120%);
+}
+
+
+/* Sadržaj i header iznad maske */
+.marketing-shell { position: relative; z-index: 12; }
+header.marketing { position: relative; z-index: 20; }
