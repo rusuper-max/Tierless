@@ -4,12 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { t } from "@/i18n";
 
 /**
- * ScrollPricingIntro (v7.2)
- * - Naslov kreće “čitljiv” (HEAD_INIT), miruje do HEAD_SHRINK_START,
- *   zatim se smanjuje do HEAD_SHRINK_END; fade-out tek posle toga.
- * - Kartice lete tek po startu smanjivanja, pa deck → odlazak nagore.
- * - Featured (centar): gradient okvir, gradient bullet i gradient hover-border.
- * - Ostali: obojeni outline + hover outline u boji tier-a.
+ * ScrollPricingIntro (v7.3 mobile-friendly)
+ * Desktop: isti raspored (2x2 + centar).
+ * Mobile ( < 640px ): finalni raspored = vertikalni stack (x=0), nema "cut-off".
+ * Naslov: na mobilnom blagi padding da slovo "T" ne kači ivicu.
  */
 
 type TierId = "basic" | "standard" | "business" | "premium" | "signature";
@@ -29,12 +27,11 @@ const PKGS: Pkg[] = [
   { id: "signature", name: "Signature", price: "€999",  features: [t("Team access"), t("Templates"), t("SLA support")] },
 ];
 
-// Boje po tier-u (za outline i hover)
 const TIER_COLORS: Record<Exclude<TierId, "business">, string> = {
-  basic: "#38bdf8",     // sky-400
-  standard: "#14b8a6",  // teal-500
-  premium: "#8b5cf6",   // violet-500
-  signature: "#f59e0b", // amber-500
+  basic: "#38bdf8",
+  standard: "#14b8a6",
+  premium: "#8b5cf6",
+  signature: "#f59e0b",
 };
 
 const clamp = (n: number, min = 0, max = 1) => Math.min(Math.max(n, min), max);
@@ -55,43 +52,70 @@ export default function ScrollPricingIntro({
     signature: null,
   });
 
+  /** Mobile breakpoint (SSR-safe) */
+  const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check, { passive: true });
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
-  // Raspored ciljeva (2x2 + centar)
+  /** Finalni ciljevi — desktop: 2x2 + centar, mobile: vertikalni stack */
   const targets = useMemo(() => {
+    if (!isMobile) {
+      return {
+        basic:     { x: -360, y: -160, scale: 0.94, rot: -2 },
+        standard:  { x:  360, y: -160, scale: 0.94, rot:  2 },
+        business:  { x:    0, y:    0, scale: 1.06, rot:  0 },
+        premium:   { x: -300, y:  220, scale: 0.98, rot: -1 },
+        signature: { x:  300, y:  220, scale: 0.98, rot:  1 },
+      } as const;
+    }
+    // Mobile — vertikalno “jedna ispod druge” (centar x, blagi razmaci po y)
     return {
-      basic:     { x: -360, y: -160, scale: 0.94, rot: -2 },
-      standard:  { x:  360, y: -160, scale: 0.94, rot:  2 },
-      business:  { x:    0, y:    0, scale: 1.06, rot:  0 }, // CENTAR (featured)
-      premium:   { x: -300, y:  220, scale: 0.98, rot: -1 },
-      signature: { x:  300, y:  220, scale: 0.98, rot:  1 },
+      basic:     { x: 0, y: -280, scale: 0.95, rot: 0 },
+      standard:  { x: 0, y: -120, scale: 0.96, rot: 0 },
+      business:  { x: 0, y:   40, scale: 1.02, rot: 0 }, // featured
+      premium:   { x: 0, y:  200, scale: 0.96, rot: 0 },
+      signature: { x: 0, y:  360, scale: 0.96, rot: 0 },
     } as const;
-  }, []);
+  }, [isMobile]);
 
-  // Početne off-screen pozicije (razni pravci/dijagonale)
+  /** Početni off-screen vektori */
   const starts = useMemo(() => {
+    if (!isMobile) {
+      return {
+        basic:     { x: -900, y: -220, rot: -14 },
+        standard:  { x:  960, y: -200, rot:  14 },
+        business:  { x:  140, y: -640, rot:  -8 },
+        premium:   { x: -820, y:  920, rot: -14 },
+        signature: { x:  980, y:  860, rot:  14 },
+      } as const;
+    }
+    // Mobile — unos sa gore/dole ka centrima, bez jakih rotacija
     return {
-      basic:     { x: -900, y: -220, rot: -14 },
-      standard:  { x:  960, y: -200, rot:  14 },
-      business:  { x:  140, y: -640, rot:  -8 },
-      premium:   { x: -820, y:  920, rot: -14 },
-      signature: { x:  980, y:  860, rot:  14 },
+      basic:     { x:  0,  y: -700, rot:  0 },
+      standard:  { x:  0,  y: -700, rot:  0 },
+      business:  { x:  0,  y: -700, rot:  0 },
+      premium:   { x:  0,  y:  700, rot:  0 },
+      signature: { x:  0,  y:  700, rot:  0 },
     } as const;
-  }, []);
+  }, [isMobile]);
 
-  // "Špil" (stack) offseti oko centra (minimalne razlike da se nazire sloj)
+  /** Špil (stack) offseti — isti za oba */
   const stackOffsets = useMemo(() => {
     return {
       basic:     { x: -14, y: 14 },
       standard:  { x: -7,  y: 10 },
-      business:  { x:  0,  y:  0 }, // TOP (naš)
+      business:  { x:  0,  y:  0 }, // TOP
       premium:   { x:  7,  y: 18 },
       signature: { x: 14,  y: 24 },
     } as const;
   }, []);
 
-  // Z-index tako da je naš (business) na vrhu u špilu
   const zIndexMap: Record<TierId, number> = {
     basic: 10,
     standard: 20,
@@ -100,16 +124,15 @@ export default function ScrollPricingIntro({
     business: 50,
   };
 
-  // ────────────────────────── Tajming naslov/kartice ──────────────────────────
-  const HEAD_INIT        = 1.08; // početna, čitljiva veličina (bez “over-zoom”)
-  const SCALE_END        = 0.24; // konačna mala veličina
-  const HEAD_SHRINK_START= 0.18; // dokle držimo HEAD_INIT, posle krene shrink
-  const HEAD_SHRINK_END  = 0.84; // do ovde završavamo shrink (tik pre fade-a)
-  const FADE_START       = 0.84; // tek kad je već mali
-  const FADE_END         = 0.96;
+  // ─────────── Tajming (mobile ima sitno drugačije vrednosti) ───────────
+  const HEAD_INIT         = isMobile ? 1.02 : 1.08;
+  const SCALE_END         = isMobile ? 0.28 : 0.24;
+  const HEAD_SHRINK_START = 0.18;
+  const HEAD_SHRINK_END   = isMobile ? 0.80 : 0.84;
+  const FADE_START        = isMobile ? 0.80 : 0.84;
+  const FADE_END          = isMobile ? 0.95 : 0.96;
 
-  // Kartice kreću nakon što je shrink počeo (bazirano relativno na HEAD_SHRINK_START)
-  const CARD_BASE = HEAD_SHRINK_START + 0.06;
+  const CARD_BASE = HEAD_SHRINK_START + (isMobile ? 0.04 : 0.06);
   const CARD_S = {
     basic:     CARD_BASE + 0.00,
     standard:  CARD_BASE + 0.03,
@@ -117,12 +140,13 @@ export default function ScrollPricingIntro({
     premium:   CARD_BASE + 0.07,
     signature: CARD_BASE + 0.09,
   } as const;
-  const CARD_D = { basic: 0.26, standard: 0.24, business: 0.26, premium: 0.22, signature: 0.20 } as const;
+  const CARD_D = isMobile
+    ? ({ basic: 0.22, standard: 0.22, business: 0.24, premium: 0.20, signature: 0.20 } as const)
+    : ({ basic: 0.26, standard: 0.24, business: 0.26, premium: 0.22, signature: 0.20 } as const);
 
-  // Faza 2 (špil → odlazak nagore)
-  const DECK_START = 0.92;  // počinje slaganje u špil
-  const DECK_STACK = 0.97;  // do ovde su složeni
-  const DECK_END   = 0.995; // odlazak nagore i nestanak
+  const DECK_START = isMobile ? 0.88 : 0.92;
+  const DECK_STACK = isMobile ? 0.96 : 0.97;
+  const DECK_END   = isMobile ? 0.995 : 0.995;
 
   useEffect(() => {
     if (!mounted) return;
@@ -139,7 +163,7 @@ export default function ScrollPricingIntro({
     const ky = Math.max(1, vh / 800);
 
     const STARTS = Object.fromEntries(
-      Object.entries(starts).map(([k, v]) => [k, { x: v.x * kx, y: v.y * ky, rot: v.rot }]),
+      Object.entries(starts).map(([k, v]) => [k, { x: v.x * (isMobile ? 1 : kx), y: v.y * (isMobile ? 1 : ky), rot: v.rot }]),
     ) as Record<TierId, { x: number; y: number; rot: number }>;
 
     let raf = 0;
@@ -153,7 +177,7 @@ export default function ScrollPricingIntro({
       const travel = Math.max(1, rect.height - vhNow);
       const raw = clamp((vhNow - rect.top) / travel, 0, 1);
 
-      // ── Naslov: hold → shrink → fade
+      // Naslov: hold → shrink → fade
       let headScale = HEAD_INIT;
       if (raw >= HEAD_SHRINK_START) {
         const p = clamp((raw - HEAD_SHRINK_START) / (HEAD_SHRINK_END - HEAD_SHRINK_START), 0, 1);
@@ -164,7 +188,7 @@ export default function ScrollPricingIntro({
       title.style.transform = `translateZ(0) scale(${headScale})`;
       title.style.opacity = String(headOpacity);
 
-      // ── Kartice: Faza 1 (fly-in to targets)
+      // Kartice
       (PKGS as Pkg[]).forEach((pkg) => {
         const el = cardRefs.current[pkg.id];
         if (!el) return;
@@ -183,7 +207,7 @@ export default function ScrollPricingIntro({
         let rot = lerp(off.rot, to.rot, t);
         let op = t;
 
-        // ── Faza 2: Stack (špil) + odlazak nagore
+        // Stack + exit
         const stackT = clamp((raw - DECK_START) / (DECK_STACK - DECK_START), 0, 1);
         const exitT  = clamp((raw - DECK_STACK) / (DECK_END - DECK_STACK), 0, 1);
 
@@ -215,18 +239,18 @@ export default function ScrollPricingIntro({
       window.removeEventListener("resize", schedule);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [mounted, starts, targets, stackOffsets]);
+  }, [mounted, starts, targets, stackOffsets, isMobile, HEAD_INIT, SCALE_END, HEAD_SHRINK_START, HEAD_SHRINK_END, FADE_START, FADE_END, DECK_START, DECK_STACK, DECK_END, CARD_S, CARD_D]);
 
   return (
     <section
       ref={sectionRef}
-      className="relative h-[460vh]"
+      className="relative h-[520vh] sm:h-[460vh]"
       aria-label={t("Scroll storytelling pricing intro")}
     >
-      {/* Sticky viewport (ne diramo bg; parent stranica je bela) */}
+      {/* Sticky viewport */}
       <div ref={viewportRef} className="sticky top-0 h-screen overflow-hidden [contain:layout_style_paint]">
-        {/* NASLOV sa brend gradijentom */}
-        <div className="absolute inset-0 grid place-items-center pointer-events-none">
+        {/* NASLOV (blagi padding na mobilu) */}
+        <div className="absolute inset-0 grid place-items-center pointer-events-none px-3 sm:px-0">
           <h2
             ref={titleRef}
             suppressHydrationWarning
@@ -236,8 +260,7 @@ export default function ScrollPricingIntro({
               "bg-gradient-to-r from-indigo-500 via-sky-400 to-teal-400",
               "text-[clamp(46px,9vw,160px)]",
             ].join(" ")}
-            // početno stanje = HEAD_INIT (da izbegnemo hydration mismatch)
-            style={{ transform: `translateZ(0) scale(${1.08})`, opacity: 1 }}
+            style={{ transform: `translateZ(0) scale(${HEAD_INIT})`, opacity: 1 }}
           >
             {headline}
           </h2>
@@ -250,7 +273,7 @@ export default function ScrollPricingIntro({
               key={pkg.id}
               ref={(el) => { cardRefs.current[pkg.id] = el; }}
               suppressHydrationWarning
-              className="absolute left-1/2 top-1/2 w-[min(86vw,360px)] -translate-x-1/2 -translate-y-1/2 will-change-transform"
+              className="absolute left-1/2 top-1/2 w-[min(92vw,380px)] sm:w-[min(86vw,360px)] -translate-x-1/2 -translate-y-1/2 will-change-transform"
               style={{
                 transform: "translate3d(0,0,0) rotate(0deg) scale(0.84)",
                 opacity: 0,
