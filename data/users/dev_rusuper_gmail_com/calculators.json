@@ -23,13 +23,6 @@
   {
     "meta": {
       "name": "PT Pricelist",
-      "slug": "pt-pricelist"
-    },
-    "config": {}
-  },
-  {
-    "meta": {
-      "name": "PT Pricelist",
       "slug": "pt-pricelist-2"
     },
     "config": {}

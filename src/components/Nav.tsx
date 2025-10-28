@@ -3,15 +3,23 @@
 
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
-import ThemeToggle from "@/components/ThemeToggle";
-import Button from "@/components/ui/Button";
 import MistToggle from "@/components/MistToggle";
 
 type MeUser = { id: string; isDev?: boolean; name?: string; title?: string };
 type MeResp = { user?: MeUser };
 type WhoAmI = { userId?: string };
 
-export default function Nav() {
+type NavProps = {
+  brandHref?: string;
+  showThemeToggle?: boolean;
+  showMistToggle?: boolean;
+};
+
+export default function Nav({
+  brandHref = "/",
+  showThemeToggle = true,
+  showMistToggle = true,
+}: NavProps) {
   const [me, setMe] = useState<MeUser | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -87,13 +95,10 @@ export default function Nav() {
 
   return (
     <div className="sticky top-0 z-[80]">
-      {/* neutralna površina; lepši kontrast i blur */}
-      <div className="border-b border-[var(--border)]
-                      bg-[color:var(--card)]/78 dark:bg-[color:var(--card)]/70
-                      backdrop-blur-md">
+      <div className="border-b border-[var(--border)] bg-white/80 backdrop-blur-md">
         <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3 -ml-2 sm:-ml-3">
-            <Link href="/" className="brand-link" aria-label="Tierless — home">
+            <Link href={brandHref} className="brand-link" aria-label="Tierless — home">
               <img src="/brand/tierless-icon.png" alt="" className="brand-logo" />
               <span className="brand-label text-xl">Tierless</span>
             </Link>
@@ -103,8 +108,7 @@ export default function Nav() {
           </div>
 
           <div className="flex items-center gap-2 relative">
-            <ThemeToggle />
-            <MistToggle />
+            {showMistToggle ? <MistToggle /> : null}
 
             {signedIn ? (
               <>

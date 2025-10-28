@@ -1,29 +1,33 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
+    "target": "ES2020",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es2020"
+    ],
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "allowJs": true,
+    "skipLibCheck": true,
     "incremental": true,
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    }
+    ]
   },
   "include": [
     "next-env.d.ts",
