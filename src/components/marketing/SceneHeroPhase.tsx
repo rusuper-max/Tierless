@@ -27,12 +27,14 @@ export default function SceneHeroPhase() {
           </div>
 
           {/* Hero sadržaj (centriran) */}
-          <div className="relative z-10 min-h-[100svh] px-6 grid place-items-center">
+          <div className="relative z-10 min-h-[100svh] px-4 sm:px-6 grid place-items-center">
             <div className="mx-auto max-w-6xl grid lg:grid-cols-2 items-center gap-10 pt-24">
-              <div className="space-y-6">
-                <h1 className="text-5xl sm:text-7xl font-semibold tracking-tight text-neutral-900">
+              {/* Dodatni levi “buffer” samo na mobilu da T ne bude na ivici */}
+              <div className="space-y-6 pl-3 sm:pl-0">
+                <h1 className="font-semibold tracking-tight text-neutral-900 leading-tight text-[clamp(34px,9.5vw,46px)] sm:text-7xl">
                   {t("hero.title")}
                 </h1>
+
                 <p className="text-lg text-neutral-600 max-w-[52ch]">
                   {t("hero.subtitle")}
                 </p>
