@@ -19,8 +19,8 @@ export default function SceneHeroPhase() {
         {/* sticky viewport */}
         <div className="sticky top-0 h-[100svh] overflow-hidden">
           {/* Lokalna aurora */}
-          <div className="fx-aurora -tight is-local pointer-events-none z-0" aria-hidden="true">
-            <span className="spot spot-tl" aria-hidden="true" />
+          <div className="fx-aurora -tight is-local pointer-events-none z-0" aria-hidden={true}>
+            <span className="spot spot-tl" aria-hidden={true} />
             <span className="l1" />
             <span className="l2" />
             <span className="l3" />
@@ -29,9 +29,23 @@ export default function SceneHeroPhase() {
           {/* Hero sadržaj (centriran) */}
           <div className="relative z-10 min-h-[100svh] px-4 sm:px-6 grid place-items-center">
             <div className="mx-auto max-w-6xl grid lg:grid-cols-2 items-center gap-10 pt-24">
-              {/* Dodatni levi “buffer” samo na mobilu da T ne bude na ivici */}
-              <div className="space-y-6 pl-3 sm:pl-0">
-                <h1 className="font-semibold tracking-tight text-neutral-900 leading-tight text-[clamp(34px,9.5vw,46px)] sm:text-7xl">
+              {/* Mobile “safe” levi buffer + blagi pomak naslova udesno */}
+              <div
+                className={[
+                  "space-y-6",
+                  // Mobile: dodaj bezbedan levi razmak (safe-area + 12px), desktop: reset
+                  "[padding-inline-start:calc(env(safe-area-inset-left,0px)+12px)]",
+                  "sm:[padding-inline-start:0px]",
+                ].join(" ")}
+              >
+                <h1
+                  className={[
+                    "font-semibold tracking-tight text-neutral-900 leading-tight",
+                    // Mobile: malo manji naslov + malko udesno; desktop: veliki i bez pomaka
+                    "text-[clamp(30px,8.6vw,44px)] sm:text-7xl",
+                    "translate-x-[2px] sm:translate-x-0",
+                  ].join(" ")}
+                >
                   {t("hero.title")}
                 </h1>
 
@@ -39,7 +53,7 @@ export default function SceneHeroPhase() {
                   {t("hero.subtitle")}
                 </p>
 
-                {/* CTA — sada je u sticky sceni, ne upada u Phase 2 */}
+                {/* CTA — u sticky sceni (ne preliva u Phase 2) */}
                 <div className="flex flex-wrap items-center gap-3 pt-2">
                   <CTAButton
                     fx="swap-up"
