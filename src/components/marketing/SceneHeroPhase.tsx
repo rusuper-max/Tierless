@@ -27,23 +27,24 @@ export default function SceneHeroPhase() {
           </div>
 
           {/* Hero sadržaj (centriran) */}
-          <div className="relative z-10 min-h-[100svh] px-4 sm:px-6 grid place-items-center">
+          <div className="relative z-10 min-h-[100svh] px-6 grid place-items-center">
             <div className="mx-auto max-w-6xl grid lg:grid-cols-2 items-center gap-10 pt-24">
-              {/* Mobile “safe” levi buffer + blagi pomak naslova udesno */}
+              {/* TEST: ogromno pomeranje udesno samo na mobilu + safe-area levi buffer */}
               <div
                 className={[
                   "space-y-6",
-                  // Mobile: dodaj bezbedan levi razmak (safe-area + 12px), desktop: reset
-                  "[padding-inline-start:calc(env(safe-area-inset-left,0px)+12px)]",
+                  // Bezbedan levi razmak (iOS notch + dodatnih 24px)
+                  "[padding-inline-start:calc(env(safe-area-inset-left,0px)+24px)]",
                   "sm:[padding-inline-start:0px]",
+                  // Ogroman pomak udesno samo na mobilu da vidimo da li prestaje sečenje
+                  "translate-x-[18vw] sm:translate-x-0",
                 ].join(" ")}
               >
                 <h1
                   className={[
                     "font-semibold tracking-tight text-neutral-900 leading-tight",
-                    // Mobile: malo manji naslov + malko udesno; desktop: veliki i bez pomaka
+                    // Malo manji na mobilu da dodatno smanjimo rizik od sečenja
                     "text-[clamp(30px,8.6vw,44px)] sm:text-7xl",
-                    "translate-x-[2px] sm:translate-x-0",
                   ].join(" ")}
                 >
                   {t("hero.title")}
