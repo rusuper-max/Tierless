@@ -1,13 +1,15 @@
+// src/components/scrolly/MainPhase2.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, createRef } from "react";
 import { t } from "@/i18n";
 
 /**
- * ScrollPricingIntro (v7.3 mobile-friendly)
- * Desktop: isti raspored (2x2 + centar).
- * Mobile ( < 640px ): finalni raspored = vertikalni stack (x=0), nema "cut-off".
- * Naslov: na mobilnom blagi padding da slovo "T" ne kači ivicu.
+ * MainPhase2 (v7.9 — adjustable INTRO HOLD)
+ * - Sve kao kod tebe (v7.8), ali INTRO_HOLD je parametrizovan:
+ *   props: holdDesktop (default 0.20), holdMobile (default 0.12).
+ * - Držimo naslov sam na ekranu do isteka HOLD-a, kartice su off-screen,
+ *   label sakriven, pa posle re-map [HOLD..1] → [0..1] i ostatak ide identično.
  */
 
 type TierId = "basic" | "standard" | "business" | "premium" | "signature";
@@ -37,13 +39,26 @@ const TIER_COLORS: Record<Exclude<TierId, "business">, string> = {
 const clamp = (n: number, min = 0, max = 1) => Math.min(Math.max(n, min), max);
 const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
 const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const easeOutBack = (t: number, s = 1.70158) => 1 + (s + 1) * Math.pow(t - 1, 3) + s * Math.pow(t - 1, 2);
 
-export default function ScrollPricingIntro({
+export default function MainPhase2({
   headline = t("Create your tiers on your price page"),
-}: { headline?: string }) {
+  labelWords = [t("Customize"), t("them"), t("to"), t("your"), t("liking")],
+  holdDesktop = 0.20,
+  holdMobile = 0.12,
+}: {
+  headline?: string;
+  labelWords?: string[];
+  holdDesktop?: number;
+  holdMobile?: number;
+}) {
   const sectionRef = useRef<HTMLElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+
+  // REFS: stabilan niz createRef-ova (nema crvenila)
+  const wordRefs = useMemo(() => labelWords.map(() => createRef<HTMLSpanElement>()), [labelWords]);
+
   const cardRefs = useRef<Record<TierId, HTMLDivElement | null>>({
     basic: null,
     standard: null,
@@ -52,7 +67,6 @@ export default function ScrollPricingIntro({
     signature: null,
   });
 
-  /** Mobile breakpoint (SSR-safe) */
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -63,7 +77,7 @@ export default function ScrollPricingIntro({
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  /** Finalni ciljevi — desktop: 2x2 + centar, mobile: vertikalni stack */
+  // Target pozicije (isto kao kod tebe)
   const targets = useMemo(() => {
     if (!isMobile) {
       return {
@@ -74,17 +88,16 @@ export default function ScrollPricingIntro({
         signature: { x:  300, y:  220, scale: 0.98, rot:  1 },
       } as const;
     }
-    // Mobile — vertikalno “jedna ispod druge” (centar x, blagi razmaci po y)
     return {
       basic:     { x: 0, y: -280, scale: 0.95, rot: 0 },
       standard:  { x: 0, y: -120, scale: 0.96, rot: 0 },
-      business:  { x: 0, y:   40, scale: 1.02, rot: 0 }, // featured
+      business:  { x: 0, y:   40, scale: 1.02, rot: 0 },
       premium:   { x: 0, y:  200, scale: 0.96, rot: 0 },
       signature: { x: 0, y:  360, scale: 0.96, rot: 0 },
     } as const;
   }, [isMobile]);
 
-  /** Početni off-screen vektori */
+  // Početni off-screen vektori
   const starts = useMemo(() => {
     if (!isMobile) {
       return {
@@ -95,7 +108,6 @@ export default function ScrollPricingIntro({
         signature: { x:  980, y:  860, rot:  14 },
       } as const;
     }
-    // Mobile — unos sa gore/dole ka centrima, bez jakih rotacija
     return {
       basic:     { x:  0,  y: -700, rot:  0 },
       standard:  { x:  0,  y: -700, rot:  0 },
@@ -105,12 +117,12 @@ export default function ScrollPricingIntro({
     } as const;
   }, [isMobile]);
 
-  /** Špil (stack) offseti — isti za oba */
+  // Špil offseti
   const stackOffsets = useMemo(() => {
     return {
       basic:     { x: -14, y: 14 },
       standard:  { x: -7,  y: 10 },
-      business:  { x:  0,  y:  0 }, // TOP
+      business:  { x:  0,  y:  0 },
       premium:   { x:  7,  y: 18 },
       signature: { x: 14,  y: 24 },
     } as const;
@@ -124,7 +136,7 @@ export default function ScrollPricingIntro({
     business: 50,
   };
 
-  // ─────────── Tajming (mobile ima sitno drugačije vrednosti) ───────────
+  // Tajming (isti kao ranije; kašnjenje pravimo kroz INTRO HOLD re-map)
   const HEAD_INIT         = isMobile ? 1.02 : 1.08;
   const SCALE_END         = isMobile ? 0.28 : 0.24;
   const HEAD_SHRINK_START = 0.18;
@@ -144,9 +156,33 @@ export default function ScrollPricingIntro({
     ? ({ basic: 0.22, standard: 0.22, business: 0.24, premium: 0.20, signature: 0.20 } as const)
     : ({ basic: 0.26, standard: 0.24, business: 0.26, premium: 0.22, signature: 0.20 } as const);
 
+  // Deck pragovi
   const DECK_START = isMobile ? 0.88 : 0.92;
   const DECK_STACK = isMobile ? 0.96 : 0.97;
   const DECK_END   = isMobile ? 0.995 : 0.995;
+
+  // RAW trim
+  const RAW_END_DESKTOP = 0.92;
+  const RAW_END_MOBILE  = 0.94;
+
+  // Kada su sve kartice “slegnute”
+  const CARDS_DONE =
+    Math.max(
+      CARD_S.basic + CARD_D.basic,
+      CARD_S.standard + CARD_D.standard,
+      CARD_S.business + CARD_D.business,
+      CARD_S.premium + CARD_D.premium,
+      CARD_S.signature + CARD_D.signature
+    );
+
+  // Label prozori (re-map kroz p)
+  const LABEL_IN_START  = Math.min(CARDS_DONE + 0.02, (DECK_START ?? 0.92) - 0.10);
+  const LABEL_IN_END    = LABEL_IN_START + 0.12;
+  const LABEL_OUT_START = Math.min((DECK_START ?? 0.92) - 0.04, 0.96);
+  const LABEL_OUT_END   = Math.min((DECK_START ?? 0.92), 0.98);
+
+  // >>> INTRO HOLD podesiv preko props-a
+  const INTRO_HOLD = useMemo(() => (isMobile ? holdMobile : holdDesktop), [isMobile, holdDesktop, holdMobile]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -175,15 +211,53 @@ export default function ScrollPricingIntro({
       const rect = section.getBoundingClientRect();
       const vhNow = window.innerHeight || 1;
       const travel = Math.max(1, rect.height - vhNow);
-      const raw = clamp((vhNow - rect.top) / travel, 0, 1);
+      const raw0 = clamp((vhNow - rect.top) / travel, 0, 1);
 
-      // Naslov: hold → shrink → fade
-      let headScale = HEAD_INIT;
-      if (raw >= HEAD_SHRINK_START) {
-        const p = clamp((raw - HEAD_SHRINK_START) / (HEAD_SHRINK_END - HEAD_SHRINK_START), 0, 1);
-        headScale = prefersReduced ? HEAD_INIT : lerp(HEAD_INIT, SCALE_END, easeInOut(p));
+      // RAW kompresija kao i ranije
+      const RAW_END = isMobile ? RAW_END_MOBILE : RAW_END_DESKTOP;
+      const raw = clamp(raw0 / RAW_END, 0, 1);
+
+      // INTRO HOLD — mirujemo do isteka
+      if (raw < INTRO_HOLD) {
+        // Naslov
+        title.style.transform = `translateZ(0) scale(${HEAD_INIT})`;
+        title.style.opacity = "1";
+
+        // Kartice off-screen
+        (PKGS as Pkg[]).forEach((pkg) => {
+          const el = cardRefs.current[pkg.id];
+          if (!el) return;
+          const off = STARTS[pkg.id];
+          el.style.transform = `translate3d(${off.x}px, ${off.y}px, 0) rotate(${off.rot}deg) scale(0.84)`;
+          el.style.opacity = "0";
+        });
+
+        // Label sakriven
+        wordRefs.forEach((ref) => {
+          const span = ref.current;
+          if (!span) return;
+          const parent = span.parentElement?.parentElement as HTMLDivElement | null;
+          if (parent) {
+            parent.style.opacity = "0";
+            parent.style.transform = "translateY(-6px) translateZ(0)";
+          }
+          span.style.opacity = "0";
+          span.style.transform = "translate3d(120px,0,0) scale(0.96)";
+        });
+
+        return;
       }
-      const headOpacity = raw < FADE_START ? 1 : 1 - clamp((raw - FADE_START) / (FADE_END - FADE_START), 0, 1);
+
+      // Re-map [INTRO_HOLD..1] → [0..1]
+      const p = clamp((raw - INTRO_HOLD) / (1 - INTRO_HOLD), 0, 1);
+
+      // Naslov
+      let headScale = HEAD_INIT;
+      if (p >= HEAD_SHRINK_START) {
+        const s = clamp((p - HEAD_SHRINK_START) / (HEAD_SHRINK_END - HEAD_SHRINK_START), 0, 1);
+        headScale = prefersReduced ? HEAD_INIT : lerp(HEAD_INIT, SCALE_END, easeInOut(s));
+      }
+      const headOpacity = p < FADE_START ? 1 : 1 - clamp((p - FADE_START) / (FADE_END - FADE_START), 0, 1);
 
       title.style.transform = `translateZ(0) scale(${headScale})`;
       title.style.opacity = String(headOpacity);
@@ -195,21 +269,21 @@ export default function ScrollPricingIntro({
 
         const s = (CARD_S as any)[pkg.id] as number;
         const d = (CARD_D as any)[pkg.id] as number;
-        const local = clamp((raw - s) / d, 0, 1);
-        const t = prefersReduced ? 1 : easeInOut(local);
+        const local = clamp((p - s) / d, 0, 1);
+        const tt = prefersReduced ? 1 : easeInOut(local);
 
         const off = STARTS[pkg.id];
         const to = targets[pkg.id];
 
-        let x = lerp(off.x, to.x, t);
-        let y = lerp(off.y, to.y, t);
-        let sc = lerp(0.84, to.scale, t);
-        let rot = lerp(off.rot, to.rot, t);
-        let op = t;
+        let x = lerp(off.x, to.x, tt);
+        let y = lerp(off.y, to.y, tt);
+        let sc = lerp(0.84, to.scale, tt);
+        let rot = lerp(off.rot, to.rot, tt);
+        let op = tt;
 
         // Stack + exit
-        const stackT = clamp((raw - DECK_START) / (DECK_STACK - DECK_START), 0, 1);
-        const exitT  = clamp((raw - DECK_STACK) / (DECK_END - DECK_STACK), 0, 1);
+        const stackT = clamp((p - DECK_START) / (DECK_STACK - DECK_START), 0, 1);
+        const exitT  = clamp((p - DECK_STACK) / (DECK_END - DECK_STACK), 0, 1);
 
         if (stackT > 0 || exitT > 0) {
           const stack = stackOffsets[pkg.id];
@@ -228,6 +302,50 @@ export default function ScrollPricingIntro({
         el.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}deg) scale(${sc})`;
         el.style.opacity = String(op);
       });
+
+      // WORD-BY-WORD label (desktop)
+      if (!isMobile) {
+        const outP = clamp((p - LABEL_OUT_START) / (LABEL_OUT_END - LABEL_OUT_START), 0, 1);
+        const outEase = easeInOut(outP);
+        const wrapTy = lerp(0, -6, outEase);
+
+        wordRefs.forEach((ref, i) => {
+          const span = ref.current;
+          if (!span) return;
+
+          const parent = span.parentElement?.parentElement as HTMLDivElement | null;
+          if (parent) {
+            parent.style.opacity = String(1 - outEase);
+            parent.style.transform = `translateY(${wrapTy}px) translateZ(0)`;
+          }
+
+          const inP = clamp(
+            (p - (LABEL_IN_START + i * 0.045)) / (LABEL_IN_END - LABEL_IN_START),
+            0, 1
+          );
+          const e = easeOutBack(inP);
+          const x = lerp(140, 0, e);
+          const sc = lerp(0.96, 1.0, e);
+          const op = inP;
+
+          span.style.transform = `translate3d(${x}px,0,0) scale(${sc})`;
+          span.style.opacity = String(op * (1 - outEase));
+        });
+      } else {
+        // Mobile: sakrij
+        wordRefs.forEach((ref) => {
+          const span = ref.current;
+          if (span) {
+            const parent = span.parentElement?.parentElement as HTMLDivElement | null;
+            if (parent) {
+              parent.style.opacity = "0";
+              parent.style.transform = "translateY(-6px) translateZ(0)";
+            }
+            span.style.opacity = "0";
+            span.style.transform = "translate3d(120px,0,0) scale(0.96)";
+          }
+        });
+      }
     };
 
     schedule();
@@ -239,34 +357,85 @@ export default function ScrollPricingIntro({
       window.removeEventListener("resize", schedule);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [mounted, starts, targets, stackOffsets, isMobile, HEAD_INIT, SCALE_END, HEAD_SHRINK_START, HEAD_SHRINK_END, FADE_START, FADE_END, DECK_START, DECK_STACK, DECK_END, CARD_S, CARD_D]);
+  }, [
+    mounted,
+    isMobile,
+    starts,
+    targets,
+    stackOffsets,
+    // tajming
+    HEAD_INIT, SCALE_END, HEAD_SHRINK_START, HEAD_SHRINK_END, FADE_START, FADE_END,
+    DECK_START, DECK_STACK, DECK_END,
+    CARD_S, CARD_D,
+    // label
+    LABEL_IN_START, LABEL_IN_END, LABEL_OUT_START, LABEL_OUT_END,
+    wordRefs,
+    INTRO_HOLD, // reaktivacija na resize/promenu
+  ]);
 
   return (
     <section
       ref={sectionRef}
-      className="relative h-[520vh] sm:h-[460vh]"
+      className="relative h-[380vh] sm:h-[320vh]"
       aria-label={t("Scroll storytelling pricing intro")}
     >
-      {/* Sticky viewport */}
       <div ref={viewportRef} className="sticky top-0 h-screen overflow-hidden [contain:layout_style_paint]">
-        {/* NASLOV (blagi padding na mobilu) */}
-        <div className="absolute inset-0 grid place-items-center pointer-events-none px-3 sm:px-0">
+        {/* Naslov */}
+        <div className="absolute inset-0 grid place-items-center pointer-events-none px-3 sm:px-0 overflow-visible">
           <h2
             ref={titleRef}
             suppressHydrationWarning
             className={[
-              "font-semibold tracking-tight text-center leading-none select-none",
+              "font-semibold tracking-tight text-center leading-tight select-none",
               "text-transparent bg-clip-text",
               "bg-gradient-to-r from-indigo-500 via-sky-400 to-teal-400",
-              "text-[clamp(46px,9vw,160px)]",
+              "mx-auto max-w-[20ch] sm:max-w-[24ch] text-balance",
+              "text-[clamp(46px,8.6vw,150px)]",
             ].join(" ")}
-            style={{ transform: `translateZ(0) scale(${HEAD_INIT})`, opacity: 1 }}
+            style={{ transform: `translateZ(0) scale(${HEAD_INIT})`, opacity: 1, paddingBottom: "0.08em" }}
           >
             {headline}
           </h2>
         </div>
 
-        {/* KARTICE */}
+        {/* Desktop label – var(--brand-gradient), reč po reč */}
+        <div className="absolute inset-0 pointer-events-none hidden sm:block">
+          <div
+            className="mx-auto w-full max-w-[92vw] text-center font-semibold select-none"
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "14%",
+              translate: "-50% 0",
+              opacity: 0,
+              transform: "translateY(-6px) translateZ(0)",
+            }}
+          >
+            <div className="inline-flex flex-wrap items-baseline justify-center gap-x-2 gap-y-2">
+              {labelWords.map((w, i) => (
+                <span
+                  key={i}
+                  ref={wordRefs[i]}
+                  className="text-transparent bg-clip-text"
+                  style={{
+                    backgroundImage: "var(--brand-gradient)",
+                    fontSize: "clamp(22px, 3.8vw, 36px)",
+                    lineHeight: 1.1,
+                    display: "inline-block",
+                    opacity: 0,
+                    transform: "translate3d(120px,0,0) scale(0.96)",
+                    willChange: "transform, opacity",
+                    filter: "drop-shadow(0 1px 10px rgba(var(--brand-1-rgb),0.08))",
+                  }}
+                >
+                  {w}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Kartice */}
         <div className="absolute inset-0">
           {PKGS.map((pkg) => (
             <div
@@ -293,7 +462,6 @@ export default function ScrollPricingIntro({
   );
 }
 
-/** Tier kartice */
 function Card({ tier, featured, color }: { tier: Pkg; featured: boolean; color?: string }) {
   if (featured) {
     return (
@@ -343,7 +511,7 @@ function Card({ tier, featured, color }: { tier: Pkg; featured: boolean; color?:
       <div className="p-6">
         <div className="flex items-baseline justify-between">
           <h3 className="text-lg font-semibold text-neutral-900">{t(tier.name)}</h3>
-          <span className="text-lg font-semibold text-neutral-900">{tier.price}</span>
+          <span className="text-lg font-semibold text-neutral-900">{t(tier.price)}</span>
         </div>
         <ul className="mt-4 space-y-2 text-sm text-neutral-700">
           {tier.features.map((f, i) => (

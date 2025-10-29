@@ -2,44 +2,47 @@
 
 import CTAButton from "@/components/marketing/CTAButton";
 import { t } from "@/i18n/t";
+import HeroPrism from "@/components/scrolly/HeroPrism";
 
 /**
- * Phase 1 — Sticky hero sa lokalnom (scoped) aurorom.
- * - Aurora je .fx-aurora.is-local => position: absolute (samo u ovoj sceni).
- * - Sticky visina preko inline style => Tailwind ne mora da parsira dinamičku klasu.
+ * MainPhase1 — BEZ praznog hoda
+ * - Track = 100svh → čim krene skrol, odmah ulaziš u sledeću sekciju.
+ * - Ako želiš da prizma i dalje rotira, neka ima idle animaciju ili je veži za global scroll,
+ *   ali NE za “track” duži od 100svh.
  */
+const PIN_HEIGHT_SVH = 100; // <<< KLJUČNO — nema travel-a, nema “praznog hoda”
 
-const PIN_HEIGHT_VH = 180;
+export default function MainPhase1() {
+  // ref ako ti negde treba (ostaje, ali više ne pravi hod)
+  const wrapRef = (globalThis as any)._p1ref ??= { current: null as HTMLElement | null };
 
-export default function SceneHeroPhase() {
   return (
-    <section aria-label={t("Hero Phase")} className="relative">
-      {/* wrapper visina određuje koliko dugo traje sticky */}
-      <div className="relative" style={{ height: `${PIN_HEIGHT_VH}vh` }}>
+    <section
+      id="phase1"
+      data-phase="1"
+      aria-label={t("Hero Phase")}
+      className="relative bg-white"
+    >
+      {/* wrapper visina = 100svh */}
+      <div ref={wrapRef} className="relative" style={{ height: `${PIN_HEIGHT_SVH}svh` }}>
         {/* sticky viewport */}
-        <div className="sticky top-0 h-[100svh] overflow-hidden">
-          {/* Lokalna aurora */}
-          <div className="fx-aurora -tight is-local pointer-events-none z-0" aria-hidden="true">
-            <span className="spot spot-tl" aria-hidden="true" />
-            <span className="l1" />
-            <span className="l2" />
-            <span className="l3" />
-          </div>
+        <div className="sticky top-0 h-[100svh] overflow-hidden relative">
+          {/* Lokalna aurora (po želji) */}
+          <div className="fx-aurora pointer-events-none z-0" aria-hidden="true" />
 
-          {/* Hero sadržaj (centriran) */}
+          {/* PRISM 3D */}
+          <HeroPrism trackRef={wrapRef} offsetX="66%" offsetY="6%" />
+
+          {/* HERO CONTENT */}
           <div className="relative z-10 min-h-[100svh] px-4 sm:px-6 grid place-items-center">
             <div className="mx-auto max-w-6xl grid lg:grid-cols-2 items-center gap-10 pt-24">
-              {/* Dodatni levi “buffer” samo na mobilu da T ne bude na ivici */}
               <div className="space-y-6 pl-3 sm:pl-0">
                 <h1 className="font-semibold tracking-tight text-neutral-900 leading-tight text-[clamp(34px,9.5vw,46px)] sm:text-7xl">
                   {t("hero.title")}
                 </h1>
-
                 <p className="text-lg text-neutral-600 max-w-[52ch]">
                   {t("hero.subtitle")}
                 </p>
-
-                {/* CTA — sada je u sticky sceni, ne upada u Phase 2 */}
                 <div className="flex flex-wrap items-center gap-3 pt-2">
                   <CTAButton
                     fx="swap-up"
@@ -60,7 +63,6 @@ export default function SceneHeroPhase() {
                   />
                 </div>
               </div>
-
               <div className="hidden lg:block" />
             </div>
           </div>
