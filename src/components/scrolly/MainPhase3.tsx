@@ -5,13 +5,9 @@ import { useEffect, useMemo, useRef, useState, CSSProperties } from "react";
 import { t } from "@/i18n/t";
 
 /**
- * Phase 3 — v3.9.1
- * - Blank start (gate + visibility hidden), offscreen enter.
- * - Headline gore, slovo-po-slovo, JEDAN brand gradijent preko cele fraze.
- * - Desno: 3 opcije + 2 slidera (enter → posle toga auto-check i slider run).
- * - Levo: cena raste tek od početka interakcija.
- * - Exit nagore preko zajedničkog flight wrappera.
- * - NOVO: gateOffsetVh (po difoltu 12) — koliki “prazan hod” pre nego što scena krene.
+ * Phase 3 — v3.9.2
+ * - Blank start ukinut (gateOffsetVh = 0 by default).
+ * - travel uračunava gatePx (stabilnije sa Lenis-om).
  */
 
 type LetterPlan = { idx: number; ch: string; sX: number; sY: number; base: number; dur: number };
@@ -19,44 +15,35 @@ type RowPlan   = { idx: number; base: number; dur: number };
 
 const clamp = (n: number, min = 0, max = 1) => Math.min(Math.max(n, min), max);
 const lerp  = (a: number, b: number, p: number) => a + (b - a) * p;
-const easeInOut = (x: number) =>
-  (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 
-// headline pozicija
 const HEAD_TOP_VH    = 16;
 
-// enter wrappera (sa strane)
 const PANEL_L_BASE = 0.10, PANEL_L_DUR = 0.24;
 const PANEL_R_BASE = 0.12, PANEL_R_DUR = 0.24;
 
-// ulaz redova odozdo
 const ROW_DUR = 0.20;
-
-// settle pre interakcija
 const SETTLE_HOLD = 0.06;
 
-// interakcije
 const CHECK_DRAW_DUR = 0.22;
 const SLIDER_RUN_DUR = 0.30;
 
-// minimalni progres pre exita
 const MIN_SLIDER_LOCAL     = 0.35;
 const MIN_LAST_CHECK_LOCAL = 0.60;
 
-// pricing simulacija
 const BASE_PRICE = 299;
 const OPTION_INCREMENTS = [60, 45, 35];
 const SLIDER_RATES      = [220, 160];
 
 export default function ScenePhase3Assemble({
   phraseFull = t("Or create your Tierless price page…"),
-  gateOffsetVh = 12, // <<< raniji start u odnosu na prethodnih ~30
+  // KLJUČNO: više nema skrivenog head-starta
+  gateOffsetVh = 0,
 }: { phraseFull?: string; gateOffsetVh?: number }) {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef   = useRef<HTMLDivElement | null>(null);
   const flightRef  = useRef<HTMLDivElement | null>(null);
 
-  /* FRAZA — jedinstveni gradijent */
   const chars = useMemo(() => phraseFull.split(""), [phraseFull]);
   const letterRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const [offsets, setOffsets] = useState<number[]>([]);
@@ -87,7 +74,6 @@ export default function ScenePhase3Assemble({
     });
   }, [chars]);
 
-  /* LEFT — lista + total */
   const leftRows = useMemo(() => [
     t("Unlimited items"),
     t("Advanced formulas"),
@@ -106,7 +92,6 @@ export default function ScenePhase3Assemble({
     [leftRows]
   );
 
-  /* RIGHT — options + sliders */
   const options = useMemo(() => [t("Option 1"), t("Option 2"), t("Option 3")], []);
   const sliders = useMemo(() => [
     { label: t("Usage level"),      baseFill: 0.62 },
@@ -174,10 +159,13 @@ export default function ScenePhase3Assemble({
       const rect  = section.getBoundingClientRect();
       const vhNow = window.innerHeight || 1;
 
-      const gatePx = (gateOffsetVh / 100) * vhNow; // <<< prop umesto konstante
-      const travel = Math.max(1, rect.height - vhNow);
+      const gatePx = (gateOffsetVh / 100) * vhNow;
+
+      // KLJUČNO: travel uključuje gatePx – stabilniji progres i raniji “show”
+      const travel = Math.max(1, rect.height - vhNow + gatePx);
       const raw0   = (vhNow - rect.top - gatePx) / travel;
       const raw    = clamp(raw0, 0, 1);
+
       stage.style.visibility = raw <= 0 ? "hidden" : "visible";
 
       // ENTER WRAPPERS
@@ -194,7 +182,7 @@ export default function ScenePhase3Assemble({
         rightPanelRef.current.style.opacity   = String(t);
       }
 
-      // LEVO — redovi odozdo
+      // LEVO — redovi
       rowsPlanLeft.forEach((rp) => {
         const el = leftRowRefs.current[rp.idx]; if (!el) return;
         const t = easeInOut(clamp((raw - rp.base) / rp.dur, 0, 1));
@@ -215,7 +203,7 @@ export default function ScenePhase3Assemble({
         row.style.transform = `translate3d(0, ${y}vh, 0)`;
         row.style.opacity   = String(t);
 
-        const cStart = checkStartTimes[i];
+        const cStart = (rp.base + ROW_DUR) + SETTLE_HOLD + i * 0.02;
         const cLocal = clamp((raw - cStart) / CHECK_DRAW_DUR, 0, 1);
         checkProgress[i] = cLocal;
         lastCheckLocal   = cLocal;
@@ -243,7 +231,7 @@ export default function ScenePhase3Assemble({
         row.style.transform = `translate3d(0, ${y}vh, 0)`;
         row.style.opacity   = String(t);
 
-        const sStart = sliderStartTimes[i];
+        const sStart = (rp.base + ROW_DUR) + SETTLE_HOLD;
         const sLocal = clamp((raw - sStart) / SLIDER_RUN_DUR, 0, 1);
         sliderLocals[i] = sLocal;
 
@@ -275,7 +263,7 @@ export default function ScenePhase3Assemble({
       priceState.current.display = next;
       if (priceRef.current) priceRef.current.textContent = `€${Math.round(next)}`;
 
-      /* EXIT ARMING (gate + fallback) */
+      // EXIT ARMING
       const slidersOk = sliderLocals.length ? Math.min(...sliderLocals) >= MIN_SLIDER_LOCAL : false;
       const checksOk  = lastCheckLocal >= MIN_LAST_CHECK_LOCAL;
       if (slidersOk && checksOk && exitStartRef.current === null) {
@@ -310,7 +298,6 @@ export default function ScenePhase3Assemble({
     options, sliders, checkStartTimes, sliderStartTimes, baseExitTiming
   ]);
 
-  /* styles */
   const charStyle = (i: number): CSSProperties => ({
     display: "inline-block",
     fontWeight: 700,
