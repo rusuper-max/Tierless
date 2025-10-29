@@ -403,6 +403,15 @@ html::before,
   transform: translateZ(0); /* GPU hint */
 }
 
-html.lenis, html.lenis body { height: auto; }
-.lenis.lenis-smooth { scroll-behavior: auto !important; }
+html.lenis { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* ===== P2→P3 GAP BRIDGE (inspirisano Jeton header{200vh; margin-bottom:-40vh}) ===== */
+.phase2-bridge { position: relative; margin-bottom: -125vh; }
+@media (max-width: 640px){ .phase2-bridge { margin-bottom: -22vh; } }
+
+/* ===== P3 TAIL TRIM (ukloni mrtvi hod pre P4) ===== */
+.phase3-trim { position: relative; margin-bottom: -14vh; }
+@media (max-width: 640px){ .phase3-trim { margin-bottom: -10vh; } }

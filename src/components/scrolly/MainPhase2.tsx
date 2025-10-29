@@ -4,14 +4,6 @@
 import { useEffect, useMemo, useRef, useState, createRef } from "react";
 import { t } from "@/i18n";
 
-/**
- * MainPhase2 (v7.9 — adjustable INTRO HOLD)
- * - Sve kao kod tebe (v7.8), ali INTRO_HOLD je parametrizovan:
- *   props: holdDesktop (default 0.20), holdMobile (default 0.12).
- * - Držimo naslov sam na ekranu do isteka HOLD-a, kartice su off-screen,
- *   label sakriven, pa posle re-map [HOLD..1] → [0..1] i ostatak ide identično.
- */
-
 type TierId = "basic" | "standard" | "business" | "premium" | "signature";
 
 type Pkg = {
@@ -24,7 +16,7 @@ type Pkg = {
 const PKGS: Pkg[] = [
   { id: "basic",     name: "Basic",     price: "€149",  features: [t("Quick setup"), t("1 page link"), t("Email inquiries")] },
   { id: "standard",  name: "Standard",  price: "€299",  features: [t("Branding colors"), t("Up to 6 addons"), t("Analytics lite")] },
-  { id: "business",  name: "Business",  price: t("Custom"), features: [t("Fair use traffic"), t("Advanced formulas"), t("White-label")] }, // FEATURED
+  { id: "business",  name: "Business",  price: t("Custom"), features: [t("Fair use traffic"), t("Advanced formulas"), t("White-label")] },
   { id: "premium",   name: "Premium",   price: "€599",  features: [t("Custom domain"), t("Unlimited addons"), t("Priority email")] },
   { id: "signature", name: "Signature", price: "€999",  features: [t("Team access"), t("Templates"), t("SLA support")] },
 ];
@@ -46,17 +38,28 @@ export default function MainPhase2({
   labelWords = [t("Customize"), t("them"), t("to"), t("your"), t("liking")],
   holdDesktop = 0.20,
   holdMobile = 0.12,
+
+  /** NOVO: skini “mrtvi rep” — 1.0 = nema kompresije */
+  rawEndDesktop = 1.0,
+  rawEndMobile = 1.0,
+
+  /** NOVO: podešavanje visine track-a (kraći = manji perceived gap) */
+  trackVHDesktop = 320,
+  trackVHMobile = 300,
 }: {
   headline?: string;
   labelWords?: string[];
   holdDesktop?: number;
   holdMobile?: number;
+  rawEndDesktop?: number;
+  rawEndMobile?: number;
+  trackVHDesktop?: number;
+  trackVHMobile?: number;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
 
-  // REFS: stabilan niz createRef-ova (nema crvenila)
   const wordRefs = useMemo(() => labelWords.map(() => createRef<HTMLSpanElement>()), [labelWords]);
 
   const cardRefs = useRef<Record<TierId, HTMLDivElement | null>>({
@@ -77,7 +80,6 @@ export default function MainPhase2({
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Target pozicije (isto kao kod tebe)
   const targets = useMemo(() => {
     if (!isMobile) {
       return {
@@ -97,7 +99,6 @@ export default function MainPhase2({
     } as const;
   }, [isMobile]);
 
-  // Početni off-screen vektori
   const starts = useMemo(() => {
     if (!isMobile) {
       return {
@@ -117,7 +118,6 @@ export default function MainPhase2({
     } as const;
   }, [isMobile]);
 
-  // Špil offseti
   const stackOffsets = useMemo(() => {
     return {
       basic:     { x: -14, y: 14 },
@@ -136,7 +136,7 @@ export default function MainPhase2({
     business: 50,
   };
 
-  // Tajming (isti kao ranije; kašnjenje pravimo kroz INTRO HOLD re-map)
+  // Tajming
   const HEAD_INIT         = isMobile ? 1.02 : 1.08;
   const SCALE_END         = isMobile ? 0.28 : 0.24;
   const HEAD_SHRINK_START = 0.18;
@@ -156,16 +156,14 @@ export default function MainPhase2({
     ? ({ basic: 0.22, standard: 0.22, business: 0.24, premium: 0.20, signature: 0.20 } as const)
     : ({ basic: 0.26, standard: 0.24, business: 0.26, premium: 0.22, signature: 0.20 } as const);
 
-  // Deck pragovi
   const DECK_START = isMobile ? 0.88 : 0.92;
   const DECK_STACK = isMobile ? 0.96 : 0.97;
-  const DECK_END   = isMobile ? 0.995 : 0.995;
+  const DECK_END   = 0.995;
 
-  // RAW trim
-  const RAW_END_DESKTOP = 0.92;
-  const RAW_END_MOBILE  = 0.94;
+  // >>> bez “mrtvog repa” (možeš opet da kompresuješ ako baš želiš)
+  const RAW_END_DESKTOP = rawEndDesktop;
+  const RAW_END_MOBILE  = rawEndMobile;
 
-  // Kada su sve kartice “slegnute”
   const CARDS_DONE =
     Math.max(
       CARD_S.basic + CARD_D.basic,
@@ -175,14 +173,15 @@ export default function MainPhase2({
       CARD_S.signature + CARD_D.signature
     );
 
-  // Label prozori (re-map kroz p)
   const LABEL_IN_START  = Math.min(CARDS_DONE + 0.02, (DECK_START ?? 0.92) - 0.10);
   const LABEL_IN_END    = LABEL_IN_START + 0.12;
   const LABEL_OUT_START = Math.min((DECK_START ?? 0.92) - 0.04, 0.96);
   const LABEL_OUT_END   = Math.min((DECK_START ?? 0.92), 0.98);
 
-  // >>> INTRO HOLD podesiv preko props-a
-  const INTRO_HOLD = useMemo(() => (isMobile ? holdMobile : holdDesktop), [isMobile, holdDesktop, holdMobile]);
+  const INTRO_HOLD = useMemo(
+    () => (isMobile ? holdMobile : holdDesktop),
+    [isMobile, holdDesktop, holdMobile]
+  );
 
   useEffect(() => {
     if (!mounted) return;
@@ -213,17 +212,15 @@ export default function MainPhase2({
       const travel = Math.max(1, rect.height - vhNow);
       const raw0 = clamp((vhNow - rect.top) / travel, 0, 1);
 
-      // RAW kompresija kao i ranije
+      // >>> NEMA kompresije kad je rawEnd == 1
       const RAW_END = isMobile ? RAW_END_MOBILE : RAW_END_DESKTOP;
       const raw = clamp(raw0 / RAW_END, 0, 1);
 
-      // INTRO HOLD — mirujemo do isteka
+      // HOLD
       if (raw < INTRO_HOLD) {
-        // Naslov
         title.style.transform = `translateZ(0) scale(${HEAD_INIT})`;
         title.style.opacity = "1";
 
-        // Kartice off-screen
         (PKGS as Pkg[]).forEach((pkg) => {
           const el = cardRefs.current[pkg.id];
           if (!el) return;
@@ -232,7 +229,6 @@ export default function MainPhase2({
           el.style.opacity = "0";
         });
 
-        // Label sakriven
         wordRefs.forEach((ref) => {
           const span = ref.current;
           if (!span) return;
@@ -303,7 +299,7 @@ export default function MainPhase2({
         el.style.opacity = String(op);
       });
 
-      // WORD-BY-WORD label (desktop)
+      // Label (desktop)
       if (!isMobile) {
         const outP = clamp((p - LABEL_OUT_START) / (LABEL_OUT_END - LABEL_OUT_START), 0, 1);
         const outEase = easeInOut(outP);
@@ -319,10 +315,7 @@ export default function MainPhase2({
             parent.style.transform = `translateY(${wrapTy}px) translateZ(0)`;
           }
 
-          const inP = clamp(
-            (p - (LABEL_IN_START + i * 0.045)) / (LABEL_IN_END - LABEL_IN_START),
-            0, 1
-          );
+          const inP = clamp((p - (LABEL_IN_START + i * 0.045)) / (LABEL_IN_END - LABEL_IN_START), 0, 1);
           const e = easeOutBack(inP);
           const x = lerp(140, 0, e);
           const sc = lerp(0.96, 1.0, e);
@@ -363,21 +356,25 @@ export default function MainPhase2({
     starts,
     targets,
     stackOffsets,
-    // tajming
     HEAD_INIT, SCALE_END, HEAD_SHRINK_START, HEAD_SHRINK_END, FADE_START, FADE_END,
     DECK_START, DECK_STACK, DECK_END,
     CARD_S, CARD_D,
-    // label
     LABEL_IN_START, LABEL_IN_END, LABEL_OUT_START, LABEL_OUT_END,
     wordRefs,
-    INTRO_HOLD, // reaktivacija na resize/promenu
+    INTRO_HOLD,
+    rawEndDesktop, rawEndMobile,
   ]);
+
+  // Dinamička visina track-a (umesto Tailwind h-[xxxvh] klasa)
+  const TRACK_VH = isMobile ? trackVHMobile : trackVHDesktop;
 
   return (
     <section
       ref={sectionRef}
-      className="relative h-[380vh] sm:h-[320vh]"
+      data-track="p2"
       aria-label={t("Scroll storytelling pricing intro")}
+      className="relative"
+      style={{ height: `${TRACK_VH}vh` }}
     >
       <div ref={viewportRef} className="sticky top-0 h-screen overflow-hidden [contain:layout_style_paint]">
         {/* Naslov */}
@@ -398,7 +395,7 @@ export default function MainPhase2({
           </h2>
         </div>
 
-        {/* Desktop label – var(--brand-gradient), reč po reč */}
+        {/* Desktop label */}
         <div className="absolute inset-0 pointer-events-none hidden sm:block">
           <div
             className="mx-auto w-full max-w-[92vw] text-center font-semibold select-none"
