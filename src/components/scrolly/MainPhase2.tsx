@@ -12,10 +12,20 @@ const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
 const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 
 /* =========================================
+   LocalStorage ključevi
+========================================= */
+const LS = {
+  ghostsD: "tierless:bgAdj:d",
+  ghostsM: "tierless:bgAdj:m",
+  label:   "tierless:labelTopVh",
+  bgop:    "tierless:bgOpacity",
+} as const;
+
+/* =========================================
    MASTER KNOBS (tweak ovde)
 ========================================= */
 // Kada (posle poslednje kartice u targetu) krene istovremeni fly-up + converge
-export const SYNC_GAP = 0.0;
+export const SYNC_GAP = 0.00;
 // Kada P3 krene u odnosu na SYNC start (negativno = ranije)
 export const P3_DELAY = 0.10;
 // Koliko visoko podižemo P2 pre “klika u nulu”
@@ -39,19 +49,17 @@ export const BG_FADE_IN_START = 0.06;
 export const BG_FADE_IN_DUR   = 0.20;
 export const BG_FADE_OUT_PAD  = 0.08; // koliko pre SYNC_START kreće fade-out
 
-// P3 headline (veliki naslov ispod panela)
-export const P3_TITLE_START = 0.92;   // (nije u upotrebi ovde)
-export const P3_TITLE_DUR   = 0.10;   // (nije u upotrebi ovde)
-export const P3_TITLE_Y_VH  = 24;     // (nije u upotrebi ovde)
-
 /* === Nova, jasna podešavanja za traženo ponašanje === */
 // P3 BACKDROP – da krene zajedno sa panelima (Options / What this includes)
 export const BACKDROP_IN_START = 0.00; // 0.00 = kad i levi panel
 export const BACKDROP_IN_DUR   = 0.22; // isto trajanje kao levi panel ulaz
 // P3 HEADLINE – da se pojavi ČIM kartice “dolete” (posle poslednje)
-export const TITLE_AFTER_LAST_CARD = 0.15; // 0 = odmah, >0 = zakašnjenje u (0..1) relativno na P2
+export const TITLE_AFTER_LAST_CARD = 0.15; // 0 = odmah, >0 = zakašnjenje (0..1) relativno na P2
 export const TITLE_IN_DUR = 0.14;          // trajanje ulaza (relativno, 0..1)
 export const TITLE_Y_IN_VH = 10;           // ulaz odozdo (vh)
+
+// “Cut” kraja P3 animacije (mapira 0..P3_CUT_AT -> 0..1, posle toga stoji)
+export const P3_CUT_AT = 0.94;
 
 /* =========================================
    P2 data
@@ -150,6 +158,7 @@ export default function MainPhase2({
   const labelLayerRef = useRef<HTMLDivElement>(null);
   const p3LayerRef = useRef<HTMLDivElement>(null);
   const p3BackdropRef = useRef<HTMLDivElement>(null);
+  const p3TitleRef = useRef<HTMLHeadingElement>(null);
 
   // Mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -233,6 +242,53 @@ export default function MainPhase2({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // === UČITAVANJE iz localStorage posle mounta i na breakpoint promenu ===
+  useEffect(() => {
+    try {
+      // 1) Ghosts (zasebno desktop/mobilni)
+      const key = isMobile ? LS.ghostsM : LS.ghostsD;
+      const raw = localStorage.getItem(key);
+      const base = (isMobile ? BG_SPECS_MOBILE_BASE : BG_SPECS_DESKTOP_BASE).map(s => ({
+        x: s.x, y: s.y, scale: s.scale, rot: s.rot, w: s.w,
+      }));
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (Array.isArray(saved)) {
+          saved.forEach((it: any, i: number) => {
+            if (base[i]) base[i] = { ...base[i], ...it };
+          });
+        }
+      }
+      setBgAdj(base);
+
+      // 2) Label top
+      const lbl = localStorage.getItem(LS.label);
+      if (lbl !== null) setLabelTopVh(parseInt(lbl, 10));
+
+      // 3) Backdrop opacity
+      const op = localStorage.getItem(LS.bgop);
+      if (op !== null) setBgOpacity(clamp(parseFloat(op), 0, 1));
+    } catch {
+      // ignore
+    }
+  }, [isMobile]);
+
+  // === AUTO-SAVE u localStorage ===
+  useEffect(() => {
+    try {
+      const key = isMobile ? LS.ghostsM : LS.ghostsD;
+      localStorage.setItem(key, JSON.stringify(bgAdj));
+    } catch {}
+  }, [bgAdj, isMobile]);
+
+  useEffect(() => {
+    try { localStorage.setItem(LS.label, String(labelTopVh)); } catch {}
+  }, [labelTopVh]);
+
+  useEffect(() => {
+    try { localStorage.setItem(LS.bgop, String(bgOpacity)); } catch {}
+  }, [bgOpacity]);
+
   // Timing
   const INTRO_HOLD = isMobile ? holdMobile : holdDesktop;
   const HEAD_INIT         = isMobile ? 1.02 : 1.08;
@@ -261,6 +317,7 @@ export default function MainPhase2({
       CARD_S.signature + CARD_D.signature,
     );
   const SYNC_START = Math.min(0.99, LAST_CARD_ARRIVE + SYNC_GAP);
+  const TITLE_START_P2 = clamp(LAST_CARD_ARRIVE + TITLE_AFTER_LAST_CARD, 0, 0.999);
   const LABEL_LIFT_START = clamp(SYNC_START + LABEL_LIFT_DELAY, 0, 0.999);
   const P3_START_IN_P2 = clamp(SYNC_START + P3_DELAY, 0, 0.995);
 
@@ -285,9 +342,6 @@ export default function MainPhase2({
   const priceRef = useRef<HTMLSpanElement | null>(null);
   const priceState = useRef({ display: BASE_PRICE });
 
-  // P3 headline ref (traženo: iznad panela, pojavi se kad kartice dolete)
-  const p3TitleRef = useRef<HTMLHeadingElement | null>(null);
-
   /* ---------- RAF ---------- */
   useEffect(() => {
     const section = sectionRef.current;
@@ -297,6 +351,7 @@ export default function MainPhase2({
     const labelLayer = labelLayerRef.current;
     const p3Layer = p3LayerRef.current;
     const p3Backdrop = p3BackdropRef.current;
+    const p3Title = p3TitleRef.current;
     if (!section || !stage || !p2Layer || !labelLayer || !p3Layer) return;
 
     const vw = window.innerWidth || 1280;
@@ -328,7 +383,9 @@ export default function MainPhase2({
 
       // P3 progres (ulazi dok P2 traje)
       const p3StartAll = segA * P3_START_IN_P2;
-      const p3Raw = clamp((rawAll - p3StartAll) / Math.max(0.0001, 1 - p3StartAll), 0, 1);
+      const p3Raw0 = clamp((rawAll - p3StartAll) / Math.max(0.0001, 1 - p3StartAll), 0, 1);
+      // “Cut” kraja P3
+      const p3 = clamp(p3Raw0 / Math.max(0.0001, P3_CUT_AT), 0, 1);
 
       /* ===== P2 ===== */
       if (p2Raw < INTRO_HOLD) {
@@ -352,13 +409,12 @@ export default function MainPhase2({
           bgRefs.current.forEach((node) => { if (node) node.style.opacity = "0"; });
         }
         if (p3Backdrop) {
-          // inicijalno sakriven (da ne krene “od početka”)
           p3Backdrop.style.opacity = "0";
           p3Backdrop.style.transform = `translate3d(0, 40vh, 0)`;
         }
-        if (p3TitleRef.current) {
-          p3TitleRef.current.style.opacity = "0";
-          p3TitleRef.current.style.transform = `translate3d(0, ${TITLE_Y_IN_VH}vh, 0)`;
+        if (p3Title) {
+          p3Title.style.opacity = "0";
+          p3Title.style.transform = `translate3d(0, ${TITLE_Y_IN_VH}vh, 0)`;
         }
       } else {
         // P2 0..1
@@ -385,7 +441,7 @@ export default function MainPhase2({
           labelLayer.style.transform = `translate3d(-50%, ${y}vh, 0)`;
         }
 
-        // BG tiers — fade in/out i “float”, uz prilagodljive pozicije
+        // BG tiers — fade in/out i “float”
         if (BG_ENABLED && bgLayer) {
           const inT  = easeInOut(clamp((p - BG_FADE_IN_START) / BG_FADE_IN_DUR, 0, 1));
           const outS = Math.max(0, SYNC_START - BG_FADE_OUT_PAD);
@@ -426,14 +482,12 @@ export default function MainPhase2({
           el.style.opacity = String(op);
         });
 
-        // === P3 HEADLINE: pojavi se ČIM kartice dolete ===
-        if (p3TitleRef.current) {
-          const tTitle = easeInOut(
-            clamp((p - (LAST_CARD_ARRIVE + TITLE_AFTER_LAST_CARD)) / Math.max(0.0001, TITLE_IN_DUR), 0, 1)
-          );
-          const ty = lerp(TITLE_Y_IN_VH, 0, tTitle);
-          p3TitleRef.current.style.opacity = String(tTitle);
-          p3TitleRef.current.style.transform = `translate3d(0, ${ty}vh, 0)`;
+        // === P3 TITLE: pojavi se nakon poslednje kartice + delay ===
+        if (p3Title) {
+          const tt = easeInOut(clamp((p - TITLE_START_P2) / Math.max(0.0001, TITLE_IN_DUR), 0, 1));
+          const y = lerp(TITLE_Y_IN_VH, 0, tt);
+          p3Title.style.opacity = String(tt);
+          p3Title.style.transform = `translate3d(0, ${y}vh, 0)`;
         }
 
         // === SYNC: simultani fly-up + converge (label poleti istovremeno) ===
@@ -444,8 +498,7 @@ export default function MainPhase2({
           p2Layer.style.transform = `translate3d(0, ${-liftVh}vh, 0)`;
 
           const endAt = Math.max(0.0001, OFF_VH / SQUEEZE_MAX_VH);
-          const k = clamp(sfT / endAt, 0, 1);
-          const converge = easeInOut(k);
+          const converge = easeInOut(clamp(sfT / endAt, 0, 1));
 
           (PKGS as Pkg[]).forEach((pkg) => {
             const el = cardRefs.current[pkg.id]; if (!el) return;
@@ -455,17 +508,11 @@ export default function MainPhase2({
             const y = lerp(to.y, 0, converge);
             const rot = lerp(to.rot, 0, converge);
 
-            let sc = to.scale;
-            if (converge > CONVERGE_SCALE_LATE) {
-              const _lateP = (converge - CONVERGE_SCALE_LATE) / (1 - CONVERGE_SCALE_LATE);
-              // (ostavljeno za finu korekciju scale-a po želji)
-            }
-
             if (liftVhRaw >= OFF_VH - 0.0001) {
               el.style.transform = `translate3d(0px,0px,0) rotate(0deg) scale(0)`;
               el.style.opacity = "0";
             } else {
-              el.style.transform = `translate3d(${x}px,${y}px,0) rotate(${rot}deg) scale(${sc})`;
+              el.style.transform = `translate3d(${x}px,${y}px,0) rotate(${rot}deg) scale(${to.scale})`;
               el.style.opacity = "1";
             }
           });
@@ -483,9 +530,9 @@ export default function MainPhase2({
       }
 
       /* ===== P3 (ulazi dok je P2 još u kadru) ===== */
-      // Backdrop (sečivo) – sada počinje zajedno sa panelima (traženo)
+      // Backdrop (sečivo) – tajming po BACKDROP_IN_START/DUR
       if (p3Backdrop) {
-        const t = easeInOut(clamp((p3Raw - BACKDROP_IN_START) / Math.max(0.0001, BACKDROP_IN_DUR), 0, 1));
+        const t = easeInOut(clamp((p3 - BACKDROP_IN_START) / Math.max(0.0001, BACKDROP_IN_DUR), 0, 1));
         p3Backdrop.style.opacity = String(t * bgOpacity);
         const y = lerp(40, 0, t);
         p3Backdrop.style.transform = `translate3d(0, ${y}vh, 0)`;
@@ -493,13 +540,13 @@ export default function MainPhase2({
 
       // Paneli: dolaze ODOZDO (oba), blagi razlik u tajmingu
       if (leftPanelRef.current) {
-        const t = easeInOut(clamp((p3Raw - 0.00) / 0.22, 0, 1));
+        const t = easeInOut(clamp((p3 - 0.00) / 0.22, 0, 1));
         const y = lerp(36, 0, t);
         leftPanelRef.current.style.transform = `translate3d(0, ${y}vh, 0)`;
         leftPanelRef.current.style.opacity = String(t);
       }
       if (rightPanelRef.current) {
-        const t = easeInOut(clamp((p3Raw - 0.03) / 0.22, 0, 1));
+        const t = easeInOut(clamp((p3 - 0.03) / 0.22, 0, 1));
         const y = lerp(36, 0, t);
         rightPanelRef.current.style.transform = `translate3d(0, ${y}vh, 0)`;
         rightPanelRef.current.style.opacity = String(t);
@@ -509,7 +556,7 @@ export default function MainPhase2({
       leftRowRefs.current.forEach((row, i) => {
         if (!row) return;
         const base = 0.22 + i * 0.045;
-        const t = easeInOut(clamp((p3Raw - base) / 0.16, 0, 1));
+        const t = easeInOut(clamp((p3 - base) / 0.16, 0, 1));
         const y = lerp(28, 0, t);
         row.style.transform = `translate3d(0, ${y}vh, 0)`;
         row.style.opacity = String(t);
@@ -521,13 +568,13 @@ export default function MainPhase2({
         const row = optionRefs.current[i]; if (!row) return;
 
         const base = 0.24 + i * 0.05;
-        const t = easeInOut(clamp((p3Raw - base) / 0.16, 0, 1));
+        const t = easeInOut(clamp((p3 - base) / 0.16, 0, 1));
         const y = lerp(28, 0, t);
         row.style.transform = `translate3d(0, ${y}vh, 0)`;
         row.style.opacity = String(t);
 
         const checkStart = base + 0.16 + 0.05;
-        const cLocal = clamp((p3Raw - checkStart) / 0.20, 0, 1);
+        const cLocal = clamp((p3 - checkStart) / 0.20, 0, 1);
         checkProgress[i] = cLocal;
 
         const path = optionCheckRefs.current[i];
@@ -543,12 +590,12 @@ export default function MainPhase2({
         const row = sliderRowRefs.current[i]; if (!row) return;
 
         const base = 0.24 + options.length * 0.05 + 0.07 + i * 0.055;
-        const t = easeInOut(clamp((p3Raw - base) / 0.16, 0, 1));
+        const t = easeInOut(clamp((p3 - base) / 0.16, 0, 1));
         const y = lerp(28, 0, t);
         row.style.transform = `translate3d(0, ${y}vh, 0)`;
         row.style.opacity = String(t);
 
-        const sLocal = clamp((p3Raw - (base + 0.16)) / 0.26, 0, 1);
+        const sLocal = clamp((p3 - (base + 0.16)) / 0.26, 0, 1);
         sliderLocals[i] = sLocal;
 
         const fill = s.baseFill * sLocal;
@@ -564,7 +611,7 @@ export default function MainPhase2({
       checkProgress.forEach((p, i) => (target += p * (OPTION_INCREMENTS[i] || 0)));
       sliderLocals.forEach((s, i) => (target += s * (SLIDER_RATES[i] || 0)));
       const cur = priceState.current.display;
-      const next = (p3Raw > 0.98) ? target : lerp(cur, target, 0.20); // nema “rep”
+      const next = (p3 >= 1) ? target : lerp(cur, target, 0.20); // nema “rep” posle cut-a
       priceState.current.display = next;
       if (priceRef.current) priceRef.current.textContent = `€${Math.round(next)}`;
     };
@@ -583,10 +630,13 @@ export default function MainPhase2({
     targets,
     INTRO_HOLD,
     HEAD_INIT, SCALE_END, HEAD_SHRINK_START, HEAD_SHRINK_END,
-    CARD_S, CARD_D, LAST_CARD_ARRIVE, SYNC_START, P3_START_IN_P2, LABEL_LIFT_START,
+    CARD_S, CARD_D, LAST_CARD_ARRIVE, SYNC_START, P3_START_IN_P2,
+    TITLE_START_P2, TITLE_IN_DUR, TITLE_Y_IN_VH,
     SEG_P2, SEG_P3, TRACK_TOTAL_VH,
+    BACKDROP_IN_START, BACKDROP_IN_DUR,
     options, sliders,
     bgAdj, bgOpacity,
+    P3_CUT_AT,
   ]);
 
   /* ---------- helpers ---------- */
@@ -704,25 +754,24 @@ export default function MainPhase2({
           ref={p3BackdropRef}
           className="absolute inset-x-0 bottom-0 h-[130vh] will-change-transform"
           style={{
-            backgroundImage: backdropCSS, // string, ne klasa
-            opacity: 0,                   // inicijalno skriven
+            backgroundImage: backdropCSS,
+            opacity: bgOpacity,
             transform: "translate3d(0,40vh,0)",
             filter: "saturate(1.05)",
           }}
         >
-          {/* Oštra gornja ivica (brend linija) */}
           <div
             className="absolute inset-x-0 top-0 h-[4px]"
             style={{ background: "var(--brand-gradient)" }}
           />
         </div>
 
-        {/* ===== P3 LAYER: P3 headline + paneli + cena ===== */}
+        {/* ===== P3 LAYER: naslov + paneli + cena ===== */}
         <div ref={p3LayerRef} className="absolute inset-0">
           <div className="absolute inset-0 grid place-items-center">
             <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 pt-[34vh] sm:pt-[30vh]">
-              {/* P3 naslov IZNAD PANELA (z-50), ali pojavljuje se tek kad kartice dolete */}
-              <div className="mb-6 sm:mb-8 text-center relative z-50 pointer-events-none">
+              {/* P3 naslov iznad panela (animacija po TITLE_* knobovima) */}
+              <div className="mb-6 sm:mb-8 text-center relative z-10">
                 <h3
                   ref={p3TitleRef}
                   className="text-[clamp(26px,4.8vw,56px)] font-semibold leading-tight text-neutral-900"
@@ -848,6 +897,16 @@ export default function MainPhase2({
           setBgOpacity={(v) => setBgOpacity(clamp(v, 0, 1))}
           specs={bgAdj}
           setSpecs={setBgAdj}
+          onResetGhosts={() => {
+            try {
+              const key = isMobile ? LS.ghostsM : LS.ghostsD;
+              localStorage.removeItem(key);
+            } catch {}
+            const base = (isMobile ? BG_SPECS_MOBILE_BASE : BG_SPECS_DESKTOP_BASE).map(s => ({
+              x: s.x, y: s.y, scale: s.scale, rot: s.rot, w: s.w,
+            }));
+            setBgAdj(base);
+          }}
         />
       )}
     </section>
@@ -1016,6 +1075,7 @@ function DevPanel({
   labelTopVh, setLabelTopVh,
   bgOpacity, setBgOpacity,
   specs, setSpecs,
+  onResetGhosts,
 }: {
   labelTopVh: number;
   setLabelTopVh: (v: number) => void;
@@ -1023,6 +1083,7 @@ function DevPanel({
   setBgOpacity: (v: number) => void;
   specs: Array<{ x: number; y: number; scale: number; rot: number; w: number }>;
   setSpecs: (fn: (prev: Array<{ x: number; y: number; scale: number; rot: number; w: number }>) => any) => void;
+  onResetGhosts: () => void;
 }) {
   return (
     <div
@@ -1031,39 +1092,64 @@ function DevPanel({
       style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
       onWheel={(e) => e.stopPropagation()}
       onTouchMove={(e) => e.stopPropagation()}
+      aria-label="Developer controls"
     >
-      <div className="text-xs font-semibold text-neutral-700 mb-2">Dev controls (D za toggle)</div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-xs font-semibold text-neutral-700">Dev controls (D za toggle)</div>
+        <button
+          onClick={onResetGhosts}
+          className="text-[11px] px-2 py-1 rounded border hover:bg-neutral-50"
+          aria-label="Reset ghost positions to base"
+        >
+          Reset ghosts
+        </button>
+      </div>
 
       <div className="mb-3">
         <label className="text-xs text-neutral-600">Label top (vh): {labelTopVh}</label>
         <input type="range" min={8} max={30} step={1} value={labelTopVh}
-          onChange={(e) => setLabelTopVh(parseInt(e.target.value))} className="w-full" />
+          onChange={(e) => setLabelTopVh(parseInt((e.target as HTMLInputElement).value, 10))} className="w-full" />
       </div>
 
       <div className="mb-3">
         <label className="text-xs text-neutral-600">P3 backdrop opacity: {bgOpacity.toFixed(2)}</label>
         <input type="range" min={0} max={1} step={0.01} value={bgOpacity}
-          onChange={(e) => setBgOpacity(parseFloat(e.target.value))} className="w-full" />
+          onChange={(e) => setBgOpacity(parseFloat((e.target as HTMLInputElement).value))} className="w-full" />
       </div>
 
       {specs.map((s, i) => (
         <div key={i} className="mb-3 rounded-lg border p-2">
           <div className="text-xs font-semibold mb-2">Ghost #{i + 1}</div>
           <label className="text-[11px] text-neutral-600">x: {s.x}</label>
-          <input type="range" min={-800} max={800} step={2} value={s.x}
-            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, x: parseInt(e.target.value) } : p))} className="w-full" />
+          <input
+            type="range" min={-800} max={800} step={2} value={s.x}
+            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, x: parseInt((e.target as HTMLInputElement).value, 10) } : p))}
+            className="w-full"
+          />
           <label className="text-[11px] text-neutral-600">y: {s.y}</label>
-          <input type="range" min={-700} max={700} step={2} value={s.y}
-            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, y: parseInt(e.target.value) } : p))} className="w-full" />
+          <input
+            type="range" min={-700} max={700} step={2} value={s.y}
+            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, y: parseInt((e.target as HTMLInputElement).value, 10) } : p))}
+            className="w-full"
+          />
           <label className="text-[11px] text-neutral-600">scale: {s.scale.toFixed(2)}</label>
-          <input type="range" min={0.50} max={1.10} step={0.01} value={s.scale}
-            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, scale: parseFloat(e.target.value) } : p))} className="w-full" />
+          <input
+            type="range" min={0.50} max={1.10} step={0.01} value={s.scale}
+            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, scale: parseFloat((e.target as HTMLInputElement).value) } : p))}
+            className="w-full"
+          />
           <label className="text-[11px] text-neutral-600">rot: {s.rot}°</label>
-          <input type="range" min={-15} max={15} step={1} value={s.rot}
-            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, rot: parseInt(e.target.value) } : p))} className="w-full" />
+          <input
+            type="range" min={-15} max={15} step={1} value={s.rot}
+            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, rot: parseInt((e.target as HTMLInputElement).value, 10) } : p))}
+            className="w-full"
+          />
           <label className="text-[11px] text-neutral-600">width: {s.w}px</label>
-          <input type="range" min={220} max={360} step={2} value={s.w}
-            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, w: parseInt(e.target.value) } : p))} className="w-full" />
+          <input
+            type="range" min={220} max={360} step={2} value={s.w}
+            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, w: parseInt((e.target as HTMLInputElement).value, 10) } : p))}
+            className="w-full"
+          />
         </div>
       ))}
     </div>
