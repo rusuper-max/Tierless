@@ -1,0 +1,10 @@
+/* src/styles/phase-bridge.css */
+
+/* Slojevi: P2 iznad P3 dok je njegov sticky aktivan */
+.section-phase2 { position: relative; z-index: 10; }
+.section-phase2 .sticky { z-index: 10; }
+
+.section-phase3 { position: relative; z-index: 0; isolation: isolate; }
+.section-phase3 .sticky { z-index: 1; }
+
+/* Bez dodatnih trikova; .cut-prev ukloniti iz global.css ako postoji */

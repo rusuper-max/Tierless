@@ -1,33 +1,23 @@
-// src/components/marketing/ScenePhase3Assemble.tsx
+// src/components/scrolly/MainPhase3.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState, CSSProperties } from "react";
-import { t } from "@/i18n/t";
-
-/**
- * Phase 3 — v3.9.2
- * - Blank start ukinut (gateOffsetVh = 0 by default).
- * - travel uračunava gatePx (stabilnije sa Lenis-om).
- */
-
-type LetterPlan = { idx: number; ch: string; sX: number; sY: number; base: number; dur: number };
-type RowPlan   = { idx: number; base: number; dur: number };
+import { useEffect, useMemo, useRef, useState, CSSProperties, useLayoutEffect } from "react";
+import { t } from "@/i18n";
 
 const clamp = (n: number, min = 0, max = 1) => Math.min(Math.max(n, min), max);
 const lerp  = (a: number, b: number, p: number) => a + (b - a) * p;
 const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 
-const HEAD_TOP_VH    = 16;
+type LetterPlan = { idx: number; ch: string; sX: number; sY: number; base: number; dur: number };
+type RowPlan   = { idx: number; base: number; dur: number };
 
+const HEAD_TOP_VH    = 16;
 const PANEL_L_BASE = 0.10, PANEL_L_DUR = 0.24;
 const PANEL_R_BASE = 0.12, PANEL_R_DUR = 0.24;
-
 const ROW_DUR = 0.20;
 const SETTLE_HOLD = 0.06;
-
-const CHECK_DRAW_DUR = 0.22;
-const SLIDER_RUN_DUR = 0.30;
-
+const CHECK_DRAW_DUR  = 0.22;
+const SLIDER_RUN_DUR  = 0.30;
 const MIN_SLIDER_LOCAL     = 0.35;
 const MIN_LAST_CHECK_LOCAL = 0.60;
 
@@ -35,14 +25,57 @@ const BASE_PRICE = 299;
 const OPTION_INCREMENTS = [60, 45, 35];
 const SLIDER_RATES      = [220, 160];
 
-export default function ScenePhase3Assemble({
+export default function MainPhase3({
   phraseFull = t("Or create your Tierless price page…"),
-  // KLJUČNO: više nema skrivenog head-starta
-  gateOffsetVh = 0,
-}: { phraseFull?: string; gateOffsetVh?: number }) {
+  gateOffsetVh = -500, // NEGATIVNO = ulazi ranije (dok P2 još traje)
+  fallbackTrackVhDesktop = 440,
+  fallbackTrackVhMobile  = 420,
+  autoTailToNextWrapper  = true,
+}: {
+  phraseFull?: string;
+  gateOffsetVh?: number;
+  fallbackTrackVhDesktop?: number;
+  fallbackTrackVhMobile?: number;
+  autoTailToNextWrapper?: boolean;
+}) {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef   = useRef<HTMLDivElement | null>(null);
   const flightRef  = useRef<HTMLDivElement | null>(null);
+
+  const [trackPx, setTrackPx] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const on = () => setIsMobile(window.innerWidth < 640);
+    on(); window.addEventListener("resize", on, { passive: true });
+    return () => window.removeEventListener("resize", on);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!autoTailToNextWrapper) { setTrackPx(null); return; }
+    const sec  = sectionRef.current;
+    const host = sec?.parentElement as HTMLElement | null;
+    const next = host?.nextElementSibling as HTMLElement | null;
+    if (!host || !next) { setTrackPx(null); return; }
+
+    const measure = () => {
+      const hostTop = host.getBoundingClientRect().top + window.scrollY;
+      const nextTop = next.getBoundingClientRect().top + window.scrollY;
+      const px = Math.max(0, Math.round(nextTop - hostTop));
+      setTrackPx(px);
+    };
+    measure();
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.documentElement);
+    ro.observe(host);
+    ro.observe(next);
+    window.addEventListener("resize", measure, { passive: true });
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [autoTailToNextWrapper]);
 
   const chars = useMemo(() => phraseFull.split(""), [phraseFull]);
   const letterRefs = useRef<Array<HTMLSpanElement | null>>([]);
@@ -139,7 +172,7 @@ export default function ScenePhase3Assemble({
     const contentReady = Math.max(lastCheckEnd, lastSliderEnd, alsoPanels);
     const HOLD = 0.06;
     const start = Math.min(contentReady + HOLD, 0.95);
-    const end   = Math.min(start + 0.10, 0.995);
+    const end   = Math.min(start + 0.08, 0.991);
     return { start, end, dur: (end - start) };
   }, [checkStartTimes, sliderStartTimes, rowsPlanLeft, rowsPlanRight, letterPlan]);
 
@@ -161,14 +194,12 @@ export default function ScenePhase3Assemble({
 
       const gatePx = (gateOffsetVh / 100) * vhNow;
 
-      // KLJUČNO: travel uključuje gatePx – stabilniji progres i raniji “show”
       const travel = Math.max(1, rect.height - vhNow + gatePx);
       const raw0   = (vhNow - rect.top - gatePx) / travel;
       const raw    = clamp(raw0, 0, 1);
 
       stage.style.visibility = raw <= 0 ? "hidden" : "visible";
 
-      // ENTER WRAPPERS
       if (leftPanelRef.current) {
         const t = easeInOut(clamp((raw - PANEL_L_BASE) / PANEL_L_DUR, 0, 1));
         const x = lerp(-140, 0, t), y = lerp(18, 0, t);
@@ -182,7 +213,6 @@ export default function ScenePhase3Assemble({
         rightPanelRef.current.style.opacity   = String(t);
       }
 
-      // LEVO — redovi
       rowsPlanLeft.forEach((rp) => {
         const el = leftRowRefs.current[rp.idx]; if (!el) return;
         const t = easeInOut(clamp((raw - rp.base) / rp.dur, 0, 1));
@@ -191,7 +221,6 @@ export default function ScenePhase3Assemble({
         el.style.opacity   = String(t);
       });
 
-      // DESNO — options enter → check
       const checkProgress: number[] = [];
       let lastCheckLocal = 0;
       options.forEach((_, i) => {
@@ -218,7 +247,6 @@ export default function ScenePhase3Assemble({
         else row.removeAttribute("data-checked");
       });
 
-      // DESNO — sliders enter → run
       const sliderFills: number[] = [];
       const sliderLocals: number[] = [];
       sliders.forEach((s, i) => {
@@ -245,7 +273,6 @@ export default function ScenePhase3Assemble({
         if (knob) knob.style.left  = `${pct}%`;
       });
 
-      // HEADLINE — slova
       letterPlan.forEach((lp) => {
         const el = letterRefs.current[lp.idx]; if (!el) return;
         const t = easeInOut(clamp((raw - lp.base) / lp.dur, 0, 1));
@@ -254,7 +281,6 @@ export default function ScenePhase3Assemble({
         el.style.opacity   = String(t);
       });
 
-      // CENA
       let target = BASE_PRICE;
       checkProgress.forEach((p, i) => { target += p * (OPTION_INCREMENTS[i] || 0); });
       sliderFills.forEach((f, i)   => { target += f * (SLIDER_RATES[i] || 0); });
@@ -263,7 +289,6 @@ export default function ScenePhase3Assemble({
       priceState.current.display = next;
       if (priceRef.current) priceRef.current.textContent = `€${Math.round(next)}`;
 
-      // EXIT ARMING
       const slidersOk = sliderLocals.length ? Math.min(...sliderLocals) >= MIN_SLIDER_LOCAL : false;
       const checksOk  = lastCheckLocal >= MIN_LAST_CHECK_LOCAL;
       if (slidersOk && checksOk && exitStartRef.current === null) {
@@ -273,15 +298,19 @@ export default function ScenePhase3Assemble({
         exitStartRef.current = raw;
       }
 
-      // EXIT na flight wrapperu
       let exitT = 0;
       if (exitStartRef.current !== null) {
         const effStart = exitStartRef.current;
-        const effEnd   = Math.min(effStart + baseExitTiming.dur, 0.999);
+        const effEnd   = Math.min(effStart + baseExitTiming.dur, baseExitTiming.end);
         exitT = clamp((raw - effStart) / Math.max(0.0001, (effEnd - effStart)), 0, 1);
       }
       const exitY = -exitT * (vhNow * 1.15);
       flight.style.transform = `translate3d(0, ${exitY}px, 0)`;
+
+      if (exitT >= 0.999) {
+        stage.style.visibility = "hidden";
+        stage.style.pointerEvents = "none";
+      }
     };
 
     schedule();
@@ -337,14 +366,23 @@ export default function ScenePhase3Assemble({
     </svg>
   );
 
+  const sectionStyle: React.CSSProperties =
+    trackPx != null
+      ? { height: `${trackPx}px` }
+      : { height: `${isMobile ? fallbackTrackVhMobile : fallbackTrackVhDesktop}vh` };
+
   return (
     <section
       ref={sectionRef}
-      className="relative h-[480vh] sm:h-[440vh] bg-white"
+      className="relative bg-white"
+      style={sectionStyle}
       aria-label={t("Letters & panels assemble")}
     >
-      <div ref={stageRef} className="sticky top-0 h-screen overflow-hidden" style={{ visibility: "hidden" }}>
-        {/* FLIGHT WRAPPER */}
+      <div
+        ref={stageRef}
+        className="sticky top-0 h-screen overflow-hidden"
+        style={{ visibility: "hidden" }}
+      >
         <div ref={flightRef} className="absolute inset-0 will-change-transform">
           {/* HEADLINE */}
           <div
@@ -466,13 +504,11 @@ export default function ScenePhase3Assemble({
                         >
                           <label className="text-sm text-neutral-700">{s.label}</label>
                           <div className="mt-2 h-3 rounded-full bg-neutral-200 relative overflow-visible">
-                            {/* fill */}
                             <div
                               ref={(el) => { sliderFillRefs.current[i] = el; }}
                               className="absolute inset-y-0 left-0 rounded-full"
                               style={{ width: "0%", background: "var(--brand-gradient)", transition: "width .08s linear" }}
                             />
-                            {/* knob */}
                             <div
                               ref={(el) => { sliderKnobRefs.current[i] = el; }}
                               className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
@@ -500,7 +536,6 @@ export default function ScenePhase3Assemble({
             </div>
           </div>
         </div>
-        {/* /FLIGHT WRAPPER */}
       </div>
     </section>
   );

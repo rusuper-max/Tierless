@@ -304,16 +304,3 @@ html:not(.dark) .table thead th{ background:#fafafa; color:#111827; }
 html.dark .neon-surface::before{
   opacity: calc(var(--aura-opacity) + .06);
 }
-
-@layer utilities {
-  /* Seče razmak iz prethodne sekcije: margin-top = 100svh - prevTrack */
-  .cut-prev { margin-top: calc(100svh - var(--prev-track, 100svh)); }
-
-  /* Sekcije sa kontrolisanim slojevima (z-index) */
-  .section-phase2 { position: relative; z-index: 10; }
-  .section-phase3 { position: relative; z-index: 0; }
-
-  /* Ako sticky deca u fazama imaju sopstveni z-index, osiguraj poredak: */
-  .section-phase2 .sticky { z-index: 10; }
-  .section-phase3 .sticky { z-index: 1; }
-}
