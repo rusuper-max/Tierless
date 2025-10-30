@@ -1,3 +1,4 @@
+// src/components/scrolly/MainPhase1.tsx
 "use client";
 
 import CTAButton from "@/components/marketing/CTAButton";
@@ -30,8 +31,10 @@ export default function MainPhase1() {
           {/* Lokalna aurora (po želji) */}
           <div className="fx-aurora pointer-events-none z-0" aria-hidden="true" />
 
-          {/* PRISM 3D */}
-          <HeroPrism trackRef={wrapRef} offsetX="66%" offsetY="6%" />
+          {/* PRISM 3D — sakrij na mobilnom */}
+          <div className="hidden md:block">
+            <HeroPrism trackRef={wrapRef} offsetX="66%" offsetY="6%" />
+          </div>
 
           {/* HERO CONTENT */}
           <div className="relative z-10 min-h-[100svh] px-4 sm:px-6 grid place-items-center">
