@@ -1,7 +1,7 @@
 // src/app/(marketing)/page.tsx
+import "@/styles/marketing.css";
 import MainPhase1 from "@/components/scrolly/MainPhase1";
 import MainPhase2 from "@/components/scrolly/MainPhase2";
-import MainPhase3 from "@/components/scrolly/MainPhase3";
 import { t } from "@/i18n";
 
 export const metadata = {
@@ -13,13 +13,10 @@ export default function Page() {
   return (
     <main className="marketing-root">
       <MainPhase1 />
-      {/* Jeton-style bridge: povuci P3 nagore */}
+
+      {/* P2: zadržavamo animaciju kartica, ali bez “centralnog praznog hoda” */}
       <div className="phase2-bridge">
         <MainPhase2 />
-      </div>
-      {/* Trim posle P3 da nema mrtvog hoda pre budućeg P4 */}
-      <div className="phase3-trim">
-        <MainPhase3 />
       </div>
     </main>
   );

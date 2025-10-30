@@ -4,14 +4,60 @@
 import { useEffect, useMemo, useRef, useState, createRef } from "react";
 import { t } from "@/i18n";
 
-type TierId = "basic" | "standard" | "business" | "premium" | "signature";
+/* =========================================
+   Utils
+========================================= */
+const clamp = (n: number, min = 0, max = 1) => Math.min(Math.max(n, min), max);
+const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
+const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 
-type Pkg = {
-  id: TierId;
-  name: string;
-  price: string;
-  features: string[];
-};
+/* =========================================
+   MASTER KNOBS (tweak ovde)
+========================================= */
+// Kada (posle poslednje kartice u targetu) krene istovremeni fly-up + converge
+export const SYNC_GAP = 0.0;
+// Kada P3 krene u odnosu na SYNC start (negativno = ranije)
+export const P3_DELAY = 0.10;
+// Koliko visoko podižemo P2 pre “klika u nulu”
+export const SQUEEZE_MAX_VH = 110;
+// Posle ovoliko vh, P2 kartice su scale=0/opacity=0
+export const OFF_VH = 100;
+// “Kasno skupljanje” da ne izgleda kao odlazak u daljinu
+export const CONVERGE_SCALE_LATE = 0.65;
+
+// LABEL (IZNAD kartica – nikad ne dodiruje scene)
+export const LABEL_TOP_VH_DEFAULT = 16; // legne visoko iznad kartica
+export const LABEL_LIFT_DELAY = 0.00;   // kreće TAČNO sa SYNC (0), pomeri ako želiš
+export const LABEL_LIFT_VH = 100;       // agresivni lift
+
+// P3 brzina (kraći segment = brži prolaz)
+export const DEFAULT_P3_SPEED = 0.70; // 1 = isto, 0.7 = 30% brže
+
+// Pozadinski “ghost” tiers – fade in/out
+export const BG_ENABLED = true;
+export const BG_FADE_IN_START = 0.06;
+export const BG_FADE_IN_DUR   = 0.20;
+export const BG_FADE_OUT_PAD  = 0.08; // koliko pre SYNC_START kreće fade-out
+
+// P3 headline (veliki naslov ispod panela)
+export const P3_TITLE_START = 0.92;   // (nije u upotrebi ovde)
+export const P3_TITLE_DUR   = 0.10;   // (nije u upotrebi ovde)
+export const P3_TITLE_Y_VH  = 24;     // (nije u upotrebi ovde)
+
+/* === Nova, jasna podešavanja za traženo ponašanje === */
+// P3 BACKDROP – da krene zajedno sa panelima (Options / What this includes)
+export const BACKDROP_IN_START = 0.00; // 0.00 = kad i levi panel
+export const BACKDROP_IN_DUR   = 0.22; // isto trajanje kao levi panel ulaz
+// P3 HEADLINE – da se pojavi ČIM kartice “dolete” (posle poslednje)
+export const TITLE_AFTER_LAST_CARD = 0.15; // 0 = odmah, >0 = zakašnjenje u (0..1) relativno na P2
+export const TITLE_IN_DUR = 0.14;          // trajanje ulaza (relativno, 0..1)
+export const TITLE_Y_IN_VH = 10;           // ulaz odozdo (vh)
+
+/* =========================================
+   P2 data
+========================================= */
+type TierId = "basic" | "standard" | "business" | "premium" | "signature";
+type Pkg = { id: TierId; name: string; price: string; features: string[] };
 
 const PKGS: Pkg[] = [
   { id: "basic",     name: "Basic",     price: "€149",  features: [t("Quick setup"), t("1 page link"), t("Email inquiries")] },
@@ -28,64 +74,114 @@ const TIER_COLORS: Record<Exclude<TierId, "business">, string> = {
   signature: "#f59e0b",
 };
 
-const clamp = (n: number, min = 0, max = 1) => Math.min(Math.max(n, min), max);
-const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
-const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
-const easeOutBack = (t: number, s = 1.70158) => 1 + (s + 1) * Math.pow(t - 1, 3) + s * Math.pow(t - 1, 2);
+/* =========================================
+   Pozadinski “ghost tiers” — bazne pozicije
+   (pomereno da ne dodiruje headline/label)
+========================================= */
+type GhostSpec = { x: number; y: number; scale: number; rot: number; color: string; z: number; w: number };
+const BG_SPECS_DESKTOP_BASE: GhostSpec[] = [
+  { x: -520, y: -220, scale: 0.80, rot: -6, color: "#22d3ee", z: 1, w: 300 },
+  { x:  560, y: -210, scale: 0.86, rot:  6, color: "#a78bfa", z: 1, w: 320 },
+  { x: -600, y:  160, scale: 0.78, rot: -8, color: "#34d399", z: 1, w: 280 },
+  { x:  620, y:  180, scale: 0.84, rot:  8, color: "#f59e0b", z: 1, w: 300 },
+  { x: -360, y:  360, scale: 0.72, rot: -4, color: "#60a5fa", z: 1, w: 260 },
+  { x:  360, y:  380, scale: 0.76, rot:  4, color: "#10b981", z: 1, w: 260 },
+  { x: -140, y: -360, scale: 0.74, rot: -3, color: "#f472b6", z: 1, w: 260 },
+  { x:  140, y: -370, scale: 0.74, rot:  3, color: "#f43f5e", z: 1, w: 260 },
+];
+const BG_SPECS_MOBILE_BASE: GhostSpec[] = [
+  { x: 0,   y: -320, scale: 0.78, rot: 0, color: "#22d3ee", z: 1, w: 280 },
+  { x: 0,   y:  300, scale: 0.76, rot: 0, color: "#a78bfa", z: 1, w: 260 },
+  { x: -160,y: -80,  scale: 0.72, rot: -2,color: "#34d399", z: 1, w: 240 },
+  { x:  160,y:  80,  scale: 0.72, rot:  2,color: "#f59e0b", z: 1, w: 240 },
+];
 
+/* =========================================
+   P3 config (cene, add-ons, slideri)
+========================================= */
+const BASE_PRICE = 299;
+const OPTION_INCREMENTS = [60, 45, 35];
+const SLIDER_RATES = [220, 160];
+
+type BackdropStyle = "brand" | "indigo" | "blue";
+
+/* =========================================
+   Component
+========================================= */
 export default function MainPhase2({
+  // P2 copy
   headline = t("Create your tiers on your price page"),
   labelWords = [t("Customize"), t("them"), t("to"), t("your"), t("liking")],
+  // holds
   holdDesktop = 0.20,
   holdMobile = 0.12,
-
-  /** NOVO: skini “mrtvi rep” — 1.0 = nema kompresije */
-  rawEndDesktop = 1.0,
-  rawEndMobile = 1.0,
-
-  /** NOVO: podešavanje visine track-a (kraći = manji perceived gap) */
-  trackVHDesktop = 320,
-  trackVHMobile = 300,
+  // height by segment
+  segP2VhDesktop = 300,
+  segP2VhMobile = 280,
+  segP3VhDesktop = 300,
+  segP3VhMobile = 280,
+  // brzina P3
+  p3Speed = DEFAULT_P3_SPEED,
+  // P3 backdrop
+  p3BackdropStyle = "indigo",
+  p3BackdropOpacity = 0.22,
+  // Dev panel (slideri za ghostove/label/bgd)
+  devControls = false,
 }: {
   headline?: string;
   labelWords?: string[];
   holdDesktop?: number;
   holdMobile?: number;
-  rawEndDesktop?: number;
-  rawEndMobile?: number;
-  trackVHDesktop?: number;
-  trackVHMobile?: number;
+  segP2VhDesktop?: number;
+  segP2VhMobile?: number;
+  segP3VhDesktop?: number;
+  segP3VhMobile?: number;
+  p3Speed?: number;
+  p3BackdropStyle?: BackdropStyle;
+  p3BackdropOpacity?: number;
+  devControls?: boolean;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
 
-  const wordRefs = useMemo(() => labelWords.map(() => createRef<HTMLSpanElement>()), [labelWords]);
+  // Layer refs
+  const bgLayerRef = useRef<HTMLDivElement>(null);
+  const p2LayerRef = useRef<HTMLDivElement>(null);
+  const labelLayerRef = useRef<HTMLDivElement>(null);
+  const p3LayerRef = useRef<HTMLDivElement>(null);
+  const p3BackdropRef = useRef<HTMLDivElement>(null);
 
-  const cardRefs = useRef<Record<TierId, HTMLDivElement | null>>({
-    basic: null,
-    standard: null,
-    business: null,
-    premium: null,
-    signature: null,
-  });
-
+  // Mobile
   const [isMobile, setIsMobile] = useState(false);
-  const [mounted, setMounted] = useState(false);
   useEffect(() => {
-    setMounted(true);
-    const check = () => setIsMobile(window.innerWidth < 640);
-    check();
-    window.addEventListener("resize", check, { passive: true });
-    return () => window.removeEventListener("resize", check);
+    const on = () => setIsMobile(window.innerWidth < 640);
+    on();
+    window.addEventListener("resize", on, { passive: true });
+    return () => window.removeEventListener("resize", on);
   }, []);
 
+  const SEG_P2 = isMobile ? segP2VhMobile : segP2VhDesktop;
+  const SEG_P3_BASE = isMobile ? segP3VhMobile : segP3VhDesktop;
+  const SEG_P3 = Math.max(160, Math.round(SEG_P3_BASE * clamp(p3Speed, 0.3, 2)));
+  const TRACK_TOTAL_VH = SEG_P2 + SEG_P3;
+
+  /* ---------- P2 refs ---------- */
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const wordRefs = useMemo(() => labelWords.map(() => createRef<HTMLSpanElement>()), [labelWords]);
+  const cardRefs = useRef<Record<TierId, HTMLDivElement | null>>({
+    basic: null, standard: null, business: null, premium: null, signature: null,
+  });
+  const zIndexMap: Record<TierId, number> = {
+    basic: 10, standard: 20, premium: 30, signature: 40, business: 50,
+  };
+
+  // Pozicije kartica
   const targets = useMemo(() => {
     if (!isMobile) {
       return {
         basic:     { x: -360, y: -160, scale: 0.94, rot: -2 },
         standard:  { x:  360, y: -160, scale: 0.94, rot:  2 },
-        business:  { x:    0, y:    0, scale: 1.06, rot:  0 },
+        business:  { x:    0, y:    0,  scale: 1.06, rot:  0 },
         premium:   { x: -300, y:  220, scale: 0.98, rot: -1 },
         signature: { x:  300, y:  220, scale: 0.98, rot:  1 },
       } as const;
@@ -110,39 +206,39 @@ export default function MainPhase2({
       } as const;
     }
     return {
-      basic:     { x:  0,  y: -700, rot:  0 },
-      standard:  { x:  0,  y: -700, rot:  0 },
-      business:  { x:  0,  y: -700, rot:  0 },
-      premium:   { x:  0,  y:  700, rot:  0 },
-      signature: { x:  0,  y:  700, rot:  0 },
+      basic:  { x: 0, y: -700, rot: 0 },
+      standard:{ x: 0, y: -700, rot: 0 },
+      business:{ x: 0, y: -700, rot: 0 },
+      premium: { x: 0, y:  700, rot: 0 },
+      signature:{x: 0, y:  700, rot: 0 },
     } as const;
   }, [isMobile]);
 
-  const stackOffsets = useMemo(() => {
-    return {
-      basic:     { x: -14, y: 14 },
-      standard:  { x: -7,  y: 10 },
-      business:  { x:  0,  y:  0 },
-      premium:   { x:  7,  y: 18 },
-      signature: { x: 14,  y: 24 },
-    } as const;
+  // BG specs u state-u (za dev slidere)
+  const BG_BASE = isMobile ? BG_SPECS_MOBILE_BASE : BG_SPECS_DESKTOP_BASE;
+  const [bgAdj, setBgAdj] = useState(() =>
+    BG_BASE.map(s => ({ x: s.x, y: s.y, scale: s.scale, rot: s.rot, w: s.w }))
+  );
+  const bgRefs = useRef<Array<HTMLDivElement | null>>([]);
+
+  // Label top u state (slider)
+  const [labelTopVh, setLabelTopVh] = useState(LABEL_TOP_VH_DEFAULT);
+  // P3 backdrop opacity u state (slider)
+  const [bgOpacity, setBgOpacity] = useState(clamp(p3BackdropOpacity, 0, 1));
+  // Dev toggle preko tastera D
+  const [showDev, setShowDev] = useState(devControls);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key.toLowerCase() === "d") setShowDev(s => !s); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const zIndexMap: Record<TierId, number> = {
-    basic: 10,
-    standard: 20,
-    premium: 30,
-    signature: 40,
-    business: 50,
-  };
-
-  // Tajming
+  // Timing
+  const INTRO_HOLD = isMobile ? holdMobile : holdDesktop;
   const HEAD_INIT         = isMobile ? 1.02 : 1.08;
   const SCALE_END         = isMobile ? 0.28 : 0.24;
   const HEAD_SHRINK_START = 0.18;
   const HEAD_SHRINK_END   = isMobile ? 0.80 : 0.84;
-  const FADE_START        = isMobile ? 0.80 : 0.84;
-  const FADE_END          = isMobile ? 0.95 : 0.96;
 
   const CARD_BASE = HEAD_SHRINK_START + (isMobile ? 0.04 : 0.06);
   const CARD_S = {
@@ -156,41 +252,52 @@ export default function MainPhase2({
     ? ({ basic: 0.22, standard: 0.22, business: 0.24, premium: 0.20, signature: 0.20 } as const)
     : ({ basic: 0.26, standard: 0.24, business: 0.26, premium: 0.22, signature: 0.20 } as const);
 
-  const DECK_START = isMobile ? 0.88 : 0.92;
-  const DECK_STACK = isMobile ? 0.96 : 0.97;
-  const DECK_END   = 0.995;
-
-  // >>> bez “mrtvog repa” (možeš opet da kompresuješ ako baš želiš)
-  const RAW_END_DESKTOP = rawEndDesktop;
-  const RAW_END_MOBILE  = rawEndMobile;
-
-  const CARDS_DONE =
+  const LAST_CARD_ARRIVE =
     Math.max(
       CARD_S.basic + CARD_D.basic,
       CARD_S.standard + CARD_D.standard,
       CARD_S.business + CARD_D.business,
       CARD_S.premium + CARD_D.premium,
-      CARD_S.signature + CARD_D.signature
+      CARD_S.signature + CARD_D.signature,
     );
+  const SYNC_START = Math.min(0.99, LAST_CARD_ARRIVE + SYNC_GAP);
+  const LABEL_LIFT_START = clamp(SYNC_START + LABEL_LIFT_DELAY, 0, 0.999);
+  const P3_START_IN_P2 = clamp(SYNC_START + P3_DELAY, 0, 0.995);
 
-  const LABEL_IN_START  = Math.min(CARDS_DONE + 0.02, (DECK_START ?? 0.92) - 0.10);
-  const LABEL_IN_END    = LABEL_IN_START + 0.12;
-  const LABEL_OUT_START = Math.min((DECK_START ?? 0.92) - 0.04, 0.96);
-  const LABEL_OUT_END   = Math.min((DECK_START ?? 0.92), 0.98);
-
-  const INTRO_HOLD = useMemo(
-    () => (isMobile ? holdMobile : holdDesktop),
-    [isMobile, holdDesktop, holdMobile]
+  /* ---------- P3 refs/data ---------- */
+  const options = useMemo(() => [t("Option 1"), t("Option 2"), t("Option 3")], []);
+  const sliders = useMemo(
+    () => [
+      { label: t("Usage level"), baseFill: 0.62 },
+      { label: t("Automation depth"), baseFill: 0.48 },
+    ],
+    []
   );
 
-  useEffect(() => {
-    if (!mounted) return;
-    const section = sectionRef.current;
-    const viewport = viewportRef.current;
-    const title = titleRef.current;
-    if (!section || !viewport || !title) return;
+  const leftPanelRef = useRef<HTMLDivElement | null>(null);
+  const rightPanelRef = useRef<HTMLDivElement | null>(null);
+  const leftRowRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const optionRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const optionCheckRefs = useRef<Array<SVGPathElement | null>>([]);
+  const sliderRowRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const sliderFillRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const sliderKnobRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const priceRef = useRef<HTMLSpanElement | null>(null);
+  const priceState = useRef({ display: BASE_PRICE });
 
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // P3 headline ref (traženo: iznad panela, pojavi se kad kartice dolete)
+  const p3TitleRef = useRef<HTMLHeadingElement | null>(null);
+
+  /* ---------- RAF ---------- */
+  useEffect(() => {
+    const section = sectionRef.current;
+    const stage = stageRef.current;
+    const bgLayer = bgLayerRef.current;
+    const p2Layer = p2LayerRef.current;
+    const labelLayer = labelLayerRef.current;
+    const p3Layer = p3LayerRef.current;
+    const p3Backdrop = p3BackdropRef.current;
+    if (!section || !stage || !p2Layer || !labelLayer || !p3Layer) return;
 
     const vw = window.innerWidth || 1280;
     const vh = window.innerHeight || 800;
@@ -198,7 +305,10 @@ export default function MainPhase2({
     const ky = Math.max(1, vh / 800);
 
     const STARTS = Object.fromEntries(
-      Object.entries(starts).map(([k, v]) => [k, { x: v.x * (isMobile ? 1 : kx), y: v.y * (isMobile ? 1 : ky), rot: v.rot }]),
+      Object.entries(starts).map(([k, v]) => [
+        k,
+        { x: v.x * (isMobile ? 1 : kx), y: v.y * (isMobile ? 1 : ky), rot: v.rot },
+      ])
     ) as Record<TierId, { x: number; y: number; rot: number }>;
 
     let raf = 0;
@@ -210,257 +320,595 @@ export default function MainPhase2({
       const rect = section.getBoundingClientRect();
       const vhNow = window.innerHeight || 1;
       const travel = Math.max(1, rect.height - vhNow);
-      const raw0 = clamp((vhNow - rect.top) / travel, 0, 1);
+      const rawAll = clamp((vhNow - rect.top) / travel, 0, 1);
 
-      // >>> NEMA kompresije kad je rawEnd == 1
-      const RAW_END = isMobile ? RAW_END_MOBILE : RAW_END_DESKTOP;
-      const raw = clamp(raw0 / RAW_END, 0, 1);
+      // P2 progres
+      const segA = SEG_P2 / TRACK_TOTAL_VH;
+      const p2Raw = clamp(rawAll / Math.max(0.0001, segA), 0, 1);
 
-      // HOLD
-      if (raw < INTRO_HOLD) {
-        title.style.transform = `translateZ(0) scale(${HEAD_INIT})`;
-        title.style.opacity = "1";
+      // P3 progres (ulazi dok P2 traje)
+      const p3StartAll = segA * P3_START_IN_P2;
+      const p3Raw = clamp((rawAll - p3StartAll) / Math.max(0.0001, 1 - p3StartAll), 0, 1);
 
+      /* ===== P2 ===== */
+      if (p2Raw < INTRO_HOLD) {
+        if (titleRef.current) {
+          titleRef.current.style.transform = `translateZ(0) scale(${HEAD_INIT})`;
+          titleRef.current.style.opacity = "1";
+        }
+        if (labelLayer) {
+          labelLayer.style.opacity = "0";
+          labelLayer.style.transform = `translate3d(-50%, -6vh, 0)`;
+        }
         (PKGS as Pkg[]).forEach((pkg) => {
-          const el = cardRefs.current[pkg.id];
-          if (!el) return;
+          const el = cardRefs.current[pkg.id]; if (!el) return;
           const off = STARTS[pkg.id];
-          el.style.transform = `translate3d(${off.x}px, ${off.y}px, 0) rotate(${off.rot}deg) scale(0.84)`;
+          el.style.transform = `translate3d(${off.x}px,${off.y}px,0) rotate(${off.rot}deg) scale(0.84)`;
           el.style.opacity = "0";
         });
+        p2Layer.style.transform = `translate3d(0,0,0)`;
 
-        wordRefs.forEach((ref) => {
-          const span = ref.current;
-          if (!span) return;
-          const parent = span.parentElement?.parentElement as HTMLDivElement | null;
-          if (parent) {
-            parent.style.opacity = "0";
-            parent.style.transform = "translateY(-6px) translateZ(0)";
+        if (BG_ENABLED && bgLayer) {
+          bgRefs.current.forEach((node) => { if (node) node.style.opacity = "0"; });
+        }
+        if (p3Backdrop) {
+          // inicijalno sakriven (da ne krene “od početka”)
+          p3Backdrop.style.opacity = "0";
+          p3Backdrop.style.transform = `translate3d(0, 40vh, 0)`;
+        }
+        if (p3TitleRef.current) {
+          p3TitleRef.current.style.opacity = "0";
+          p3TitleRef.current.style.transform = `translate3d(0, ${TITLE_Y_IN_VH}vh, 0)`;
+        }
+      } else {
+        // P2 0..1
+        const p = clamp((p2Raw - INTRO_HOLD) / (1 - INTRO_HOLD), 0, 1);
+
+        // Headline shrink
+        if (titleRef.current) {
+          let headScale = HEAD_INIT;
+          if (p >= HEAD_SHRINK_START) {
+            const s = clamp((p - HEAD_SHRINK_START) / (HEAD_SHRINK_END - HEAD_SHRINK_START), 0, 1);
+            headScale = lerp(HEAD_INIT, SCALE_END, easeInOut(s));
           }
-          span.style.opacity = "0";
-          span.style.transform = "translate3d(120px,0,0) scale(0.96)";
-        });
-
-        return;
-      }
-
-      // Re-map [INTRO_HOLD..1] → [0..1]
-      const p = clamp((raw - INTRO_HOLD) / (1 - INTRO_HOLD), 0, 1);
-
-      // Naslov
-      let headScale = HEAD_INIT;
-      if (p >= HEAD_SHRINK_START) {
-        const s = clamp((p - HEAD_SHRINK_START) / (HEAD_SHRINK_END - HEAD_SHRINK_START), 0, 1);
-        headScale = prefersReduced ? HEAD_INIT : lerp(HEAD_INIT, SCALE_END, easeInOut(s));
-      }
-      const headOpacity = p < FADE_START ? 1 : 1 - clamp((p - FADE_START) / (FADE_END - FADE_START), 0, 1);
-
-      title.style.transform = `translateZ(0) scale(${headScale})`;
-      title.style.opacity = String(headOpacity);
-
-      // Kartice
-      (PKGS as Pkg[]).forEach((pkg) => {
-        const el = cardRefs.current[pkg.id];
-        if (!el) return;
-
-        const s = (CARD_S as any)[pkg.id] as number;
-        const d = (CARD_D as any)[pkg.id] as number;
-        const local = clamp((p - s) / d, 0, 1);
-        const tt = prefersReduced ? 1 : easeInOut(local);
-
-        const off = STARTS[pkg.id];
-        const to = targets[pkg.id];
-
-        let x = lerp(off.x, to.x, tt);
-        let y = lerp(off.y, to.y, tt);
-        let sc = lerp(0.84, to.scale, tt);
-        let rot = lerp(off.rot, to.rot, tt);
-        let op = tt;
-
-        // Stack + exit
-        const stackT = clamp((p - DECK_START) / (DECK_STACK - DECK_START), 0, 1);
-        const exitT  = clamp((p - DECK_STACK) / (DECK_END - DECK_STACK), 0, 1);
-
-        if (stackT > 0 || exitT > 0) {
-          const stack = stackOffsets[pkg.id];
-          x = lerp(x, stack.x, stackT);
-          y = lerp(y, stack.y, stackT);
-          rot = lerp(rot, 0, stackT);
-          sc = lerp(sc, 1.0, stackT);
-
-          if (exitT > 0) {
-            y = y - exitT * (vhNow * 0.8);
-            const fadeFactor = pkg.id === "business" ? 0.85 : 1.0;
-            op = op * (1 - exitT * fadeFactor);
-          }
+          titleRef.current.style.transform = `translateZ(0) scale(${headScale})`;
+          titleRef.current.style.opacity = "1";
         }
 
-        el.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}deg) scale(${sc})`;
-        el.style.opacity = String(op);
+        // LABEL IN (odozgo, iznad kartica — nikad ne dodiruje)
+        const LABEL_IN_START = Math.max(0.06, CARD_S.business + CARD_D.business - 0.10);
+        const LABEL_IN_END = LABEL_IN_START + 0.14;
+        if (labelLayer) {
+          const tIn = easeInOut(clamp((p - LABEL_IN_START) / (LABEL_IN_END - LABEL_IN_START), 0, 1));
+          const y = lerp(-6, 0, tIn);
+          labelLayer.style.opacity = String(tIn);
+          labelLayer.style.transform = `translate3d(-50%, ${y}vh, 0)`;
+        }
+
+        // BG tiers — fade in/out i “float”, uz prilagodljive pozicije
+        if (BG_ENABLED && bgLayer) {
+          const inT  = easeInOut(clamp((p - BG_FADE_IN_START) / BG_FADE_IN_DUR, 0, 1));
+          const outS = Math.max(0, SYNC_START - BG_FADE_OUT_PAD);
+          const outT = clamp((p - outS) / Math.max(0.0001, (SYNC_START - outS)), 0, 1);
+          const op = inT * (1 - outT);
+
+          bgAdj.forEach((spec, i) => {
+            const node = bgRefs.current[i]; if (!node) return;
+            const j = i + 1;
+            const fx = Math.sin(p * Math.PI * (0.6 + j * 0.07)) * 14;
+            const fy = Math.cos(p * Math.PI * (0.4 + j * 0.05)) * 8;
+            node.style.opacity = String(op);
+            node.style.transform = `translate3d(${spec.x + fx}px, ${spec.y + fy}px, 0) rotate(${spec.rot}deg) scale(${spec.scale})`;
+            (node.firstElementChild as HTMLElement)?.style.setProperty("width", `${Math.min(spec.w, 340)}px`);
+          });
+        }
+
+        // Kartice: STARTS -> TARGETS
+        (PKGS as Pkg[]).forEach((pkg) => {
+          const el = cardRefs.current[pkg.id]; if (!el) return;
+
+          const s = (CARD_S as any)[pkg.id] as number;
+          const d = (CARD_D as any)[pkg.id] as number;
+          const local = clamp((p - s) / d, 0, 1);
+          const tt = easeInOut(local);
+
+          const off = STARTS[pkg.id];
+          const to = targets[pkg.id];
+
+          const baseX = lerp(off.x, to.x, tt);
+          const baseY = lerp(off.y, to.y, tt);
+          const baseRot = lerp(off.rot, to.rot, tt);
+          const baseSc = lerp(0.84, to.scale, tt);
+
+          const op = local > 0.02 ? 1 : local / 0.02;
+
+          el.style.transform = `translate3d(${baseX}px,${baseY}px,0) rotate(${baseRot}deg) scale(${baseSc})`;
+          el.style.opacity = String(op);
+        });
+
+        // === P3 HEADLINE: pojavi se ČIM kartice dolete ===
+        if (p3TitleRef.current) {
+          const tTitle = easeInOut(
+            clamp((p - (LAST_CARD_ARRIVE + TITLE_AFTER_LAST_CARD)) / Math.max(0.0001, TITLE_IN_DUR), 0, 1)
+          );
+          const ty = lerp(TITLE_Y_IN_VH, 0, tTitle);
+          p3TitleRef.current.style.opacity = String(tTitle);
+          p3TitleRef.current.style.transform = `translate3d(0, ${ty}vh, 0)`;
+        }
+
+        // === SYNC: simultani fly-up + converge (label poleti istovremeno) ===
+        const sfT = clamp((p - SYNC_START) / Math.max(0.0001, 1 - SYNC_START), 0, 1);
+        if (sfT > 0) {
+          const liftVhRaw = sfT * SQUEEZE_MAX_VH;
+          const liftVh = Math.min(liftVhRaw, OFF_VH);
+          p2Layer.style.transform = `translate3d(0, ${-liftVh}vh, 0)`;
+
+          const endAt = Math.max(0.0001, OFF_VH / SQUEEZE_MAX_VH);
+          const k = clamp(sfT / endAt, 0, 1);
+          const converge = easeInOut(k);
+
+          (PKGS as Pkg[]).forEach((pkg) => {
+            const el = cardRefs.current[pkg.id]; if (!el) return;
+            const to = targets[pkg.id];
+
+            const x = lerp(to.x, 0, converge);
+            const y = lerp(to.y, 0, converge);
+            const rot = lerp(to.rot, 0, converge);
+
+            let sc = to.scale;
+            if (converge > CONVERGE_SCALE_LATE) {
+              const _lateP = (converge - CONVERGE_SCALE_LATE) / (1 - CONVERGE_SCALE_LATE);
+              // (ostavljeno za finu korekciju scale-a po želji)
+            }
+
+            if (liftVhRaw >= OFF_VH - 0.0001) {
+              el.style.transform = `translate3d(0px,0px,0) rotate(0deg) scale(0)`;
+              el.style.opacity = "0";
+            } else {
+              el.style.transform = `translate3d(${x}px,${y}px,0) rotate(${rot}deg) scale(${sc})`;
+              el.style.opacity = "1";
+            }
+          });
+
+          // label – lift tačno u syncu, nikad ne dodiruje scene
+          if (labelLayer) {
+            const ll = clamp((p - (SYNC_START + LABEL_LIFT_DELAY)) / Math.max(0.0001, 1 - (SYNC_START + LABEL_LIFT_DELAY)), 0, 1);
+            const llFast = Math.min(1, ll / 0.22);
+            const ly = -llFast * LABEL_LIFT_VH;
+            labelLayer.style.transform = `translate3d(-50%, ${ly}vh, 0)`;
+            const lop = 1 - clamp(ll / 0.18, 0, 1);
+            labelLayer.style.opacity = String(lop);
+          }
+        }
+      }
+
+      /* ===== P3 (ulazi dok je P2 još u kadru) ===== */
+      // Backdrop (sečivo) – sada počinje zajedno sa panelima (traženo)
+      if (p3Backdrop) {
+        const t = easeInOut(clamp((p3Raw - BACKDROP_IN_START) / Math.max(0.0001, BACKDROP_IN_DUR), 0, 1));
+        p3Backdrop.style.opacity = String(t * bgOpacity);
+        const y = lerp(40, 0, t);
+        p3Backdrop.style.transform = `translate3d(0, ${y}vh, 0)`;
+      }
+
+      // Paneli: dolaze ODOZDO (oba), blagi razlik u tajmingu
+      if (leftPanelRef.current) {
+        const t = easeInOut(clamp((p3Raw - 0.00) / 0.22, 0, 1));
+        const y = lerp(36, 0, t);
+        leftPanelRef.current.style.transform = `translate3d(0, ${y}vh, 0)`;
+        leftPanelRef.current.style.opacity = String(t);
+      }
+      if (rightPanelRef.current) {
+        const t = easeInOut(clamp((p3Raw - 0.03) / 0.22, 0, 1));
+        const y = lerp(36, 0, t);
+        rightPanelRef.current.style.transform = `translate3d(0, ${y}vh, 0)`;
+        rightPanelRef.current.style.opacity = String(t);
+      }
+
+      // LEFT rows
+      leftRowRefs.current.forEach((row, i) => {
+        if (!row) return;
+        const base = 0.22 + i * 0.045;
+        const t = easeInOut(clamp((p3Raw - base) / 0.16, 0, 1));
+        const y = lerp(28, 0, t);
+        row.style.transform = `translate3d(0, ${y}vh, 0)`;
+        row.style.opacity = String(t);
       });
 
-      // Label (desktop)
-      if (!isMobile) {
-        const outP = clamp((p - LABEL_OUT_START) / (LABEL_OUT_END - LABEL_OUT_START), 0, 1);
-        const outEase = easeInOut(outP);
-        const wrapTy = lerp(0, -6, outEase);
+      // RIGHT options + check + slideri
+      const checkProgress: number[] = [];
+      options.forEach((_, i) => {
+        const row = optionRefs.current[i]; if (!row) return;
 
-        wordRefs.forEach((ref, i) => {
-          const span = ref.current;
-          if (!span) return;
+        const base = 0.24 + i * 0.05;
+        const t = easeInOut(clamp((p3Raw - base) / 0.16, 0, 1));
+        const y = lerp(28, 0, t);
+        row.style.transform = `translate3d(0, ${y}vh, 0)`;
+        row.style.opacity = String(t);
 
-          const parent = span.parentElement?.parentElement as HTMLDivElement | null;
-          if (parent) {
-            parent.style.opacity = String(1 - outEase);
-            parent.style.transform = `translateY(${wrapTy}px) translateZ(0)`;
-          }
+        const checkStart = base + 0.16 + 0.05;
+        const cLocal = clamp((p3Raw - checkStart) / 0.20, 0, 1);
+        checkProgress[i] = cLocal;
 
-          const inP = clamp((p - (LABEL_IN_START + i * 0.045)) / (LABEL_IN_END - LABEL_IN_START), 0, 1);
-          const e = easeOutBack(inP);
-          const x = lerp(140, 0, e);
-          const sc = lerp(0.96, 1.0, e);
-          const op = inP;
+        const path = optionCheckRefs.current[i];
+        if (path) {
+          const totalLen = 26;
+          path.style.strokeDasharray = `${totalLen}`;
+          path.style.strokeDashoffset = `${(1 - cLocal) * totalLen}`;
+        }
+      });
 
-          span.style.transform = `translate3d(${x}px,0,0) scale(${sc})`;
-          span.style.opacity = String(op * (1 - outEase));
-        });
-      } else {
-        // Mobile: sakrij
-        wordRefs.forEach((ref) => {
-          const span = ref.current;
-          if (span) {
-            const parent = span.parentElement?.parentElement as HTMLDivElement | null;
-            if (parent) {
-              parent.style.opacity = "0";
-              parent.style.transform = "translateY(-6px) translateZ(0)";
-            }
-            span.style.opacity = "0";
-            span.style.transform = "translate3d(120px,0,0) scale(0.96)";
-          }
-        });
-      }
+      const sliderLocals: number[] = [];
+      sliders.forEach((s, i) => {
+        const row = sliderRowRefs.current[i]; if (!row) return;
+
+        const base = 0.24 + options.length * 0.05 + 0.07 + i * 0.055;
+        const t = easeInOut(clamp((p3Raw - base) / 0.16, 0, 1));
+        const y = lerp(28, 0, t);
+        row.style.transform = `translate3d(0, ${y}vh, 0)`;
+        row.style.opacity = String(t);
+
+        const sLocal = clamp((p3Raw - (base + 0.16)) / 0.26, 0, 1);
+        sliderLocals[i] = sLocal;
+
+        const fill = s.baseFill * sLocal;
+        const pct = (fill * 100).toFixed(1);
+        const bar = sliderFillRefs.current[i];
+        const knob = sliderKnobRefs.current[i];
+        if (bar) bar.style.width = `${pct}%`;
+        if (knob) knob.style.left = `${pct}%`;
+      });
+
+      // PRICE: BASE + add-ons + sliders
+      let target = BASE_PRICE;
+      checkProgress.forEach((p, i) => (target += p * (OPTION_INCREMENTS[i] || 0)));
+      sliderLocals.forEach((s, i) => (target += s * (SLIDER_RATES[i] || 0)));
+      const cur = priceState.current.display;
+      const next = (p3Raw > 0.98) ? target : lerp(cur, target, 0.20); // nema “rep”
+      priceState.current.display = next;
+      if (priceRef.current) priceRef.current.textContent = `€${Math.round(next)}`;
     };
 
     schedule();
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule, { passive: true });
-
     return () => {
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       if (raf) cancelAnimationFrame(raf);
     };
   }, [
-    mounted,
     isMobile,
     starts,
     targets,
-    stackOffsets,
-    HEAD_INIT, SCALE_END, HEAD_SHRINK_START, HEAD_SHRINK_END, FADE_START, FADE_END,
-    DECK_START, DECK_STACK, DECK_END,
-    CARD_S, CARD_D,
-    LABEL_IN_START, LABEL_IN_END, LABEL_OUT_START, LABEL_OUT_END,
-    wordRefs,
     INTRO_HOLD,
-    rawEndDesktop, rawEndMobile,
+    HEAD_INIT, SCALE_END, HEAD_SHRINK_START, HEAD_SHRINK_END,
+    CARD_S, CARD_D, LAST_CARD_ARRIVE, SYNC_START, P3_START_IN_P2, LABEL_LIFT_START,
+    SEG_P2, SEG_P3, TRACK_TOTAL_VH,
+    options, sliders,
+    bgAdj, bgOpacity,
   ]);
 
-  // Dinamička visina track-a (umesto Tailwind h-[xxxvh] klasa)
-  const TRACK_VH = isMobile ? trackVHMobile : trackVHDesktop;
+  /* ---------- helpers ---------- */
+  const backdropCSS =
+    p3BackdropStyle === "brand"
+      ? "linear-gradient(180deg, rgba(99,102,241,1), rgba(56,189,248,1), rgba(20,184,166,1))"
+      : p3BackdropStyle === "blue"
+        ? "linear-gradient(180deg, rgba(37,99,235,1), rgba(59,130,246,1))"
+        : "linear-gradient(180deg, rgba(79,70,229,1), rgba(56,189,248,1))";
 
+  /* ---------- render ---------- */
   return (
     <section
       ref={sectionRef}
-      data-track="p2"
-      aria-label={t("Scroll storytelling pricing intro")}
-      className="relative"
-      style={{ height: `${TRACK_VH}vh` }}
+      aria-label={t("Unified P2+P3 sticky track")}
+      className="relative bg-white"
+      style={{ height: `${TRACK_TOTAL_VH}vh` }}
     >
-      <div ref={viewportRef} className="sticky top-0 h-screen overflow-hidden [contain:layout_style_paint]">
-        {/* Naslov */}
-        <div className="absolute inset-0 grid place-items-center pointer-events-none px-3 sm:px-0 overflow-visible">
-          <h2
-            ref={titleRef}
-            suppressHydrationWarning
-            className={[
-              "font-semibold tracking-tight text-center leading-tight select-none",
-              "text-transparent bg-clip-text",
-              "bg-gradient-to-r from-indigo-500 via-sky-400 to-teal-400",
-              "mx-auto max-w-[20ch] sm:max-w-[24ch] text-balance",
-              "text-[clamp(46px,8.6vw,150px)]",
-            ].join(" ")}
-            style={{ transform: `translateZ(0) scale(${HEAD_INIT})`, opacity: 1, paddingBottom: "0.08em" }}
-          >
-            {headline}
-          </h2>
-        </div>
+      <div ref={stageRef} className="sticky top-0 h-screen overflow-hidden [contain:layout_style_paint]">
+        {/* ===== BG LAYER: ghost tiers ===== */}
+        {BG_ENABLED && (
+          <div ref={bgLayerRef} className="absolute inset-0 pointer-events-none">
+            {(isMobile ? BG_SPECS_MOBILE_BASE : BG_SPECS_DESKTOP_BASE).map((base, i) => (
+              <div
+                key={i}
+                ref={(el) => { bgRefs.current[i] = el; }}
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 will-change-transform"
+                style={{ zIndex: base.z }}
+              >
+                <div style={{ width: Math.min(bgAdj[i]?.w ?? base.w, 340) }}>
+                  <GhostCard color={base.color} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-        {/* Desktop label */}
-        <div className="absolute inset-0 pointer-events-none hidden sm:block">
-          <div
-            className="mx-auto w-full max-w-[92vw] text-center font-semibold select-none"
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "14%",
-              translate: "-50% 0",
-              opacity: 0,
-              transform: "translateY(-6px) translateZ(0)",
-            }}
-          >
-            <div className="inline-flex flex-wrap items-baseline justify-center gap-x-2 gap-y-2">
-              {labelWords.map((w, i) => (
-                <span
-                  key={i}
-                  ref={wordRefs[i]}
-                  className="text-transparent bg-clip-text"
-                  style={{
-                    backgroundImage: "var(--brand-gradient)",
-                    fontSize: "clamp(22px, 3.8vw, 36px)",
-                    lineHeight: 1.1,
-                    display: "inline-block",
-                    opacity: 0,
-                    transform: "translate3d(120px,0,0) scale(0.96)",
-                    willChange: "transform, opacity",
-                    filter: "drop-shadow(0 1px 10px rgba(var(--brand-1-rgb),0.08))",
-                  }}
-                >
-                  {w}
-                </span>
-              ))}
-            </div>
+        {/* ===== P2 LAYER: headline + cards (diže se nagore) ===== */}
+        <div ref={p2LayerRef} className="absolute inset-0 will-change-transform">
+          {/* Headline */}
+          <div className="absolute inset-0 grid place-items-center pointer-events-none px-3 sm:px-0">
+            <h2
+              ref={titleRef}
+              suppressHydrationWarning
+              className={[
+                "font-semibold tracking-tight text-center leading-tight select-none",
+                "text-transparent bg-clip-text",
+                "bg-gradient-to-r from-indigo-500 via-sky-400 to-teal-400",
+                "mx-auto max-w-[20ch] sm:max-w-[24ch] text-balance",
+                "text-[clamp(46px,8.6vw,150px)]",
+              ].join(" ")}
+              style={{ transform: `translateZ(0) scale(${HEAD_INIT})`, opacity: 1, paddingBottom: "0.08em" }}
+            >
+              {headline}
+            </h2>
+          </div>
+
+          {/* Cards */}
+          <div className="absolute inset-0">
+            {PKGS.map((pkg) => (
+              <div
+                key={pkg.id}
+                ref={(el) => { cardRefs.current[pkg.id] = el; }}
+                suppressHydrationWarning
+                className="absolute left-1/2 top-1/2 w-[min(92vw,380px)] sm:w-[min(86vw,360px)] -translate-x-1/2 -translate-y-1/2 will-change-transform"
+                style={{
+                  transform: "translate3d(0,0,0) rotate(0deg) scale(0.84)",
+                  opacity: 0,
+                  zIndex: zIndexMap[pkg.id],
+                }}
+              >
+                <Card
+                  tier={pkg}
+                  featured={pkg.id === "business"}
+                  color={pkg.id === "business" ? undefined : TIER_COLORS[pkg.id]}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Kartice */}
-        <div className="absolute inset-0">
-          {PKGS.map((pkg) => (
-            <div
-              key={pkg.id}
-              ref={(el) => { cardRefs.current[pkg.id] = el; }}
-              suppressHydrationWarning
-              className="absolute left-1/2 top-1/2 w-[min(92vw,380px)] sm:w-[min(86vw,360px)] -translate-x-1/2 -translate-y-1/2 will-change-transform"
-              style={{
-                transform: "translate3d(0,0,0) rotate(0deg) scale(0.84)",
-                opacity: 0,
-                zIndex: zIndexMap[pkg.id],
-              }}
-            >
-              <Card
-                tier={pkg}
-                featured={pkg.id === "business"}
-                color={pkg.id === "business" ? undefined : TIER_COLORS[pkg.id]}
-              />
-            </div>
-          ))}
+        {/* ===== LABEL LAYER: IZNAD kartica (ne dodiruje ništa) ===== */}
+        <div
+          ref={labelLayerRef}
+          className="absolute left-1/2 pointer-events-none hidden sm:block z-[80]"
+          style={{
+            top: `${labelTopVh}vh`,
+            transform: "translate3d(-50%, -6vh, 0)",
+            opacity: 0,
+          }}
+        >
+          <div className="inline-flex flex-wrap items-baseline justify-center gap-x-2 gap-y-2 font-semibold">
+            {labelWords.map((w, i) => (
+              <span
+                key={i}
+                ref={wordRefs[i]}
+                className="text-transparent bg-clip-text"
+                style={{
+                  backgroundImage: "var(--brand-gradient)",
+                  fontSize: "clamp(20px, 3.4vw, 34px)",
+                  lineHeight: 1.1,
+                  display: "inline-block",
+                  willChange: "transform, opacity",
+                  filter: "drop-shadow(0 1px 10px rgba(59,130,246,.10))",
+                }}
+              >
+                {w}
+              </span>
+            ))}
+          </div>
         </div>
+
+        {/* ===== P3 BACKDROP (sečivo odozdo) ===== */}
+        <div
+          ref={p3BackdropRef}
+          className="absolute inset-x-0 bottom-0 h-[130vh] will-change-transform"
+          style={{
+            backgroundImage: backdropCSS, // string, ne klasa
+            opacity: 0,                   // inicijalno skriven
+            transform: "translate3d(0,40vh,0)",
+            filter: "saturate(1.05)",
+          }}
+        >
+          {/* Oštra gornja ivica (brend linija) */}
+          <div
+            className="absolute inset-x-0 top-0 h-[4px]"
+            style={{ background: "var(--brand-gradient)" }}
+          />
+        </div>
+
+        {/* ===== P3 LAYER: P3 headline + paneli + cena ===== */}
+        <div ref={p3LayerRef} className="absolute inset-0">
+          <div className="absolute inset-0 grid place-items-center">
+            <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 pt-[34vh] sm:pt-[30vh]">
+              {/* P3 naslov IZNAD PANELA (z-50), ali pojavljuje se tek kad kartice dolete */}
+              <div className="mb-6 sm:mb-8 text-center relative z-50 pointer-events-none">
+                <h3
+                  ref={p3TitleRef}
+                  className="text-[clamp(26px,4.8vw,56px)] font-semibold leading-tight text-neutral-900"
+                  aria-label={t("Or make a Tierless price page")}
+                  style={{ opacity: 0, transform: `translate3d(0, ${TITLE_Y_IN_VH}vh, 0)` }}
+                >
+                  {t("Or make a")}{" "}
+                  <span
+                    className="text-transparent bg-clip-text"
+                    style={{ backgroundImage: "var(--brand-gradient)" }}
+                  >
+                    {t("Tierless")}
+                  </span>{" "}
+                  {t("price page")}
+                </h3>
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 items-start">
+                {/* LEFT panel */}
+                <div
+                  ref={leftPanelRef}
+                  className="opacity-0 will-change-transform"
+                  style={{ transform: "translate3d(0, 36vh, 0)" }}
+                >
+                  <div className="rounded-3xl border bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,.06)]">
+                    <div className="flex items-baseline justify-between">
+                      <h4 className="text-lg font-semibold text-neutral-900">{t("What this includes")}</h4>
+                      <span
+                        className="inline-flex items-center rounded-xl px-3 py-1.5 text-sm font-semibold"
+                        style={{
+                          background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box",
+                          border: "1px solid transparent",
+                          color: "#111827",
+                        }}
+                      >
+                        {t("Estimated total")}: <span ref={priceRef}>€{BASE_PRICE}</span>
+                      </span>
+                    </div>
+
+                    <div className="mt-4 divide-y" style={{ borderColor: "rgba(229,231,235,.8)" }}>
+                      {[t("Unlimited items"), t("Advanced formulas"), t("Analytics & events"), t("Email support"), t("Custom domain ready"), t("Team access"), t("Export to CSV")].map((content, i) => (
+                        <div
+                          key={i}
+                          ref={(el) => { leftRowRefs.current[i] = el; }}
+                          className="flex items-center gap-3 py-3 opacity-0 will-change-transform"
+                          style={{ transform: "translate3d(0, 28vh, 0)" }}
+                        >
+                          <span className="inline-block h-2 w-2 rounded-full translate-y-[2px]" style={{ background: "var(--brand-gradient)" }} />
+                          <span className="text-sm text-neutral-800">{content}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT panel */}
+                <div
+                  ref={rightPanelRef}
+                  className="opacity-0 will-change-transform"
+                  style={{ transform: "translate3d(0, 36vh, 0)" }}
+                >
+                  <div className="rounded-3xl border bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,.06)]">
+                    <h4 className="text-lg font-semibold text-neutral-900">{t("Options")}</h4>
+
+                    {/* OPTIONS */}
+                    <div className="mt-4 space-y-3">
+                      {["Option 1", "Option 2", "Option 3"].map((label, i) => (
+                        <div
+                          key={i}
+                          ref={(el) => { optionRefs.current[i] = el; }}
+                          className="flex items-center justify-between rounded-xl border px-3 py-2 opacity-0 will-change-transform"
+                          style={{ borderColor: "rgba(229,231,235,.8)", transform: "translate3d(0, 28vh, 0)" }}
+                        >
+                          <span className="text-sm text-neutral-800">{t(label)}</span>
+                          <span className="inline-flex items-center justify-center rounded-md" style={{ width: 22, height: 22, border: "1px solid rgba(0,0,0,.2)", background: "linear-gradient(#fff,#fff)" }}>
+                            <CheckSVG refCb={(el) => { optionCheckRefs.current[i] = el; }} />
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* SLIDERS */}
+                    <div className="mt-6 space-y-5">
+                      {sliders.map((s, i) => (
+                        <div
+                          key={i}
+                          ref={(el) => { sliderRowRefs.current[i] = el; }}
+                          className="opacity-0 will-change-transform"
+                          style={{ transform: "translate3d(0, 28vh, 0)" }}
+                        >
+                          <label className="text-sm text-neutral-700">{s.label}</label>
+                          <div className="mt-2 h-3 rounded-full bg-neutral-200 relative overflow-visible">
+                            <div
+                              ref={(el) => { sliderFillRefs.current[i] = el; }}
+                              className="absolute inset-y-0 left-0 rounded-full"
+                              style={{ width: "0%", background: "var(--brand-gradient)", transition: "width .08s linear" }}
+                            />
+                            <div
+                              ref={(el) => { sliderKnobRefs.current[i] = el; }}
+                              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
+                              style={{ left: "0%", width: 18, height: 18, borderRadius: 999, boxShadow: "0 2px 8px rgba(0,0,0,.18)", background: "#fff", border: "1px solid rgba(0,0,0,.18)" }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {/* /RIGHT */}
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* /P3 */}
       </div>
+
+      {/* ===== DEV CONTROLS (toggle: prop devControls ili taster "D") ===== */}
+      {showDev && (
+        <DevPanel
+          labelTopVh={labelTopVh}
+          setLabelTopVh={setLabelTopVh}
+          bgOpacity={bgOpacity}
+          setBgOpacity={(v) => setBgOpacity(clamp(v, 0, 1))}
+          specs={bgAdj}
+          setSpecs={setBgAdj}
+        />
+      )}
     </section>
   );
 }
 
-function Card({ tier, featured, color }: { tier: Pkg; featured: boolean; color?: string }) {
+/* =========================================
+   SVG check util
+========================================= */
+function CheckSVG({ refCb }: { refCb: (el: SVGPathElement | null) => void }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
+      <defs>
+        <linearGradient id="gb" x1="0" y1="0" x2="20" y2="20">
+          <stop offset="0%" stopColor="#4F46E5" />
+          <stop offset="100%" stopColor="#22D3EE" />
+        </linearGradient>
+      </defs>
+      <path
+        ref={refCb}
+        d="M5 10.5l3.2 3.2L15 7"
+        stroke="url(#gb)"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="26"
+        strokeDashoffset="26"
+      />
+    </svg>
+  );
+}
+
+/* =========================================
+   Ghost Card (lagana pozadina)
+========================================= */
+function GhostCard({ color }: { color: string }) {
+  return (
+    <div className="rounded-3xl border bg-white/90 backdrop-blur-[1px] shadow-[0_10px_40px_rgba(0,0,0,.08)]">
+      <div className="p-4 md:p-5">
+        <div className="flex items-center justify-between">
+          <div className="h-3 w-24 rounded-md" style={{ backgroundColor: color, opacity: 0.85 }} />
+          <div className="h-3 w-12 rounded-md" style={{ backgroundColor: color, opacity: 0.35 }} />
+        </div>
+        <div className="mt-3 space-y-2">
+          <div className="h-2 w-40 rounded" style={{ backgroundColor: color, opacity: 0.18 }} />
+          <div className="h-2 w-36 rounded" style={{ backgroundColor: color, opacity: 0.14 }} />
+          <div className="h-2 w-28 rounded" style={{ backgroundColor: color, opacity: 0.10 }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================
+   Card (featured sa generičkim addon čipovima)
+========================================= */
+type CardProps = { tier: Pkg; featured: boolean; color?: string };
+
+function Card({ tier, featured, color }: CardProps) {
   if (featured) {
+    const included = [t("Addon 1"), t("Addon 2"), t("Addon 3")];
     return (
       <div className="rounded-3xl p-[1px] bg-gradient-to-br from-indigo-500 via-sky-400 to-teal-400 shadow-[0_8px_40px_rgba(0,0,0,.12)]">
         <div className="rounded-[calc(theme(borderRadius.3xl)-1px)] bg-white">
@@ -469,17 +917,43 @@ function Card({ tier, featured, color }: { tier: Pkg; featured: boolean; color?:
               <h3 className="text-lg font-semibold text-neutral-900">{t(tier.name)}</h3>
               <span className="text-lg font-semibold text-neutral-900">{tier.price}</span>
             </div>
+
             <ul className="mt-4 space-y-2 text-sm text-neutral-700">
               {tier.features.map((f, i) => (
                 <li key={i} className="flex items-center gap-2">
-                  <span
-                    className="inline-block h-2 w-2 rounded-full translate-y-[1px]"
-                    style={{ background: "linear-gradient(90deg, #6366f1, #38bdf8, #14b8a6)" }}
-                  />
+                  <span className="inline-block h-2 w-2 rounded-full translate-y-[1px]"
+                        style={{ background: "linear-gradient(90deg, #6366f1, #38bdf8, #14b8a6)" }} />
                   <span>{f}</span>
                 </li>
               ))}
             </ul>
+
+            {/* Included add-ons (pill) */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              {included.map((label, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-2 rounded-2xl px-3 py-1.5 text-xs font-semibold"
+                  style={{
+                    background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box",
+                    border: "1px solid transparent",
+                    color: "#0f172a",
+                  }}
+                >
+                  {label}
+                  <span
+                    className="rounded-xl px-2 py-[2px] text-[11px] font-semibold"
+                    style={{
+                      background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box",
+                      border: "1px solid transparent",
+                    }}
+                  >
+                    {t("Included")}
+                  </span>
+                </span>
+              ))}
+            </div>
+
             <button
               className={[
                 "mt-5 w-full rounded-xl py-2.5 text-sm font-medium transition",
@@ -513,7 +987,8 @@ function Card({ tier, featured, color }: { tier: Pkg; featured: boolean; color?:
         <ul className="mt-4 space-y-2 text-sm text-neutral-700">
           {tier.features.map((f, i) => (
             <li key={i} className="flex items-center gap-2">
-              <span className="inline-block h-2 w-2 rounded-full translate-y-[1px]" style={{ backgroundColor: color || "#737373" }} />
+              <span className="inline-block h-2 w-2 rounded-full translate-y-[1px]"
+                    style={{ backgroundColor: color || "#737373" }} />
               <span>{f}</span>
             </li>
           ))}
@@ -530,6 +1005,67 @@ function Card({ tier, featured, color }: { tier: Pkg; featured: boolean; color?:
           {t("Select")}
         </button>
       </div>
+    </div>
+  );
+}
+
+/* =========================================
+   Dev panel (sliders)
+========================================= */
+function DevPanel({
+  labelTopVh, setLabelTopVh,
+  bgOpacity, setBgOpacity,
+  specs, setSpecs,
+}: {
+  labelTopVh: number;
+  setLabelTopVh: (v: number) => void;
+  bgOpacity: number;
+  setBgOpacity: (v: number) => void;
+  specs: Array<{ x: number; y: number; scale: number; rot: number; w: number }>;
+  setSpecs: (fn: (prev: Array<{ x: number; y: number; scale: number; rot: number; w: number }>) => any) => void;
+}) {
+  return (
+    <div
+      className="fixed right-3 bottom-3 z-[99999] max-h-[90vh] w-[340px] overflow-y-auto overscroll-contain rounded-2xl border bg-white/90 backdrop-blur p-3 shadow-lg"
+      data-lenis-prevent
+      style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
+      onWheel={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
+    >
+      <div className="text-xs font-semibold text-neutral-700 mb-2">Dev controls (D za toggle)</div>
+
+      <div className="mb-3">
+        <label className="text-xs text-neutral-600">Label top (vh): {labelTopVh}</label>
+        <input type="range" min={8} max={30} step={1} value={labelTopVh}
+          onChange={(e) => setLabelTopVh(parseInt(e.target.value))} className="w-full" />
+      </div>
+
+      <div className="mb-3">
+        <label className="text-xs text-neutral-600">P3 backdrop opacity: {bgOpacity.toFixed(2)}</label>
+        <input type="range" min={0} max={1} step={0.01} value={bgOpacity}
+          onChange={(e) => setBgOpacity(parseFloat(e.target.value))} className="w-full" />
+      </div>
+
+      {specs.map((s, i) => (
+        <div key={i} className="mb-3 rounded-lg border p-2">
+          <div className="text-xs font-semibold mb-2">Ghost #{i + 1}</div>
+          <label className="text-[11px] text-neutral-600">x: {s.x}</label>
+          <input type="range" min={-800} max={800} step={2} value={s.x}
+            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, x: parseInt(e.target.value) } : p))} className="w-full" />
+          <label className="text-[11px] text-neutral-600">y: {s.y}</label>
+          <input type="range" min={-700} max={700} step={2} value={s.y}
+            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, y: parseInt(e.target.value) } : p))} className="w-full" />
+          <label className="text-[11px] text-neutral-600">scale: {s.scale.toFixed(2)}</label>
+          <input type="range" min={0.50} max={1.10} step={0.01} value={s.scale}
+            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, scale: parseFloat(e.target.value) } : p))} className="w-full" />
+          <label className="text-[11px] text-neutral-600">rot: {s.rot}°</label>
+          <input type="range" min={-15} max={15} step={1} value={s.rot}
+            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, rot: parseInt(e.target.value) } : p))} className="w-full" />
+          <label className="text-[11px] text-neutral-600">width: {s.w}px</label>
+          <input type="range" min={220} max={360} step={2} value={s.w}
+            onChange={(e) => setSpecs(prev => prev.map((p, idx) => idx === i ? { ...p, w: parseInt(e.target.value) } : p))} className="w-full" />
+        </div>
+      ))}
     </div>
   );
 }
