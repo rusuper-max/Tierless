@@ -1,542 +1,501 @@
 // src/components/scrolly/MainPhase3.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState, CSSProperties, useLayoutEffect } from "react";
+import { useEffect, useRef, useState, CSSProperties } from "react";
+import WireGlobe from "@/components/scrolly/WireGlobe";
+import CTAButton from "@/components/marketing/CTAButton"; // prilagodi path
 import { t } from "@/i18n";
 
-const clamp = (n: number, min = 0, max = 1) => Math.min(Math.max(n, min), max);
-const lerp  = (a: number, b: number, p: number) => a + (b - a) * p;
-const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+/* ============ DEV STATE ============ */
+type DevState = {
+  bottomBarH: number;          // visina bele trake (px)
+  curveSizeVmin: number;       // veličina SVG kruga (vmin)
+  curveRadius: number;         // radijus teksta (svg units)
+  curveOffsetX: number;        // pomeraj X (px)
+  curveOffsetY: number;        // pomeraj Y (px)
+  curveLeftStart: number;      // % gde kreće levi text
+  curveRightStart: number;     // % gde kreće desni text
+  bgTopStart: string;
+  bgTopEnd: string;
+  bgBottomStart: string;
+  bgBottomEnd: string;
+  bgStopStart: number;         // % granice na phase 0
+  bgStopEnd: number;           // % granice na phase 1
+  topMix: number;              // blending brzina gore
+  bottomMix: number;           // blending brzina dole
+  // Side hint (levo)
+  sideText: string;
+  sideX: number;
+  sideY: number;
+  sideMaxW: number;
+  sideFont: number;
+  sideOpacity: number;
+};
 
-type LetterPlan = { idx: number; ch: string; sX: number; sY: number; base: number; dur: number };
-type RowPlan   = { idx: number; base: number; dur: number };
+const DEV_KEY = "mp3Dev";
 
-const HEAD_TOP_VH    = 16;
-const PANEL_L_BASE = 0.10, PANEL_L_DUR = 0.24;
-const PANEL_R_BASE = 0.12, PANEL_R_DUR = 0.24;
-const ROW_DUR = 0.20;
-const SETTLE_HOLD = 0.06;
-const CHECK_DRAW_DUR  = 0.22;
-const SLIDER_RUN_DUR  = 0.30;
-const MIN_SLIDER_LOCAL     = 0.35;
-const MIN_LAST_CHECK_LOCAL = 0.60;
+const DEFAULTS: DevState = {
+  bottomBarH: 170,
+  curveSizeVmin: 87,
+  curveRadius: 420,
+  curveOffsetX: 0,
+  curveOffsetY: -80,
+  curveLeftStart: 18,
+  curveRightStart: 67,
+  bgTopStart: "#0b1d4d",
+  bgTopEnd:   "#0e2f2c",
+  bgBottomStart: "#042a4a",
+  bgBottomEnd:   "#08dfff",
+  bgStopStart: 37,
+  bgStopEnd:   0,
+  topMix: 0.45,
+  bottomMix: 0.47,
+  sideText: "Tip: you can spin the globe with your mouse or finger — no reason, it's just awesome.",
+  sideX: -440,
+  sideY: 0,
+  sideMaxW: 360,
+  sideFont: 16,
+  sideOpacity: 0.9,
+};
 
-const BASE_PRICE = 299;
-const OPTION_INCREMENTS = [60, 45, 35];
-const SLIDER_RATES      = [220, 160];
+/* ============ MAIN ============ */
+export default function MainPhase3() {
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [phase, setPhase] = useState(0); // 0..1
+  const [href, setHref] = useState("/signup");
 
-export default function MainPhase3({
-  phraseFull = t("Or create your Tierless price page…"),
-  gateOffsetVh = -500, // NEGATIVNO = ulazi ranije (dok P2 još traje)
-  fallbackTrackVhDesktop = 440,
-  fallbackTrackVhMobile  = 420,
-  autoTailToNextWrapper  = true,
-}: {
-  phraseFull?: string;
-  gateOffsetVh?: number;
-  fallbackTrackVhDesktop?: number;
-  fallbackTrackVhMobile?: number;
-  autoTailToNextWrapper?: boolean;
-}) {
-  const sectionRef = useRef<HTMLElement>(null);
-  const stageRef   = useRef<HTMLDivElement | null>(null);
-  const flightRef  = useRef<HTMLDivElement | null>(null);
+  // DEV panel
+  const [devOpen, setDevOpen] = useState(false);
+  const [dev, setDev] = useState<DevState>(DEFAULTS);
 
-  const [trackPx, setTrackPx] = useState<number | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  // load/save dev
   useEffect(() => {
-    const on = () => setIsMobile(window.innerWidth < 640);
-    on(); window.addEventListener("resize", on, { passive: true });
-    return () => window.removeEventListener("resize", on);
+    try {
+      const raw = localStorage.getItem(DEV_KEY);
+      if (raw) setDev({ ...DEFAULTS, ...JSON.parse(raw) });
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(DEV_KEY, JSON.stringify(dev));
+    } catch {}
+  }, [dev]);
+
+  // toggle D
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea") return;
+      if (e.key.toLowerCase() === "d") setDevOpen((v) => !v);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  useLayoutEffect(() => {
-    if (!autoTailToNextWrapper) { setTrackPx(null); return; }
-    const sec  = sectionRef.current;
-    const host = sec?.parentElement as HTMLElement | null;
-    const next = host?.nextElementSibling as HTMLElement | null;
-    if (!host || !next) { setTrackPx(null); return; }
-
-    const measure = () => {
-      const hostTop = host.getBoundingClientRect().top + window.scrollY;
-      const nextTop = next.getBoundingClientRect().top + window.scrollY;
-      const px = Math.max(0, Math.round(nextTop - hostTop));
-      setTrackPx(px);
-    };
-    measure();
-
-    const ro = new ResizeObserver(measure);
-    ro.observe(document.documentElement);
-    ro.observe(host);
-    ro.observe(next);
-    window.addEventListener("resize", measure, { passive: true });
-
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, [autoTailToNextWrapper]);
-
-  const chars = useMemo(() => phraseFull.split(""), [phraseFull]);
-  const letterRefs = useRef<Array<HTMLSpanElement | null>>([]);
-  const [offsets, setOffsets] = useState<number[]>([]);
-  const [totalW, setTotalW]   = useState(0);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // Scroll progresija 0..1
   useEffect(() => {
-    const offs = letterRefs.current.map((el) => (el ? el.offsetLeft : 0));
-    const last = letterRefs.current[letterRefs.current.length - 1];
-    const total = last ? last.offsetLeft + last.offsetWidth : 0;
-    setOffsets(offs); setTotalW(total);
-  }, [chars.length, mounted]);
-
-  const letterPlan = useMemo<LetterPlan[]>(() => {
-    const vw = typeof window !== "undefined" ? window.innerWidth  : 1280;
-    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
-    const MAGX = vw * 0.68, MAGY = vh * 0.54;
-    const BASE = 0.22, STEP = 0.012, DUR = 0.22;
-    return chars.map((ch, i) => {
-      const dir = i % 4;
-      const jitter = ((i % 6) - 3) * 4;
-      const p: LetterPlan = { idx: i, ch, sX: 0, sY: 0, base: BASE + i * STEP, dur: DUR };
-      if      (dir === 0) { p.sX = -MAGX; p.sY =  jitter; }
-      else if (dir === 1) { p.sX =  MAGX; p.sY = -jitter; }
-      else if (dir === 2) { p.sX =  jitter; p.sY = -MAGY; }
-      else                { p.sX = -jitter; p.sY =  MAGY; }
-      return p;
-    });
-  }, [chars]);
-
-  const leftRows = useMemo(() => [
-    t("Unlimited items"),
-    t("Advanced formulas"),
-    t("Analytics & events"),
-    t("Email support"),
-    t("Custom domain ready"),
-    t("Team access"),
-    t("Export to CSV"),
-  ], []);
-  const leftPanelRef = useRef<HTMLDivElement | null>(null);
-  const leftRowRefs  = useRef<Array<HTMLDivElement | null>>([]);
-  const priceRef     = useRef<HTMLSpanElement | null>(null);
-  const priceState   = useRef({ display: BASE_PRICE });
-  const rowsPlanLeft: RowPlan[] = useMemo(
-    () => leftRows.map((_, i) => ({ idx: i, base: PANEL_L_BASE + PANEL_L_DUR + 0.06 + i * 0.05, dur: ROW_DUR })),
-    [leftRows]
-  );
-
-  const options = useMemo(() => [t("Option 1"), t("Option 2"), t("Option 3")], []);
-  const sliders = useMemo(() => [
-    { label: t("Usage level"),      baseFill: 0.62 },
-    { label: t("Automation depth"), baseFill: 0.48 },
-  ], []);
-  const rightPanelRef   = useRef<HTMLDivElement | null>(null);
-  const optionRefs      = useRef<Array<HTMLDivElement | null>>([]);
-  const optionCheckRefs = useRef<Array<SVGPathElement | null>>([]);
-  const sliderRowRefs   = useRef<Array<HTMLDivElement | null>>([]);
-  const sliderFillRefs  = useRef<Array<HTMLDivElement | null>>([]);
-  const sliderKnobRefs  = useRef<Array<HTMLDivElement | null>>([]);
-
-  const rowsPlanRight: RowPlan[] = useMemo(() => {
-    const arr: RowPlan[] = [];
-    const startBase = PANEL_R_BASE + PANEL_R_DUR + 0.08;
-    options.forEach((_, i) => arr.push({ idx: i, base: startBase + i * 0.055, dur: ROW_DUR }));
-    const after = startBase + options.length * 0.055 + 0.08;
-    sliders.forEach((_, i) => arr.push({ idx: options.length + i, base: after + i * 0.06, dur: ROW_DUR }));
-    return arr;
-  }, [options, sliders]);
-
-  const checkStartTimes = useMemo(() => {
-    return options.map((_, i) => {
-      const enterEnd = rowsPlanRight[i].base + ROW_DUR;
-      return enterEnd + SETTLE_HOLD + i * 0.02;
-    });
-  }, [rowsPlanRight, options.length]);
-
-  const sliderStartTimes = useMemo(() => {
-    return sliders.map((_, i) => {
-      const idx = options.length + i;
-      const enterEnd = rowsPlanRight[idx].base + ROW_DUR;
-      return enterEnd + SETTLE_HOLD;
-    });
-  }, [rowsPlanRight, options.length, sliders.length]);
-
-  const baseExitTiming = useMemo(() => {
-    const lastCheckEnd  = checkStartTimes.length ? Math.max(...checkStartTimes.map(s => s + CHECK_DRAW_DUR)) : 0;
-    const lastSliderEnd = sliderStartTimes.length ? Math.max(...sliderStartTimes.map(s => s + SLIDER_RUN_DUR)) : 0;
-    const alsoPanels = Math.max(
-      rowsPlanLeft.reduce((m, r) => Math.max(m, r.base + ROW_DUR), 0),
-      rowsPlanRight.reduce((m, r) => Math.max(m, r.base + ROW_DUR), 0),
-      letterPlan.reduce((m, l) => Math.max(m, l.base + l.dur), 0)
-    );
-    const contentReady = Math.max(lastCheckEnd, lastSliderEnd, alsoPanels);
-    const HOLD = 0.06;
-    const start = Math.min(contentReady + HOLD, 0.95);
-    const end   = Math.min(start + 0.08, 0.991);
-    return { start, end, dur: (end - start) };
-  }, [checkStartTimes, sliderStartTimes, rowsPlanLeft, rowsPlanRight, letterPlan]);
-
-  const exitStartRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    const stage   = stageRef.current;
-    const flight  = flightRef.current;
-    if (!section || !stage || !flight) return;
-
-    let raf = 0;
-    const schedule = () => { if (!raf) raf = requestAnimationFrame(frame); };
-
-    const frame = () => {
-      raf = 0;
-      const rect  = section.getBoundingClientRect();
-      const vhNow = window.innerHeight || 1;
-
-      const gatePx = (gateOffsetVh / 100) * vhNow;
-
-      const travel = Math.max(1, rect.height - vhNow + gatePx);
-      const raw0   = (vhNow - rect.top - gatePx) / travel;
-      const raw    = clamp(raw0, 0, 1);
-
-      stage.style.visibility = raw <= 0 ? "hidden" : "visible";
-
-      if (leftPanelRef.current) {
-        const t = easeInOut(clamp((raw - PANEL_L_BASE) / PANEL_L_DUR, 0, 1));
-        const x = lerp(-140, 0, t), y = lerp(18, 0, t);
-        leftPanelRef.current.style.transform = `translate3d(${x}vw, ${y}vh, 0)`;
-        leftPanelRef.current.style.opacity   = String(t);
-      }
-      if (rightPanelRef.current) {
-        const t = easeInOut(clamp((raw - PANEL_R_BASE) / PANEL_R_DUR, 0, 1));
-        const x = lerp(140, 0, t), y = lerp(18, 0, t);
-        rightPanelRef.current.style.transform = `translate3d(${x}vw, ${y}vh, 0)`;
-        rightPanelRef.current.style.opacity   = String(t);
-      }
-
-      rowsPlanLeft.forEach((rp) => {
-        const el = leftRowRefs.current[rp.idx]; if (!el) return;
-        const t = easeInOut(clamp((raw - rp.base) / rp.dur, 0, 1));
-        const y = lerp(36, 0, t);
-        el.style.transform = `translate3d(0, ${y}vh, 0)`;
-        el.style.opacity   = String(t);
-      });
-
-      const checkProgress: number[] = [];
-      let lastCheckLocal = 0;
-      options.forEach((_, i) => {
-        const row = optionRefs.current[i]; if (!row) return;
-        const rp = rowsPlanRight[i];
-
-        const t = easeInOut(clamp((raw - rp.base) / ROW_DUR, 0, 1));
-        const y = lerp(36, 0, t);
-        row.style.transform = `translate3d(0, ${y}vh, 0)`;
-        row.style.opacity   = String(t);
-
-        const cStart = (rp.base + ROW_DUR) + SETTLE_HOLD + i * 0.02;
-        const cLocal = clamp((raw - cStart) / CHECK_DRAW_DUR, 0, 1);
-        checkProgress[i] = cLocal;
-        lastCheckLocal   = cLocal;
-
-        const path = optionCheckRefs.current[i];
-        if (path) {
-          const totalLen = 26;
-          path.style.strokeDasharray  = `${totalLen}`;
-          path.style.strokeDashoffset = `${(1 - cLocal) * totalLen}`;
-        }
-        if (cLocal >= 0.98) row.setAttribute("data-checked", "true");
-        else row.removeAttribute("data-checked");
-      });
-
-      const sliderFills: number[] = [];
-      const sliderLocals: number[] = [];
-      sliders.forEach((s, i) => {
-        const idx = options.length + i;
-        const rp  = rowsPlanRight[idx];
-        const row = sliderRowRefs.current[i]; if (!row) return;
-
-        const t = easeInOut(clamp((raw - rp.base) / ROW_DUR, 0, 1));
-        const y = lerp(36, 0, t);
-        row.style.transform = `translate3d(0, ${y}vh, 0)`;
-        row.style.opacity   = String(t);
-
-        const sStart = (rp.base + ROW_DUR) + SETTLE_HOLD;
-        const sLocal = clamp((raw - sStart) / SLIDER_RUN_DUR, 0, 1);
-        sliderLocals[i] = sLocal;
-
-        const fill = s.baseFill * sLocal;
-        sliderFills[i] = fill;
-
-        const bar  = sliderFillRefs.current[i];
-        const knob = sliderKnobRefs.current[i];
-        const pct  = (fill * 100).toFixed(1);
-        if (bar)  bar.style.width = `${pct}%`;
-        if (knob) knob.style.left  = `${pct}%`;
-      });
-
-      letterPlan.forEach((lp) => {
-        const el = letterRefs.current[lp.idx]; if (!el) return;
-        const t = easeInOut(clamp((raw - lp.base) / lp.dur, 0, 1));
-        const x = lerp(lp.sX, 0, t), y = lerp(lp.sY, 0, t);
-        el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-        el.style.opacity   = String(t);
-      });
-
-      let target = BASE_PRICE;
-      checkProgress.forEach((p, i) => { target += p * (OPTION_INCREMENTS[i] || 0); });
-      sliderFills.forEach((f, i)   => { target += f * (SLIDER_RATES[i] || 0); });
-      const cur  = priceState.current.display;
-      const next = lerp(cur, target, 0.18);
-      priceState.current.display = next;
-      if (priceRef.current) priceRef.current.textContent = `€${Math.round(next)}`;
-
-      const slidersOk = sliderLocals.length ? Math.min(...sliderLocals) >= MIN_SLIDER_LOCAL : false;
-      const checksOk  = lastCheckLocal >= MIN_LAST_CHECK_LOCAL;
-      if (slidersOk && checksOk && exitStartRef.current === null) {
-        exitStartRef.current = Math.max(raw, baseExitTiming.start);
-      }
-      if (exitStartRef.current === null && raw > 0.98) {
-        exitStartRef.current = raw;
-      }
-
-      let exitT = 0;
-      if (exitStartRef.current !== null) {
-        const effStart = exitStartRef.current;
-        const effEnd   = Math.min(effStart + baseExitTiming.dur, baseExitTiming.end);
-        exitT = clamp((raw - effStart) / Math.max(0.0001, (effEnd - effStart)), 0, 1);
-      }
-      const exitY = -exitT * (vhNow * 1.15);
-      flight.style.transform = `translate3d(0, ${exitY}px, 0)`;
-
-      if (exitT >= 0.999) {
-        stage.style.visibility = "hidden";
-        stage.style.pointerEvents = "none";
-      }
+    const el = trackRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const rect = el.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const y = Math.min(total, Math.max(0, -rect.top));
+      const p = total > 0 ? y / total : 0;
+      setPhase(Number(p.toFixed(4)));
     };
-
-    schedule();
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize",  schedule, { passive: true });
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     return () => {
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize",  schedule);
-      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
     };
-  }, [
-    gateOffsetVh,
-    rowsPlanLeft, rowsPlanRight, letterPlan,
-    options, sliders, checkStartTimes, sliderStartTimes, baseExitTiming
-  ]);
+  }, []);
 
-  const charStyle = (i: number): CSSProperties => ({
-    display: "inline-block",
-    fontWeight: 700,
-    letterSpacing: "-0.01em",
-    lineHeight: 1,
-    fontSize: "clamp(34px, 8.2vw, 86px)",
-    backgroundImage: "var(--brand-gradient)",
-    WebkitBackgroundClip: "text",
-    backgroundClip: "text",
-    color: "transparent",
-    WebkitTextFillColor: "transparent",
-    backgroundSize: totalW ? `${totalW}px 100%` : "100% 100%",
-    backgroundPosition: totalW ? `-${offsets[i] || 0}px 0` : "0 0",
-    transform: "translate3d(0,90vh,0)",
-    opacity: 0,
-    willChange: "transform, opacity",
-  });
+  // Ako je ulogovan, CTA vodi na dashboard
+  useEffect(() => {
+    let dead = false;
+    fetch("/api/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!dead && data?.user) setHref("/dashboard");
+      })
+      .catch(() => void 0);
+    return () => { dead = true; };
+  }, []);
 
-  const CheckSVG = ({ refCb }: { refCb: (el: SVGPathElement | null) => void }) => (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
-      <defs>
-        <linearGradient id="gb" x1="0" y1="0" x2="20" y2="20">
-          <stop offset="0%"  stopColor="#4F46E5" />
-          <stop offset="100%" stopColor="#22D3EE" />
-        </linearGradient>
-      </defs>
-      <path
-        ref={refCb}
-        d="M5 10.5l3.2 3.2L15 7"
-        stroke="url(#gb)"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeDasharray="26"
-        strokeDashoffset="26"
-      />
-    </svg>
-  );
+  // Dinamičan gradijent pozadine
+  const bgTop = mixHex(dev.bgTopStart, dev.bgTopEnd, clamp(phase * dev.topMix, 0, 1));
+  const bgBottom = mixHex(dev.bgBottomStart, dev.bgBottomEnd, clamp(phase * dev.bottomMix, 0, 1));
+  const stop = Math.round(lerp(dev.bgStopStart, dev.bgStopEnd, phase));
+  const background = `linear-gradient(180deg, ${bgTop} 0%, ${bgTop} ${stop}%, ${bgBottom} 100%)`;
 
-  const sectionStyle: React.CSSProperties =
-    trackPx != null
-      ? { height: `${trackPx}px` }
-      : { height: `${isMobile ? fallbackTrackVhMobile : fallbackTrackVhDesktop}vh` };
+  // Donja bela traka — gura globus gore
+  const ctaBottom = dev.bottomBarH + 16;
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative bg-white"
-      style={sectionStyle}
-      aria-label={t("Letters & panels assemble")}
-    >
-      <div
-        ref={stageRef}
-        className="sticky top-0 h-screen overflow-hidden"
-        style={{ visibility: "hidden" }}
-      >
-        <div ref={flightRef} className="absolute inset-0 will-change-transform">
-          {/* HEADLINE */}
+    <section ref={trackRef} className="relative w-full" style={{ height: "250vh" }} aria-label="MainPhase3 track">
+      {/* Sticky viewport */}
+      <div className="sticky top-0 h-screen w-full overflow-hidden" style={{ background }}>
+        {/* --- LAYER 1: GLOBE + CURVED TEXT + LEFT HINT (ispod overlay-a — prvo nevidljivo) --- */}
+        <div className="absolute left-0 right-0 top-0" style={{ bottom: dev.bottomBarH, zIndex: 1 }}>
+          <WireGlobe phase={phase} />
+          <CurvedBand
+            sizeVmin={dev.curveSizeVmin}
+            radius={dev.curveRadius}
+            offsetX={dev.curveOffsetX}
+            offsetY={dev.curveOffsetY}
+            leftStart={dev.curveLeftStart}
+            rightStart={dev.curveRightStart}
+          />
+          <SideHint
+            text={dev.sideText}
+            x={dev.sideX}
+            y={dev.sideY}
+            maxW={dev.sideMaxW}
+            font={dev.sideFont}
+            opacity={dev.sideOpacity}
+          />
+        </div>
+
+        {/* --- LAYER 2: INDIGO OVERLAY koji se skida odozgo (otkrivanje) --- */}
+        <div
+          className="absolute inset-0 flex items-center justify-center text-center"
+          style={{ zIndex: 2, background: "#0b1d4d", clipPath: `inset(${(phase * 100).toFixed(2)}% 0 0 0)` }}
+        >
           <div
-            className="absolute inset-x-0 z-10 pointer-events-none"
+            className="px-6"
             style={{
-              top: `${HEAD_TOP_VH}vh`,
-              paddingInlineStart: "calc(env(safe-area-inset-left,0px) + 12px)",
-              paddingInlineEnd:   "calc(env(safe-area-inset-right,0px) + 12px)",
+              opacity: 1 - phase,
+              transform: `translateY(${(-10 * phase).toFixed(2)}px)`,
+              transition: "opacity 0.15s linear, transform 0.15s linear",
             }}
           >
-            <div className="mx-auto max-w-6xl px-4 sm:px-6">
-              <h3 className="leading-none font-semibold select-none text-center whitespace-nowrap">
-                {letterPlan.map((lp) => {
-                  const ch = lp.ch === " " ? "\u00A0" : lp.ch;
-                  return (
-                    <span
-                      key={lp.idx}
-                      ref={(el) => { letterRefs.current[lp.idx] = el; }}
-                      className="inline-block align-baseline"
-                      style={charStyle(lp.idx)}
-                    >
-                      {ch}
-                    </span>
-                  );
-                })}
-              </h3>
-            </div>
+            <h1 className="text-5xl md:text-7xl font-semibold tracking-tight text-white">
+              {t("Create your price page")}.
+            </h1>
+            <p className="mt-4 text-white/80 text-lg md:text-xl">
+              {t("For any business on this planet")}
+            </p>
           </div>
+        </div>
 
-          {/* PANELS */}
-          <div className="absolute inset-0 grid place-items-center">
-            <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 pt-[42vh] sm:pt-[40vh]">
-              <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 items-start">
-                {/* LEFT */}
-                <div
-                  ref={leftPanelRef}
-                  className="opacity-0 will-change-transform"
-                  style={{ transform: "translate3d(-140vw, 18vh, 0)" }}
-                >
-                  <div className="rounded-3xl border bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,.06)]">
-                    <div className="flex items-baseline justify-between">
-                      <h4 className="text-lg font-semibold text-neutral-900">{t("What this includes")}</h4>
-                      <span
-                        className="inline-flex items-center rounded-xl px-3 py-1.5 text-sm font-semibold"
-                        style={{
-                          background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box",
-                          border: "1px solid transparent",
-                          color: "#111827",
-                        }}
-                      >
-                        {t("Estimated total")}: <span ref={priceRef}>€{BASE_PRICE}</span>
-                      </span>
-                    </div>
+        {/* --- LAYER 3: CTA (iznad bele trake) --- */}
+       <div
+  className="absolute inset-x-0 flex items-center justify-center pointer-events-none translate-y-[6px]"
+  style={{ bottom: ctaBottom, zIndex: 3 }}
+>
+  <CTAButton
+    fx="swap-up"
+    variant="brand"
+    size="lg"
+    pill
+    href={href}
+    label={t("Start Right Now")}
+    className="pointer-events-auto"
+  />
+          
+        </div>
 
-                    <div className="mt-4 divide-y" style={{ borderColor: "rgba(229,231,235,.8)" }}>
-                      {leftRows.map((content, i) => (
-                        <div
-                          key={i}
-                          ref={(el) => { leftRowRefs.current[i] = el; }}
-                          className="flex items-center gap-3 py-3 opacity-0 will-change-transform"
-                          style={{ transform: "translate3d(0, 36vh, 0)" }}
-                        >
-                          <span
-                            className="inline-block h-2 w-2 rounded-full translate-y-[2px]"
-                            style={{ background: "var(--brand-gradient)" }}
-                          />
-                          <span className="text-sm text-neutral-800">{content}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+        {/* --- LAYER 4: Donja bela traka (gura globus) --- */}
+        <BottomBar height={dev.bottomBarH} />
+      </div>
 
-                {/* RIGHT */}
-                <div
-                  ref={rightPanelRef}
-                  className="opacity-0 will-change-transform"
-                  style={{ transform: "translate3d(140vw, 18vh, 0)" }}
-                >
-                  <div className="rounded-3xl border bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,.06)]">
-                    <h4 className="text-lg font-semibold text-neutral-900">{t("Options")}</h4>
+      {/* DEV PANEL (toggle: D) */}
+      <DevPanel open={devOpen} dev={dev} onChange={setDev} />
 
-                    {/* OPTIONS */}
-                    <div className="mt-4 space-y-3">
-                      {options.map((label, i) => (
-                        <div
-                          key={i}
-                          ref={(el) => { optionRefs.current[i] = el; }}
-                          className="flex items-center justify-between rounded-xl border px-3 py-2 opacity-0 will-change-transform"
-                          style={{ borderColor: "rgba(229,231,235,.8)", transform: "translate3d(0, 36vh, 0)" }}
-                          data-checked="false"
-                        >
-                          <span className="text-sm text-neutral-800">{label}</span>
-                          <span className="inline-flex items-center gap-2" aria-hidden="true">
-                            <span
-                              className="inline-flex items-center justify-center rounded-md"
-                              style={{
-                                width: 22,
-                                height: 22,
-                                border: "1px solid rgba(0,0,0,.2)",
-                                background: "linear-gradient(#fff,#fff)",
-                              }}
-                            >
-                              <CheckSVG refCb={(el) => { optionCheckRefs.current[i] = el; }} />
-                            </span>
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+      {/* Lokalni stilovi za CTA gradient text + swapup (Safari fix) */}
+    </section>
+  );
+}
 
-                    {/* SLIDERS */}
-                    <div className="mt-6 space-y-5">
-                      {sliders.map((s, i) => (
-                        <div
-                          key={i}
-                          ref={(el) => { sliderRowRefs.current[i] = el; }}
-                          className="opacity-0 will-change-transform"
-                          style={{ transform: "translate3d(0, 36vh, 0)" }}
-                        >
-                          <label className="text-sm text-neutral-700">{s.label}</label>
-                          <div className="mt-2 h-3 rounded-full bg-neutral-200 relative overflow-visible">
-                            <div
-                              ref={(el) => { sliderFillRefs.current[i] = el; }}
-                              className="absolute inset-y-0 left-0 rounded-full"
-                              style={{ width: "0%", background: "var(--brand-gradient)", transition: "width .08s linear" }}
-                            />
-                            <div
-                              ref={(el) => { sliderKnobRefs.current[i] = el; }}
-                              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
-                              style={{
-                                left: "0%",
-                                width: 18, height: 18,
-                                borderRadius: 999,
-                                boxShadow: "0 2px 8px rgba(0,0,0,.18)",
-                                background: "#fff",
-                                border: "1px solid rgba(0,0,0,.18)",
-                              }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {/* /RIGHT */}
-              </div>
+/* ================= subcomponents ================= */
 
-              <div className="mt-8 text-center text-sm text-neutral-500">
-                {t("Everything configurable later in the builder.")}
-              </div>
-            </div>
+function CurvedBand({
+  sizeVmin,
+  radius,
+  offsetX,
+  offsetY,
+  leftStart,
+  rightStart,
+}: {
+  sizeVmin: number;
+  radius: number;
+  offsetX: number;
+  offsetY: number;
+  leftStart: number;   // %
+  rightStart: number;  // %
+}) {
+  // “pufnasti” spaceri da ništa ne bude pojedeno na krajevima
+  const pad = "\u00A0\u2009"; // NBSP + thin space
+  const L = pad + t("For any business on planet Earth") + pad;
+  const R = pad + t("Share your link in minutes") + pad;
+
+  return (
+    <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+      <svg
+        viewBox="0 0 1000 1000"
+        className="absolute left-1/2 top-1/2"
+        style={{
+          width: `${sizeVmin}vmin`,
+          height: `${sizeVmin}vmin`,
+          transform: `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`,
+          overflow: "visible", // da ništa ne iseče
+        }}
+      >
+        <defs>
+          <path
+            id="orbitOuter"
+            d={`M500,${500 - radius} a${radius},${radius} 0 1,1 0,${radius * 2} a${radius},${radius} 0 1,1 0,-${radius * 2}`}
+          />
+          <radialGradient id="curvedGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0.70)" />
+          </radialGradient>
+        </defs>
+
+        <text
+          fill="url(#curvedGrad)"
+          fontSize="28"
+          fontWeight={600}
+          letterSpacing="2"     // malo manje da ne “ždere” krajeve
+          style={{ textTransform: "uppercase" }}
+        >
+          <textPath href="#orbitOuter" startOffset={`${leftStart}%`} textAnchor="middle">
+            {L}
+          </textPath>
+        </text>
+
+        <text
+          fill="url(#curvedGrad)"
+          fontSize="28"
+          fontWeight={600}
+          letterSpacing="2"
+          style={{ textTransform: "uppercase" }}
+        >
+          <textPath href="#orbitOuter" startOffset={`${rightStart}%`} textAnchor="middle">
+            {R}
+          </textPath>
+        </text>
+      </svg>
+    </div>
+  );
+}
+
+function SideHint({
+  text, x, y, maxW, font, opacity,
+}: { text: string; x: number; y: number; maxW: number; font: number; opacity: number }) {
+  return (
+    <div
+      className="absolute left-1/2 top-1/2 pointer-events-none"
+      style={{
+        transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+        width: maxW,
+        color: `rgba(255,255,255,${opacity})`,
+        fontSize: font,
+        lineHeight: 1.4,
+        textAlign: "left",
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
+function SwapText({ label }: { label: string }) {
+  const chars = Array.from(label);
+  return (
+    <span className="mkt-ch--wrap">
+      <span className="mkt-ch--A">
+        {chars.map((ch, i) => (
+          <span key={`A${i}`} className="mkt-line mkt-stripe" style={{ ["--i" as any]: i } as CSSProperties}>
+            {ch}
+          </span>
+        ))}
+      </span>
+      <span className="mkt-ch--B">
+        {chars.map((ch, i) => (
+          <span key={`B${i}`} className="mkt-line mkt-stripe" style={{ ["--i" as any]: i } as CSSProperties}>
+            {ch}
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
+
+function BottomBar({ height }: { height: number }) {
+  return (
+    <div
+      className="absolute inset-x-0 bottom-0 z-[2]"
+      style={{ height, background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.06)" }}
+      aria-label="Footer links"
+    >
+      <div
+        className="mx-auto w-full h-full max-w-6xl flex items-center"
+        style={{ paddingLeft: "24px", paddingRight: "calc(32px + env(safe-area-inset-right))" }}
+      >
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 w-full">
+          <div className="space-y-1.5">
+            <div className="text-sm/6 text-black/60">{t("Get Started")}</div>
+            <FooterLink href="/signup">{t("Sign up")}</FooterLink>
+            <FooterLink href="/login">{t("Login")}</FooterLink>
+          </div>
+          <div className="space-y-1.5">
+            <div className="text-sm/6 text-black/60">{t("Discover")}</div>
+            <FooterLink href="/templates">{t("Templates")}</FooterLink>
+            <FooterLink href="/pricing">{t("Pricing")}</FooterLink>
+          </div>
+          <div className="space-y-1.5">
+            <div className="text-sm/6 text-black/60">{t("Company")}</div>
+            <FooterLink href="/about">{t("About")}</FooterLink>
+          </div>
+          <div className="space-y-1.5">
+            <div className="text-sm/6 text-black/60">{t("Legal & Help")}</div>
+            <FooterLink href="/legal/cookies">{t("Cookie Policy")}</FooterLink>
+            <FooterLink href="/legal/privacy">{t("Privacy Policy")}</FooterLink>
+            <FooterLink href="/legal/terms">{t("Terms and Conditions")}</FooterLink>
+            <FooterLink href="/faq">{t("FAQ")}</FooterLink>
+            <FooterLink href="/support">{t("Support")}</FooterLink>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
+}
+
+function FooterLink(props: React.ComponentProps<"a">) {
+  return <a {...props} className="block text-base/6 text-black hover:text-black/70 transition-colors" />;
+}
+
+/* ============ DEV PANEL UI ============ */
+
+function DevPanel({ open, dev, onChange }: { open: boolean; dev: DevState; onChange: (d: DevState) => void }) {
+  const set = (k: keyof DevState, v: any) => onChange({ ...dev, [k]: v });
+  const copySnippet = () => {
+    const snippet = `const DEFAULTS: DevState = ${JSON.stringify(dev, null, 2)};`;
+    navigator.clipboard?.writeText(snippet).catch(() => {});
+  };
+  const reset = () => onChange({ ...DEFAULTS });
+
+  return (
+    <div
+      className="fixed right-3 top-3 z-[50]"
+      style={{ pointerEvents: open ? "auto" : "none", opacity: open ? 1 : 0, transition: "opacity .2s ease" }}
+    >
+      <div
+        className="rounded-2xl p-3 shadow-2xl min-w-[340px] max-w-[420px] text-sm"
+        style={{ background: "rgba(15,23,42,.86)", color: "white", backdropFilter: "blur(8px)", border: "1px solid rgba(148,163,184,.25)" }}
+      >
+        <div className="mb-2 flex items-center justify-between">
+          <strong>Phase3 Dev</strong>
+          <div className="flex gap-2">
+            <button className="btn px-2 py-1 rounded-lg" onClick={reset}>Reset</button>
+            <button className="btn px-2 py-1 rounded-lg" onClick={copySnippet}>Copy</button>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <Group title="Bottom bar (px)">
+          <Slider label="Height" min={72} max={300} value={dev.bottomBarH} onChange={(v)=>set("bottomBarH", v)} />
+        </Group>
+
+        {/* Curved text */}
+        <Group title="Curved text">
+          <Slider label="Size (vmin)" min={80} max={110} step={1} value={dev.curveSizeVmin} onChange={(v)=>set("curveSizeVmin", v)} />
+          <Slider label="Radius" min={400} max={500} step={1} value={dev.curveRadius} onChange={(v)=>set("curveRadius", v)} />
+          <Slider label="Offset X" min={-160} max={160} value={dev.curveOffsetX} onChange={(v)=>set("curveOffsetX", v)} />
+          <Slider label="Offset Y" min={-160} max={160} value={dev.curveOffsetY} onChange={(v)=>set("curveOffsetY", v)} />
+          <Slider label="Left start (%)" min={0} max={100} value={dev.curveLeftStart} onChange={(v)=>set("curveLeftStart", v)} />
+          <Slider label="Right start (%)" min={0} max={100} value={dev.curveRightStart} onChange={(v)=>set("curveRightStart", v)} />
+        </Group>
+
+        {/* Background palette */}
+        <Group title="Background colors">
+          <Color label="Top start" value={dev.bgTopStart} onChange={(v)=>set("bgTopStart", v)} />
+          <Color label="Top end" value={dev.bgTopEnd} onChange={(v)=>set("bgTopEnd", v)} />
+          <Color label="Bottom start" value={dev.bgBottomStart} onChange={(v)=>set("bgBottomStart", v)} />
+          <Color label="Bottom end" value={dev.bgBottomEnd} onChange={(v)=>set("bgBottomEnd", v)} />
+          <Slider label="Top mix" min={0} max={1} step={0.01} value={dev.topMix} onChange={(v)=>set("topMix", v)} />
+          <Slider label="Bottom mix" min={0} max={1} step={0.01} value={dev.bottomMix} onChange={(v)=>set("bottomMix", v)} />
+          <Slider label="Stop @phase0 (%)" min={0} max={100} value={dev.bgStopStart} onChange={(v)=>set("bgStopStart", v)} />
+          <Slider label="Stop @phase1 (%)" min={0} max={100} value={dev.bgStopEnd} onChange={(v)=>set("bgStopEnd", v)} />
+        </Group>
+
+        {/* Side hint controls */}
+        <Group title="Side hint (left)">
+          <Text label="Text" value={dev.sideText} onChange={(v)=>set("sideText", v)} />
+          <Slider label="Offset X" min={-700} max={0} value={dev.sideX} onChange={(v)=>set("sideX", v)} />
+          <Slider label="Offset Y" min={-300} max={300} value={dev.sideY} onChange={(v)=>set("sideY", v)} />
+          <Slider label="Max width" min={240} max={520} value={dev.sideMaxW} onChange={(v)=>set("sideMaxW", v)} />
+          <Slider label="Font size" min={12} max={22} value={dev.sideFont} onChange={(v)=>set("sideFont", v)} />
+          <Slider label="Opacity" min={0.2} max={1} step={0.01} value={dev.sideOpacity} onChange={(v)=>set("sideOpacity", v)} />
+        </Group>
+
+        <div className="mt-2 text-[11px] text-slate-300/80">
+          Tip: pritisni <kbd>D</kbd> da sakriješ/prikažeš panel. Sve izmene se čuvaju u localStorage i primenjuju odmah.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-3">
+      <div className="text-xs uppercase tracking-wide text-slate-300/80 mb-1">{title}</div>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function Slider({ label, min, max, value, step = 1, onChange }:{
+  label: string; min: number; max: number; value: number; step?: number; onChange: (v: number)=>void;
+}) {
+  return (
+    <label className="flex items-center gap-3">
+      <span className="w-36">{label}</span>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={(e)=>onChange(Number(e.target.value))} className="flex-1" />
+      <span className="w-12 text-right tabular-nums">{value}</span>
+    </label>
+  );
+}
+
+function Color({ label, value, onChange }:{ label: string; value: string; onChange: (v: string)=>void; }) {
+  return (
+    <label className="flex items-center gap-3">
+      <span className="w-36">{label}</span>
+      <input type="color" value={value} onChange={(e)=>onChange(e.target.value)} />
+      <span className="w-24 font-mono text-xs">{value}</span>
+    </label>
+  );
+}
+function Text({ label, value, onChange }:{ label: string; value: string; onChange: (v: string)=>void; }) {
+  return (
+    <label className="flex items-center gap-3">
+      <span className="w-16">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e)=>onChange(e.target.value)}
+        className="flex-1 rounded-md px-2 py-1 text-black"
+        placeholder="Type hint…"
+      />
+    </label>
+  );
+}
+
+/* ---------- helpers ---------- */
+function clamp(v: number, a: number, b: number) { return Math.min(b, Math.max(a, v)); }
+function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
+function mixHex(a: string, b: string, t: number) {
+  const ca = hexToRgb(a), cb = hexToRgb(b);
+  const m = (x: number, y: number) => Math.round(x + (y - x) * t);
+  return `rgb(${m(ca.r,cb.r)}, ${m(ca.g,cb.g)}, ${m(ca.b,cb.b)})`;
+}
+function hexToRgb(hex: string) {
+  const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)!;
+  return { r: parseInt(r[1], 16), g: parseInt(r[2], 16), b: parseInt(r[3], 16) };
 }

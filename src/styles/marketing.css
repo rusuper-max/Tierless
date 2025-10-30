@@ -132,6 +132,14 @@
 }
 
 /* A — početni sloj */
+
+.mkt-btn--swapup .mkt-ch--wrap{
+  position: relative;
+  display: inline-block;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .mkt-btn--swapup .mkt-ch--A{
   position: relative;
   opacity: 1;
@@ -144,7 +152,7 @@
 /* B — čeka ispod, stiže kasnije (gap) */
 .mkt-btn--swapup .mkt-ch--B{
   position: absolute; left:0; top:0;
-  transform: translateY(var(--swap-in));
+  transform: translateY(var(--swap-in, 110%));
   opacity: 0;
   transition:
     transform var(--swap-dur) cubic-bezier(.22,1,.36,1),
@@ -155,7 +163,7 @@
 /* Hover state */
 .mkt-btn--swapup:hover .mkt-ch--A,
 .mkt-btn--swapup:focus-visible .mkt-ch--A{
-  transform: translateY(var(--swap-out));
+  transform: translateY(var(--swap-out, -110%));
   opacity: 0;
 }
 .mkt-btn--swapup:hover .mkt-ch--B,
