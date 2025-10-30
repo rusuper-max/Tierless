@@ -8,54 +8,58 @@ import { t } from "@/i18n";
 
 /* ============ DEV STATE ============ */
 type DevState = {
-  bottomBarH: number;          // visina bele trake (px)
-  curveSizeVmin: number;       // veličina SVG kruga (vmin)
-  curveRadius: number;         // radijus teksta (svg units)
-  curveOffsetX: number;        // pomeraj X (px)
-  curveOffsetY: number;        // pomeraj Y (px)
-  curveLeftStart: number;      // % gde kreće levi text
-  curveRightStart: number;     // % gde kreće desni text
+  bottomBarH: number;
+  curveSizeVmin: number;
+  curveRadius: number;
+  curveOffsetX: number;
+  curveOffsetY: number;
+  curveLeftStart: number;
+  curveRightStart: number;
   bgTopStart: string;
   bgTopEnd: string;
   bgBottomStart: string;
   bgBottomEnd: string;
-  bgStopStart: number;         // % granice na phase 0
-  bgStopEnd: number;           // % granice na phase 1
-  topMix: number;              // blending brzina gore
-  bottomMix: number;           // blending brzina dole
-  // Side hint (levo)
+  bgStopStart: number;
+  bgStopEnd: number;
+  topMix: number;
+  bottomMix: number;
   sideText: string;
   sideX: number;
   sideY: number;
   sideMaxW: number;
   sideFont: number;
   sideOpacity: number;
+  /** NOVO: prozor u kom otkrivamo P3/krivu */
+  curveRevealStart: number;   // 0..1 (npr 0.21)
+  curveRevealEnd: number;     // 0..1 (npr 1)
 };
 
 const DEV_KEY = "mp3Dev";
 
 const DEFAULTS: DevState = {
-  bottomBarH: 170,
-  curveSizeVmin: 87,
-  curveRadius: 420,
-  curveOffsetX: 0,
-  curveOffsetY: -80,
-  curveLeftStart: 18,
-  curveRightStart: 67,
-  bgTopStart: "#0b1d4d",
-  bgTopEnd:   "#0e2f2c",
-  bgBottomStart: "#042a4a",
-  bgBottomEnd:   "#08dfff",
-  bgStopStart: 37,
-  bgStopEnd:   0,
-  topMix: 0.45,
-  bottomMix: 0.47,
-  sideText: "Tip: you can spin the globe with your mouse or finger — no reason, it's just awesome.",
-  sideX: -440,
-  sideY: 0,
-  sideMaxW: 360,
-  sideFont: 16,
-  sideOpacity: 0.9,
+  "bottomBarH": 202,
+  "curveSizeVmin": 86,
+  "curveRadius": 400,
+  "curveOffsetX": 3,
+  "curveOffsetY": -3,
+  "curveLeftStart": 18,
+  "curveRightStart": 67,
+  "bgTopStart": "#002e7a",
+  "bgTopEnd": "#0e2f2c",
+  "bgBottomStart": "#0042aa",
+  "bgBottomEnd": "#00fdff",
+  "bgStopStart": 37,
+  "bgStopEnd": 1,
+  "topMix": 0.33,
+  "bottomMix": 0.36,
+  "sideText": "Tip: you can spin the globe with your mouse or finger — no reason, it's just awesome.",
+  "sideX": -550,
+  "sideY": 203,
+  "sideMaxW": 364,
+  "sideFont": 22,
+  "sideOpacity": 0.9,
+  "curveRevealStart": 0.21,
+  "curveRevealEnd": 1
 };
 
 /* ============ MAIN ============ */

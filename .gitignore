@@ -47,3 +47,5 @@ dist
 .env
 .env.*
 
+public/textures/world-land-mask.png
+public/textures/world-land-fill.png
