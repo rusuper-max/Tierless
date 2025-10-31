@@ -32,6 +32,8 @@ function toCss(c: THREE.Color) {
   return `#${c.getHexString()}`;
 }
 
+const BASE_YAW = Math.PI * 0.1; // početni pomak ka "Atlantiku"
+
 /* ---------- child unutar <Canvas> ---------- */
 function GlobeWithStencil({
   outlineTex,
@@ -50,100 +52,102 @@ function GlobeWithStencil({
   fillOpacity: number;
   reducedMotion: boolean;
 }) {
+  // Axial tilt i shared spin parent
   const tiltRef = useRef<THREE.Group>(null!);
+  const spinRef = useRef<THREE.Group>(null!);
+
   const wireRef = useRef<THREE.Mesh>(null!);
   const outlineRef = useRef<THREE.Mesh>(null!);
   const maskRef = useRef<THREE.Mesh>(null!);
   const fillRef = useRef<THREE.Mesh>(null!);
 
-  // aksijalni nagib ~23.4°
+  // nagib ~23.4° i početni yaw
   useEffect(() => {
     if (tiltRef.current) tiltRef.current.rotation.z = THREE.MathUtils.degToRad(23.4);
+    if (spinRef.current) spinRef.current.rotation.y = BASE_YAW;
   }, []);
 
   useFrame((_, dt) => {
     if (reducedMotion) return;
-    const spin = dt * 0.15;
-    if (wireRef.current) wireRef.current.rotation.y += spin;
-    if (outlineRef.current) outlineRef.current.rotation.y += spin;
-    if (maskRef.current) maskRef.current.rotation.y += spin;
-    if (fillRef.current) fillRef.current.rotation.y += spin;
+    if (spinRef.current) spinRef.current.rotation.y += dt * 0.15;
   });
 
   return (
     <group ref={tiltRef}>
-      {/* 0) LAND FILL — ispod svega, blago providan */}
-      {fillTex && (
-        <mesh ref={fillRef} rotation={[0, Math.PI * 0.1, 0]} renderOrder={0}>
-          <sphereGeometry args={[0.999, 64, 64]} />
-          <meshBasicMaterial
-            map={fillTex}
-            transparent
-            opacity={fillOpacity}
-            depthWrite={false}
-            polygonOffset
-            polygonOffsetFactor={1}
-            polygonOffsetUnits={1}
-          />
-        </mesh>
-      )}
+      <group ref={spinRef}>
+        {/* 0) LAND FILL — ispod svega, blago providan */}
+        {fillTex && (
+          <mesh ref={fillRef} renderOrder={0}>
+            <sphereGeometry args={[0.999, 64, 64]} />
+            <meshBasicMaterial
+              map={fillTex}
+              transparent
+              opacity={fillOpacity}
+              depthWrite={false}
+              polygonOffset
+              polygonOffsetFactor={1}
+              polygonOffsetUnits={1}
+            />
+          </mesh>
+        )}
 
-      {/* 1) LAND MASK u stencil buffer (piše 1 gde je kopno) */}
-      {maskTex && (
-        <mesh ref={maskRef} rotation={[0, Math.PI * 0.1, 0]} renderOrder={1}>
-          <sphereGeometry args={[1.0, 64, 64]} />
+        {/* 1) LAND MASK u stencil buffer (piše 1 gde je kopno) */}
+        {maskTex && (
+          <mesh ref={maskRef} renderOrder={1}>
+            <sphereGeometry args={[1.0, 64, 64]} />
+            {/* @ts-ignore stencil props */}
+            <meshBasicMaterial
+              map={maskTex}
+              transparent
+              alphaTest={0.5}
+              colorWrite={false}
+              depthWrite={false}
+              depthTest={false}
+              stencilWrite
+              stencilRef={1}
+              stencilFunc={THREE.AlwaysStencilFunc}
+              stencilZPass={THREE.ReplaceStencilOp}
+              stencilZFail={THREE.KeepStencilOp}
+              stencilFail={THREE.KeepStencilOp}
+            />
+          </mesh>
+        )}
+
+        {/* 2) WIREFRAME — vidi se samo gde maska NIJE (okeani) */}
+        <mesh ref={wireRef} renderOrder={2}>
+          <sphereGeometry args={[1.0, 48, 48]} />
           {/* @ts-ignore stencil props */}
           <meshBasicMaterial
-            map={maskTex}
+            wireframe
+            color={wireColor}
             transparent
-            alphaTest={0.5}
-            colorWrite={false}
-            depthWrite={false}
-            depthTest={false}
-            stencilWrite
+            opacity={0.48}
+            stencilWrite={!!maskTex}
             stencilRef={1}
-            stencilFunc={THREE.AlwaysStencilFunc}
-            stencilZPass={THREE.ReplaceStencilOp}
+            stencilFunc={THREE.NotEqualStencilFunc}
+            stencilZPass={THREE.KeepStencilOp}
             stencilZFail={THREE.KeepStencilOp}
             stencilFail={THREE.KeepStencilOp}
           />
         </mesh>
-      )}
 
-      {/* 2) WIREFRAME — vidi se samo gde maska NIJE (okeani) */}
-      <mesh ref={wireRef} rotation={[0, Math.PI * 0.1, 0]} renderOrder={2}>
-        <sphereGeometry args={[1.0, 48, 48]} />
-        {/* @ts-ignore stencil props */}
-        <meshBasicMaterial
-          wireframe
-          color={wireColor}
-          transparent
-          opacity={0.48}
-          stencilWrite={!!maskTex}
-          stencilRef={1}
-          stencilFunc={THREE.NotEqualStencilFunc}
-          stencilZPass={THREE.KeepStencilOp}
-          stencilZFail={THREE.KeepStencilOp}
-          stencilFail={THREE.KeepStencilOp}
-        />
-      </mesh>
-
-      {/* 3) OUTLINE — preko svega */}
-      {outlineTex && (
-        <mesh ref={outlineRef} rotation={[0, Math.PI * 0.1, 0]} renderOrder={3}>
-          <sphereGeometry args={[1.001, 64, 64]} />
-          <meshBasicMaterial
-            map={outlineTex}
-            transparent
-            color={lineTint}
-            depthWrite={false}
-            polygonOffset
-            polygonOffsetFactor={-1}
-            polygonOffsetUnits={-1}
-            blending={THREE.AdditiveBlending}
-          />
-        </mesh>
-      )}
+        {/* 3) OUTLINE — preko svega */}
+        {outlineTex && (
+          <mesh ref={outlineRef} renderOrder={3}>
+            <sphereGeometry args={[1.001, 64, 64]} />
+            <meshBasicMaterial
+              map={outlineTex}
+              transparent
+              color={lineTint}
+              depthWrite={false}
+              polygonOffset
+              polygonOffsetFactor={-1}
+              polygonOffsetUnits={-1}
+              blending={THREE.AdditiveBlending}
+            />
+          </mesh>
+        )}
+      </group>
     </group>
   );
 }
@@ -165,14 +169,24 @@ export default function WireGlobe({
     return { css: toCss(c), three: c };
   }, [base, phase]);
 
-  // Land fill providnost lagano raste ka kraju (možeš zameniti za konstantu fillMaxOpacity)
+  // Land fill providnost raste ka kraju (desktop only)
   const fillOpacity = Math.min(fillMaxOpacity, fillMaxOpacity * (0.2 + 0.8 * phase));
 
   const reduced =
     typeof window !== "undefined" &&
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-  // Učitavanje tekstura
+  // Detekcija mobilnog (<= 640px) — za isključivanje land-fill-a na mobilnom
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = typeof window !== "undefined" ? window.matchMedia("(max-width: 640px)") : null;
+    const apply = () => setIsMobile(!!mq?.matches);
+    apply();
+    mq?.addEventListener?.("change", apply);
+    return () => mq?.removeEventListener?.("change", apply);
+  }, []);
+
+  // Učitavanje tekstura (land-fill se NE učitava na mobilnom)
   const [outlineTex, setOutlineTex] = useState<THREE.Texture | null>(null);
   const [maskTex, setMaskTex] = useState<THREE.Texture | null>(null);
   const [fillTex, setFillTex] = useState<THREE.Texture | null>(null);
@@ -190,6 +204,9 @@ export default function WireGlobe({
           tex.wrapS = THREE.ClampToEdgeWrapping;
           tex.wrapT = THREE.ClampToEdgeWrapping;
           tex.premultiplyAlpha = true;
+          tex.center.set(0.5, 0.5);
+          tex.offset.set(0, 0);
+          tex.needsUpdate = true;
           setter(tex);
         },
         undefined,
@@ -199,10 +216,14 @@ export default function WireGlobe({
 
     load(textureSrc, setOutlineTex);
     load(landMaskSrc, setMaskTex);
-    load(landFillSrc, setFillTex);
+    if (!isMobile) {
+      load(landFillSrc, setFillTex);
+    } else {
+      setFillTex(null);
+    }
 
     return () => { dead = true; };
-  }, [textureSrc, landMaskSrc, landFillSrc]);
+  }, [textureSrc, landMaskSrc, landFillSrc, isMobile]);
 
   return (
     <Canvas
@@ -216,7 +237,7 @@ export default function WireGlobe({
       <GlobeWithStencil
         outlineTex={outlineTex}
         maskTex={maskTex}
-        fillTex={fillTex}
+        fillTex={fillTex}               // na mobilnom je null → nema land fill-a
         wireColor={final.css}
         lineTint={final.css}
         fillOpacity={fillOpacity}

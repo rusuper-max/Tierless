@@ -8,10 +8,10 @@ import { t } from "@/i18n";
 
 /* ============ ZAPEČENI DEFAULTS (ono što si podesio) ============ */
 const BOTTOM_BAR_H = 202;           // px (desktop)
-const MOBILE_BOTTOM_BAR_H = 240;    // px (mob — malo više da ne guta CTA/tekst)
+const MOBILE_BOTTOM_BAR_H = 236;    // px (mobile — par px "niže" od 240 da ne dira gornji deo)
 
 const CURVE_SIZE_VMIN = 86;         // desktop
-const MOBILE_CURVE_SIZE_VMIN = 70;  // mobilni — manja kugla
+const MOBILE_CURVE_SIZE_VMIN = 62;  // mobilni — manja kugla
 
 const CURVE_RADIUS = 400;
 const CURVE_OFFSET_X = 3;
@@ -102,6 +102,7 @@ export default function MainPhase3() {
           className="absolute left-0 right-0 top-0"
           style={{ bottom: "var(--p3-bottom)", zIndex: 1 }}
         >
+          {/* WireGlobe internim pravilom isključuje land-fill na mobilnom */}
           <WireGlobe phase={phase} />
 
           {/* Krug/tekst oko planete (otkriva se zajedno sa globe) */}
@@ -150,13 +151,13 @@ export default function MainPhase3() {
 
         {/* --- LAYER 3: CTA (iznad bele trake) --- */}
         <div
-  className="absolute inset-x-0 flex items-center justify-center pointer-events-none"
-  style={{
-    bottom: `calc(var(--p3-bottom) + ${ctaBottom}px - 6px)`,
-    zIndex: 3,
-    transition: "bottom .2s ease, transform .2s ease", // opcionalno, za glatke promene
-  }}
->
+          className="absolute inset-x-0 flex items-center justify-center pointer-events-none"
+          style={{
+            bottom: `calc(var(--p3-bottom) + ${ctaBottom}px - 6px)`,
+            zIndex: 3,
+            transition: "bottom .2s ease, transform .2s ease",
+          }}
+        >
           <CTAButton
             fx="swap-up"
             variant="brand"
