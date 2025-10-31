@@ -1,34 +1,22 @@
+// src/app/api/me/route.ts
 import { NextResponse } from "next/server";
-import { getUserIdFromRequest } from "@/lib/auth";
-import { getDevProfileByUserId } from "@/lib/team";
+import { getSessionUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function noStore(res: NextResponse) {
+  res.headers.set("cache-control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+  return res;
+}
+
 export async function GET(req: Request) {
-  const userId = getUserIdFromRequest(req); // "dev:email" ili "anon:token"
-
-  // default user (anon/fallback)
-  let user: any = {
-    id: userId,
-    isDev: false,
-    plan: "free",
-    name: "user",
-  };
-
-  // ako je dev:email → dodaj profil/ulogu/pozdrav
-  const { email, profile } = getDevProfileByUserId(userId);
-  if (email && profile) {
-    user = {
-      ...user,
-      isDev: true,
-      email,
-      plan: profile.plan,
-      role: profile.role,
-      name: profile.displayName,     // koristi se u pozdravu
-      title: profile.title,          // dodatni opis
-    };
-  }
-
-  return NextResponse.json({ user }, { headers: { "cache-control": "no-store" } });
+  const u = await getSessionUser(req);
+  if (!u) return noStore(NextResponse.json({ user: null, authenticated: false }));
+  const email = u.email;
+  const name = email.split("@")[0] || email;
+  return noStore(NextResponse.json({
+    user: { id: email, name },
+    authenticated: true,
+  }));
 }

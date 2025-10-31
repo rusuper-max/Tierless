@@ -49,3 +49,4 @@ dist
 
 public/textures/world-land-mask.png
 public/textures/world-land-fill.png
+_trash_*

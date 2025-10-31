@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "@/lib/auth";
-import * as fullStore from "@/lib/fullStore";      // tvoj full JSON store (FS/Blob unutar)
-import * as mini from "@/lib/data/calcs";          // ⬅️ router ka mini store-u (local/Blob)
-import { putPublic /*, deletePublic */ } from "@/lib/publicStore";
+import * as fullStore from "@/lib/fullStore";
+import * as mini from "@/lib/data/calcs";
+import { putPublic /*, deletePublic*/ } from "@/lib/publicStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,7 +44,9 @@ function jsonNoCache(data: any, status = 200) {
 }
 
 export async function GET(req: Request, ctx: { params: { slug?: string } }) {
-  const userId = getUserIdFromRequest(req);
+  const userId = await getUserIdFromRequest(req);
+  if (!userId) return jsonNoCache({ error: "unauthorized" }, 401);
+
   const slug = extractSlug(req, ctx?.params);
   if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
@@ -69,7 +71,9 @@ export async function GET(req: Request, ctx: { params: { slug?: string } }) {
 }
 
 export async function PUT(req: Request, ctx: { params: { slug?: string } }) {
-  const userId = getUserIdFromRequest(req);
+  const userId = await getUserIdFromRequest(req);
+  if (!userId) return jsonNoCache({ error: "unauthorized" }, 401);
+
   const slug = extractSlug(req, ctx?.params);
   if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
@@ -83,13 +87,10 @@ export async function PUT(req: Request, ctx: { params: { slug?: string } }) {
     const normalized = { ...body, blocks: autoBlocksFrom(body), meta: { ...body.meta, slug } };
     await fullStore.putFull(userId, slug, normalized);
 
-    // sinhronizuj ime u mini listingu
     const newName = String(body?.meta?.name ?? "").trim();
     if (newName) await mini.updateName(userId, slug, newName);
 
-    // auto publish
     await putPublic(slug, normalized);
-
     return jsonNoCache({ ok: true, slug });
   } catch (e: any) {
     console.error("PUT full error:", e);
@@ -98,17 +99,16 @@ export async function PUT(req: Request, ctx: { params: { slug?: string } }) {
 }
 
 export async function DELETE(req: Request, ctx: { params: { slug?: string } }) {
-  const userId = getUserIdFromRequest(req);
+  const userId = await getUserIdFromRequest(req);
+  if (!userId) return jsonNoCache({ error: "unauthorized" }, 401);
+
   const slug = extractSlug(req, ctx?.params);
   if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
   try {
     await fullStore.deleteFull(userId, slug).catch(() => {});
     const removedMini = await mini.remove(userId, slug).catch(() => false);
-
-    // opcionalno, obriši i public kopiju (ako imaš deletePublic u publicStore)
     // try { await deletePublic(slug); } catch {}
-
     return jsonNoCache({ ok: true, removed: slug, mini: removedMini });
   } catch (e: any) {
     console.error("DELETE full error:", e);

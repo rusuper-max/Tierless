@@ -163,7 +163,7 @@ export default function MainPhase3() {
             variant="brand"
             size="lg"
             pill
-            href={href}
+            href="/start"
             label={t("Start Right Now")}
             className="pointer-events-auto"
           />
