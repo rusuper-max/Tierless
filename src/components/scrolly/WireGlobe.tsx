@@ -43,6 +43,7 @@ function GlobeWithStencil({
   lineTint,
   fillOpacity,
   reducedMotion,
+  modelScale,
 }: {
   outlineTex: THREE.Texture | null;
   maskTex: THREE.Texture | null;
@@ -51,6 +52,7 @@ function GlobeWithStencil({
   lineTint: string;
   fillOpacity: number;
   reducedMotion: boolean;
+  modelScale: number; // NEW: skala cele kugle (npr. 0.84 na mobilnom)
 }) {
   // Axial tilt i shared spin parent
   const tiltRef = useRef<THREE.Group>(null!);
@@ -73,9 +75,9 @@ function GlobeWithStencil({
   });
 
   return (
-    <group ref={tiltRef}>
+    <group ref={tiltRef} scale={modelScale}>
       <group ref={spinRef}>
-        {/* 0) LAND FILL — ispod svega, blago providan */}
+        {/* 0) LAND FILL — ispod svega, blago providan (desktop only) */}
         {fillTex && (
           <mesh ref={fillRef} renderOrder={0}>
             <sphereGeometry args={[0.999, 64, 64]} />
@@ -176,7 +178,7 @@ export default function WireGlobe({
     typeof window !== "undefined" &&
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-  // Detekcija mobilnog (<= 640px) — za isključivanje land-fill-a na mobilnom
+  // Detekcija mobilnog (<= 640px) — za isključivanje land-fill-a i smanjenje kugle
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const mq = typeof window !== "undefined" ? window.matchMedia("(max-width: 640px)") : null;
@@ -210,7 +212,9 @@ export default function WireGlobe({
           setter(tex);
         },
         undefined,
-        () => { if (!dead) setter(null); }
+        () => {
+          if (!dead) setter(null);
+        }
       );
     };
 
@@ -222,36 +226,62 @@ export default function WireGlobe({
       setFillTex(null);
     }
 
-    return () => { dead = true; };
+    return () => {
+      dead = true;
+    };
   }, [textureSrc, landMaskSrc, landFillSrc, isMobile]);
 
+  // Kamera/scale za mobilni → dosta manja kugla
+  const camZ = isMobile ? 3.65 : 3.15;
+  const camFov = isMobile ? 42 : 45;
+  const modelScale = isMobile ? 0.84 : 1;
+
   return (
-    <Canvas
-      gl={{ antialias: true, alpha: true, stencil: true }}
-      camera={{ position: [0, 0, 3.15], fov: 45 }}
-      dpr={[1, 2]}
-      style={{ width: "100%", height: "100%" }}
-    >
-      <ambientLight intensity={0.9} />
+    <div className="relative w-full h-full">
+      {/* Tip balon — samo na mobilnom, iznad kugle */}
+      {isMobile && (
+        <div className="absolute top-3 inset-x-0 z-[5] text-center px-3">
+          <div
+            className="mx-auto max-w-[90%] text-white/85 text-sm leading-snug rounded-xl px-3 py-1.5"
+            style={{
+              background: "rgba(3,7,18,0.35)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              backdropFilter: "blur(4px)",
+            }}
+          >
+            Tip: you can spin the globe with your finger — no reason, it’s just awesome.
+          </div>
+        </div>
+      )}
 
-      <GlobeWithStencil
-        outlineTex={outlineTex}
-        maskTex={maskTex}
-        fillTex={fillTex}               // na mobilnom je null → nema land fill-a
-        wireColor={final.css}
-        lineTint={final.css}
-        fillOpacity={fillOpacity}
-        reducedMotion={!!reduced}
-      />
+      <Canvas
+        gl={{ antialias: true, alpha: true, stencil: true }}
+        camera={{ position: [0, 0, camZ], fov: camFov }}
+        dpr={[1, 2]}
+        style={{ width: "100%", height: "100%" }}
+      >
+        <ambientLight intensity={0.9} />
 
-      <OrbitControls
-        enablePan={false}
-        enableZoom={false}
-        enableRotate
-        enableDamping
-        dampingFactor={0.06}
-        autoRotate={false}
-      />
-    </Canvas>
+        <GlobeWithStencil
+          outlineTex={outlineTex}
+          maskTex={maskTex}
+          fillTex={fillTex} // na mobilnom je null → nema land fill-a
+          wireColor={final.css}
+          lineTint={final.css}
+          fillOpacity={fillOpacity}
+          reducedMotion={!!reduced}
+          modelScale={modelScale}
+        />
+
+        <OrbitControls
+          enablePan={false}
+          enableZoom={false}
+          enableRotate
+          enableDamping
+          dampingFactor={0.06}
+          autoRotate={false}
+        />
+      </Canvas>
+    </div>
   );
 }
