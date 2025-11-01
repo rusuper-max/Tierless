@@ -1,22 +1,16 @@
 // src/app/api/me/route.ts
-import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth";
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-function noStore(res: NextResponse) {
-  res.headers.set("cache-control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
-  return res;
-}
+import { NextRequest, NextResponse } from "next/server";
+import type { PlanId } from "@/lib/entitlements";
 
-export async function GET(req: Request) {
-  const u = await getSessionUser(req);
-  if (!u) return noStore(NextResponse.json({ user: null, authenticated: false }));
-  const email = u.email;
-  const name = email.split("@")[0] || email;
-  return noStore(NextResponse.json({
-    user: { id: email, name },
+export async function GET(req: NextRequest) {
+  // Dev: čitamo plan iz kolačića (prod kasnije iz DB/session)
+  const plan = (req.cookies.get("tl_plan")?.value as PlanId) || "free";
+  return NextResponse.json({
+    user: { plan },
     authenticated: true,
-  }));
+  });
 }

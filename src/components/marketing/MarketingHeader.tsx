@@ -1,44 +1,22 @@
-// src/components/marketing/MarketingHeader.tsx
 "use client";
 
 import Link from "next/link";
-import { useState, useCallback, useMemo, useRef, useLayoutEffect, useEffect, CSSProperties } from "react";
+import { useState, useMemo, useRef, useLayoutEffect, useEffect, CSSProperties, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import CTAButton from "@/components/marketing/CTAButton";
 import { t } from "@/i18n/t";
+import { useAuthStatus } from "@/hooks/useAuthStatus";
+import { logoutClient } from "@/lib/logoutClient";
 
 export default function MarketingHeader() {
   const router = useRouter();
+  const { authenticated: authed, setAuthenticated } = useAuthStatus();
 
-  // --- Auth (CSR) ---
-  const [authed, setAuthed] = useState(false);
-  const refreshAuth = useCallback(async (reason: string) => {
-    try {
-      const res = await fetch(`${location.origin}/api/auth/status?ts=${Date.now()}`, {
-        credentials: "include",
-        cache: "no-store",
-        headers: { "x-no-cache": String(performance.now()) },
-      });
-      const data = await res.json();
-      setAuthed(!!data?.authenticated);
-      // console.debug("[Header] auth:", !!data?.authenticated, "| reason:", reason);
-    } catch {
-      // dev fallback ako želiš – preskočeno ovde
-    }
-  }, []);
-  useEffect(() => {
-    refreshAuth("mount");
-    const onChanged = () => refreshAuth("TL_AUTH_CHANGED");
-    window.addEventListener("TL_AUTH_CHANGED", onChanged as any);
-    return () => window.removeEventListener("TL_AUTH_CHANGED", onChanged as any);
-  }, [refreshAuth]);
-
-  // --- Morph: Header → Side rail nav ---
+  // Side rail signal — ostaje
   const [railVisible, setRailVisible] = useState(false);
   useEffect(() => {
     const hero = document.getElementById("hero");
     if (!hero) {
-      // fallback: jednostavno po scrollY
       const onScroll = () => {
         const vis = window.scrollY > 24;
         setRailVisible(vis);
@@ -50,7 +28,6 @@ export default function MarketingHeader() {
     }
     const io = new IntersectionObserver(
       (entries) => {
-        // čim hero nije više dominantno u view-u → rail on
         const e = entries[0];
         const vis = !e.isIntersecting;
         setRailVisible(vis);
@@ -62,10 +39,19 @@ export default function MarketingHeader() {
     return () => io.disconnect();
   }, []);
 
-  // --- Brand animacija (kao kod tebe) ---
+  // Hide on scroll
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 0);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Brand animacija — samo 'T' hoveruje i klikabilan je samo 'T'
   const [hovered, setHovered] = useState(false);
-  const onEnter = useCallback(() => setHovered(true), []);
-  const onLeave = useCallback(() => setHovered(false), []);
+  const onEnterT = useCallback(() => setHovered(true), []);
+  const onLeaveT = useCallback(() => setHovered(false), []);
   const brandSolid = "var(--brand-1, #4F46E5)";
   const GRAD_HOLD_PCT = 40;
   const grad = `linear-gradient(90deg,
@@ -94,7 +80,6 @@ export default function MarketingHeader() {
     }
   }, [letters.length]);
 
-  // --- Account dropdown (tiny avatar) ---
   const [accOpen, setAccOpen] = useState(false);
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -105,18 +90,21 @@ export default function MarketingHeader() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const userInitial = useMemo(() => {
-    // Po želji: ekstrakcija iz email-a posle što ga budeš čuvao u globalu
-    return "A";
-  }, []);
+  const userInitial = useMemo(() => "A", []);
+  const hiddenNow = scrolled;
 
-  // --- Header UI ---
+  const doLogout = async () => {
+    setAccOpen(false);
+    await logoutClient(router);
+    // optimistično flipuj lokalno odmah ( trenutni header )
+    setAuthenticated(false);
+  };
+
   return (
     <header
       className={[
-        "fixed inset-x-0 top-0 z-40",
-        "transition-all duration-300",
-        railVisible ? "opacity-0 -translate-y-2 pointer-events-none" : "opacity-100 translate-y-0",
+        "fixed inset-x-0 top-0 z-40 transition-all duration-200",
+        hiddenNow ? "opacity-0 -translate-y-2 pointer-events-none" : "opacity-100 translate-y-0",
       ].join(" ")}
       aria-label={t("Main header")}
     >
@@ -127,29 +115,29 @@ export default function MarketingHeader() {
           paddingInlineEnd: "calc(env(safe-area-inset-right, 0px) + 8px)",
         }}
       >
-        {/* Logo */}
-        <Link
-          href="/"
-          aria-label={`${t("brand.name")} — home`}
-          className={["inline-flex select-none", "ml-0"].join(" ")}
-          style={{ lineHeight: 1, alignItems: "baseline" }}
-          onMouseEnter={onEnter}
-          onMouseLeave={onLeave}
-          onFocus={onEnter}
-          onBlur={onLeave}
-        >
-          <span
-            style={{
-              display: "inline-block",
-              fontWeight: 700,
-              letterSpacing: "-0.01em",
-              lineHeight: 1,
-              fontSize,
-              color: brandSolid,
-            }}
-          >
-            T
-          </span>
+        {/* Logo: SAMO 'T' je klikabilan + hover trigger */}
+        <div className="inline-flex select-none ml-0" style={{ lineHeight: 1, alignItems: "baseline" }}>
+          <Link href="/" aria-label={`${t("brand.name")} — home`} className="inline-flex">
+            <span
+              onMouseEnter={onEnterT}
+              onMouseLeave={onLeaveT}
+              onFocus={onEnterT}
+              onBlur={onLeaveT}
+              style={{
+                display: "inline-block",
+                fontWeight: 700,
+                letterSpacing: "-0.01em",
+                lineHeight: 1,
+                fontSize,
+                color: brandSolid,
+                cursor: "pointer",
+              }}
+            >
+              T
+            </span>
+          </Link>
+
+          {/* "ierless" NIJE klikabilan, nema hover handlere, i ne prima pointer evente */}
           <span
             ref={wrapRef}
             aria-hidden
@@ -160,6 +148,7 @@ export default function MarketingHeader() {
               overflow: "hidden",
               paddingLeft: "0.15ch",
               whiteSpace: "nowrap",
+              pointerEvents: "none",
             }}
           >
             {letters.map((ch, i) => {
@@ -197,7 +186,7 @@ export default function MarketingHeader() {
               );
             })}
           </span>
-        </Link>
+        </div>
 
         {/* Right: auth actions */}
         <nav className="flex items-center gap-3">
@@ -211,6 +200,7 @@ export default function MarketingHeader() {
                 hairlineOutline
                 href="/signin"
                 label={t("nav.signin")}
+                data-guest-cta="true"
               />
               <CTAButton
                 fx="swap-up"
@@ -224,7 +214,6 @@ export default function MarketingHeader() {
             </>
           ) : (
             <>
-              {/* Dashboard (ghost/outline) */}
               <CTAButton
                 fx="swap-up"
                 variant="outline"
@@ -234,7 +223,6 @@ export default function MarketingHeader() {
                 href="/dashboard"
                 label={t("Dashboard")}
               />
-              {/* New page / Editor (brand CTA) — promeni rutu po želji */}
               <CTAButton
                 fx="swap-up"
                 variant="brand"
@@ -244,7 +232,6 @@ export default function MarketingHeader() {
                 href="/dashboard/new"
                 label={t("New page")}
               />
-              {/* Account tiny avatar */}
               <div id="hdr-acc-dd" className="relative">
                 <button
                   onClick={() => setAccOpen((v) => !v)}
@@ -253,21 +240,15 @@ export default function MarketingHeader() {
                   className="flex size-10 items-center justify-center rounded-full ring-1 ring-inset ring-white/12 bg-black/30 text-white/90 hover:ring-cyan-300/60 transition"
                 >
                   <span className="inline-flex items-center justify-center size-8 rounded-full bg-cyan-500/25 text-cyan-100 font-semibold">
-                    {userInitial}
+                    A
                   </span>
                 </button>
                 {accOpen && (
                   <div className="absolute right-0 mt-2 min-w-56 rounded-2xl border border-cyan-400/30 bg-[rgba(10,20,28,0.95)] p-2 shadow-2xl backdrop-blur">
                     <ul className="flex flex-col gap-1">
-                      <li>
-                        <MenuBtn label={t("Profile")} onClick={() => { setAccOpen(false); router.push("/account"); }} />
-                      </li>
-                      <li>
-                        <MenuBtn label={t("Subscription")} onClick={() => { setAccOpen(false); router.push("/billing"); }} />
-                      </li>
-                      <li>
-                        <MenuBtn label={t("Log out")} onClick={() => { setAccOpen(false); router.push("/logout"); }} />
-                      </li>
+                      <li><MenuBtn label={t("Profile")} onClick={() => { setAccOpen(false); router.push("/account"); }} /></li>
+                      <li><MenuBtn label={t("Subscription")} onClick={() => { setAccOpen(false); router.push("/billing"); }} /></li>
+                      <li><MenuBtn label={t("Log out")} onClick={doLogout} /></li>
                     </ul>
                   </div>
                 )}

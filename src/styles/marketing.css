@@ -423,3 +423,104 @@ html.lenis { height: auto; }
 /* ===== P3 TAIL TRIM (ukloni mrtvi hod pre P4) ===== */
 .phase3-trim { position: relative; margin-bottom: -14vh; }
 @media (max-width: 640px){ .phase3-trim { margin-bottom: -10vh; } }
+
+/* ====== Gap killer (marketing landing) ====== */
+main > section:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+.phase3-bridge > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+#end-of-p3 { height: 1px !important; }
+
+/* iOS / mobile vh fix — koristi dinamički viewport da ne “dodaje” dno */
+@supports (height: 100svh) {
+  .h-screen    { height: 100svh !important; }
+  .min-h-screen{ min-height: 100svh !important; }
+}
+
+/* ===== Start page tiers: outlines, hover, buttons, badges ===== */
+
+/* Hairline accent outline (non-brand) */
+.tier-outline {
+  border: 1px solid color-mix(in oklab, var(--accent) 65%, transparent);
+}
+
+/* Thicker brand gradient outline */
+.tier-outline--brand {
+  background: linear-gradient(#0b1014, #0b1014) padding-box, var(--brand-gradient) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 12px 50px rgba(0,0,0,.35);
+}
+
+/* Reveal the hover wash */
+.tier-card:hover > div:first-child {
+  opacity: 1;
+}
+
+/* Accent & brand buttons */
+.btn-accent {
+  border: 1px solid color-mix(in oklab, var(--accent) 70%, transparent);
+  color: #e5f9ff;
+  background:
+    linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)) padding-box,
+    linear-gradient(90deg, color-mix(in oklab, var(--accent) 90%, transparent), color-mix(in oklab, var(--accent) 35%, transparent)) border-box;
+}
+.btn-accent:hover {
+  border-color: transparent;
+  background:
+    linear-gradient(#0b1014,#0b1014) padding-box,
+    linear-gradient(90deg, color-mix(in oklab, var(--accent) 90%, transparent), color-mix(in oklab, var(--accent) 35%, transparent)) border-box;
+}
+
+.btn-brand-strong {
+  color: #0f172a;
+  background:
+    linear-gradient(#ffffff,#ffffff) padding-box,
+    var(--brand-gradient) border-box;
+  border: 2px solid transparent;
+}
+.btn-brand-strong:hover {
+  filter: saturate(1.05);
+}
+
+/* Benefit chip */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .375rem .625rem;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e6f6ff;
+}
+
+/* Most popular badge */
+.badge-popular {
+  display: inline-block;
+  padding: .375rem .75rem;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #081017;
+  background:
+    linear-gradient(#d4f9ff,#d4f9ff) padding-box,
+    var(--brand-gradient) border-box;
+  border: 1px solid transparent;
+  box-shadow: 0 8px 28px rgba(0,0,0,.25);
+  position: relative;
+  overflow: hidden;
+}
+.badge-popular::after {
+  /* subtle “sheen” every few seconds */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.8) 20%, transparent 40%);
+  background-size: 200% 100%;
+  transform: translateX(-100%);
+  animation: sheen 4.5s ease-in-out infinite;
+}
+@keyframes sheen {
+  0%   { transform: translateX(-120%); opacity: 0; }
+  8%   { transform: translateX(0%);    opacity: .8; }
+  16%  { transform: translateX(120%);  opacity: 0; }
+  100% { transform: translateX(120%);  opacity: 0; }
+}
