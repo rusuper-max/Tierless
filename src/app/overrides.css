@@ -1,0 +1,48 @@
+/* === FINAL OVERRIDES (učitava se POSLE Tailwinda) === */
+
+/* 1) Naša dugmad (.btn i .tl-btn) — nikad ne bela na hover */
+.btn:hover,
+.tl-btn:hover,
+a.btn:hover,
+a.tl-btn:hover,
+button.btn:hover,
+button.tl-btn:hover {
+  background-color: color-mix(in oklab, var(--accent) 14%, transparent) !important;
+  border-color: var(--accent) !important;
+  color: var(--fg) !important;
+}
+
+/* 2) Globalno ubij bela/light hover utilse gde god da se pojave */
+[class*="hover:bg-white"]:hover,
+[class*="hover:bg-neutral-50"]:hover,
+[class*="hover:bg-gray-50"]:hover,
+[class*="hover:bg-slate-50"]:hover,
+[class*="hover:bg-zinc-50"]:hover,
+.dark [class*="hover:bg-neutral-900"]:hover,
+[class*="dark:hover:bg-neutral-900"]:hover {
+  background-color: color-mix(in oklab, var(--accent) 14%, transparent) !important;
+  border-color: var(--accent) !important;
+  color: var(--fg) !important;
+}
+
+/* 3) Ako je neko ostavio fiksnu belu pozadinu na hover baš inline — pregazi i to */
+a:hover.bg-white,
+button:hover.bg-white {
+  background-color: color-mix(in oklab, var(--accent) 14%, transparent) !important;
+  border-color: var(--accent) !important;
+  color: var(--fg) !important;
+}
+
+/* 4) (opciono) “light” dugme koje izgleda dobro i u dark temi */
+.btn-light,
+.tl-btn-light {
+  background: #ffffff !important;
+  color: #0b0b0c !important;
+  border: 1px solid #e5e7eb !important;
+}
+.btn-light:hover,
+.tl-btn-light:hover {
+  background: #f5f5f5 !important;
+  color: #0b0b0c !important;
+  border-color: #d1d5db !important;
+}

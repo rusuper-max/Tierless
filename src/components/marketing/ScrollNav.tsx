@@ -28,12 +28,17 @@ type ScrollNavProps = {
   pages?: PageLink[];
   showLogin?: boolean;
   showSignup?: boolean;
-  /** samo hint za prvi render; CSR uvek proverava /api/auth/status */
+  /** hint za prvi render; CSR uvek proverava /api/auth/status */
   isAuthenticated?: boolean;
 };
 
 const LS_SIDE = "tl_nav_side";
 const LS_COLLAPSED = "tl_nav_collapsed";
+
+// UX konstante
+const EASE = "cubic-bezier(0.22,1,0.36,1)";
+const DUR_BTN = 260;
+const DUR_PANEL = 220;
 
 export default function ScrollNav({
   side = "right",
@@ -57,11 +62,8 @@ export default function ScrollNav({
 
   // auth
   const [authed, setAuthed] = useState<boolean>(!!isAuthenticated);
-  useEffect(() => {
-    if (typeof isAuthenticated === "boolean") setAuthed(!!isAuthenticated);
-  }, [isAuthenticated]);
+  useEffect(() => { if (typeof isAuthenticated === "boolean") setAuthed(!!isAuthenticated); }, [isAuthenticated]);
 
-  // centralizovan CSR refresh sa debug logovima + fallback na x-dev-email
   const refreshAuth = async (reason: string) => {
     try {
       const res = await fetch("/api/auth/status", {
@@ -72,34 +74,25 @@ export default function ScrollNav({
       const data = await res.json().catch(() => ({}));
       if (typeof data?.authenticated === "boolean") {
         setAuthed(!!data.authenticated);
-        // eslint-disable-next-line no-console
-        console.debug("[ScrollNav] auth status:", data.authenticated, "| reason:", reason);
+        // console.debug("[ScrollNav]", reason, data.authenticated);
         return;
       }
-      // eslint-disable-next-line no-console
-      console.debug("[ScrollNav] auth status: unknown payload | reason:", reason, data);
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.debug("[ScrollNav] auth fetch failed, trying cookie fallback | reason:", reason, e);
-      // DEV fallback: ako postoji x-dev-email cookie, tretiraj kao authed
+    } catch {
       if (typeof document !== "undefined" && document.cookie?.includes("x-dev-email=")) {
         setAuthed(true);
-        // eslint-disable-next-line no-console
-        console.debug("[ScrollNav] cookie fallback authed=true (x-dev-email present)");
       }
     }
   };
 
-  // inicijalni refresh + retry + event hooks
   useEffect(() => {
     let alive = true;
     refreshAuth("mount");
-    const t1 = setTimeout(() => alive && refreshAuth("retry-300ms"), 300);
-    const t2 = setTimeout(() => alive && refreshAuth("retry-1500ms"), 1500);
+    const t1 = setTimeout(() => alive && refreshAuth("retry-300"), 300);
+    const t2 = setTimeout(() => alive && refreshAuth("retry-1500"), 1500);
 
     const onChanged = () => refreshAuth("TL_AUTH_CHANGED");
     const onFocus = () => refreshAuth("window-focus");
-    const onVis = () => document.visibilityState === "visible" && refreshAuth("visibilitychange-visible");
+    const onVis = () => document.visibilityState === "visible" && refreshAuth("visibility");
 
     window.addEventListener("TL_AUTH_CHANGED", onChanged as any);
     window.addEventListener("focus", onFocus);
@@ -113,10 +106,9 @@ export default function ScrollNav({
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVis);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ui
+  // ui state
   const [dim, setDim] = useState(false);
   const [activeFaq, setActiveFaq] = useState<string>("");
   const [pagesOpen, setPagesOpen] = useState(false);
@@ -127,16 +119,16 @@ export default function ScrollNav({
   const flyoutPagesRef = useRef<HTMLDivElement | null>(null);
   const flyoutAccountRef = useRef<HTMLDivElement | null>(null);
 
-  // lista stranica: sada samo 2,3,4
+  // lista stranica: 2,3,4
   const pageList: PageLink[] = pages?.length
     ? pages
     : [
-        { id: "page-2", label: t("Page 2") }, // Phase 2 start
-        { id: "page-3", label: t("Page 3") }, // Phase 3 start
-        { id: "page-4", label: t("Page 4") }, // Phase 3 end
+        { id: "page-2", label: t("Page 2") },
+        { id: "page-3", label: t("Page 3") },
+        { id: "page-4", label: t("Page 4") },
       ];
 
-  // opciono: FAQ spy
+  // FAQ spy
   useEffect(() => {
     const id = sections?.faq;
     if (!id) return;
@@ -144,7 +136,7 @@ export default function ScrollNav({
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => e.isIntersecting && setActiveFaq(e.target.id)),
-      { rootMargin: "-30% 0px -60% 0px", threshold: [0, 0.2, 0.6, 1] }
+      { rootMargin: "-30% 0px -60% 0px", threshold: [0, 0.25, 0.6, 1] }
     );
     io.observe(el);
     return () => io.disconnect();
@@ -177,7 +169,6 @@ export default function ScrollNav({
   // akcije
   const goTop = () => { closeAll(); window.scrollTo({ top: 0, behavior: "smooth" }); };
 
-  // precizni skokovi (sada samo 2,3,4)
   const smartScroll = (id: string) => {
     closeAll();
 
@@ -198,11 +189,11 @@ export default function ScrollNav({
 
     switch (id) {
       case "page-2": if (p2) return goEl(p2, 0); break;
-      case "page-3": if (p3) return goEl(p3, 0); break; // start Phase 3
+      case "page-3": if (p3) return goEl(p3, 0); break;
       case "page-4":
         if (p3) {
           const extra = Math.max(p3.getBoundingClientRect().height - window.innerHeight * 0.75, 0);
-          return goEl(p3, extra); // kraj Phase 3
+          return goEl(p3, extra);
         }
         break;
     }
@@ -213,7 +204,6 @@ export default function ScrollNav({
   const goHome = () => { closeAll(); router.push(authed ? "/dashboard" : "/signin"); };
   const goLogin = () => { closeAll(); router.push("/signin"); };
   const goSignup = () => { closeAll(); router.push("/signin?create=1"); };
-  const goAccount = () => { closeAll(); router.push("/account"); };
   const accountNavigate = (path: string) => { closeAll(); router.push(path); };
 
   // items
@@ -222,17 +212,17 @@ export default function ScrollNav({
       [
         { key: "top",    label: t("Back to top"), icon: ArrowUp,     onClick: goTop,    active: false, variant: "ghost" },
         { key: "home",   label: authed ? t("Dashboard") : t("Home"), icon: Home,       onClick: goHome, active: false, variant: "ghost" },
-        { key: "pick",   label: t("Pick a page"),  icon: LayoutGrid, onClick: () => { setAccountOpen(false); setPagesOpen((v) => !v); }, active: pagesOpen, variant: "ghost" },
+        { key: "pick",   label: t("Pick a page"),  icon: LayoutGrid, onClick: () => { setAccountOpen(false); setPagesOpen(v => !v); }, active: pagesOpen, variant: "ghost" },
         sections?.faq && { key: "faq", label: t("FAQ"), icon: HelpCircle, onClick: () => smartScroll(sections.faq!), active: activeFaq === sections?.faq, variant: "ghost" },
         !authed && showLogin  && { key: "login",  label: t("Log in"),  icon: LogIn,   onClick: goLogin,  active: false, variant: "ghost" },
         !authed && showSignup && { key: "signup", label: t("Sign up"), icon: UserPlus, onClick: goSignup, active: false, variant: "primary" },
-        authed && { key: "account", label: t("Account"), icon: User, onClick: () => { setPagesOpen(false); setAccountOpen((v) => !v); }, active: accountOpen, variant: "primary" },
+        authed && { key: "account", label: t("Account"), icon: User, onClick: () => { setPagesOpen(false); setAccountOpen(v => !v); }, active: accountOpen, variant: "primary" },
       ].filter(Boolean) as NavItem[],
     [activeFaq, authed, pagesOpen, accountOpen, sections?.faq]
   );
 
-  const tipSideClass   = (right: boolean) => (right ? "right-[calc(100%+10px)]" : "left-[calc(100%+10px)]");
-  const markerSideClass= (right: boolean) => (right ? "left-1.5" : "right-1.5");
+  const tipSideClass    = (right: boolean) => (right ? "right-[calc(100%+10px)]" : "left-[calc(100%+10px)]");
+  const markerSideClass = (right: boolean) => (right ? "left-1.5" : "right-1.5");
 
   return (
     <>
@@ -249,27 +239,32 @@ export default function ScrollNav({
       {/* Dim + blur */}
       <div
         className={[
-          "fixed inset-0 z-[60] transition-opacity duration-150",
+          "fixed inset-0 z-[60] transition-opacity",
           dim ? "opacity-100" : "opacity-0",
           "backdrop-blur-[2px]",
         ].join(" ")}
-        style={{ background: "rgba(0,0,0,0.15)", pointerEvents: "none" }}
+        style={{ transitionDuration: `${DUR_PANEL}ms`, transitionTimingFunction: EASE, background: "rgba(0,0,0,0.15)", pointerEvents: "none" }}
         aria-hidden
       />
 
-      {/* Ručka */}
+      {/* Ručka (uvećana + veći hit-area) */}
       <button
-        onClick={() => setCollapsed((v) => !v)}
+        onClick={() => setCollapsed(v => !v)}
         className={[
           "fixed z-[9999] hidden lg:flex items-center justify-center",
-          "h-10 w-6 rounded-full bg-black/40 border border-white/10 backdrop-blur text-white/80 hover:text-white transition",
+          "h-14 w-8 rounded-full bg-black/40 border border-white/12 backdrop-blur text-white/80",
+          "hover:text-white hover:bg-black/45",
           isRight ? "right-2" : "left-2",
           "top-1/2 -translate-y-1/2",
         ].join(" ")}
+        style={{ transition: `transform ${DUR_BTN}ms ${EASE}, background-color ${DUR_BTN}ms ${EASE}` }}
         aria-label={collapsed ? t("Show nav") : t("Hide nav")}
       >
-        {isRight ? (collapsed ? <ChevronLeft className="size-4" /> : <ChevronRightIcon className="size-4" />)
-                 : (collapsed ? <ChevronRightIcon className="size-4" /> : <ChevronLeft className="size-4" />)}
+        {/* Veća klik zona */}
+        <span className="absolute -inset-2" aria-hidden />
+        {isRight
+          ? (collapsed ? <ChevronLeft className="size-5" /> : <ChevronRightIcon className="size-5" />)
+          : (collapsed ? <ChevronRightIcon className="size-5" /> : <ChevronLeft className="size-5" />)}
       </button>
 
       {/* DESKTOP rail */}
@@ -279,11 +274,13 @@ export default function ScrollNav({
         onMouseLeave={() => setDim(false)}
         aria-label={t("Main quick nav")}
         className={[
-          "fixed z-[990] hidden lg:flex transition-transform",
+          "fixed z-[990] hidden lg:flex",
           isRight ? "right-6" : "left-6",
           "top-1/2 -translate-y-1/2",
+          "transition-transform",
           collapsed ? (isRight ? "translate-x-[200%]" : "-translate-x-[200%]") : "translate-x-0",
         ].join(" ")}
+        style={{ transitionDuration: `${DUR_PANEL}ms`, transitionTimingFunction: EASE }}
       >
         {/* Glow halo */}
         <div
@@ -303,8 +300,8 @@ export default function ScrollNav({
                   onClick={() => {
                     if (item.key !== "pick") setPagesOpen(false);
                     if (item.key !== "account") setAccountOpen(false);
-                    if (item.key === "pick") return setPagesOpen((v) => !v);
-                    if (item.key === "account") return setAccountOpen((v) => !v);
+                    if (item.key === "pick") return setPagesOpen(v => !v);
+                    if (item.key === "account") return setAccountOpen(v => !v);
                     item.onClick();
                   }}
                   onMouseEnter={() => {
@@ -312,32 +309,37 @@ export default function ScrollNav({
                     if (item.key !== "account") setAccountOpen(false);
                   }}
                   className={[
-                    "group relative flex w-full items-center justify-center rounded-full p-3 outline-none transition text-white/95",
-                    item.variant === "primary" ? "ring-1 ring-inset ring-cyan-400/80" : "ring-1 ring-inset ring-white/12 hover:ring-cyan-300/60",
+                    "group relative flex w-full items-center justify-center rounded-full p-3 outline-none text-white/95",
+                    item.variant === "primary" ? "ring-1 ring-inset ring-cyan-400/80" : "ring-1 ring-inset ring-white/12",
                     item.active ? "bg-cyan-500/18" : "bg-black/25",
-                    "focus-visible:ring-2 focus-visible:ring-cyan-300",
                   ].join(" ")}
+                  style={{ transition: `transform ${DUR_BTN}ms ${EASE}, box-shadow ${DUR_BTN}ms ${EASE}, background-color ${DUR_BTN}ms ${EASE}` }}
                   aria-label={item.label}
                 >
-                  <item.icon className="size-[22px]" aria-hidden />
+                  <item.icon className="size-[22px] transition-transform" style={{ transitionDuration: `${DUR_BTN}ms`, transitionTimingFunction: EASE }} aria-hidden />
+                  {/* Tip */}
                   {item.key !== "pick" && item.key !== "account" && (
                     <span
                       className={[
-                        "pointer-events-none absolute top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/75 px-3 py-1 text-[12px] opacity-0 backdrop-blur shadow-lg transition-opacity duration-100 group-hover:opacity-100",
+                        "pointer-events-none absolute top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/75 px-3 py-1 text-[12px] opacity-0 backdrop-blur shadow-lg",
                         tipSideClass(isRight),
+                        "group-hover:opacity-100",
                       ].join(" ")}
+                      style={{ transition: `opacity ${DUR_BTN}ms ${EASE}` }}
                       role="tooltip"
                     >
                       {item.label}
                     </span>
                   )}
+                  {/* Marker */}
                   <span
                     className={[
-                      "absolute h-5 w-[3px] rounded-full bg-cyan-400/90 transition-opacity",
+                      "absolute h-5 w-[3px] rounded-full bg-cyan-400/90",
                       "top-1/2 -translate-y-1/2",
                       markerSideClass(isRight),
                       item.active ? "opacity-100" : "opacity-0",
                     ].join(" ")}
+                    style={{ transition: `opacity ${DUR_BTN}ms ${EASE}` }}
                   />
                 </button>
               </li>
@@ -348,7 +350,8 @@ export default function ScrollNav({
           <div className="mt-1 flex w-full items-center justify-center">
             <button
               onClick={() => setCurrSide((s) => (s === "right" ? "left" : "right"))}
-              className="flex items-center justify-center rounded-full p-2 ring-1 ring-inset ring-white/12 hover:ring-cyan-300/60 bg-black/25 text-white/90"
+              className="flex items-center justify-center rounded-full p-2 ring-1 ring-inset ring-white/12 bg-black/25 text-white/90 hover:ring-cyan-300/60"
+              style={{ transition: `all ${DUR_BTN}ms ${EASE}` }}
               aria-label={t("Move bar to the other side")}
             >
               <ArrowLeftRight className="size-[18px]" aria-hidden />
@@ -361,6 +364,7 @@ export default function ScrollNav({
               ref={flyoutPagesRef}
               onMouseLeave={() => setPagesOpen(false)}
               className={["absolute top-1/2 z-[995] -translate-y-1/2", isRight ? "right-[calc(100%-2px)]" : "left-[calc(100%-2px)]"].join(" ")}
+              style={{ transition: `opacity ${DUR_PANEL}ms ${EASE}` }}
             >
               <div className="rounded-2xl border border-cyan-400/30 bg-[rgba(10,20,28,0.95)] p-2 shadow-2xl backdrop-blur">
                 <ul className="flex min-w-[220px] flex-col gap-1">
@@ -369,6 +373,7 @@ export default function ScrollNav({
                       <button
                         onClick={() => smartScroll(p.id)}
                         className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-white/95 transition hover:bg-white/10"
+                        style={{ transitionTimingFunction: EASE, transitionDuration: `${DUR_BTN}ms` }}
                       >
                         <span className="text-base">{p.label}</span>
                         <ChevronRight className="size-4 opacity-70" />
@@ -386,6 +391,7 @@ export default function ScrollNav({
               ref={flyoutAccountRef}
               onMouseLeave={() => setAccountOpen(false)}
               className={["absolute top-1/2 z-[995] -translate-y-1/2", isRight ? "right-[calc(100%-2px)]" : "left-[calc(100%-2px)]"].join(" ")}
+              style={{ transition: `opacity ${DUR_PANEL}ms ${EASE}` }}
             >
               <div className="rounded-2xl border border-cyan-400/30 bg-[rgba(10,20,28,0.95)] p-2 shadow-2xl backdrop-blur">
                 <ul className="flex min-w-[220px] flex-col gap-1">
@@ -412,15 +418,17 @@ export default function ScrollNav({
             <button
               key={`m-${item.key}`}
               onClick={() => {
-                if (item.key === "pick") return setPagesOpen((v) => !v);
-                if (item.key === "account") return setAccountOpen((v) => !v);
+                if (item.key === "pick") return setPagesOpen(v => !v);
+                if (item.key === "account") return setAccountOpen(v => !v);
                 closeAll();
                 item.onClick();
               }}
               className={[
-                "group relative flex h-12 flex-1 flex-col items-center justify-center rounded-xl transition",
-                item.variant === "primary" ? "ring-1 ring-inset ring-cyan-400/80" : "ring-1 ring-inset ring-white/12 hover:ring-cyan-300/60",
+                "group relative flex h-12 flex-1 flex-col items-center justify-center rounded-xl",
+                item.variant === "primary" ? "ring-1 ring-inset ring-cyan-400/80" : "ring-1 ring-inset ring-white/12",
+                "transition",
               ].join(" ")}
+              style={{ transition: `all ${DUR_BTN}ms ${EASE}` }}
               aria-label={item.label}
             >
               <item.icon className="size-[20px]" aria-hidden />
@@ -473,7 +481,8 @@ function FlyoutBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-white/95 transition hover:bg-white/10"
+      className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-white/95 hover:bg-white/10"
+      style={{ transition: `background-color ${DUR_BTN}ms ${EASE}` }}
     >
       <span className="text-base">{label}</span>
       <ChevronRight className="size-4 opacity-70" />

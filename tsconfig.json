@@ -31,12 +31,13 @@
   },
   "include": [
     "next-env.d.ts",
+    "src",
     "src/**/*.ts",
     "src/**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "types/*.d.ts"
-  ],
+, "src/components/upsell/UpgradeSheet.dev"  ],
   "exclude": [
     "node_modules",
     ".next",

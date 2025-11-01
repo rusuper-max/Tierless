@@ -1,15 +1,28 @@
-// Server Component (Next.js 16): params je Promise — razrešavamo ga sa await.
-import EditorClient from "./EditorClient";
+// src/app/editor/[id]/page.tsx
+import { redirect } from "next/navigation";
 
 type Params = { id: string };
 
-export default async function EditorPage({
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export default async function LegacyEditorRedirect({
   params,
+  searchParams,
 }: {
   params: Promise<Params>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { id } = await params; // ✅ umesto direktnog params.id
+  const { id } = await params;
+  const sp = await searchParams;
+  const qp = new URLSearchParams();
 
-  // Server deo ne radi logiku — samo prosleđuje slug/id u klijentski editor
-  return <EditorClient slug={id} />;
+  if (sp) {
+    for (const [k, v] of Object.entries(sp)) {
+      if (Array.isArray(v)) v.forEach((vv) => qp.append(k, String(vv)));
+      else if (v != null) qp.set(k, String(v));
+    }
+  }
+
+  redirect(`/e/${id}${qp.toString() ? `?${qp.toString()}` : ""}`);
 }

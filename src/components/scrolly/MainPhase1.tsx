@@ -47,14 +47,7 @@ export default function MainPhase1() {
                   {t("hero.subtitle")}
                 </p>
                 <div className="flex flex-wrap items-center gap-3 pt-2">
-                  <CTAButton
-                    fx="swap-up"
-                    variant="brand"
-                    size="lg"
-                    pill
-                    href="/signup"
-                    label={t("hero.ctaPrimary")}
-                  />
+                  <CTAButton fx="swap-up" variant="brand" size="lg" pill href="/start" label={t("hero.ctaPrimary")} />
                   <CTAButton
                     fx="swap-up"
                     variant="outline"

@@ -14,39 +14,25 @@ export const metadata = {
 export default function MarketingHomePage() {
   return (
     <main className="relative">
-      {/* HERO / OVERVIEW */}
       <section id="hero" aria-label={t("Overview")}>
         <MainPhase1 />
       </section>
 
-      {/* PRICING INTRO (Phase 2) */}
       <section id="pricing" aria-label={t("Pricing intro")}>
-        <div className="phase2-bridge">
+        <div className="phase2-bridge" data-stop="page-2">
           <MainPhase2 />
         </div>
       </section>
 
-      {/* TEMPLATES / GALLERY (Phase 3) */}
       <section id="templates" aria-label={t("Templates")}>
-        <div className="phase3-bridge">
+        <div className="phase3-bridge" data-stop="page-3">
           <MainPhase3 />
+          {/* “Page 4” kraj — 1px, nema buffera */}
+          <div id="end-of-p3" data-stop="page-4" className="h-px" />
         </div>
       </section>
 
-      {/* FAQ anchor */}
-      <section id="faq" aria-label="FAQ">
-        <div className="h-[40vh]" />
-      </section>
-
-      {/* Quick nav: desni rail na desktopu, dock na mobilnom */}
-      <ScrollNav
-        side="right"
-        sections={{ faq: "faq" }}
-        showLogin
-        showSignup
-        // Ako hoćeš da izbaciš "Page 3", možeš proslediti pages:
-        // pages={[ { id: "page-2", label: t("Page 2") }, { id: "page-4", label: t("Page 3") } ]}
-      />
+      <ScrollNav side="right" sections={{}} showLogin showSignup />
     </main>
   );
 }

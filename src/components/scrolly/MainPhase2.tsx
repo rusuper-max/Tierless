@@ -14,44 +14,37 @@ const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x 
 /* =========================================
    MASTER KNOBS (tweak ovde)
 ========================================= */
-// Kada (posle poslednje kartice u targetu) krene istovremeni fly-up + converge
 export const SYNC_GAP = 0.0;
-// Kada P3 krene u odnosu na SYNC start (negativno = ranije)
 export const P3_DELAY = 0.10;
-// Koliko visoko podižemo P2 pre “klika u nulu”
 export const SQUEEZE_MAX_VH = 110;
-// Posle ovoliko vh, P2 kartice su scale=0/opacity=0
 export const OFF_VH = 100;
-// “Kasno skupljanje” da ne izgleda kao odlazak u daljinu
 export const CONVERGE_SCALE_LATE = 0.65;
 
-// LABEL (IZNAD kartica – nikad ne dodiruje scene)
-export const LABEL_TOP_VH_DEFAULT = 16; // legne visoko iznad kartica
-export const LABEL_LIFT_DELAY = 0.00;   // kreće TAČNO sa SYNC (0), pomeri ako želiš
-export const LABEL_LIFT_VH = 100;       // agresivni lift
+// LABEL
+export const LABEL_TOP_VH_DEFAULT = 16;
+export const LABEL_LIFT_DELAY = 0.00;
+export const LABEL_LIFT_VH = 100;
 
-// P3 brzina (kraći segment = brži prolaz)
-export const DEFAULT_P3_SPEED = 0.70; // 1 = isto, 0.7 = 30% brže
+// P3 brzina
+export const DEFAULT_P3_SPEED = 0.70;
 
-// Pozadinski “ghost” tiers – fade in/out
+// Pozadinski “ghost” tiers
 export const BG_ENABLED = true;
 export const BG_FADE_IN_START = 0.06;
 export const BG_FADE_IN_DUR   = 0.20;
-export const BG_FADE_OUT_PAD  = 0.08; // koliko pre SYNC_START kreće fade-out
+export const BG_FADE_OUT_PAD  = 0.08;
 
-// P3 headline (veliki naslov ispod panela)
-export const P3_TITLE_START = 0.92;   // (nije u upotrebi ovde)
-export const P3_TITLE_DUR   = 0.10;   // (nije u upotrebi ovde)
-export const P3_TITLE_Y_VH  = 24;     // (nije u upotrebi ovde)
+// P3 headline (nije kritično za ovu izmenu)
+export const P3_TITLE_START = 0.92;
+export const P3_TITLE_DUR   = 0.10;
+export const P3_TITLE_Y_VH  = 24;
 
-/* === Nova, jasna podešavanja za traženo ponašanje === */
-// P3 BACKDROP – da krene zajedno sa panelima (Options / What this includes)
-export const BACKDROP_IN_START = 0.00; // 0.00 = kad i levi panel
-export const BACKDROP_IN_DUR   = 0.22; // isto trajanje kao levi panel ulaz
-// P3 HEADLINE – da se pojavi ČIM kartice “dolete” (posle poslednje)
-export const TITLE_AFTER_LAST_CARD = 0.15; // 0 = odmah, >0 = zakašnjenje u (0..1) relativno na P2
-export const TITLE_IN_DUR = 0.14;          // trajanje ulaza (relativno, 0..1)
-export const TITLE_Y_IN_VH = 10;           // ulaz odozdo (vh)
+/* Nova podešavanja */
+export const BACKDROP_IN_START = 0.00;
+export const BACKDROP_IN_DUR   = 0.22;
+export const TITLE_AFTER_LAST_CARD = 0.15;
+export const TITLE_IN_DUR = 0.14;
+export const TITLE_Y_IN_VH = 10;
 
 /* =========================================
    P2 data
@@ -75,8 +68,7 @@ const TIER_COLORS: Record<Exclude<TierId, "business">, string> = {
 };
 
 /* =========================================
-   Pozadinski “ghost tiers” — bazne pozicije
-   (pomereno da ne dodiruje headline/label)
+   Ghost pozicije
 ========================================= */
 type GhostSpec = { x: number; y: number; scale: number; rot: number; color: string; z: number; w: number };
 const BG_SPECS_DESKTOP_BASE: GhostSpec[] = [
@@ -97,7 +89,7 @@ const BG_SPECS_MOBILE_BASE: GhostSpec[] = [
 ];
 
 /* =========================================
-   P3 config (cene, add-ons, slideri)
+   P3 config
 ========================================= */
 const BASE_PRICE = 299;
 const OPTION_INCREMENTS = [60, 45, 35];
@@ -109,23 +101,17 @@ type BackdropStyle = "brand" | "indigo" | "blue";
    Component
 ========================================= */
 export default function MainPhase2({
-  // P2 copy
   headline = t("Create your tiers on your price page"),
-  labelWords = [t("Customize"), t("them"), t("to"), t("your"), t("liking")],
-  // holds
+  labelWords = [t("Tiers shown are an example"), t("(not actual tiers)")],
   holdDesktop = 0.20,
   holdMobile = 0.12,
-  // height by segment
   segP2VhDesktop = 300,
   segP2VhMobile = 280,
-  segP3VhDesktop = 300,
-  segP3VhMobile = 280,
-  // brzina P3
+  segP3VhDesktop = 260,   // ⬅️ blago skraćeno
+  segP3VhMobile = 240,    // ⬅️ blago skraćeno
   p3Speed = DEFAULT_P3_SPEED,
-  // P3 backdrop
   p3BackdropStyle = "indigo",
   p3BackdropOpacity = 0.22,
-  // Dev panel (slideri za ghostove/label/bgd)
   devControls = false,
 }: {
   headline?: string;
@@ -221,11 +207,9 @@ export default function MainPhase2({
   );
   const bgRefs = useRef<Array<HTMLDivElement | null>>([]);
 
-  // Label top u state (slider)
+  // Label top i backdrop opacity
   const [labelTopVh, setLabelTopVh] = useState(LABEL_TOP_VH_DEFAULT);
-  // P3 backdrop opacity u state (slider)
   const [bgOpacity, setBgOpacity] = useState(clamp(p3BackdropOpacity, 0, 1));
-  // Dev toggle preko tastera D
   const [showDev, setShowDev] = useState(devControls);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key.toLowerCase() === "d") setShowDev(s => !s); };
@@ -261,7 +245,6 @@ export default function MainPhase2({
       CARD_S.signature + CARD_D.signature,
     );
   const SYNC_START = Math.min(0.99, LAST_CARD_ARRIVE + SYNC_GAP);
-  const LABEL_LIFT_START = clamp(SYNC_START + LABEL_LIFT_DELAY, 0, 0.999);
   const P3_START_IN_P2 = clamp(SYNC_START + P3_DELAY, 0, 0.995);
 
   /* ---------- P3 refs/data ---------- */
@@ -282,11 +265,14 @@ export default function MainPhase2({
   const sliderRowRefs = useRef<Array<HTMLDivElement | null>>([]);
   const sliderFillRefs = useRef<Array<HTMLDivElement | null>>([]);
   const sliderKnobRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const priceRef = useRef<HTMLSpanElement | null>(null);
+
+  // 🔧 dve odvojene cene (levo i desno) – ranije je bila jedna ref pa je “gutala” drugu
+  const priceLeftRef = useRef<HTMLSpanElement | null>(null);
+  const priceRightRef = useRef<HTMLSpanElement | null>(null);
   const priceState = useRef({ display: BASE_PRICE });
 
-  // P3 headline ref (traženo: iznad panela, pojavi se kad kartice dolete)
   const p3TitleRef = useRef<HTMLHeadingElement | null>(null);
+  const p3NoticeRef = useRef<HTMLParagraphElement | null>(null);
 
   /* ---------- RAF ---------- */
   useEffect(() => {
@@ -326,20 +312,13 @@ export default function MainPhase2({
       const segA = SEG_P2 / TRACK_TOTAL_VH;
       const p2Raw = clamp(rawAll / Math.max(0.0001, segA), 0, 1);
 
-      // P3 progres (ulazi dok P2 traje)
+      // P3 progres
       const p3StartAll = segA * P3_START_IN_P2;
       const p3Raw = clamp((rawAll - p3StartAll) / Math.max(0.0001, 1 - p3StartAll), 0, 1);
 
       /* ===== P2 ===== */
       if (p2Raw < INTRO_HOLD) {
-        if (titleRef.current) {
-          titleRef.current.style.transform = `translateZ(0) scale(${HEAD_INIT})`;
-          titleRef.current.style.opacity = "1";
-        }
-        if (labelLayer) {
-          labelLayer.style.opacity = "0";
-          labelLayer.style.transform = `translate3d(-50%, -6vh, 0)`;
-        }
+        // reseti i početna stanja
         (PKGS as Pkg[]).forEach((pkg) => {
           const el = cardRefs.current[pkg.id]; if (!el) return;
           const off = STARTS[pkg.id];
@@ -352,7 +331,6 @@ export default function MainPhase2({
           bgRefs.current.forEach((node) => { if (node) node.style.opacity = "0"; });
         }
         if (p3Backdrop) {
-          // inicijalno sakriven (da ne krene “od početka”)
           p3Backdrop.style.opacity = "0";
           p3Backdrop.style.transform = `translate3d(0, 40vh, 0)`;
         }
@@ -360,6 +338,15 @@ export default function MainPhase2({
           p3TitleRef.current.style.opacity = "0";
           p3TitleRef.current.style.transform = `translate3d(0, ${TITLE_Y_IN_VH}vh, 0)`;
         }
+        if (p3NoticeRef.current) {
+          p3NoticeRef.current.style.opacity = "0";
+          p3NoticeRef.current.style.transform = `translate3d(0, ${TITLE_Y_IN_VH}vh, 0)`;
+        }
+
+        // cena – inicijalno držimo BASE_PRICE na oba mesta
+        const baseTxt = `€${Math.round(priceState.current.display)}`;
+        if (priceLeftRef.current)  priceLeftRef.current.textContent = baseTxt;
+        if (priceRightRef.current) priceRightRef.current.textContent = baseTxt;
       } else {
         // P2 0..1
         const p = clamp((p2Raw - INTRO_HOLD) / (1 - INTRO_HOLD), 0, 1);
@@ -375,7 +362,7 @@ export default function MainPhase2({
           titleRef.current.style.opacity = "1";
         }
 
-        // LABEL IN (odozgo, iznad kartica — nikad ne dodiruje)
+        // LABEL IN
         const LABEL_IN_START = Math.max(0.06, CARD_S.business + CARD_D.business - 0.10);
         const LABEL_IN_END = LABEL_IN_START + 0.14;
         if (labelLayer) {
@@ -385,7 +372,7 @@ export default function MainPhase2({
           labelLayer.style.transform = `translate3d(-50%, ${y}vh, 0)`;
         }
 
-        // BG tiers — fade in/out i “float”, uz prilagodljive pozicije
+        // BG tiers
         if (BG_ENABLED && bgLayer) {
           const inT  = easeInOut(clamp((p - BG_FADE_IN_START) / BG_FADE_IN_DUR, 0, 1));
           const outS = Math.max(0, SYNC_START - BG_FADE_OUT_PAD);
@@ -403,7 +390,7 @@ export default function MainPhase2({
           });
         }
 
-        // Kartice: STARTS -> TARGETS
+        // Kartice
         (PKGS as Pkg[]).forEach((pkg) => {
           const el = cardRefs.current[pkg.id]; if (!el) return;
 
@@ -426,7 +413,7 @@ export default function MainPhase2({
           el.style.opacity = String(op);
         });
 
-        // === P3 HEADLINE: pojavi se ČIM kartice dolete ===
+        // P3 Title + napomena
         if (p3TitleRef.current) {
           const tTitle = easeInOut(
             clamp((p - (LAST_CARD_ARRIVE + TITLE_AFTER_LAST_CARD)) / Math.max(0.0001, TITLE_IN_DUR), 0, 1)
@@ -435,8 +422,16 @@ export default function MainPhase2({
           p3TitleRef.current.style.opacity = String(tTitle);
           p3TitleRef.current.style.transform = `translate3d(0, ${ty}vh, 0)`;
         }
+        if (p3NoticeRef.current) {
+          const tTitle2 = easeInOut(
+            clamp((p - (LAST_CARD_ARRIVE + TITLE_AFTER_LAST_CARD)) / Math.max(0.0001, TITLE_IN_DUR), 0, 1)
+          );
+          const ty2 = lerp(TITLE_Y_IN_VH, 0, tTitle2);
+          p3NoticeRef.current.style.opacity = String(tTitle2);
+          p3NoticeRef.current.style.transform = `translate3d(0, ${ty2}vh, 0)`;
+        }
 
-        // === SYNC: simultani fly-up + converge (label poleti istovremeno) ===
+        // SYNC lift
         const sfT = clamp((p - SYNC_START) / Math.max(0.0001, 1 - SYNC_START), 0, 1);
         if (sfT > 0) {
           const liftVhRaw = sfT * SQUEEZE_MAX_VH;
@@ -454,12 +449,7 @@ export default function MainPhase2({
             const x = lerp(to.x, 0, converge);
             const y = lerp(to.y, 0, converge);
             const rot = lerp(to.rot, 0, converge);
-
-            let sc = to.scale;
-            if (converge > CONVERGE_SCALE_LATE) {
-              const _lateP = (converge - CONVERGE_SCALE_LATE) / (1 - CONVERGE_SCALE_LATE);
-              // (ostavljeno za finu korekciju scale-a po želji)
-            }
+            const sc = to.scale;
 
             if (liftVhRaw >= OFF_VH - 0.0001) {
               el.style.transform = `translate3d(0px,0px,0) rotate(0deg) scale(0)`;
@@ -470,7 +460,7 @@ export default function MainPhase2({
             }
           });
 
-          // label – lift tačno u syncu, nikad ne dodiruje scene
+          // label lift
           if (labelLayer) {
             const ll = clamp((p - (SYNC_START + LABEL_LIFT_DELAY)) / Math.max(0.0001, 1 - (SYNC_START + LABEL_LIFT_DELAY)), 0, 1);
             const llFast = Math.min(1, ll / 0.22);
@@ -482,8 +472,7 @@ export default function MainPhase2({
         }
       }
 
-      /* ===== P3 (ulazi dok je P2 još u kadru) ===== */
-      // Backdrop (sečivo) – sada počinje zajedno sa panelima (traženo)
+      /* ===== P3 ===== */
       if (p3Backdrop) {
         const t = easeInOut(clamp((p3Raw - BACKDROP_IN_START) / Math.max(0.0001, BACKDROP_IN_DUR), 0, 1));
         p3Backdrop.style.opacity = String(t * bgOpacity);
@@ -491,7 +480,7 @@ export default function MainPhase2({
         p3Backdrop.style.transform = `translate3d(0, ${y}vh, 0)`;
       }
 
-      // Paneli: dolaze ODOZDO (oba), blagi razlik u tajmingu
+      // Panely fade-in
       if (leftPanelRef.current) {
         const t = easeInOut(clamp((p3Raw - 0.00) / 0.22, 0, 1));
         const y = lerp(36, 0, t);
@@ -505,21 +494,20 @@ export default function MainPhase2({
         rightPanelRef.current.style.opacity = String(t);
       }
 
-      // LEFT rows
+      // ✅ LEVI panel – animacija SVAKOG reda (ranije je falila, zato je izgledalo “prazno”)
       leftRowRefs.current.forEach((row, i) => {
         if (!row) return;
-        const base = 0.22 + i * 0.045;
+        const base = 0.12 + i * 0.05; // blagi kaskadni ulaz
         const t = easeInOut(clamp((p3Raw - base) / 0.16, 0, 1));
         const y = lerp(28, 0, t);
         row.style.transform = `translate3d(0, ${y}vh, 0)`;
         row.style.opacity = String(t);
       });
 
-      // RIGHT options + check + slideri
+      // OPTIONS (desni panel)
       const checkProgress: number[] = [];
       options.forEach((_, i) => {
         const row = optionRefs.current[i]; if (!row) return;
-
         const base = 0.24 + i * 0.05;
         const t = easeInOut(clamp((p3Raw - base) / 0.16, 0, 1));
         const y = lerp(28, 0, t);
@@ -538,6 +526,7 @@ export default function MainPhase2({
         }
       });
 
+      // SLIDERS (desni panel)
       const sliderLocals: number[] = [];
       sliders.forEach((s, i) => {
         const row = sliderRowRefs.current[i]; if (!row) return;
@@ -559,14 +548,17 @@ export default function MainPhase2({
         if (knob) knob.style.left = `${pct}%`;
       });
 
-      // PRICE: BASE + add-ons + sliders
+      // CENA – računaj i ažuriraj oba mesta
       let target = BASE_PRICE;
       checkProgress.forEach((p, i) => (target += p * (OPTION_INCREMENTS[i] || 0)));
       sliderLocals.forEach((s, i) => (target += s * (SLIDER_RATES[i] || 0)));
       const cur = priceState.current.display;
-      const next = (p3Raw > 0.98) ? target : lerp(cur, target, 0.20); // nema “rep”
+      const next = (p3Raw > 0.98) ? target : lerp(cur, target, 0.20);
       priceState.current.display = next;
-      if (priceRef.current) priceRef.current.textContent = `€${Math.round(next)}`;
+
+      const txt = `€${Math.round(next)}`;
+      if (priceLeftRef.current)  priceLeftRef.current.textContent = txt;
+      if (priceRightRef.current) priceRightRef.current.textContent = txt;
     };
 
     schedule();
@@ -581,15 +573,14 @@ export default function MainPhase2({
     isMobile,
     starts,
     targets,
-    INTRO_HOLD,
-    HEAD_INIT, SCALE_END, HEAD_SHRINK_START, HEAD_SHRINK_END,
-    CARD_S, CARD_D, LAST_CARD_ARRIVE, SYNC_START, P3_START_IN_P2, LABEL_LIFT_START,
-    SEG_P2, SEG_P3, TRACK_TOTAL_VH,
+    holdMobile, holdDesktop,
+    // headline knobs
+    // (ostalo izračunavamo iz konstanti)
+    BG_ENABLED, bgAdj, bgOpacity,
     options, sliders,
-    bgAdj, bgOpacity,
+    SEG_P2, SEG_P3, TRACK_TOTAL_VH,
   ]);
 
-  /* ---------- helpers ---------- */
   const backdropCSS =
     p3BackdropStyle === "brand"
       ? "linear-gradient(180deg, rgba(99,102,241,1), rgba(56,189,248,1), rgba(20,184,166,1))"
@@ -598,6 +589,9 @@ export default function MainPhase2({
         : "linear-gradient(180deg, rgba(79,70,229,1), rgba(56,189,248,1))";
 
   /* ---------- render ---------- */
+  // >>> Na mobilnom prikazuj samo FEATURED tier (Business)
+  const VISIBLE_PKGS = isMobile ? PKGS.filter(p => p.id === "business") : PKGS;
+
   return (
     <section
       ref={sectionRef}
@@ -606,7 +600,7 @@ export default function MainPhase2({
       style={{ height: `${TRACK_TOTAL_VH}vh` }}
     >
       <div ref={stageRef} className="sticky top-0 h-screen overflow-hidden [contain:layout_style_paint]">
-        {/* ===== BG LAYER: ghost tiers ===== */}
+        {/* ===== BG LAYER ===== */}
         {BG_ENABLED && (
           <div ref={bgLayerRef} className="absolute inset-0 pointer-events-none">
             {(isMobile ? BG_SPECS_MOBILE_BASE : BG_SPECS_DESKTOP_BASE).map((base, i) => (
@@ -624,7 +618,7 @@ export default function MainPhase2({
           </div>
         )}
 
-        {/* ===== P2 LAYER: headline + cards (diže se nagore) ===== */}
+        {/* ===== P2 LAYER ===== */}
         <div ref={p2LayerRef} className="absolute inset-0 will-change-transform">
           {/* Headline */}
           <div className="absolute inset-0 grid place-items-center pointer-events-none px-3 sm:px-0">
@@ -646,7 +640,7 @@ export default function MainPhase2({
 
           {/* Cards */}
           <div className="absolute inset-0">
-            {PKGS.map((pkg) => (
+            {VISIBLE_PKGS.map((pkg) => (
               <div
                 key={pkg.id}
                 ref={(el) => { cardRefs.current[pkg.id] = el; }}
@@ -668,10 +662,10 @@ export default function MainPhase2({
           </div>
         </div>
 
-        {/* ===== LABEL LAYER: IZNAD kartica (ne dodiruje ništa) ===== */}
+        {/* ===== LABEL LAYER (napomena umesto “Customize…”) ===== */}
         <div
           ref={labelLayerRef}
-          className="absolute left-1/2 pointer-events-none hidden sm:block z-[80]"
+          className="absolute left-1/2 pointer-events-none z-[80]"
           style={{
             top: `${labelTopVh}vh`,
             transform: "translate3d(-50%, -6vh, 0)",
@@ -686,7 +680,7 @@ export default function MainPhase2({
                 className="text-transparent bg-clip-text"
                 style={{
                   backgroundImage: "var(--brand-gradient)",
-                  fontSize: "clamp(20px, 3.4vw, 34px)",
+                  fontSize: "clamp(18px, 3.2vw, 30px)",
                   lineHeight: 1.1,
                   display: "inline-block",
                   willChange: "transform, opacity",
@@ -699,30 +693,34 @@ export default function MainPhase2({
           </div>
         </div>
 
-        {/* ===== P3 BACKDROP (sečivo odozdo) ===== */}
+        {/* ===== P3 BACKDROP ===== */}
         <div
           ref={p3BackdropRef}
           className="absolute inset-x-0 bottom-0 h-[130vh] will-change-transform"
           style={{
-            backgroundImage: backdropCSS, // string, ne klasa
-            opacity: 0,                   // inicijalno skriven
+            backgroundImage: backdropCSS,
+            opacity: 0,
             transform: "translate3d(0,40vh,0)",
             filter: "saturate(1.05)",
           }}
         >
-          {/* Oštra gornja ivica (brend linija) */}
-          <div
-            className="absolute inset-x-0 top-0 h-[4px]"
-            style={{ background: "var(--brand-gradient)" }}
-          />
+          <div className="absolute inset-x-0 top-0 h-[4px]" style={{ background: "var(--brand-gradient)" }} />
         </div>
 
-        {/* ===== P3 LAYER: P3 headline + paneli + cena ===== */}
+        {/* ===== P3 LAYER ===== */}
         <div ref={p3LayerRef} className="absolute inset-0">
           <div className="absolute inset-0 grid place-items-center">
             <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 pt-[34vh] sm:pt-[30vh]">
-              {/* P3 naslov IZNAD PANELA (z-50), ali pojavljuje se tek kad kartice dolete */}
+              {/* Napomena + Title */}
               <div className="mb-6 sm:mb-8 text-center relative z-50 pointer-events-none">
+                <p
+                  ref={p3NoticeRef}
+                  className="mb-2 sm:mb-3 text-center font-semibold select-none text-transparent bg-clip-text
+                             text-[clamp(18px,3.8vw,28px)] leading-tight"
+                  style={{ backgroundImage: "var(--brand-gradient)", opacity: 0, transform: `translate3d(0, ${TITLE_Y_IN_VH}vh, 0)` }}
+                >
+                  {t("This is an example preview. It does not reflect your real tiers.")}
+                </p>
                 <h3
                   ref={p3TitleRef}
                   className="text-[clamp(26px,4.8vw,56px)] font-semibold leading-tight text-neutral-900"
@@ -730,10 +728,7 @@ export default function MainPhase2({
                   style={{ opacity: 0, transform: `translate3d(0, ${TITLE_Y_IN_VH}vh, 0)` }}
                 >
                   {t("Or make a")}{" "}
-                  <span
-                    className="text-transparent bg-clip-text"
-                    style={{ backgroundImage: "var(--brand-gradient)" }}
-                  >
+                  <span className="text-transparent bg-clip-text" style={{ backgroundImage: "var(--brand-gradient)" }}>
                     {t("Tierless")}
                   </span>{" "}
                   {t("price page")}
@@ -741,10 +736,10 @@ export default function MainPhase2({
               </div>
 
               <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 items-start">
-                {/* LEFT panel */}
+                {/* LEFT panel – SAKRIVEN na mobilnom */}
                 <div
                   ref={leftPanelRef}
-                  className="opacity-0 will-change-transform"
+                  className="opacity-0 will-change-transform hidden sm:block"
                   style={{ transform: "translate3d(0, 36vh, 0)" }}
                 >
                   <div className="rounded-3xl border bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,.06)]">
@@ -758,7 +753,7 @@ export default function MainPhase2({
                           color: "#111827",
                         }}
                       >
-                        {t("Estimated total")}: <span ref={priceRef}>€{BASE_PRICE}</span>
+                        {t("Estimated total")}: <span ref={priceLeftRef}>€{BASE_PRICE}</span>
                       </span>
                     </div>
 
@@ -778,14 +773,17 @@ export default function MainPhase2({
                   </div>
                 </div>
 
-                {/* RIGHT panel */}
+                {/* RIGHT panel – NA MOBILNOM jedini panel */}
                 <div
                   ref={rightPanelRef}
-                  className="opacity-0 will-change-transform"
+                  className="opacity-0 will-change-transform w-full max-w-[520px] mx-auto"
                   style={{ transform: "translate3d(0, 36vh, 0)" }}
                 >
                   <div className="rounded-3xl border bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,.06)]">
-                    <h4 className="text-lg font-semibold text-neutral-900">{t("Options")}</h4>
+                    <div className="flex items-baseline justify-between">
+                      <h4 className="text-lg font-semibold text-neutral-900">{t("Options")}</h4>
+
+                    </div>
 
                     {/* OPTIONS */}
                     <div className="mt-4 space-y-3">
@@ -839,7 +837,7 @@ export default function MainPhase2({
         {/* /P3 */}
       </div>
 
-      {/* ===== DEV CONTROLS (toggle: prop devControls ili taster "D") ===== */}
+      {/* ===== DEV CONTROLS ===== */}
       {showDev && (
         <DevPanel
           labelTopVh={labelTopVh}
@@ -881,7 +879,7 @@ function CheckSVG({ refCb }: { refCb: (el: SVGPathElement | null) => void }) {
 }
 
 /* =========================================
-   Ghost Card (lagana pozadina)
+   Ghost Card
 ========================================= */
 function GhostCard({ color }: { color: string }) {
   return (
@@ -902,7 +900,7 @@ function GhostCard({ color }: { color: string }) {
 }
 
 /* =========================================
-   Card (featured sa generičkim addon čipovima)
+   Card
 ========================================= */
 type CardProps = { tier: Pkg; featured: boolean; color?: string };
 
@@ -928,7 +926,6 @@ function Card({ tier, featured, color }: CardProps) {
               ))}
             </ul>
 
-            {/* Included add-ons (pill) */}
             <div className="mt-4 flex flex-wrap gap-2">
               {included.map((label, i) => (
                 <span
@@ -1010,7 +1007,7 @@ function Card({ tier, featured, color }: CardProps) {
 }
 
 /* =========================================
-   Dev panel (sliders)
+   Dev panel
 ========================================= */
 function DevPanel({
   labelTopVh, setLabelTopVh,

@@ -22,7 +22,7 @@ export const DEV_ACCOUNTS: Record<string, DevProfile> = {
     displayName: "Jelena - Dev account",
     title: "Main designer",
     role: "owner",      // ⬅ co-owner
-    plan: "pro",        // ⬅ PRO
+    plan: "pro",        // ⬅ PRO, hteo sam standard, ali reko da ne plačeš puno :)
   },
 };
 

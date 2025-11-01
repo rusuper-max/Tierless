@@ -21,10 +21,7 @@ export default function MarketingHeader() {
       });
       const data = await res.json();
       setAuthed(!!data?.authenticated);
-      // console.debug("[Header] auth:", !!data?.authenticated, "| reason:", reason);
-    } catch {
-      // dev fallback ako želiš – preskočeno ovde
-    }
+    } catch {}
   }, []);
   useEffect(() => {
     refreshAuth("mount");
@@ -33,12 +30,11 @@ export default function MarketingHeader() {
     return () => window.removeEventListener("TL_AUTH_CHANGED", onChanged as any);
   }, [refreshAuth]);
 
-  // --- Morph: Header → Side rail nav ---
+  // --- Side rail signal (ostaje kao ranije) ---
   const [railVisible, setRailVisible] = useState(false);
   useEffect(() => {
     const hero = document.getElementById("hero");
     if (!hero) {
-      // fallback: jednostavno po scrollY
       const onScroll = () => {
         const vis = window.scrollY > 24;
         setRailVisible(vis);
@@ -50,7 +46,6 @@ export default function MarketingHeader() {
     }
     const io = new IntersectionObserver(
       (entries) => {
-        // čim hero nije više dominantno u view-u → rail on
         const e = entries[0];
         const vis = !e.isIntersecting;
         setRailVisible(vis);
@@ -62,7 +57,16 @@ export default function MarketingHeader() {
     return () => io.disconnect();
   }, []);
 
-  // --- Brand animacija (kao kod tebe) ---
+  // --- NEW: sakrij header čim krene scroll ---
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 0);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // --- Brand animacija ---
   const [hovered, setHovered] = useState(false);
   const onEnter = useCallback(() => setHovered(true), []);
   const onLeave = useCallback(() => setHovered(false), []);
@@ -94,7 +98,6 @@ export default function MarketingHeader() {
     }
   }, [letters.length]);
 
-  // --- Account dropdown (tiny avatar) ---
   const [accOpen, setAccOpen] = useState(false);
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -105,18 +108,16 @@ export default function MarketingHeader() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const userInitial = useMemo(() => {
-    // Po želji: ekstrakcija iz email-a posle što ga budeš čuvao u globalu
-    return "A";
-  }, []);
+  const userInitial = useMemo(() => "A", []);
 
-  // --- Header UI ---
+  // Ako je scrolled, krijemo header odmah (nezavisno od railVisible)
+  const hiddenNow = scrolled;
+
   return (
     <header
       className={[
-        "fixed inset-x-0 top-0 z-40",
-        "transition-all duration-300",
-        railVisible ? "opacity-0 -translate-y-2 pointer-events-none" : "opacity-100 translate-y-0",
+        "fixed inset-x-0 top-0 z-40 transition-all duration-200",
+        hiddenNow ? "opacity-0 -translate-y-2 pointer-events-none" : "opacity-100 translate-y-0",
       ].join(" ")}
       aria-label={t("Main header")}
     >
@@ -131,7 +132,7 @@ export default function MarketingHeader() {
         <Link
           href="/"
           aria-label={`${t("brand.name")} — home`}
-          className={["inline-flex select-none", "ml-0"].join(" ")}
+          className="inline-flex select-none ml-0"
           style={{ lineHeight: 1, alignItems: "baseline" }}
           onMouseEnter={onEnter}
           onMouseLeave={onLeave}
@@ -224,7 +225,6 @@ export default function MarketingHeader() {
             </>
           ) : (
             <>
-              {/* Dashboard (ghost/outline) */}
               <CTAButton
                 fx="swap-up"
                 variant="outline"
@@ -234,7 +234,6 @@ export default function MarketingHeader() {
                 href="/dashboard"
                 label={t("Dashboard")}
               />
-              {/* New page / Editor (brand CTA) — promeni rutu po želji */}
               <CTAButton
                 fx="swap-up"
                 variant="brand"
@@ -244,7 +243,6 @@ export default function MarketingHeader() {
                 href="/dashboard/new"
                 label={t("New page")}
               />
-              {/* Account tiny avatar */}
               <div id="hdr-acc-dd" className="relative">
                 <button
                   onClick={() => setAccOpen((v) => !v)}
