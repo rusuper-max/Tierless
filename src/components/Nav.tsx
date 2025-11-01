@@ -5,59 +5,88 @@ import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 
 type MeUser = { id: string; isDev?: boolean; name?: string; title?: string };
-type MeResp = { user?: MeUser | null; authenticated?: boolean };
+type MeResp  = { user?: MeUser | null; authenticated?: boolean };
+type StatusResp = { authenticated?: boolean; user?: { email?: string } | null };
 
 type NavProps = {
   brandHref?: string;
-  showThemeToggle?: boolean;
+  showThemeToggle?: boolean; // (nije u upotrebi, zadržano radi kompatibilnosti)
 };
 
 export default function Nav({ brandHref = "/", showThemeToggle = true }: NavProps) {
   const [me, setMe] = useState<MeUser | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const btnRef = useRef<HTMLButtonElement | null>(null);
+  const btnRef  = useRef<HTMLButtonElement | null>(null);
 
   // ——— učitaj auth (status → fallback na /api/me), bez keša
   useEffect(() => {
     let alive = true;
 
-    async function load() {
+    async function load(reason: string) {
       try {
-        // 1) Prefer /api/auth/status (ako ga imaš)
-        const r = await fetch("/api/auth/status", { credentials: "same-origin", cache: "no-store" });
+        // 1) Prefer /api/auth/status
+        const r = await fetch("/api/auth/status", {
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: { "x-no-cache": String(Date.now()) },
+        });
+
         if (r.ok) {
-          const j = (await r.json()) as { authenticated?: boolean; user?: { email?: string } };
-          if (alive && j?.authenticated && j.user?.email) {
-            const email = j.user.email;
-            setMe({ id: email, name: email.split("@")[0] || email });
-            return;
+          const j = (await r.json()) as StatusResp;
+          if (j?.authenticated) {
+            const email = j.user?.email;
+            if (email) {
+              if (alive) setMe({ id: email, name: email.split("@")[0] || email });
+              return;
+            }
+            // nema email-a u statusu → fallback na /api/me
           }
         }
-      } catch {}
+      } catch {
+        // ignore
+      }
+
       try {
-        // 2) Fallback: /api/me (format iz ove rute smo upravo standardizovali)
+        // 2) Fallback: /api/me
         const r2 = await fetch("/api/me", { credentials: "same-origin", cache: "no-store" });
         if (r2.ok) {
           const j2 = (await r2.json()) as MeResp;
           if (alive && j2?.user?.id) {
-            setMe({ id: j2.user.id, name: j2.user.name });
+            const id = j2.user.id;
+            const name = j2.user.name || id.split("@")[0] || id;
+            setMe({ id, name, title: j2.user.title, isDev: j2.user.isDev });
             return;
           }
         }
-      } catch {}
+      } catch {
+        // ignore
+      }
+
       if (alive) setMe(null);
     }
 
-    load();
+    // inicijalno + brzi retry da uhvati sveže kolačiće
+    load("mount");
+    const t1 = setTimeout(() => load("retry-250"), 250);
+    const t2 = setTimeout(() => load("retry-1000"), 1000);
 
-    // opciono: reaguj na globalni event ako ga emituješ posle login/logout-a
-    const onAuthChange = () => load();
-    window.addEventListener("TL_AUTH_CHANGED", onAuthChange as any);
+    // reaguj na globalne promene
+    const onChanged = () => load("TL_AUTH_CHANGED");
+    const onFocus   = () => load("window-focus");
+    const onVis     = () => document.visibilityState === "visible" && load("visibility");
+
+    window.addEventListener("TL_AUTH_CHANGED", onChanged as any);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
 
     return () => {
       alive = false;
-      window.removeEventListener("TL_AUTH_CHANGED", onAuthChange as any);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener("TL_AUTH_CHANGED", onChanged as any);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, []);
 
@@ -79,14 +108,7 @@ export default function Nav({ brandHref = "/", showThemeToggle = true }: NavProp
     };
   }, [menuOpen]);
 
-  // ——— čist logout (nema više dev-logout)
-  async function logout() {
-    try { await fetch("/api/logout", { method: "POST", credentials: "same-origin", cache: "no-store" }); } catch {}
-    // hard nav da SSR odmah vidi prazan cookie
-    window.location.replace("/signin");
-  }
-
-  const signedIn = !!me?.id; // sada je id = email, nema "anon:" heuritike
+  const signedIn = !!me?.id;
 
   const greeting = signedIn ? (
     <>
@@ -100,9 +122,21 @@ export default function Nav({ brandHref = "/", showThemeToggle = true }: NavProp
       <div className="border-b border-[var(--border)] bg-white/80 backdrop-blur-md">
         <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3 -ml-2 sm:-ml-3">
-            <Link href={brandHref} className="brand-link" aria-label="Tierless — home">
-              <img src="/brand/tierless-icon.png" alt="" className="brand-logo" />
-              <span className="brand-label text-xl">Tierless</span>
+            {/* Brand: samo slovo T, bez PNG-a */}
+            <Link href={brandHref} className="brand-link inline-flex items-center gap-2" aria-label="Tierless — home">
+              <span
+                className="inline-block select-none"
+                style={{
+                  fontWeight: 700,
+                  letterSpacing: "-0.01em",
+                  lineHeight: 1,
+                  fontSize: "24px",
+                  color: "var(--brand-1, #4F46E5)",
+                }}
+              >
+                T
+              </span>
+              <span className="sr-only">Tierless</span>
             </Link>
 
             <Link href="/dashboard" className="btn btn-nav btn-plain">Pages</Link>
@@ -148,9 +182,10 @@ export default function Nav({ brandHref = "/", showThemeToggle = true }: NavProp
                       Billing
                     </Link>
                     <div className="h-px bg-[var(--border)] my-1" />
-                    <button onClick={logout} className="btn btn-danger w-full justify-start" role="menuitem">
+                    {/* Logout ide kroz /logout rutu (standardizovano) */}
+                    <Link href="/logout" className="btn btn-danger w-full justify-start" role="menuitem">
                       Sign out
-                    </button>
+                    </Link>
                   </div>
                 )}
               </>

@@ -40,6 +40,10 @@ const EASE = "cubic-bezier(0.22,1,0.36,1)";
 const DUR_BTN = 260;
 const DUR_PANEL = 220;
 
+// brand boje (fallback ako nema CSS var)
+const BRAND1 = "var(--brand-1, #4F46E5)"; // indigo
+const BRAND2 = "var(--brand-2, #22D3EE)"; // cyan
+
 export default function ScrollNav({
   side = "right",
   sections,
@@ -64,7 +68,7 @@ export default function ScrollNav({
   const [authed, setAuthed] = useState<boolean>(!!isAuthenticated);
   useEffect(() => { if (typeof isAuthenticated === "boolean") setAuthed(!!isAuthenticated); }, [isAuthenticated]);
 
-  const refreshAuth = async (reason: string) => {
+  const refreshAuth = async (_reason: string) => {
     try {
       const res = await fetch("/api/auth/status", {
         credentials: "include",
@@ -74,7 +78,6 @@ export default function ScrollNav({
       const data = await res.json().catch(() => ({}));
       if (typeof data?.authenticated === "boolean") {
         setAuthed(!!data.authenticated);
-        // console.debug("[ScrollNav]", reason, data.authenticated);
         return;
       }
     } catch {
@@ -108,8 +111,7 @@ export default function ScrollNav({
     };
   }, []);
 
-  // ui state
-  const [dim, setDim] = useState(false);
+  // ui refs
   const [activeFaq, setActiveFaq] = useState<string>("");
   const [pagesOpen, setPagesOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -236,18 +238,7 @@ export default function ScrollNav({
         aria-hidden
       />
 
-      {/* Dim + blur */}
-      <div
-        className={[
-          "fixed inset-0 z-[60] transition-opacity",
-          dim ? "opacity-100" : "opacity-0",
-          "backdrop-blur-[2px]",
-        ].join(" ")}
-        style={{ transitionDuration: `${DUR_PANEL}ms`, transitionTimingFunction: EASE, background: "rgba(0,0,0,0.15)", pointerEvents: "none" }}
-        aria-hidden
-      />
-
-      {/* Ručka (uvećana + veći hit-area) */}
+      {/* Ručka */}
       <button
         onClick={() => setCollapsed(v => !v)}
         className={[
@@ -260,7 +251,6 @@ export default function ScrollNav({
         style={{ transition: `transform ${DUR_BTN}ms ${EASE}, background-color ${DUR_BTN}ms ${EASE}` }}
         aria-label={collapsed ? t("Show nav") : t("Hide nav")}
       >
-        {/* Veća klik zona */}
         <span className="absolute -inset-2" aria-hidden />
         {isRight
           ? (collapsed ? <ChevronLeft className="size-5" /> : <ChevronRightIcon className="size-5" />)
@@ -270,8 +260,6 @@ export default function ScrollNav({
       {/* DESKTOP rail */}
       <nav
         ref={navRef}
-        onMouseEnter={() => setDim(true)}
-        onMouseLeave={() => setDim(false)}
         aria-label={t("Main quick nav")}
         className={[
           "fixed z-[990] hidden lg:flex",
@@ -309,13 +297,26 @@ export default function ScrollNav({
                     if (item.key !== "account") setAccountOpen(false);
                   }}
                   className={[
-                    "group relative flex w-full items-center justify-center rounded-full p-3 outline-none text-white/95",
+                    "group relative flex w-full items-center justify-center rounded-full p-3 outline-none text-white/95 overflow-hidden",
                     item.variant === "primary" ? "ring-1 ring-inset ring-cyan-400/80" : "ring-1 ring-inset ring-white/12",
                     item.active ? "bg-cyan-500/18" : "bg-black/25",
                   ].join(" ")}
                   style={{ transition: `transform ${DUR_BTN}ms ${EASE}, box-shadow ${DUR_BTN}ms ${EASE}, background-color ${DUR_BTN}ms ${EASE}` }}
                   aria-label={item.label}
                 >
+                  {/* Hover gradient outline */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                    style={{
+                      padding: 1.5,
+                      background: `linear-gradient(90deg, ${BRAND1}, ${BRAND2})`,
+                      WebkitMask:
+                        "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                      WebkitMaskComposite: "xor",
+                      maskComposite: "exclude",
+                    }}
+                  />
                   <item.icon className="size-[22px] transition-transform" style={{ transitionDuration: `${DUR_BTN}ms`, transitionTimingFunction: EASE }} aria-hidden />
                   {/* Tip */}
                   {item.key !== "pick" && item.key !== "account" && (
@@ -331,7 +332,7 @@ export default function ScrollNav({
                       {item.label}
                     </span>
                   )}
-                  {/* Marker */}
+                  {/* Marker (active) */}
                   <span
                     className={[
                       "absolute h-5 w-[3px] rounded-full bg-cyan-400/90",
@@ -340,6 +341,7 @@ export default function ScrollNav({
                       item.active ? "opacity-100" : "opacity-0",
                     ].join(" ")}
                     style={{ transition: `opacity ${DUR_BTN}ms ${EASE}` }}
+                    aria-hidden
                   />
                 </button>
               </li>
@@ -350,10 +352,23 @@ export default function ScrollNav({
           <div className="mt-1 flex w-full items-center justify-center">
             <button
               onClick={() => setCurrSide((s) => (s === "right" ? "left" : "right"))}
-              className="flex items-center justify-center rounded-full p-2 ring-1 ring-inset ring-white/12 bg-black/25 text-white/90 hover:ring-cyan-300/60"
+              className="group relative flex items-center justify-center rounded-full p-2 ring-1 ring-inset ring-white/12 bg-black/25 text-white/90 hover:ring-cyan-300/60 overflow-hidden"
               style={{ transition: `all ${DUR_BTN}ms ${EASE}` }}
               aria-label={t("Move bar to the other side")}
             >
+              {/* Hover gradient outline */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                style={{
+                  padding: 1.5,
+                  background: `linear-gradient(90deg, ${BRAND1}, ${BRAND2})`,
+                  WebkitMask:
+                    "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                  WebkitMaskComposite: "xor",
+                  maskComposite: "exclude",
+                }}
+              />
               <ArrowLeftRight className="size-[18px]" aria-hidden />
             </button>
           </div>
@@ -370,14 +385,7 @@ export default function ScrollNav({
                 <ul className="flex min-w-[220px] flex-col gap-1">
                   {pageList.map((p) => (
                     <li key={p.id}>
-                      <button
-                        onClick={() => smartScroll(p.id)}
-                        className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-white/95 transition hover:bg-white/10"
-                        style={{ transitionTimingFunction: EASE, transitionDuration: `${DUR_BTN}ms` }}
-                      >
-                        <span className="text-base">{p.label}</span>
-                        <ChevronRight className="size-4 opacity-70" />
-                      </button>
+                      <FlyoutBtn label={p.label} onClick={() => smartScroll(p.id)} />
                     </li>
                   ))}
                 </ul>
@@ -407,8 +415,6 @@ export default function ScrollNav({
 
       {/* MOBILE dock */}
       <nav
-        onMouseEnter={() => setDim(true)}
-        onMouseLeave={() => setDim(false)}
         aria-label={t("Main quick nav")}
         className="fixed inset-x-0 bottom-0 z-[980] flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2 lg:hidden"
       >
@@ -424,13 +430,26 @@ export default function ScrollNav({
                 item.onClick();
               }}
               className={[
-                "group relative flex h-12 flex-1 flex-col items-center justify-center rounded-xl",
+                "group relative flex h-12 flex-1 flex-col items-center justify-center rounded-xl overflow-hidden",
                 item.variant === "primary" ? "ring-1 ring-inset ring-cyan-400/80" : "ring-1 ring-inset ring-white/12",
                 "transition",
               ].join(" ")}
               style={{ transition: `all ${DUR_BTN}ms ${EASE}` }}
               aria-label={item.label}
             >
+              {/* Hover gradient outline */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                style={{
+                  padding: 1.5,
+                  background: `linear-gradient(90deg, ${BRAND1}, ${BRAND2})`,
+                  WebkitMask:
+                    "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                  WebkitMaskComposite: "xor",
+                  maskComposite: "exclude",
+                }}
+              />
               <item.icon className="size-[20px]" aria-hidden />
               <span className="mt-0.5 text-[11px] leading-none opacity-90">{item.label}</span>
             </button>
@@ -481,11 +500,24 @@ function FlyoutBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-white/95 hover:bg-white/10"
+      className="group relative flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-white/95 hover:bg-white/10 overflow-hidden"
       style={{ transition: `background-color ${DUR_BTN}ms ${EASE}` }}
     >
+      {/* Hover gradient outline */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+        style={{
+          padding: 1.5,
+          background: `linear-gradient(90deg, ${BRAND1}, ${BRAND2})`,
+          WebkitMask:
+            "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+          WebkitMaskComposite: "xor",
+          maskComposite: "exclude",
+        }}
+      />
       <span className="text-base">{label}</span>
-      <ChevronRight className="size-4 opacity-70" />
+      <ChevronRight className="size-4 opacity-70" aria-hidden />
     </button>
   );
 }
