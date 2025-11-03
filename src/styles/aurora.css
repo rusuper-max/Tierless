@@ -28,7 +28,44 @@ html::before{
   0%   { transform: translate3d(0, 0, 0) scale(1); }
   100% { transform: translate3d(1.5vmax, -1vmax, 0) scale(1.015); }
 }
+
 @media (prefers-reduced-motion: reduce){ html::before{ animation:none; } }
+
+/* ===============================
+   DARK THEME TUNING (Aurora + Lines)
+   =============================== */
+html.dark::before{
+  /* Stronger, brighter glows that sit nicely on dark backgrounds */
+  background:
+    radial-gradient(120vmax 80vmax at 10% 20%, color-mix(in oklab, var(--tl-indigo) 38%, transparent) 0 60%, transparent 60% 100%),
+    radial-gradient( 95vmax 65vmax at 82% 28%, color-mix(in oklab, var(--tl-sky)    34%, transparent) 0 58%, transparent 58% 100%),
+    radial-gradient(105vmax 75vmax at 60% 78%, color-mix(in oklab, var(--tl-teal)   32%, transparent) 0 62%, transparent 62% 100%),
+    radial-gradient(70vmax  50vmax at 18% 70%, color-mix(in oklab, var(--tl-indigo) 18%, transparent) 0 55%, transparent 55% 100%);
+  background-repeat:no-repeat;
+  filter: saturate(120%) brightness(1.0);
+  mix-blend-mode: screen;
+  opacity: .95;
+}
+
+/* Light streaks on dark: a bit stronger and blended as screen */
+html.dark body::before{
+  background-image:
+    linear-gradient(115deg, color-mix(in oklab, var(--tl-indigo) 28%, transparent) 0 2px, transparent 2px 100%),
+    linear-gradient(115deg, color-mix(in oklab, var(--tl-sky)    28%, transparent) 0 2px, transparent 2px 100%),
+    linear-gradient(115deg, color-mix(in oklab, var(--tl-teal)   28%, transparent) 0 2px, transparent 2px 100%);
+  mix-blend-mode: screen;
+  opacity: .9;
+}
+
+/* Logo safe-zone mask: switch to a dark-tinted vignette in dark mode
+   (prevents brightening the header area on dark background) */
+html.dark::after{
+  background:
+    radial-gradient(ellipse 60vmin 5vmin at 0rem 3.5rem,
+      rgba(0,0,0,.90) 0 70%,
+      rgba(0,0,0,.70) 70% 83%,
+      rgba(0,0,0,0) 100%);
+}
 
 /* LIGHT STREAKS — zamena za .l1 .l2 .l3 */
 body::before{
