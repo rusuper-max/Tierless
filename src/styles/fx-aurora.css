@@ -1,7 +1,8 @@
 :root{
-  --tl-indigo: #6366f1; /* indigo-500 */
-  --tl-sky:    #38bdf8; /* sky-400  */
-  --tl-teal:   #14b8a6; /* teal-500 */
+  /* read from global tokens if present, fallback to defaults */
+  --tl-indigo: var(--brand-1, #6366f1); /* indigo-500 */
+  --tl-sky:    var(--brand-2, #38bdf8); /* sky-400  */
+  --tl-teal:   var(--brand-3, #14b8a6); /* teal-500 */
 }
 
 /* Bez horizontalnog skrola */
@@ -30,10 +31,20 @@ html, body { overflow-x: clip; }
 
 .fx-aurora .spot{
   position: absolute;
-  opacity: .95;
+  opacity: .90;
   filter: blur(48px) saturate(125%);
-  mix-blend-mode: normal;
+  mix-blend-mode: multiply; /* better on light backgrounds; overridden in dark */
   will-change: transform;
+}
+
+/* Theme-aware blending/opacity */
+html:not(.dark) .fx-aurora .spot{
+  mix-blend-mode: multiply;
+  opacity: .80;
+}
+html.dark .fx-aurora .spot{
+  mix-blend-mode: screen;   /* lifts colors on dark backgrounds */
+  opacity: .92;
 }
 
 .fx-aurora .spot-tl{
@@ -74,6 +85,12 @@ html, body { overflow-x: clip; }
   top: 76vh; left: -10vmax;
   background: linear-gradient(90deg, color-mix(in oklab, var(--tl-teal) 14%, transparent) 0 35%, transparent 55% 100%);
   transform: rotate(12deg); animation: fx-line-left2right 28s linear infinite;
+}
+
+html.dark .fx-aurora .l1,
+html.dark .fx-aurora .l2,
+html.dark .fx-aurora .l3{
+  opacity: .24;
 }
 
 @keyframes fx-line-left2right{

@@ -162,10 +162,16 @@ export default function ScrollNav({
         !authed && showLogin  && { key: "login",  label: t("Log in"),  icon: LogIn,   onClick: goLogin,  active: false, variant: "ghost" },
         !authed && showSignup && { key: "signup", label: t("Sign up"), icon: UserPlus, onClick: goSignup, active: false, variant: "primary" },
         authed && { key: "account", label: t("Account"), icon: User, onClick: () => setAccountOpen(v => !v), active: accountOpen, variant: "primary" },
-        { key: "theme", label: theme === "dark" ? t("Light mode") : t("Dark mode"),
-          icon: theme === "dark" ? Sun : Moon, onClick: toggleTheme, active: false, variant: "ghost" },
+        {
+          key: "theme",
+          label: mounted ? (theme === "dark" ? t("Light mode") : t("Dark mode")) : t("Theme"),
+          icon: mounted ? (theme === "dark" ? Sun : Moon) : Sun,
+          onClick: toggleTheme,
+          active: false,
+          variant: "ghost",
+        },
       ].filter(Boolean) as NavItem[]),
-    [activeFaq, authed, sections?.faq, accountOpen, showLogin, showSignup, theme]
+    [activeFaq, authed, sections?.faq, accountOpen, showLogin, showSignup, theme, mounted]
   );
 
   const pillSidePos     = (right: boolean) => (right ? "right-[calc(100%-2px)]" : "left-[calc(100%-2px)]");
@@ -243,11 +249,13 @@ export default function ScrollNav({
                   />
 
                   {/* Ikonica ostaje */}
-                  <item.icon
-                    className="size-[22px] transition-transform"
-                    style={{ transitionDuration: `${DUR_BTN}ms`, transitionTimingFunction: EASE }}
-                    aria-hidden
-                  />
+                  <span suppressHydrationWarning>
+                    <item.icon
+                      className="size-[22px] transition-transform"
+                      style={{ transitionDuration: `${DUR_BTN}ms`, transitionTimingFunction: EASE }}
+                      aria-hidden
+                    />
+                  </span>
 
                   {/* Ekspanziona pilula (scaleX) */}
                   <span
@@ -367,7 +375,9 @@ export default function ScrollNav({
                   maskComposite: "exclude",
                 }}
               />
-              <item.icon className="size-[20px]" aria-hidden />
+              <span suppressHydrationWarning>
+                <item.icon className="size-[20px]" aria-hidden />
+              </span>
               <span className="mt-0.5 text-[11px] leading-none opacity-90">{item.label}</span>
             </button>
           ))}

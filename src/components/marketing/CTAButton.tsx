@@ -179,17 +179,42 @@ export default function CTAButton({
 
   const computedAria = ariaLabel ?? (text || undefined);
 
+  // Force white fill always + brand gradient outline (hairline optional) for brand & outline.
+  const inlineStyle: CSSProperties | undefined =
+    variant === "brand" || variant === "outline"
+      ? {
+          // White fill with gradient border ring (padding-box + border-box trick).
+          background:
+            "linear-gradient(#fff, #fff) padding-box, var(--brand-gradient) border-box",
+          border: hairlineOutline ? "0.5px solid transparent" : "1px solid transparent",
+          // Ensure readable ink regardless of theme.
+          color: "#0f172a",
+        }
+      : undefined;
+
   // 5) Render Link ili button
   if (href) {
     return (
-      <Link href={href} aria-label={computedAria} className={base} {...(rest as any)}>
+      <Link
+        href={href}
+        aria-label={computedAria}
+        className={base}
+        style={inlineStyle}
+        {...(rest as any)}
+      >
         {labelNode}
       </Link>
     );
   }
 
   return (
-    <button type="button" aria-label={computedAria} className={base} {...rest}>
+    <button
+      type="button"
+      aria-label={computedAria}
+      className={base}
+      style={inlineStyle}
+      {...rest}
+    >
       {labelNode}
     </button>
   );

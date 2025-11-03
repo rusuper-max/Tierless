@@ -223,15 +223,6 @@ export default function MarketingHeader() {
                 href="/dashboard"
                 label={t("Dashboard")}
               />
-              <CTAButton
-                fx="swap-up"
-                variant="brand"
-                size="md"
-                pill
-                textGradientUnified
-                href="/dashboard/new"
-                label={t("New page")}
-              />
               <div id="hdr-acc-dd" className="relative">
                 <button
                   onClick={() => setAccOpen((v) => !v)}
