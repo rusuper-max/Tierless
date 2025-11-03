@@ -1,11 +1,19 @@
+// src/app/api/calculators/[slug]/route.ts
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "@/lib/auth";
 import * as fullStore from "@/lib/fullStore";
 import * as mini from "@/lib/data/calcs";
+import * as trash from "@/lib/data/trash";
 import { putPublic /*, deletePublic*/ } from "@/lib/publicStore";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+function jsonNoCache(data: any, status = 200) {
+  const res = NextResponse.json(data, { status });
+  res.headers.set("cache-control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+  return res;
+}
 
 function extractSlug(req: Request, params?: { slug?: string }) {
   let s = params?.slug ?? "";
@@ -35,12 +43,6 @@ function autoBlocksFrom(calc: any) {
   if (hasAddons) blocks.push({ id: "b_extras", type: "extras", title: "Extras" });
 
   return blocks;
-}
-
-function jsonNoCache(data: any, status = 200) {
-  const res = NextResponse.json(data, { status });
-  res.headers.set("cache-control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
-  return res;
 }
 
 export async function GET(req: Request, ctx: { params: { slug?: string } }) {
@@ -99,6 +101,7 @@ export async function PUT(req: Request, ctx: { params: { slug?: string } }) {
 }
 
 export async function DELETE(req: Request, ctx: { params: { slug?: string } }) {
+  // SOFT DELETE → move to Trash
   const userId = await getUserIdFromRequest(req);
   if (!userId) return jsonNoCache({ error: "unauthorized" }, 401);
 
@@ -106,10 +109,17 @@ export async function DELETE(req: Request, ctx: { params: { slug?: string } }) {
   if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
   try {
+    // uzmi mini zapis (ako postoji) i gurni u trash
+    const row = await mini.get(userId, slug);
+    if (row) {
+      await trash.push(userId, row);
+    }
+
+    // očisti full + mini
     await fullStore.deleteFull(userId, slug).catch(() => {});
     const removedMini = await mini.remove(userId, slug).catch(() => false);
-    // try { await deletePublic(slug); } catch {}
-    return jsonNoCache({ ok: true, removed: slug, mini: removedMini });
+
+    return jsonNoCache({ ok: true, trashed: true, removedMini, slug });
   } catch (e: any) {
     console.error("DELETE full error:", e);
     return jsonNoCache({ error: "delete_failed", detail: e?.stack ?? String(e) }, 500);

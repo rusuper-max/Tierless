@@ -1,0 +1,113 @@
+// src/hooks/useAccount.ts
+"use client";
+
+import { useEffect, useSyncExternalStore } from "react";
+import { entitlementsFor, type Plan } from "@/lib/entitlements.adapter";
+
+export type AccountSnapshot = {
+  loading: boolean;
+  authenticated: boolean;
+  email: string | null;
+  plan: Plan;
+  entitlements: string[];
+};
+
+// ------- Lightweight store (bez React setState u efektima) -------
+let started = false;
+const subs = new Set<() => void>();
+
+const notify = () => subs.forEach((fn) => fn());
+
+let state: AccountSnapshot = {
+  loading: true,
+  authenticated: false,
+  email: null,
+  plan: "free",
+  entitlements: entitlementsFor("free"),
+};
+
+async function fetchStatusAndMe() {
+  state = { ...state, loading: true };
+  notify();
+
+  try {
+    const sRes = await fetch("/api/auth/status", {
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { "x-no-cache": String(Date.now()) },
+    });
+
+    const sJson = (await sRes.json().catch(() => ({}))) as {
+      authenticated?: boolean;
+      user?: { email?: string | null };
+    };
+
+    const authenticated = !!sJson?.authenticated;
+    const email = authenticated ? (sJson?.user?.email || null) : null;
+
+    let plan: Plan = "free";
+    if (authenticated) {
+      const mRes = await fetch("/api/me", {
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: { "x-no-cache": String(Date.now()) },
+      });
+      const mJson = (await mRes.json().catch(() => ({}))) as {
+        user?: { plan?: Plan };
+        plan?: Plan;
+        authenticated?: boolean;
+      };
+      plan = (mJson?.user?.plan || mJson?.plan || "free") as Plan;
+    }
+
+    state = {
+      loading: false,
+      authenticated,
+      email,
+      plan,
+      entitlements: entitlementsFor(plan),
+    };
+    notify();
+  } catch {
+    state = {
+      loading: false,
+      authenticated: false,
+      email: null,
+      plan: "free",
+      entitlements: entitlementsFor("free"),
+    };
+    notify();
+  }
+}
+
+function start() {
+  if (started || typeof window === "undefined") return;
+  started = true;
+
+  fetchStatusAndMe();
+
+  const onAuth = () => fetchStatusAndMe();
+  const onFocus = () => fetchStatusAndMe();
+  const onVis = () => {
+    if (document.visibilityState === "visible") fetchStatusAndMe();
+  };
+
+  window.addEventListener("TL_AUTH_CHANGED", onAuth as EventListener);
+  window.addEventListener("focus", onFocus);
+  document.addEventListener("visibilitychange", onVis);
+}
+
+export function useAccount(): AccountSnapshot {
+  useEffect(() => {
+    start();
+  }, []);
+
+  return useSyncExternalStore(
+    (cb) => {
+      subs.add(cb);
+      return () => subs.delete(cb);
+    },
+    () => state,
+    () => state
+  );
+}

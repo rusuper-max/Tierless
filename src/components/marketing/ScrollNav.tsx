@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { t } from "@/i18n";
+import { useAuthStatus } from "@/hooks/useAuthStatus";
 
 type Side = "right" | "left";
 type Sections = { faq?: string };
@@ -28,19 +29,16 @@ type ScrollNavProps = {
   pages?: PageLink[];
   showLogin?: boolean;
   showSignup?: boolean;
-  /** hint za prvi render; CSR uvek proverava /api/auth/status */
-  isAuthenticated?: boolean;
 };
 
 const LS_SIDE = "tl_nav_side";
 const LS_COLLAPSED = "tl_nav_collapsed";
 
-// UX konstante
 const EASE = "cubic-bezier(0.22,1,0.36,1)";
 const DUR_BTN = 260;
 const DUR_PANEL = 220;
 
-// brand boje (fallback ako nema CSS var)
+// brand fallback boje
 const BRAND1 = "var(--brand-1, #4F46E5)"; // indigo
 const BRAND2 = "var(--brand-2, #22D3EE)"; // cyan
 
@@ -50,9 +48,9 @@ export default function ScrollNav({
   pages,
   showLogin = true,
   showSignup = true,
-  isAuthenticated,
 }: ScrollNavProps) {
   const router = useRouter();
+  const { authenticated: authed } = useAuthStatus();
 
   // persist side/collapsed
   const [currSide, setCurrSide] = useState<Side>(() =>
@@ -63,53 +61,6 @@ export default function ScrollNav({
   );
   useEffect(() => localStorage.setItem(LS_SIDE, currSide), [currSide]);
   useEffect(() => localStorage.setItem(LS_COLLAPSED, collapsed ? "1" : "0"), [collapsed]);
-
-  // auth
-  const [authed, setAuthed] = useState<boolean>(!!isAuthenticated);
-  useEffect(() => { if (typeof isAuthenticated === "boolean") setAuthed(!!isAuthenticated); }, [isAuthenticated]);
-
-  const refreshAuth = async (_reason: string) => {
-    try {
-      const res = await fetch("/api/auth/status", {
-        credentials: "include",
-        cache: "no-store",
-        headers: { "x-no-cache": String(Date.now()) },
-      });
-      const data = await res.json().catch(() => ({}));
-      if (typeof data?.authenticated === "boolean") {
-        setAuthed(!!data.authenticated);
-        return;
-      }
-    } catch {
-      if (typeof document !== "undefined" && document.cookie?.includes("x-dev-email=")) {
-        setAuthed(true);
-      }
-    }
-  };
-
-  useEffect(() => {
-    let alive = true;
-    refreshAuth("mount");
-    const t1 = setTimeout(() => alive && refreshAuth("retry-300"), 300);
-    const t2 = setTimeout(() => alive && refreshAuth("retry-1500"), 1500);
-
-    const onChanged = () => refreshAuth("TL_AUTH_CHANGED");
-    const onFocus = () => refreshAuth("window-focus");
-    const onVis = () => document.visibilityState === "visible" && refreshAuth("visibility");
-
-    window.addEventListener("TL_AUTH_CHANGED", onChanged as any);
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVis);
-
-    return () => {
-      alive = false;
-      clearTimeout(t1);
-      clearTimeout(t2);
-      window.removeEventListener("TL_AUTH_CHANGED", onChanged as any);
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVis);
-    };
-  }, []);
 
   // ui refs
   const [activeFaq, setActiveFaq] = useState<string>("");
@@ -237,25 +188,6 @@ export default function ScrollNav({
         ].join(" ")}
         aria-hidden
       />
-
-      {/* Ručka */}
-      <button
-        onClick={() => setCollapsed(v => !v)}
-        className={[
-          "fixed z-[9999] hidden lg:flex items-center justify-center",
-          "h-14 w-8 rounded-full bg-black/40 border border-white/12 backdrop-blur text-white/80",
-          "hover:text-white hover:bg-black/45",
-          isRight ? "right-2" : "left-2",
-          "top-1/2 -translate-y-1/2",
-        ].join(" ")}
-        style={{ transition: `transform ${DUR_BTN}ms ${EASE}, background-color ${DUR_BTN}ms ${EASE}` }}
-        aria-label={collapsed ? t("Show nav") : t("Hide nav")}
-      >
-        <span className="absolute -inset-2" aria-hidden />
-        {isRight
-          ? (collapsed ? <ChevronLeft className="size-5" /> : <ChevronRightIcon className="size-5" />)
-          : (collapsed ? <ChevronRightIcon className="size-5" /> : <ChevronLeft className="size-5" />)}
-      </button>
 
       {/* DESKTOP rail */}
       <nav
@@ -486,7 +418,6 @@ export default function ScrollNav({
   );
 }
 
-/* Helpers */
 type NavItem = {
   key: string;
   label: string;
@@ -503,7 +434,6 @@ function FlyoutBtn({ label, onClick }: { label: string; onClick: () => void }) {
       className="group relative flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-white/95 hover:bg-white/10 overflow-hidden"
       style={{ transition: `background-color ${DUR_BTN}ms ${EASE}` }}
     >
-      {/* Hover gradient outline */}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"

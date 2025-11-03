@@ -79,6 +79,32 @@ export async function create(userId: string, name = "Untitled Page"): Promise<Ca
   return row;
 }
 
+/** Kreiraj zapis sa željenim slug-om (ako je zauzet, dodaje sufiks -restored-#) */
+export async function createWithSlug(
+  userId: string,
+  desiredSlug: string,
+  name: string,
+  cfg?: any,
+  template?: string
+): Promise<Calc> {
+  const rows = await readAll(userId);
+  let slug = desiredSlug || slugify(name || "page");
+  if (rows.some(r => r.meta.slug === slug)) {
+    const base = (desiredSlug || "restored").replace(/-restored-\d+$/, "");
+    let i = 1;
+    let candidate = `${base}-restored-${i}`;
+    while (rows.some(r => r.meta.slug === candidate)) {
+      i++;
+      candidate = `${base}-restored-${i}`;
+    }
+    slug = candidate;
+  }
+  const row: Calc = { meta: { name: name || "Restored Page", slug }, template, config: cfg ?? {} };
+  rows.push(row);
+  await writeAll(userId, rows);
+  return row;
+}
+
 export async function createFromTemplate(userId: string, templateSlug: string, name?: string) {
   const rows = await readAll(userId);
   const baseName = name?.trim() || templateSlug || "New Page";
