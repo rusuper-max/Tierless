@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUp,
-  LayoutGrid,
+  ArrowDown,
   HelpCircle,
   LogIn,
   UserPlus,
@@ -12,19 +12,20 @@ import {
   ChevronRight,
   User,
   ArrowLeftRight,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { t } from "@/i18n";
 import { useAuthStatus } from "@/hooks/useAuthStatus";
+import { useTheme } from "@/hooks/useTheme";
 
 type Side = "right" | "left";
 type Sections = { faq?: string };
-type PageLink = { id: string; label: string };
 
 type ScrollNavProps = {
   side?: Side;
   sections?: Sections;
-  pages?: PageLink[];
   showLogin?: boolean;
   showSignup?: boolean;
 };
@@ -43,12 +44,12 @@ const BRAND2 = "var(--brand-2, #22D3EE)"; // cyan
 export default function ScrollNav({
   side = "right",
   sections,
-  pages,
   showLogin = true,
   showSignup = true,
 }: ScrollNavProps) {
   const router = useRouter();
   const { authenticated: authed } = useAuthStatus();
+  const { theme, toggle: toggleTheme, mounted } = useTheme();
 
   // persist side/collapsed
   const [currSide, setCurrSide] = useState<Side>(() =>
@@ -62,22 +63,11 @@ export default function ScrollNav({
 
   // ui refs
   const [activeFaq, setActiveFaq] = useState<string>("");
-  const [pagesOpen, setPagesOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
   const isRight = currSide === "right";
   const navRef = useRef<HTMLDivElement | null>(null);
-  const flyoutPagesRef = useRef<HTMLDivElement | null>(null);
   const flyoutAccountRef = useRef<HTMLDivElement | null>(null);
-
-  // lista stranica: 2,3,4
-  const pageList: PageLink[] = pages?.length
-    ? pages
-    : [
-        { id: "page-2", label: t("Page 2") },
-        { id: "page-3", label: t("Page 3") },
-        { id: "page-4", label: t("Page 4") },
-      ];
 
   // FAQ spy
   useEffect(() => {
@@ -94,13 +84,13 @@ export default function ScrollNav({
   }, [sections?.faq]);
 
   // global close menija
-  const closeAll = () => { setPagesOpen(false); setAccountOpen(false); };
+  const closeAll = () => { setAccountOpen(false); };
   useEffect(() => {
     const close = () => closeAll();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
     const onDocClick = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (navRef.current?.contains(t) || flyoutPagesRef.current?.contains(t) || flyoutAccountRef.current?.contains(t)) return;
+      if (navRef.current?.contains(t) || flyoutAccountRef.current?.contains(t)) return;
       close();
     };
     window.addEventListener("scroll", close, { passive: true });
@@ -119,6 +109,18 @@ export default function ScrollNav({
 
   // akcije
   const goTop = () => { closeAll(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const goBottom = () => {
+    closeAll();
+    const h = Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight,
+      document.body.offsetHeight,
+      document.documentElement.offsetHeight,
+      document.body.clientHeight,
+      document.documentElement.clientHeight
+    );
+    window.scrollTo({ top: h, behavior: "smooth" });
+  };
 
   const smartScroll = (id: string) => {
     closeAll();
@@ -130,23 +132,6 @@ export default function ScrollNav({
     if (stop) {
       const top = stop.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.12;
       return window.scrollTo({ top, behavior: "smooth" });
-    }
-
-    const p2 = document.querySelector(".phase2-bridge") as HTMLElement | null;
-    const p3 = document.querySelector(".phase3-bridge") as HTMLElement | null;
-
-    const goEl = (el: HTMLElement, extra = 0) =>
-      window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY + extra, behavior: "smooth" });
-
-    switch (id) {
-      case "page-2": if (p2) return goEl(p2, 0); break;
-      case "page-3": if (p3) return goEl(p3, 0); break;
-      case "page-4":
-        if (p3) {
-          const extra = Math.max(p3.getBoundingClientRect().height - window.innerHeight * 0.75, 0);
-          return goEl(p3, extra);
-        }
-        break;
     }
 
     window.dispatchEvent(new CustomEvent("TL_JUMP", { detail: { page: id } }));
@@ -169,20 +154,22 @@ export default function ScrollNav({
   // items
   const items = useMemo(
     () =>
-      [
-        { key: "top",    label: t("Back to top"), icon: ArrowUp,     onClick: goTop,    active: false, variant: "ghost" },
-        { key: "home",   label: authed ? t("Dashboard") : t("Home"), icon: Home,       onClick: goHome, active: false, variant: "ghost" },
-        { key: "pick",   label: t("Pick a page"),  icon: LayoutGrid, onClick: () => { setAccountOpen(false); setPagesOpen(v => !v); }, active: pagesOpen, variant: "ghost" },
+      ([
+        { key: "top",    label: t("Back to top"),   icon: ArrowUp,   onClick: goTop,    active: false, variant: "ghost" },
+        { key: "bottom", label: t("Go to bottom"),  icon: ArrowDown, onClick: goBottom, active: false, variant: "ghost" },
+        { key: "home",   label: authed ? t("Dashboard") : t("Home"), icon: Home, onClick: goHome, active: false, variant: "ghost" },
         sections?.faq && { key: "faq", label: t("FAQ"), icon: HelpCircle, onClick: () => smartScroll(sections.faq!), active: activeFaq === sections?.faq, variant: "ghost" },
         !authed && showLogin  && { key: "login",  label: t("Log in"),  icon: LogIn,   onClick: goLogin,  active: false, variant: "ghost" },
         !authed && showSignup && { key: "signup", label: t("Sign up"), icon: UserPlus, onClick: goSignup, active: false, variant: "primary" },
-        authed && { key: "account", label: t("Account"), icon: User, onClick: () => { setPagesOpen(false); setAccountOpen(v => !v); }, active: accountOpen, variant: "primary" },
-      ].filter(Boolean) as NavItem[],
-    [activeFaq, authed, pagesOpen, accountOpen, sections?.faq]
+        authed && { key: "account", label: t("Account"), icon: User, onClick: () => setAccountOpen(v => !v), active: accountOpen, variant: "primary" },
+        { key: "theme", label: theme === "dark" ? t("Light mode") : t("Dark mode"),
+          icon: theme === "dark" ? Sun : Moon, onClick: toggleTheme, active: false, variant: "ghost" },
+      ].filter(Boolean) as NavItem[]),
+    [activeFaq, authed, sections?.faq, accountOpen, showLogin, showSignup, theme]
   );
 
-  const tipSideClass    = (right: boolean) => (right ? "right-[calc(100%+10px)]" : "left-[calc(100%+10px)]");
   const pillSidePos     = (right: boolean) => (right ? "right-[calc(100%-2px)]" : "left-[calc(100%-2px)]");
+  const pillOriginClass = (right: boolean) => (right ? "origin-right" : "origin-left");
   const markerSideClass = (right: boolean) => (right ? "left-1.5" : "right-1.5");
 
   return (
@@ -220,27 +207,23 @@ export default function ScrollNav({
           aria-hidden
         />
 
-        <div className="relative flex w-[84px] flex-col items-center gap-2 rounded-[42px] border border-cyan-400/45 bg-[rgba(10,20,28,0.72)] p-2 shadow-2xl backdrop-blur-md">
+        <div className="relative flex w-[84px] flex-col items-center gap-2 rounded-[42px] border border-cyan-400/45 bg-[rgba(10,20,28,0.72)] dark:bg-[rgba(12,14,18,0.85)] p-2 shadow-2xl backdrop-blur-md">
           <ul className="flex flex-col items-center gap-2">
             {items.map((item) => (
               <li key={item.key} className="w-full group">
                 <button
                   onClick={() => {
-                    if (item.key !== "pick") setPagesOpen(false);
                     if (item.key !== "account") setAccountOpen(false);
-                    if (item.key === "pick") return setPagesOpen(v => !v);
                     if (item.key === "account") return setAccountOpen(v => !v);
                     item.onClick();
                   }}
                   onMouseEnter={() => {
-                    if (item.key !== "pick") setPagesOpen(false);
                     if (item.key !== "account") setAccountOpen(false);
                   }}
                   className={[
-                    "relative flex w-full items-center justify-center rounded-full p-3 outline-none text-white/95 overflow-visible", // overflow visible za pilulu
+                    "relative flex w-full items-center justify-center rounded-full p-3 outline-none text-white/95 overflow-visible",
                     item.variant === "primary" ? "ring-1 ring-inset ring-cyan-400/80" : "ring-1 ring-inset ring-white/12",
                     item.active ? "bg-cyan-500/18" : "bg-black/25",
-                    "transition", // width/opacity animacije unutar
                   ].join(" ")}
                   style={{ transition: `transform ${DUR_BTN}ms ${EASE}, box-shadow ${DUR_BTN}ms ${EASE}, background-color ${DUR_BTN}ms ${EASE}` }}
                   aria-label={item.label}
@@ -259,29 +242,32 @@ export default function ScrollNav({
                     }}
                   />
 
-                  {/* Ikonica (ostaje vidljiva) */}
+                  {/* Ikonica ostaje */}
                   <item.icon
                     className="size-[22px] transition-transform"
                     style={{ transitionDuration: `${DUR_BTN}ms`, transitionTimingFunction: EASE }}
                     aria-hidden
                   />
 
-                  {/* Ekspandirajuća pilula sa labelom (hover reveal) */}
+                  {/* Ekspanziona pilula (scaleX) */}
                   <span
+                    aria-hidden
                     className={[
-                      "pointer-events-none absolute top-1/2 -translate-y-1/2",
+                      "pointer-events-none absolute top-1/2 -translate-y-1/2 transform-gpu will-change-transform",
                       pillSidePos(isRight),
-                      "flex items-center gap-2 rounded-full border border-white/10 bg-black/75 text-[12px] shadow-lg backdrop-blur",
-                      "h-9 overflow-hidden",
-                      "w-0 opacity-0 px-0",
-                      "group-hover:w-[180px] group-hover:opacity-100 group-hover:px-3",
-                      "whitespace-nowrap",
-                      "transition-all duration-300",
+                      pillOriginClass(isRight),
+                      mounted ? "" : "invisible",
+                      // start state
+                      "scale-x-0 opacity-0",
+                      // target state
+                      "group-hover:scale-x-100 group-hover:opacity-100",
+                      // vizuelni stil
+                      "flex items-center gap-2 h-9 w-[180px] rounded-full border border-white/10 bg-black/75 dark:bg-white/10 dark:border-white/15 px-3 shadow-lg backdrop-blur",
+                      "transition-transform duration-300 ease-out",
                     ].join(" ")}
-                    role="tooltip"
                   >
-                    <span className="uppercase tracking-wide">{item.label}</span>
-                    <ChevronRight className="size-4 opacity-70" aria-hidden />
+                    <span className="text-[12px] uppercase tracking-wide">{item.label}</span>
+                    <ChevronRight className="size-4 opacity-70" />
                   </span>
 
                   {/* Marker (active) */}
@@ -325,26 +311,6 @@ export default function ScrollNav({
             </button>
           </div>
 
-          {/* Flyout: Pick a page */}
-          {pagesOpen && (
-            <div
-              ref={flyoutPagesRef}
-              onMouseLeave={() => setPagesOpen(false)}
-              className={["absolute top-1/2 z-[995] -translate-y-1/2", isRight ? "right-[calc(100%-2px)]" : "left-[calc(100%-2px)]"].join(" ")}
-              style={{ transition: `opacity ${DUR_PANEL}ms ${EASE}` }}
-            >
-              <div className="rounded-2xl border border-cyan-400/30 bg-[rgba(10,20,28,0.95)] p-2 shadow-2xl backdrop-blur">
-                <ul className="flex min-w-[220px] flex-col gap-1">
-                  {pageList.map((p) => (
-                    <li key={p.id}>
-                      <FlyoutBtn label={p.label} onClick={() => smartScroll(p.id)} />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
           {/* Flyout: Account */}
           {authed && accountOpen && (
             <div
@@ -353,7 +319,7 @@ export default function ScrollNav({
               className={["absolute top-1/2 z-[995] -translate-y-1/2", isRight ? "right-[calc(100%-2px)]" : "left-[calc(100%-2px)]"].join(" ")}
               style={{ transition: `opacity ${DUR_PANEL}ms ${EASE}` }}
             >
-              <div className="rounded-2xl border border-cyan-400/30 bg-[rgba(10,20,28,0.95)] p-2 shadow-2xl backdrop-blur">
+              <div className="rounded-2xl border border-cyan-400/30 bg-[rgba(10,20,28,0.95)] dark:bg-[rgba(12,14,18,0.95)] p-2 shadow-2xl backdrop-blur">
                 <ul className="flex min-w-[220px] flex-col gap-1">
                   <li><FlyoutBtn label={t("Profile")} onClick={() => accountNavigate("/account")} /></li>
                   <li><FlyoutBtn label={t("Subscription")} onClick={() => accountNavigate("/billing")} /></li>
@@ -371,12 +337,11 @@ export default function ScrollNav({
         className="fixed inset-x-0 bottom-0 z-[980] flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2 lg:hidden"
       >
         <div className="pointer-events-none absolute inset-x-4 -top-[1px] h-[2px] bg-gradient-to-r from-cyan-400 via-cyan-300 to-cyan-200 opacity-95" />
-        <div className="relative flex w-full max-w-[620px] items-center justify-between gap-1 rounded-2xl border border-cyan-400/45 bg-[rgba(10,20,28,0.72)] px-2 py-1 shadow-2xl backdrop-blur-md">
+        <div className="relative flex w-full max-w-[620px] items-center justify-between gap-1 rounded-2xl border border-cyan-400/45 bg-[rgba(10,20,28,0.72)] dark:bg-[rgba(12,14,18,0.85)] px-2 py-1 shadow-2xl backdrop-blur-md">
           {items.map((item) => (
             <button
               key={`m-${item.key}`}
               onClick={() => {
-                if (item.key === "pick") return setPagesOpen(v => !v);
                 if (item.key === "account") return setAccountOpen(v => !v);
                 closeAll();
                 item.onClick();
@@ -407,23 +372,9 @@ export default function ScrollNav({
             </button>
           ))}
 
-          {pagesOpen && (
-            <div className="absolute left-2 right-2 -top-2 translate-y-[-100%]">
-              <div className="rounded-xl border border-cyan-400/30 bg-[rgba(10,20,28,0.95)] p-2 shadow-2xl backdrop-blur">
-                <ul className="flex min-w-[220px] flex-col gap-1">
-                  {pageList.map((p) => (
-                    <li key={p.id}>
-                      <FlyoutBtn label={p.label} onClick={() => smartScroll(p.id)} />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
           {authed && accountOpen && (
             <div className="absolute left-2 right-2 -top-2 translate-y-[-100%]">
-              <div className="rounded-xl border border-cyan-400/30 bg-[rgba(10,20,28,0.95)] p-2 shadow-2xl backdrop-blur">
+              <div className="rounded-xl border border-cyan-400/30 bg-[rgba(10,20,28,0.95)] dark:bg-[rgba(12,14,18,0.95)] p-2 shadow-2xl backdrop-blur">
                 <ul className="flex min-w-[220px] flex-col gap-1">
                   <li><FlyoutBtn label={t("Profile")} onClick={() => accountNavigate("/account")} /></li>
                   <li><FlyoutBtn label={t("Subscription")} onClick={() => accountNavigate("/billing")} /></li>
