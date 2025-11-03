@@ -22,8 +22,9 @@ export const CONVERGE_SCALE_LATE = 0.65;
 
 // LABEL
 export const LABEL_TOP_VH_DEFAULT = 16;
-export const LABEL_LIFT_DELAY = 0.00;
+export const LABEL_LIFT_DELAY = 0.12;
 export const LABEL_LIFT_VH = 100;
+
 
 // P3 brzina
 export const DEFAULT_P3_SPEED = 0.70;
@@ -102,7 +103,10 @@ type BackdropStyle = "brand" | "indigo" | "blue";
 ========================================= */
 export default function MainPhase2({
   headline = t("Create your tiers on your price page"),
-  labelWords = [t("Tiers shown are an example"), t("(not actual tiers)")],
+  labelWords = [
+  t("Demo preview — not actual tiers"),
+  t("You’ll create your own tiers"),
+],
   holdDesktop = 0.20,
   holdMobile = 0.12,
   segP2VhDesktop = 300,
@@ -466,7 +470,7 @@ export default function MainPhase2({
             const llFast = Math.min(1, ll / 0.22);
             const ly = -llFast * LABEL_LIFT_VH;
             labelLayer.style.transform = `translate3d(-50%, ${ly}vh, 0)`;
-            const lop = 1 - clamp(ll / 0.18, 0, 1);
+            const lop = 1 - clamp(ll / 0.28, 0, 1);
             labelLayer.style.opacity = String(lop);
           }
         }
@@ -600,6 +604,20 @@ export default function MainPhase2({
       style={{ height: `${TRACK_TOTAL_VH}vh` }}
     >
       <div ref={stageRef} className="sticky top-0 h-screen overflow-hidden [contain:layout_style_paint]">
+        {/* Sticky demo badge — visible while section is in view */}
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-[95] select-none pointer-events-none">
+          <span
+            className="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium text-neutral-900 shadow-[0_8px_24px_rgba(15,23,42,.08)]"
+            style={{
+              background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box",
+              border: "1px solid transparent",
+              backdropFilter: "blur(6px)",
+            }}
+            aria-live="polite"
+          >
+            {t("Demo preview — you’ll create your own tiers")}
+          </span>
+        </div>
         {/* ===== BG LAYER ===== */}
         {BG_ENABLED && (
           <div ref={bgLayerRef} className="absolute inset-0 pointer-events-none">
@@ -680,7 +698,7 @@ export default function MainPhase2({
                 className="text-transparent bg-clip-text"
                 style={{
                   backgroundImage: "var(--brand-gradient)",
-                  fontSize: "clamp(18px, 3.2vw, 30px)",
+                  fontSize: "clamp(20px, 3.8vw, 34px)",
                   lineHeight: 1.1,
                   display: "inline-block",
                   willChange: "transform, opacity",
@@ -952,15 +970,17 @@ function Card({ tier, featured, color }: CardProps) {
             </div>
 
             <button
+              disabled
+              aria-disabled="true"
               className={[
                 "mt-5 w-full rounded-xl py-2.5 text-sm font-medium transition",
                 "border border-neutral-200 text-neutral-900 hover:shadow hover:-translate-y-[1px]",
                 "hover:border-transparent",
                 "hover:[background:linear-gradient(#fff,#fff)_padding-box,linear-gradient(90deg,_#6366f1,_#38bdf8,_#14b8a6)_border-box]",
               ].join(" ")}
-              aria-label={t("Select {name}", { name: tier.name })}
+              aria-label={t("Demo preview — you’ll create your own tiers")}
             >
-              {t("Select")}
+              {t("Demo preview — you’ll create your own tiers")}
             </button>
           </div>
         </div>
@@ -991,15 +1011,17 @@ function Card({ tier, featured, color }: CardProps) {
           ))}
         </ul>
         <button
+          disabled
+          aria-disabled="true"
           className={[
             "mt-5 w-full rounded-xl py-2.5 text-sm font-medium transition",
             "border border-neutral-200 text-neutral-900 hover:shadow hover:-translate-y-[1px]",
             "hover:outline hover:outline-2 hover:outline-offset-2",
             "hover:[outline-color:var(--tier)] hover:[border-color:var(--tier)]",
           ].join(" ")}
-          aria-label={t("Select {name}", { name: tier.name })}
+          aria-label={t("Demo preview — you’ll create your own tiers")}
         >
-          {t("Select")}
+          {t("Demo preview — you’ll create your own tiers")}
         </button>
       </div>
     </div>

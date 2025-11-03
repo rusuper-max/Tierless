@@ -12,8 +12,6 @@ import {
   ChevronRight,
   User,
   ArrowLeftRight,
-  ChevronLeft,
-  ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { t } from "@/i18n";
@@ -159,6 +157,15 @@ export default function ScrollNav({
   const goSignup = () => { closeAll(); router.push("/signin?create=1"); };
   const accountNavigate = (path: string) => { closeAll(); router.push(path); };
 
+  type NavItem = {
+    key: string;
+    label: string;
+    icon: any;
+    onClick: () => void;
+    active: boolean;
+    variant: "ghost" | "primary";
+  };
+
   // items
   const items = useMemo(
     () =>
@@ -175,6 +182,7 @@ export default function ScrollNav({
   );
 
   const tipSideClass    = (right: boolean) => (right ? "right-[calc(100%+10px)]" : "left-[calc(100%+10px)]");
+  const pillSidePos     = (right: boolean) => (right ? "right-[calc(100%-2px)]" : "left-[calc(100%-2px)]");
   const markerSideClass = (right: boolean) => (right ? "left-1.5" : "right-1.5");
 
   return (
@@ -215,7 +223,7 @@ export default function ScrollNav({
         <div className="relative flex w-[84px] flex-col items-center gap-2 rounded-[42px] border border-cyan-400/45 bg-[rgba(10,20,28,0.72)] p-2 shadow-2xl backdrop-blur-md">
           <ul className="flex flex-col items-center gap-2">
             {items.map((item) => (
-              <li key={item.key} className="w-full">
+              <li key={item.key} className="w-full group">
                 <button
                   onClick={() => {
                     if (item.key !== "pick") setPagesOpen(false);
@@ -229,9 +237,10 @@ export default function ScrollNav({
                     if (item.key !== "account") setAccountOpen(false);
                   }}
                   className={[
-                    "group relative flex w-full items-center justify-center rounded-full p-3 outline-none text-white/95 overflow-hidden",
+                    "relative flex w-full items-center justify-center rounded-full p-3 outline-none text-white/95 overflow-visible", // overflow visible za pilulu
                     item.variant === "primary" ? "ring-1 ring-inset ring-cyan-400/80" : "ring-1 ring-inset ring-white/12",
                     item.active ? "bg-cyan-500/18" : "bg-black/25",
+                    "transition", // width/opacity animacije unutar
                   ].join(" ")}
                   style={{ transition: `transform ${DUR_BTN}ms ${EASE}, box-shadow ${DUR_BTN}ms ${EASE}, background-color ${DUR_BTN}ms ${EASE}` }}
                   aria-label={item.label}
@@ -249,21 +258,32 @@ export default function ScrollNav({
                       maskComposite: "exclude",
                     }}
                   />
-                  <item.icon className="size-[22px] transition-transform" style={{ transitionDuration: `${DUR_BTN}ms`, transitionTimingFunction: EASE }} aria-hidden />
-                  {/* Tip */}
-                  {item.key !== "pick" && item.key !== "account" && (
-                    <span
-                      className={[
-                        "pointer-events-none absolute top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/75 px-3 py-1 text-[12px] opacity-0 backdrop-blur shadow-lg",
-                        tipSideClass(isRight),
-                        "group-hover:opacity-100",
-                      ].join(" ")}
-                      style={{ transition: `opacity ${DUR_BTN}ms ${EASE}` }}
-                      role="tooltip"
-                    >
-                      {item.label}
-                    </span>
-                  )}
+
+                  {/* Ikonica (ostaje vidljiva) */}
+                  <item.icon
+                    className="size-[22px] transition-transform"
+                    style={{ transitionDuration: `${DUR_BTN}ms`, transitionTimingFunction: EASE }}
+                    aria-hidden
+                  />
+
+                  {/* Ekspandirajuća pilula sa labelom (hover reveal) */}
+                  <span
+                    className={[
+                      "pointer-events-none absolute top-1/2 -translate-y-1/2",
+                      pillSidePos(isRight),
+                      "flex items-center gap-2 rounded-full border border-white/10 bg-black/75 text-[12px] shadow-lg backdrop-blur",
+                      "h-9 overflow-hidden",
+                      "w-0 opacity-0 px-0",
+                      "group-hover:w-[180px] group-hover:opacity-100 group-hover:px-3",
+                      "whitespace-nowrap",
+                      "transition-all duration-300",
+                    ].join(" ")}
+                    role="tooltip"
+                  >
+                    <span className="uppercase tracking-wide">{item.label}</span>
+                    <ChevronRight className="size-4 opacity-70" aria-hidden />
+                  </span>
+
                   {/* Marker (active) */}
                   <span
                     className={[
@@ -417,15 +437,6 @@ export default function ScrollNav({
     </>
   );
 }
-
-type NavItem = {
-  key: string;
-  label: string;
-  icon: any;
-  onClick: () => void;
-  active: boolean;
-  variant: "ghost" | "primary";
-};
 
 function FlyoutBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
