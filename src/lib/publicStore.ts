@@ -12,3 +12,9 @@ export async function putPublic(slug: string, data: any) {
   await fs.mkdir(PUB_ROOT, { recursive: true });
   await fs.writeFile(fileFor(slug), JSON.stringify(data ?? {}, null, 2), "utf8");
 }
+
+// add in src/lib/publicStore.ts
+export async function deletePublic(_slug: string): Promise<boolean> {
+  // no-op (ili obriši iz CDN/file sistema ako imaš)
+  return true;
+}

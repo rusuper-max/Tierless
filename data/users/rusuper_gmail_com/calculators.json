@@ -1,8 +1,10 @@
 [
   {
     "meta": {
-      "name": "Copy of Untitled Page",
-      "slug": "copy-of-untitled-page"
+      "name": "Copy of Copy of Toping",
+      "slug": "copy-of-copy-of-toping",
+      "order": 4,
+      "online": true
     },
     "config": {}
   }

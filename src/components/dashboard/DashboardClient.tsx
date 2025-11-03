@@ -5,86 +5,61 @@ import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 
 type MiniCalc = { meta: { name: string; slug: string } };
-type ApiRows =
+type ApiResp =
   | MiniCalc[]
-  | { rows?: MiniCalc[]; __debug?: { userId: string; file: string } };
+  | {
+      rows?: MiniCalc[];
+      trashedCount?: number;
+      notice?: string;
+      limit?: number | "unlimited";
+      __debug?: { userId: string; file: string };
+    };
 
 function ConfirmDeleteModal({
-  open,
-  name,
-  onCancel,
-  onConfirm,
-  busy,
-}: {
-  open: boolean;
-  name: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-  busy?: boolean;
-}) {
+  open, name, onCancel, onConfirm, busy,
+}: { open: boolean; name: string; onCancel: () => void; onConfirm: () => void; busy?: boolean; }) {
   const [typed, setTyped] = useState("");
-
-  useEffect(() => {
-    if (open) setTyped("");
-  }, [open]);
-
+  useEffect(() => { if (open) setTyped(""); }, [open]);
   if (!open) return null;
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
       <div className="relative z-[101] card w-[92vw] max-w-md p-4">
         <div className="text-lg font-semibold">Delete “{name}”</div>
-        <p className="mt-2 text-sm text-neutral-500">
-          Ova akcija je nepovratna. Da potvrdiš, ukucaj tačno: <b>Delete</b>
-        </p>
-        <input
-          className="field mt-3 w-full"
-          placeholder='Type "Delete" to confirm'
-          value={typed}
-          onChange={(e) => setTyped(e.target.value)}
-          autoFocus
-        />
+        <p className="mt-2 text-sm text-neutral-500">Ova akcija je nepovratna. Da potvrdiš, ukucaj tačno: <b>Delete</b></p>
+        <input className="field mt-3 w-full" placeholder='Type "Delete" to confirm' value={typed} onChange={(e) => setTyped(e.target.value)} autoFocus />
         <div className="mt-4 flex items-center justify-end gap-2">
-          <button onClick={onCancel} className="btn btn-plain" disabled={busy}>
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="btn btn-danger btn-danger--solid"
-            disabled={busy || typed !== "Delete"}
-          >
-            {busy ? "Deleting…" : "Delete"}
-          </button>
+          <button onClick={onCancel} className="btn btn-plain" disabled={busy}>Cancel</button>
+          <button onClick={onConfirm} className="btn btn-danger btn-danger--solid" disabled={busy || typed !== "Delete"}>{busy ? "Deleting…" : "Delete"}</button>
         </div>
       </div>
     </div>
   );
 }
 
-export default function DashboardClient({ email }: { email?: string }) {
+export default function DashboardClient() {
   const [rows, setRows] = useState<MiniCalc[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [userDebug, setUserDebug] = useState<{ userId: string; file: string } | null>(null);
+  const [notice, setNotice] = useState<string>("");
+  const [error, setError] = useState<string>("");
 
   const [confirmSlug, setConfirmSlug] = useState<string | null>(null);
   const [confirmName, setConfirmName] = useState<string>("");
 
   async function load() {
     setLoading(true);
+    setError("");
     try {
-      const r = await fetch("/api/calculators", {
-        cache: "no-store",
-        credentials: "same-origin",
-      });
-      const json = (await r.json()) as ApiRows;
-
+      const r = await fetch("/api/calculators", { cache: "no-store", credentials: "same-origin" });
+      const json = (await r.json()) as ApiResp;
       const arr = Array.isArray(json) ? json : json?.rows ?? [];
       setRows(Array.isArray(arr) ? arr : []);
-
       if (!Array.isArray(json) && json?.__debug) setUserDebug(json.__debug);
       else setUserDebug(null);
+      if (!Array.isArray(json) && typeof json?.notice === "string") setNotice(json.notice);
+      else setNotice("");
     } catch {
       setRows([]);
       setUserDebug(null);
@@ -92,13 +67,11 @@ export default function DashboardClient({ email }: { email?: string }) {
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   async function createBlank() {
     setBusy("new");
+    setError("");
     try {
       const r = await fetch("/api/calculators", {
         method: "POST",
@@ -106,15 +79,19 @@ export default function DashboardClient({ email }: { email?: string }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({}),
       });
-
       const payload = await r.text();
       if (!r.ok) {
+        try {
+          const j = JSON.parse(payload);
+          if (j?.error === "limit_reached") { setError("You reached your plan page limit. Consider upgrading."); return; }
+        } catch {}
         console.error("CREATE /api/calculators ->", payload);
-        throw new Error(`create_failed: ${payload}`);
+        setError("Create failed.");
+        return;
       }
       const json = JSON.parse(payload) as { slug?: string };
       if (json?.slug) {
-        setRows((prev) => [...prev, { meta: { name: "Untitled Page", slug: json.slug! } }]);
+        setRows(prev => [...prev, { meta: { name: "Untitled Page", slug: json.slug! } }]);
         window.location.href = `/editor/${json.slug}`;
       }
     } finally {
@@ -124,6 +101,7 @@ export default function DashboardClient({ email }: { email?: string }) {
 
   async function duplicate(slug: string, name: string) {
     setBusy(slug);
+    setError("");
     try {
       const r = await fetch("/api/calculators", {
         method: "POST",
@@ -133,12 +111,17 @@ export default function DashboardClient({ email }: { email?: string }) {
       });
       const payload = await r.text();
       if (!r.ok) {
+        try {
+          const j = JSON.parse(payload);
+          if (j?.error === "limit_reached") { setError("You reached your plan page limit. Consider upgrading."); return; }
+        } catch {}
         console.error("DUP /api/calculators ->", payload);
-        throw new Error(`dup_failed: ${payload}`);
+        setError("Duplicate failed.");
+        return;
       }
       const json = JSON.parse(payload) as { slug?: string };
       if (json?.slug) {
-        setRows((prev) => [...prev, { meta: { name: `Copy of ${name}`, slug: json.slug! } }]);
+        setRows(prev => [...prev, { meta: { name: `Copy of ${name}`, slug: json.slug! } }]);
       }
     } finally {
       setBusy(null);
@@ -149,22 +132,17 @@ export default function DashboardClient({ email }: { email?: string }) {
     setConfirmSlug(slug);
     setConfirmName(name);
   }
-
   async function removeConfirmed() {
     if (!confirmSlug) return;
     const slug = confirmSlug;
     setBusy(slug);
     try {
-      const r = await fetch(`/api/calculators/${encodeURIComponent(slug)}`, {
-        method: "DELETE",
-        credentials: "same-origin",
-      });
-      const payload = await r.text().catch(() => "");
+      const r = await fetch(`/api/calculators/${encodeURIComponent(slug)}`, { method: "DELETE", credentials: "same-origin" });
       if (!r.ok) {
+        const payload = await r.text().catch(() => "");
         console.error("DELETE /api/calculators ->", payload);
-        throw new Error(`delete_failed: ${payload}`);
       }
-      setRows((prev) => prev.filter((x) => x.meta.slug !== slug));
+      setRows(prev => prev.filter(x => x.meta.slug !== slug));
       setConfirmSlug(null);
       setConfirmName("");
     } finally {
@@ -177,9 +155,7 @@ export default function DashboardClient({ email }: { email?: string }) {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Pages</h1>
-          <p className="text-xs text-neutral-500">
-            Create, edit and share your Tierless pages.
-          </p>
+          <p className="text-xs text-neutral-500">Create, edit and share your Tierless pages.</p>
           {userDebug && (
             <p className="mt-1 text-[11px] text-neutral-500">
               user: <code>{userDebug.userId}</code> • file: <code>{userDebug.file}</code>
@@ -195,6 +171,9 @@ export default function DashboardClient({ email }: { email?: string }) {
         </div>
       </header>
 
+      {notice && <div className="card p-3 border border-amber-200 bg-amber-50 text-amber-800 text-sm">{notice}</div>}
+      {error &&  <div className="card p-3 border border-rose-200  bg-rose-50  text-rose-700  text-sm">{error}</div>}
+
       {loading ? (
         <div className="text-sm text-neutral-500">Loading…</div>
       ) : rows.length === 0 ? (
@@ -203,9 +182,7 @@ export default function DashboardClient({ email }: { email?: string }) {
           <p className="text-neutral-500">Create a blank page or start from a template.</p>
           <div className="mt-3 flex gap-2 flex-nowrap whitespace-nowrap">
             <Button onClick={createBlank}>New Page</Button>
-            <Button href="/templates" variant="plain">
-              Browse Templates
-            </Button>
+            <Button href="/templates" variant="plain">Browse Templates</Button>
           </div>
         </div>
       ) : (
@@ -226,25 +203,12 @@ export default function DashboardClient({ email }: { email?: string }) {
                   <td className="align-middle">
                     <div className="min-w-[340px] overflow-x-auto">
                       <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap">
-                        <Button href={`/p/${r.meta.slug}`} className="text-xs">
-                          Public
-                        </Button>
-                        <Button href={`/editor/${r.meta.slug}`} className="text-xs">
-                          Edit
-                        </Button>
-                        <Button
-                          onClick={() => duplicate(r.meta.slug, r.meta.name)}
-                          disabled={busy === r.meta.slug}
-                          className="text-xs"
-                        >
+                        <Button href={`/p/${r.meta.slug}`} className="text-xs">Public</Button>
+                        <Button href={`/editor/${r.meta.slug}`} className="text-xs">Edit</Button>
+                        <Button onClick={() => duplicate(r.meta.slug, r.meta.name)} disabled={busy === r.meta.slug} className="text-xs">
                           {busy === r.meta.slug ? "Duplicating…" : "Duplicate"}
                         </Button>
-                        <button
-                          className="btn btn-danger text-xs"
-                          onClick={() => openConfirm(r.meta.slug, r.meta.name)}
-                          disabled={busy === r.meta.slug}
-                          aria-label={`Delete ${r.meta.name}`}
-                        >
+                        <button className="btn btn-danger text-xs" onClick={() => openConfirm(r.meta.slug, r.meta.name)} disabled={busy === r.meta.slug} aria-label={`Delete ${r.meta.name}`}>
                           Delete
                         </button>
                       </div>

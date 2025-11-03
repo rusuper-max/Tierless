@@ -7,10 +7,12 @@ import { NextRequest, NextResponse } from "next/server";
 import type { PlanId } from "@/lib/entitlements";
 
 export async function GET(req: NextRequest) {
-  // Dev: čitamo plan iz kolačića (prod kasnije iz DB/session)
   const plan = (req.cookies.get("tl_plan")?.value as PlanId) || "free";
-  return NextResponse.json({
+  const res = NextResponse.json({
+    authenticated: true,            // OK u dev-u (izvor istine je /api/auth/status)
     user: { plan },
-    authenticated: true,
+    plan,                            // opcioni “dup” radi pogodnosti
   });
+  res.headers.set("Cache-Control", "no-store");
+  return res;
 }

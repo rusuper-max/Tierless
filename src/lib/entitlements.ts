@@ -18,6 +18,7 @@ export type Limits = {
   pages: number | "unlimited";
   tiersPerPage: number | "unlimited";
   items: number | "unlimited";
+  /** Koliko stranica može biti ONLINE istovremeno (tj. “published” cap) */
   maxPublicPages: number | "unlimited";
   teamSeats: number | "unlimited";
   customDomains: number | "unlimited";
@@ -56,7 +57,7 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
       pages: 1,
       tiersPerPage: 2,
       items: 20,
-      maxPublicPages: 1,
+      maxPublicPages: 1, // published cap
       teamSeats: 1,
       customDomains: 0,
     },
@@ -77,7 +78,7 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
       pages: 1,
       tiersPerPage: 3,
       items: 40,
-      maxPublicPages: 1,
+      maxPublicPages: 1, // published cap
       teamSeats: 1,
       customDomains: 0,
     },
@@ -98,7 +99,7 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
       pages: 2,
       tiersPerPage: 5,
       items: 80,
-      maxPublicPages: 2,
+      maxPublicPages: 2, // published cap
       teamSeats: 1,
       customDomains: 0,
     },
@@ -119,7 +120,7 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
       pages: 5,
       tiersPerPage: 5,
       items: 130,
-      maxPublicPages: 5,
+      maxPublicPages: 3, // ← traženo: 3 published stranice
       teamSeats: 3,
       customDomains: 0,
     },
@@ -139,8 +140,8 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
     limits: {
       pages: "unlimited",
       tiersPerPage: "unlimited",
-      items: 300,             // anti-abuse cap
-      maxPublicPages: 10,
+      items: 300, // anti-abuse cap
+      maxPublicPages: 5, // ← “možda 5” — lako podižeš na 10 kad poželiš
       teamSeats: 10,
       customDomains: 3,
     },
@@ -163,7 +164,9 @@ export function canFeature(feature: FeatureKey, plan: PlanId): { allowed: boolea
   return { allowed: false, requiredPlan: firstPlanWithFeature(feature) };
 }
 
-export type UsageNeeds = Partial<Pick<Limits, "pages" | "tiersPerPage" | "items" | "maxPublicPages" | "teamSeats" | "customDomains">>;
+export type UsageNeeds = Partial<
+  Pick<Limits, "pages" | "tiersPerPage" | "items" | "maxPublicPages" | "teamSeats" | "customDomains">
+>;
 
 // Nađi najniži plan koji zadovoljava zadate potrebe (brojčani limiti)
 export function findPlanForNeeds(needs: UsageNeeds): PlanId {
@@ -195,4 +198,9 @@ export function withinLimits(
 export function suggestPlanByLimits(needs: UsageNeeds, current: PlanId): PlanId | null {
   if (withinLimits(needs, current).ok) return null;
   return PLAN_ORDER.find((p) => withinLimits(needs, p).ok) ?? "tierless";
+}
+
+/** Helper alias da bude jasno da je “published cap” = limits.maxPublicPages */
+export function getPublishedCap(plan: PlanId): number | "unlimited" {
+  return ENTITLEMENTS[plan].limits.maxPublicPages;
 }
