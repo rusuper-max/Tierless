@@ -28,7 +28,7 @@ export default function MainPhase1() {
         {/* sticky viewport */}
         <div className="sticky top-0 h-[100svh] overflow-hidden relative">
           {/* Lokalna aurora (po želji) */}
-          <div className="fx-aurora pointer-events-none z-0" aria-hidden="true" />
+          <div className="fx-aurora pointer-events-none z-0 sm:opacity-100 sm:[filter:blur(44px)] opacity-90 [filter:blur(28px)]" aria-hidden="true" />
 
           {/* PRISM 3D — sakrij na mobilnom */}
           <div className="hidden md:block">
@@ -36,13 +36,15 @@ export default function MainPhase1() {
           </div>
 
           {/* HERO CONTENT */}
-          <div className="relative z-10 min-h-[100svh] px-4 sm:px-6 grid place-items-center">
+          <div className="relative z-10 min-h-[100svh] px-4 sm:px-6 grid place-items-center
+                          pt-[calc(env(safe-area-inset-top)+8px)]
+                          pb-[calc(env(safe-area-inset-bottom)+88px)]">
             <div className="mx-auto max-w-6xl grid lg:grid-cols-2 items-center gap-10 pt-24">
               <div className="space-y-6 pl-3 sm:pl-0 dark:[&_*]:!text-white">
-                <h1 className="font-semibold tracking-tight antialiased text-neutral-900 dark:!text-white leading-tight text-[clamp(34px,9.5vw,46px)] sm:text-7xl transition-colors dark:[text-shadow:0_3px_26px_rgba(0,0,0,.85),0_2px_12px_rgba(0,0,0,.65)]">
+                <h1 className="font-semibold tracking-tight antialiased text-neutral-900 dark:!text-white leading-tight text-[clamp(34px,9.5vw,46px)] sm:text-7xl transition-colors sm:dark:[text-shadow:0_3px_26px_rgba(0,0,0,.85),0_2px_12px_rgba(0,0,0,.65)]">
                   {t("hero.title")}
                 </h1>
-                <p className="text-lg antialiased text-neutral-700 dark:!text-white/95 max-w-[52ch] transition-colors dark:[text-shadow:0_2px_16px_rgba(0,0,0,.75),0_1px_8px_rgba(0,0,0,.55)]">
+                <p className="text-lg antialiased text-neutral-700 dark:!text-white/95 max-w-[52ch] transition-colors sm:dark:[text-shadow:0_2px_16px_rgba(0,0,0,.75),0_1px_8px_rgba(0,0,0,.55)]">
                   {t("hero.subtitle")}
                 </p>
                 <div className="flex flex-wrap items-center gap-3 pt-2">

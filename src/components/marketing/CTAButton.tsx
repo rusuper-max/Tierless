@@ -48,6 +48,9 @@ export default function CTAButton({
   ariaLabel,
   ...rest
 }: Props) {
+  const WHITE_INK = "#0f172a";
+  const isWhiteFill = variant === "brand" || variant === "outline";
+
   // 1) Izaberi tekst koji renderujemo
   const text = useMemo(() => {
     if (typeof label === "string") return label;
@@ -122,19 +125,19 @@ export default function CTAButton({
       const content = ch === " " ? "\u00A0" : ch;
 
       // Unified gradient: pun efekat TEK kad izmerimo širine
-      const gradStyle: CSSProperties | undefined =
-        textGradientUnified && measured
-          ? {
-              backgroundImage:
-                "linear-gradient(90deg, var(--brand-1, #4F46E5), var(--brand-2, #22D3EE))",
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              color: "transparent",
-              WebkitTextFillColor: "transparent",
-              backgroundSize: `${totalW}px 100%`,
-              backgroundPosition: `-${offsets[i] || 0}px 0`,
-            }
-          : undefined; // pre merenja — bez gradijenta po slovima (izgleda kao regularan tekst/boja)
+      const allowGradient = textGradientUnified && measured && !isWhiteFill;
+      const gradStyle: CSSProperties | undefined = allowGradient
+        ? {
+            backgroundImage:
+              "linear-gradient(90deg, var(--brand-1, #4F46E5), var(--brand-2, #22D3EE))",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+            WebkitTextFillColor: "transparent",
+            backgroundSize: `${totalW}px 100%`,
+            backgroundPosition: `-${offsets[i] || 0}px 0`,
+          }
+        : undefined;
 
       return (
         <span
@@ -168,11 +171,18 @@ export default function CTAButton({
 
   const labelNode =
     fx === "swap-up" && text ? (
-      <span ref={wrapRef} className="mkt-btn-label">
+      <span
+        ref={wrapRef}
+        className="mkt-btn-label"
+        style={isWhiteFill ? ({ color: WHITE_INK } as CSSProperties) : undefined}
+      >
         {renderChars()}
       </span>
     ) : (
-      <span className="mkt-btn-label">
+      <span
+        className="mkt-btn-label"
+        style={isWhiteFill ? ({ color: WHITE_INK } as CSSProperties) : undefined}
+      >
         {typeof label === "string" ? label : children}
       </span>
     );
@@ -180,17 +190,15 @@ export default function CTAButton({
   const computedAria = ariaLabel ?? (text || undefined);
 
   // Force white fill always + brand gradient outline (hairline optional) for brand & outline.
-  const inlineStyle: CSSProperties | undefined =
-    variant === "brand" || variant === "outline"
-      ? {
-          // White fill with gradient border ring (padding-box + border-box trick).
-          background:
-            "linear-gradient(#fff, #fff) padding-box, var(--brand-gradient) border-box",
-          border: hairlineOutline ? "0.5px solid transparent" : "1px solid transparent",
-          // Ensure readable ink regardless of theme.
-          color: "#0f172a",
-        }
-      : undefined;
+  const inlineStyle: CSSProperties | undefined = isWhiteFill
+    ? {
+        background:
+          "linear-gradient(#fff, #fff) padding-box, var(--brand-gradient) border-box",
+        border: hairlineOutline ? "0.5px solid transparent" : "1px solid transparent",
+        color: WHITE_INK,
+        WebkitTextFillColor: WHITE_INK as any, // ensure Safari doesn't keep transparent fill from children
+      }
+    : undefined;
 
   // 5) Render Link ili button
   if (href) {

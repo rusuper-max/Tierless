@@ -179,7 +179,7 @@ export default function MainPhase2({
     return {
       basic:     { x: 0, y: -280, scale: 0.95, rot: 0 },
       standard:  { x: 0, y: -120, scale: 0.96, rot: 0 },
-      business:  { x: 0, y:   40, scale: 1.02, rot: 0 },
+      business:  { x: 0, y:   0,  scale: 0.98, rot: 0 },
       premium:   { x: 0, y:  200, scale: 0.96, rot: 0 },
       signature: { x: 0, y:  360, scale: 0.96, rot: 0 },
     } as const;
@@ -607,7 +607,10 @@ export default function MainPhase2({
         color: "var(--ink, #f5f5f6)"
       }}
     >
-      <div ref={stageRef} className="sticky top-0 h-screen overflow-hidden [contain:layout_style_paint]">
+      <div
+  ref={stageRef}
+  className="sticky top-0 h-screen overflow-hidden [contain:layout_style_paint] box-border pt-[calc(env(safe-area-inset-top)+4px)] pb-[calc(env(safe-area-inset-bottom)+90px)]"
+>
         {/* Sticky demo badge — visible while section is in view */}
         <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-[95] select-none pointer-events-none">
           <span
@@ -732,7 +735,7 @@ export default function MainPhase2({
         {/* ===== P3 LAYER ===== */}
         <div ref={p3LayerRef} className="absolute inset-0">
           <div className="absolute inset-0 grid place-items-center">
-            <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 pt-[34vh] sm:pt-[30vh]">
+            <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 pt-[28vh] sm:pt-[30vh]">
               {/* Napomena + Title */}
               <div className="mb-6 sm:mb-8 text-center relative z-50 pointer-events-none">
                 <p
