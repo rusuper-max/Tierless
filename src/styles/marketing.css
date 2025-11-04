@@ -554,3 +554,9 @@ html.dark #hero p {
   color: #f5f7fa !important; /* bright, but not pure white */
   text-shadow: 0 1px 10px rgba(0,0,0,.25); /* subtle lift on dark bg */
 }
+
+/* === Dark-mode: make Phase 2 pricing title readable === */
+html.dark #pricing h3 {
+  color: #f5f7fa !important;   /* bright readable white */
+  text-shadow: 0 1px 10px rgba(0,0,0,.25);
+}

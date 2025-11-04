@@ -91,6 +91,44 @@ export default function MarketingHeader() {
   }, []);
 
   const userInitial = useMemo(() => "A", []);
+
+  // --- Sticky page progress ---
+  const [progress, setProgress] = useState(0); // 0..1 of total scroll
+  const rafRef = useRef<number | null>(null);
+  const tickingRef = useRef(false);
+
+  const computeProgress = useCallback(() => {
+    const doc = document.documentElement;
+    const max = Math.max(1, doc.scrollHeight - window.innerHeight);
+    const y = window.scrollY || doc.scrollTop || 0;
+    setProgress(Math.min(1, Math.max(0, y / max)));
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (tickingRef.current) return;
+      tickingRef.current = true;
+      rafRef.current = requestAnimationFrame(() => {
+        computeProgress();
+        tickingRef.current = false;
+      });
+    };
+    const onResize = () => {
+      // recompute on viewport changes
+      computeProgress();
+    };
+    computeProgress();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, [computeProgress]);
+
   const hiddenNow = scrolled;
 
   const doLogout = async () => {
@@ -101,154 +139,174 @@ export default function MarketingHeader() {
   };
 
   return (
-    <header
-      className={[
-        "fixed inset-x-0 top-0 z-40 transition-all duration-200",
-        hiddenNow ? "opacity-0 -translate-y-2 pointer-events-none" : "opacity-100 translate-y-0",
-      ].join(" ")}
-      aria-label={t("Main header")}
-    >
-      <div
-        className="mx-auto w-full max-w-7xl px-4 py-5 flex items-center justify-between"
-        style={{
-          paddingInlineStart: "calc(env(safe-area-inset-left, 0px) + 8px)",
-          paddingInlineEnd: "calc(env(safe-area-inset-right, 0px) + 8px)",
-        }}
+    <>
+      <header
+        className={[
+          "fixed inset-x-0 top-0 z-40 transition-all duration-200",
+          hiddenNow ? "opacity-0 -translate-y-2 pointer-events-none" : "opacity-100 translate-y-0",
+        ].join(" ")}
+        aria-label={t("Main header")}
       >
-        {/* Logo: SAMO 'T' je klikabilan + hover trigger */}
-        <div className="inline-flex select-none ml-0" style={{ lineHeight: 1, alignItems: "baseline" }}>
-          <Link href="/" aria-label={`${t("brand.name")} — home`} className="inline-flex">
+        <div
+          className="mx-auto w-full max-w-7xl px-4 py-5 flex items-center justify-between"
+          style={{
+            paddingInlineStart: "calc(env(safe-area-inset-left, 0px) + 8px)",
+            paddingInlineEnd: "calc(env(safe-area-inset-right, 0px) + 8px)",
+          }}
+        >
+          {/* Logo: SAMO 'T' je klikabilan + hover trigger */}
+          <div className="inline-flex select-none ml-0" style={{ lineHeight: 1, alignItems: "baseline" }}>
+            <Link href="/" aria-label={`${t("brand.name")} — home`} className="inline-flex">
+              <span
+                onMouseEnter={onEnterT}
+                onMouseLeave={onLeaveT}
+                onFocus={onEnterT}
+                onBlur={onLeaveT}
+                style={{
+                  display: "inline-block",
+                  fontWeight: 700,
+                  letterSpacing: "-0.01em",
+                  lineHeight: 1,
+                  fontSize,
+                  color: brandSolid,
+                  cursor: "pointer",
+                }}
+              >
+                T
+              </span>
+            </Link>
+
+            {/* "ierless" NIJE klikabilan, nema hover handlere, i ne prima pointer evente */}
             <span
-              onMouseEnter={onEnterT}
-              onMouseLeave={onLeaveT}
-              onFocus={onEnterT}
-              onBlur={onLeaveT}
+              ref={wrapRef}
+              aria-hidden
               style={{
                 display: "inline-block",
-                fontWeight: 700,
-                letterSpacing: "-0.01em",
-                lineHeight: 1,
-                fontSize,
-                color: brandSolid,
-                cursor: "pointer",
+                verticalAlign: "baseline",
+                width: wrapWidth,
+                overflow: "hidden",
+                paddingLeft: "0.15ch",
+                whiteSpace: "nowrap",
+                pointerEvents: "none",
               }}
             >
-              T
-            </span>
-          </Link>
-
-          {/* "ierless" NIJE klikabilan, nema hover handlere, i ne prima pointer evente */}
-          <span
-            ref={wrapRef}
-            aria-hidden
-            style={{
-              display: "inline-block",
-              verticalAlign: "baseline",
-              width: wrapWidth,
-              overflow: "hidden",
-              paddingLeft: "0.15ch",
-              whiteSpace: "nowrap",
-              pointerEvents: "none",
-            }}
-          >
-            {letters.map((ch, i) => {
-              const style: CSSProperties = {
-                display: "inline-block",
-                fontWeight: 700,
-                letterSpacing: "-0.01em",
-                lineHeight: 1,
-                fontSize,
-                backgroundImage: grad,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-                WebkitTextFillColor: "transparent",
-                backgroundSize: totalW ? `${totalW}px 100%` : "100% 100%",
-                backgroundPosition: totalW ? `-${offsets[i] || 0}px 0` : "0 0",
-                transform: hovered ? "translateX(0) translateY(0)" : "translateX(-0.6ch) translateY(0.15em)",
-                opacity: hovered ? 1 : 0,
-                transitionProperty: "transform, opacity",
-                transitionDuration: `${DURATION}ms`,
-                transitionTimingFunction: EASE,
-                transitionDelay: hovered ? `${i * STAGGER}ms` : "0ms",
-                willChange: "transform, opacity",
-              };
-              return (
-                <span
-                  key={i}
-                  ref={(el: HTMLSpanElement | null) => {
-                    letterRefs.current[i] = el;
-                  }}
-                  style={style}
-                >
-                  {ch}
-                </span>
-              );
-            })}
-          </span>
-        </div>
-
-        {/* Right: auth actions */}
-        <nav className="flex items-center gap-3">
-          {!authed ? (
-            <>
-              <CTAButton
-                fx="swap-up"
-                variant="outline"
-                size="md"
-                pill
-                hairlineOutline
-                href="/signin"
-                label={t("nav.signin")}
-                data-guest-cta="true"
-              />
-              <CTAButton
-                fx="swap-up"
-                variant="brand"
-                size="md"
-                pill
-                textGradientUnified
-                href="/signup"
-                label={t("nav.signup")}
-              />
-            </>
-          ) : (
-            <>
-              <CTAButton
-                fx="swap-up"
-                variant="outline"
-                size="md"
-                pill
-                hairlineOutline
-                href="/dashboard"
-                label={t("Dashboard")}
-              />
-              <div id="hdr-acc-dd" className="relative">
-                <button
-                  onClick={() => setAccOpen((v) => !v)}
-                  aria-haspopup="menu"
-                  aria-expanded={accOpen}
-                  className="flex size-10 items-center justify-center rounded-full ring-1 ring-inset ring-white/12 bg-black/30 text-white/90 hover:ring-cyan-300/60 transition"
-                >
-                  <span className="inline-flex items-center justify-center size-8 rounded-full bg-cyan-500/25 text-cyan-100 font-semibold">
-                    A
+              {letters.map((ch, i) => {
+                const style: CSSProperties = {
+                  display: "inline-block",
+                  fontWeight: 700,
+                  letterSpacing: "-0.01em",
+                  lineHeight: 1,
+                  fontSize,
+                  backgroundImage: grad,
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                  WebkitTextFillColor: "transparent",
+                  backgroundSize: totalW ? `${totalW}px 100%` : "100% 100%",
+                  backgroundPosition: totalW ? `-${offsets[i] || 0}px 0` : "0 0",
+                  transform: hovered ? "translateX(0) translateY(0)" : "translateX(-0.6ch) translateY(0.15em)",
+                  opacity: hovered ? 1 : 0,
+                  transitionProperty: "transform, opacity",
+                  transitionDuration: `${DURATION}ms`,
+                  transitionTimingFunction: EASE,
+                  transitionDelay: hovered ? `${i * STAGGER}ms` : "0ms",
+                  willChange: "transform, opacity",
+                };
+                return (
+                  <span
+                    key={i}
+                    ref={(el: HTMLSpanElement | null) => {
+                      letterRefs.current[i] = el;
+                    }}
+                    style={style}
+                  >
+                    {ch}
                   </span>
-                </button>
-                {accOpen && (
-                  <div className="absolute right-0 mt-2 min-w-56 rounded-2xl border border-cyan-400/30 bg-[rgba(10,20,28,0.95)] p-2 shadow-2xl backdrop-blur">
-                    <ul className="flex flex-col gap-1">
-                      <li><MenuBtn label={t("Profile")} onClick={() => { setAccOpen(false); router.push("/account"); }} /></li>
-                      <li><MenuBtn label={t("Subscription")} onClick={() => { setAccOpen(false); router.push("/billing"); }} /></li>
-                      <li><MenuBtn label={t("Log out")} onClick={doLogout} /></li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </nav>
+                );
+              })}
+            </span>
+          </div>
+
+          {/* Right: auth actions */}
+          <nav className="flex items-center gap-3">
+            {!authed ? (
+              <>
+                <CTAButton
+                  fx="swap-up"
+                  variant="outline"
+                  size="md"
+                  pill
+                  hairlineOutline
+                  href="/signin"
+                  label={t("nav.signin")}
+                  data-guest-cta="true"
+                />
+                <CTAButton
+                  fx="swap-up"
+                  variant="brand"
+                  size="md"
+                  pill
+                  textGradientUnified
+                  href="/signup"
+                  label={t("nav.signup")}
+                />
+              </>
+            ) : (
+              <>
+                <CTAButton
+                  fx="swap-up"
+                  variant="outline"
+                  size="md"
+                  pill
+                  hairlineOutline
+                  href="/dashboard"
+                  label={t("Dashboard")}
+                />
+                <div id="hdr-acc-dd" className="relative">
+                  <button
+                    onClick={() => setAccOpen((v) => !v)}
+                    aria-haspopup="menu"
+                    aria-expanded={accOpen}
+                    className="flex size-10 items-center justify-center rounded-full ring-1 ring-inset ring-white/12 bg-black/30 text-white/90 hover:ring-cyan-300/60 transition"
+                  >
+                    <span className="inline-flex items-center justify-center size-8 rounded-full bg-cyan-500/25 text-cyan-100 font-semibold">
+                      A
+                    </span>
+                  </button>
+                  {accOpen && (
+                    <div className="absolute right-0 mt-2 min-w-56 rounded-2xl border border-cyan-400/30 bg-[rgba(10,20,28,0.95)] p-2 shadow-2xl backdrop-blur">
+                      <ul className="flex flex-col gap-1">
+                        <li><MenuBtn label={t("Profile")} onClick={() => { setAccOpen(false); router.push("/account"); }} /></li>
+                        <li><MenuBtn label={t("Subscription")} onClick={() => { setAccOpen(false); router.push("/billing"); }} /></li>
+                        <li><MenuBtn label={t("Log out")} onClick={doLogout} /></li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </nav>
+        </div>
+      </header>
+
+      {/* Sticky page progress (always visible) */}
+      <div
+        aria-hidden
+        className="fixed left-0 right-0 top-0 z-[60] h-[2px] pointer-events-none"
+        style={{ background: "transparent" }}
+      >
+        <div
+          className="h-full"
+          style={{
+            width: `${Math.round(progress * 100)}%`,
+            background: "var(--brand-gradient)",
+            boxShadow:
+              "0 0 10px rgba(99,102,241,.28), 0 0 18px rgba(34,211,238,.18)",
+            transition: "width 90ms linear",
+          }}
+        />
       </div>
-    </header>
+    </>
   );
 }
 

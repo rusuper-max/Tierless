@@ -1,4 +1,3 @@
-// src/components/scrolly/MainPhase3.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -127,13 +126,18 @@ export default function MainPhase3() {
           />
         </div>
 
-        {/* --- LAYER 2: INDIGO OVERLAY koji se skida odozgo (otkrivanje) --- */}
+        {/* --- LAYER 2: OVERLAY (indigo on light; deep black + starfield on dark) --- */}
         <div
-          className="absolute inset-0 flex items-center justify-center text-center"
-          style={{ zIndex: 2, background: "#0b1d4d", clipPath: `inset(${(phase * 100).toFixed(2)}% 0 0 0)` }}
+          className="absolute inset-0 flex items-center justify-center text-center overlay"
+          style={{ zIndex: 2, clipPath: `inset(${(phase * 100).toFixed(2)}% 0 0 0)` }}
         >
+          {/* Starfield only visible in dark theme (CSS controls visibility) */}
+          <div className="starfield pointer-events-none" aria-hidden="true">
+            <Starfield />
+          </div>
+
           <div
-            className="px-6"
+            className="px-6 relative"
             style={{
               opacity: 1 - phase,
               transform: `translateY(${(-10 * phase).toFixed(2)}px)`,
@@ -185,6 +189,18 @@ export default function MainPhase3() {
             --p3-globe-size: ${MOBILE_CURVE_SIZE_VMIN}vmin;
           }
         }
+      `}</style>
+      <style jsx>{`
+        /* Overlay background per theme */
+        .overlay{ background: #0b1d4d; }                 /* light = original indigo */
+        :global(html.dark) .overlay{ background: #000; }  /* dark = deep black */
+
+        /* Starfield only on dark theme */
+        .starfield{ position: absolute; inset: 0; display: none; z-index: 0; }
+        :global(html.dark) .starfield{ display: block; }
+
+        /* Ensure text sits above stars within overlay */
+        .overlay > .relative{ z-index: 1; }
       `}</style>
     </section>
   );
@@ -276,8 +292,8 @@ function SideHint({
 function BottomBar() {
   return (
     <div
-      className="absolute inset-x-0 bottom-0 z-[2]"
-      style={{ height: "var(--p3-bottom)", background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.06)" }}
+      className="absolute inset-x-0 bottom-0 z-[2] footer-bar"
+      style={{ height: "var(--p3-bottom)" }}
       aria-label="Footer links"
     >
       <div
@@ -286,21 +302,21 @@ function BottomBar() {
       >
         <div className="grid grid-cols-2 gap-x-8 gap-y-6 md:grid-cols-4 w-full">
           <div className="space-y-1.5">
-            <div className="text-sm/6 text-black/60">{t("Get Started")}</div>
+            <div className="text-sm/6 footer-muted">{t("Get Started")}</div>
             <FooterLink href="/signup">{t("Sign up")}</FooterLink>
             <FooterLink href="/login">{t("Login")}</FooterLink>
           </div>
           <div className="space-y-1.5">
-            <div className="text-sm/6 text-black/60">{t("Discover")}</div>
+            <div className="text-sm/6 footer-muted">{t("Discover")}</div>
             <FooterLink href="/templates">{t("Templates")}</FooterLink>
             <FooterLink href="/pricing">{t("Pricing")}</FooterLink>
           </div>
           <div className="space-y-1.5">
-            <div className="text-sm/6 text-black/60">{t("Company")}</div>
+            <div className="text-sm/6 footer-muted">{t("Company")}</div>
             <FooterLink href="/about">{t("About")}</FooterLink>
           </div>
           <div className="space-y-1.5">
-            <div className="text-sm/6 text-black/60">{t("Legal & Help")}</div>
+            <div className="text-sm/6 footer-muted">{t("Legal & Help")}</div>
             <FooterLink href="/legal/cookies">{t("Cookie Policy")}</FooterLink>
             <FooterLink href="/legal/privacy">{t("Privacy Policy")}</FooterLink>
             <FooterLink href="/legal/terms">{t("Terms and Conditions")}</FooterLink>
@@ -309,12 +325,74 @@ function BottomBar() {
           </div>
         </div>
       </div>
+      <style jsx>{`
+        /* Theme-aware footer container */
+        .footer-bar{
+          height: var(--p3-bottom);
+          background: #ffffff;
+          color: #0b1020;
+          border-top: 1px solid rgba(0,0,0,0.08);
+        }
+        :global(html.dark) .footer-bar{
+          background: #0b0b0c;
+          color: #ffffff;
+          border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        /* Muted headings (inherit color, reduce opacity) */
+        .footer-muted{ opacity: .7; }
+
+        /* Links inherit color; full-width hit area for reliable hover */
+        .footer-bar :global(a.footer-link){
+          position: relative;
+          text-decoration: none;
+          color: inherit;
+          display: block;            /* each link on its own line; full hover zone */
+          padding: 2px 0 6px;
+          line-height: 1.2;          /* stabilize baseline for underline */
+        }
+        .footer-bar :global(a.footer-link .footer-ink){
+          position: relative;
+          display: inline-block;     /* shrink-wrap to text */
+        }
+        .footer-bar :global(a.footer-link .footer-ink::after){
+          content: "";
+          position: absolute;
+          left: 0;
+          bottom: 0;                       /* right under the text baseline */
+          width: 100%;                     /* only the text width */
+          height: 2px;                     /* thin underline */
+          background: var(--brand-gradient);
+          transform: scaleX(0);            /* collapsed by default */
+          transform-origin: left;          /* grow like a loading bar */
+          transition: transform .70s cubic-bezier(.22,1,.36,1), opacity .3s ease;
+          opacity: .95;
+          pointer-events: none;
+        }
+        .footer-bar :global(a.footer-link:hover .footer-ink::after),
+        .footer-bar :global(a.footer-link:focus-visible .footer-ink::after){
+          transform: scaleX(1);
+          opacity: 1;
+        }
+
+        @media (prefers-reduced-motion: reduce){
+          .footer-bar :global(a.footer-link .footer-ink::after){
+            transition: none;
+            transform: none;
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }
 
 function FooterLink(props: React.ComponentProps<"a">) {
-  return <a {...props} className="block text-base/6 text-black hover:text-black/70 transition-colors" />;
+  const { children, className, ...rest } = props;
+  return (
+    <a {...rest} className={`footer-link block text-base/6 transition-colors ${className ?? ""}`}>
+      <span className="footer-ink">{children}</span>
+    </a>
+  );
 }
 
 /* ---------- helpers ---------- */
@@ -332,4 +410,67 @@ function hexToRgb(hex: string) {
 function smoothstep(edge0: number, edge1: number, x: number) {
   const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
   return t * t * (3 - 2 * t);
+}
+
+function Starfield() {
+  // Deterministic, SSR-safe star positions (fixed seed)
+  const seed = 1337;
+  const area = 2000; // px virtual canvas (both width & height)
+  const small = generateBoxShadows(420, area, area, seed + 1);
+  const medium = generateBoxShadows(160, area, area, seed + 2);
+  const big = generateBoxShadows(80, area, area, seed + 3);
+
+  return (
+    <>
+      <div className="stars" style={{ ["--shadow" as any]: small } as React.CSSProperties} />
+      <div className="stars2" style={{ ["--shadow" as any]: medium } as React.CSSProperties} />
+      <div className="stars3" style={{ ["--shadow" as any]: big } as React.CSSProperties} />
+      <style jsx>{`
+        .stars, .stars2, .stars3 {
+          position: absolute;
+          top: 0; left: 0;
+          width: 1px; height: 1px;
+          background: transparent;
+          box-shadow: var(--shadow);
+          animation: animStar 60s linear infinite;
+          will-change: transform;
+        }
+        .stars::after, .stars2::after, .stars3::after{
+          content: "";
+          position: absolute;
+          top: 2000px; left: 0;
+          width: inherit; height: inherit;
+          background: transparent;
+          box-shadow: var(--shadow);
+        }
+        .stars2{ width: 2px; height: 2px; animation-duration: 110s; opacity: .9; }
+        .stars3{ width: 3px; height: 3px; animation-duration: 160s; opacity: .75; }
+
+        @keyframes animStar {
+          from { transform: translateY(0); }
+          to   { transform: translateY(-2000px); }
+        }
+      `}</style>
+    </>
+  );
+}
+
+function generateBoxShadows(n: number, w: number, h: number, seed: number) {
+  const rng = lcg(seed);
+  const pts: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const x = Math.floor(rng() * w);
+    const y = Math.floor(rng() * h);
+    pts.push(`${x}px ${y}px #FFF`);
+  }
+  return pts.join(", ");
+}
+
+function lcg(seed: number) {
+  // Simple linear congruential generator; deterministic for SSR/CSR
+  let s = seed >>> 0;
+  return function() {
+    s = (1664525 * s + 1013904223) % 0xffffffff;
+    return s / 0xffffffff;
+  };
 }
