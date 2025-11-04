@@ -7,7 +7,7 @@ import { t } from "@/i18n";
 
 /* ============ ZAPEČENI DEFAULTS (ono što si podesio) ============ */
 const BOTTOM_BAR_H = 202;           // px (desktop)
-const MOBILE_BOTTOM_BAR_H = 236;    // px (mobile — malo niže od 240 da ne dira gornji deo)
+const MOBILE_BOTTOM_BAR_H = 236;    // px (mobile — par px "niže" od 240 da ne dira gornji deo)
 
 const CURVE_SIZE_VMIN = 86;         // desktop
 const MOBILE_CURVE_SIZE_VMIN = 62;  // mobilni — manja kugla
@@ -101,10 +101,8 @@ export default function MainPhase3() {
           className="absolute left-0 right-0 top-0"
           style={{ bottom: "var(--p3-bottom)", zIndex: 1 }}
         >
-          {/* WireGlobe internim pravilom isključuje land-fill na mobilnom */}
           <WireGlobe phase={phase} />
 
-          {/* Krug/tekst oko planete (otkriva se zajedno sa globe) */}
           <CurvedBand
             sizeVminVar="--p3-globe-size"
             radius={CURVE_RADIUS}
@@ -115,7 +113,6 @@ export default function MainPhase3() {
             opacity={curveOpacity}
           />
 
-          {/* Left hint (funny tekst) */}
           <SideHint
             text={SIDE_TEXT}
             x={SIDE_X}
@@ -131,7 +128,6 @@ export default function MainPhase3() {
           className="absolute inset-0 flex items-center justify-center text-center overlay"
           style={{ zIndex: 2, clipPath: `inset(${(phase * 100).toFixed(2)}% 0 0 0)` }}
         >
-          {/* Starfield only visible in dark theme (CSS controls visibility) */}
           <div className="starfield pointer-events-none" aria-hidden="true">
             <Starfield />
           </div>
@@ -147,7 +143,7 @@ export default function MainPhase3() {
             <h1 className="text-5xl md:text-7xl font-semibold tracking-tight text-white">
               {t("Create your price page")}.
             </h1>
-            <p className="mt-4 text-white/90 text-lg md:text-xl">
+            <p className="mt-4 text-white/80 text-lg md:text-xl">
               {t("For any business on this planet")}
             </p>
           </div>
@@ -191,15 +187,12 @@ export default function MainPhase3() {
         }
       `}</style>
       <style jsx>{`
-        /* Overlay background per theme */
-        .overlay{ background: #0b1d4d; }                 /* light = original indigo */
-        :global(html.dark) .overlay{ background: #000; }  /* dark = deep black */
+        .overlay{ background: #0b1d4d; }
+        :global(html.dark) .overlay{ background: #000; }
 
-        /* Starfield only on dark theme */
         .starfield{ position: absolute; inset: 0; display: none; z-index: 0; }
         :global(html.dark) .starfield{ display: block; }
 
-        /* Ensure text sits above stars within overlay */
         .overlay > .relative{ z-index: 1; }
       `}</style>
     </section>
@@ -217,16 +210,15 @@ function CurvedBand({
   rightStart,
   opacity,
 }: {
-  sizeVminVar: string;  // CSS var, npr "--p3-globe-size"
+  sizeVminVar: string;
   radius: number;
   offsetX: number;
   offsetY: number;
-  leftStart: number;   // %
-  rightStart: number;  // %
+  leftStart: number;
+  rightStart: number;
   opacity: number;
 }) {
-  // razmak da ne “pojede” krajeve
-  const pad = "\u00A0\u2009"; // NBSP + thin space
+  const pad = "\u00A0\u2009";
   const L = pad + t("For any business on planet Earth") + pad;
   const R = pad + t("Share your link in minutes") + pad;
 
@@ -272,10 +264,10 @@ function CurvedBand({
       </div>
 
       <style jsx>{`
-        /* Mobile-only: gurni krivi tekst malo VAN globusa */
+        /* Mobile-only: gurni krivi tekst još malo VAN globusa */
         @media (max-width: 640px) {
           .curved-wrap{
-            transform: translate(-50%, -50%) scale(1.16);
+            transform: translate(-50%, -50%) scale(1.22);
             transform-origin: center;
           }
         }
@@ -315,7 +307,7 @@ function BottomBar() {
       <div className="brand-hairline" aria-hidden="true" />
 
       <div
-        className="mx-auto w-full h-full max-w-6xl flex items-center fb-grid"
+        className="mx-auto w-full h-full max-w-6xl flex items-start fb-grid"
         style={{ paddingLeft: "16px", paddingRight: "calc(16px + env(safe-area-inset-right))" }}
       >
         <div className="grid grid-cols-2 gap-x-8 gap-y-6 md:grid-cols-4 w-full">
@@ -347,7 +339,7 @@ function BottomBar() {
       {/* Legal row at absolute bottom of footer */}
       <div className="legal-row">
         <div className="legal-inner">
-          <span className="legal-left">© {new Date().getFullYear()} Tierless — All rights reserved.</span>
+          <span className="legal-left">Tierless — All rights reserved.</span>
           <span className="legal-right">Made with ❤️</span>
         </div>
       </div>
@@ -359,6 +351,7 @@ function BottomBar() {
           background: #ffffff;
           color: #0b1020;
           border-top: 1px solid rgba(0,0,0,0.08);
+          overflow: hidden; /* NIŠTA da ne pređe granicu futera */
         }
         :global(html.dark) .footer-bar{
           background: #0b0b0c;
@@ -366,7 +359,6 @@ function BottomBar() {
           border-top: 1px solid rgba(255,255,255,0.08);
         }
 
-        /* ultra-thin brand divider on top of footer */
         .brand-hairline{
           position: absolute;
           top: 0; left: 0; right: 0;
@@ -377,38 +369,33 @@ function BottomBar() {
         }
         :global(html.dark) .brand-hairline{ opacity: .85; }
 
-        /* Muted headings (inherit color, reduce opacity) */
         .footer-muted{ opacity: .7; }
 
-        /* keep links grid clear of legal row at bottom */
-        .fb-grid{ padding-bottom: 38px; }
-        @media (max-width: 640px){
-          .fb-grid{ padding-bottom: 48px; }
-        }
+        /* rezerva za legal red + malo gornjeg vazduha */
+        .fb-grid{ padding-top: 12px; padding-bottom: 42px; }
 
-        /* Links inherit color; full-width hit area for reliable hover + brand underline */
         .footer-bar :global(a.footer-link){
           position: relative;
           text-decoration: none;
           color: inherit;
-          display: block;            /* svaki link sopstvena linija; full hover zona */
+          display: block;
           padding: 2px 0 6px;
-          line-height: 1.2;          /* stabilna podloga za underline */
+          line-height: 1.2;
         }
         .footer-bar :global(a.footer-link .footer-ink){
           position: relative;
-          display: inline-block;     /* shrink-wrap na tekst */
+          display: inline-block;
         }
         .footer-bar :global(a.footer-link .footer-ink::after){
           content: "";
           position: absolute;
           left: 0;
-          bottom: 0;                       /* odmah ispod baseline teksta */
-          width: 100%;                     /* samo širina teksta */
-          height: 2px;                     /* tanak underline */
+          bottom: 0;
+          width: 100%;
+          height: 2px;
           background: var(--brand-gradient);
-          transform: scaleX(0);            /* collapsed default */
-          transform-origin: left;          /* raste kao loading bar */
+          transform: scaleX(0);
+          transform-origin: left;
           transition: transform .70s cubic-bezier(.22,1,.36,1), opacity .3s ease;
           opacity: .95;
           pointer-events: none;
@@ -419,7 +406,6 @@ function BottomBar() {
           opacity: 1;
         }
 
-        /* legal row at the very bottom */
         .legal-row{
           position: absolute;
           left: 0; right: 0; bottom: 0;
@@ -439,13 +425,13 @@ function BottomBar() {
           display: flex; align-items: center; justify-content: space-between;
           font-size: 12px; line-height: 1; opacity: .85;
         }
+
         @media (max-width: 640px){
           .legal-inner{
             justify-content: center;
             gap: 10px;
             flex-wrap: wrap;
             padding-bottom: env(safe-area-inset-bottom, 0px);
-            padding-top: 6px; /* mala distanca od linkova iznad */
             text-align: center;
           }
         }
@@ -489,9 +475,8 @@ function smoothstep(edge0: number, edge1: number, x: number) {
 }
 
 function Starfield() {
-  // Deterministic, SSR-safe star positions (fixed seed)
   const seed = 1337;
-  const area = 2000; // px virtual canvas (both width & height)
+  const area = 2000;
   const small = generateBoxShadows(420, area, area, seed + 1);
   const medium = generateBoxShadows(160, area, area, seed + 2);
   const big = generateBoxShadows(80, area, area, seed + 3);
@@ -543,7 +528,6 @@ function generateBoxShadows(n: number, w: number, h: number, seed: number) {
 }
 
 function lcg(seed: number) {
-  // Simple linear congruential generator; deterministic for SSR/CSR
   let s = seed >>> 0;
   return function() {
     s = (1664525 * s + 1013904223) % 0xffffffff;
