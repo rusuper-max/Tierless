@@ -16,7 +16,7 @@ export const metadata = {
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <>
-      <div className="relative z-[40] min-h-screen bg-white text-neutral-900 dark:bg-[#0b0b0c] dark:text-neutral-100 transition-colors duration-300">
+      <div className="relative z-[40] min-h-[100svh] lg:min-h-screen bg-white dark:bg-[#0b0b0c] transition-colors duration-300">
         <MarketingHeader />
         <LenisRoot>
           {/* Ostavi svoj shell/wrapper kako si već imao */}
