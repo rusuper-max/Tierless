@@ -600,8 +600,12 @@ export default function MainPhase2({
     <section
       ref={sectionRef}
       aria-label={t("Unified P2+P3 sticky track")}
-      className="relative bg-white"
-      style={{ height: `${TRACK_TOTAL_VH}vh` }}
+      className="relative"
+      style={{
+        height: `${TRACK_TOTAL_VH}vh`,
+        background: "var(--bg, #0b0b0c)",
+        color: "var(--ink, #f5f5f6)"
+      }}
     >
       <div ref={stageRef} className="sticky top-0 h-screen overflow-hidden [contain:layout_style_paint]">
         {/* Sticky demo badge — visible while section is in view */}
@@ -741,7 +745,7 @@ export default function MainPhase2({
                 </p>
                 <h3
                   ref={p3TitleRef}
-                  className="text-[clamp(26px,4.8vw,56px)] font-semibold leading-tight text-neutral-900"
+                  className="tl-hero-copy text-[clamp(26px,4.8vw,56px)] font-semibold leading-tight text-neutral-900 dark:text-white"
                   aria-label={t("Or make a Tierless price page")}
                   style={{ opacity: 0, transform: `translate3d(0, ${TITLE_Y_IN_VH}vh, 0)` }}
                 >
@@ -930,11 +934,11 @@ function Card({ tier, featured, color }: CardProps) {
         <div className="rounded-[calc(theme(borderRadius.3xl)-1px)] bg-white">
           <div className="p-6">
             <div className="flex items-baseline justify-between">
-              <h3 className="text-lg font-semibold text-neutral-900">{t(tier.name)}</h3>
-              <span className="text-lg font-semibold text-neutral-900">{tier.price}</span>
+              <h3 className="text-lg font-semibold !text-neutral-900">{t(tier.name)}</h3>
+              <span className="text-lg font-semibold !text-neutral-900">{tier.price}</span>
             </div>
 
-            <ul className="mt-4 space-y-2 text-sm text-neutral-700">
+            <ul className="mt-4 space-y-2 text-sm !text-neutral-700">
               {tier.features.map((f, i) => (
                 <li key={i} className="flex items-center gap-2">
                   <span className="inline-block h-2 w-2 rounded-full translate-y-[1px]"
@@ -998,10 +1002,10 @@ function Card({ tier, featured, color }: CardProps) {
     >
       <div className="p-6">
         <div className="flex items-baseline justify-between">
-          <h3 className="text-lg font-semibold text-neutral-900">{t(tier.name)}</h3>
-          <span className="text-lg font-semibold text-neutral-900">{t(tier.price)}</span>
+          <h3 className="text-lg font-semibold !text-neutral-900">{t(tier.name)}</h3>
+          <span className="text-lg font-semibold !text-neutral-900">{t(tier.price)}</span>
         </div>
-        <ul className="mt-4 space-y-2 text-sm text-neutral-700">
+        <ul className="mt-4 space-y-2 text-sm !text-neutral-700">
           {tier.features.map((f, i) => (
             <li key={i} className="flex items-center gap-2">
               <span className="inline-block h-2 w-2 rounded-full translate-y-[1px]"
@@ -1015,7 +1019,7 @@ function Card({ tier, featured, color }: CardProps) {
           aria-disabled="true"
           className={[
             "mt-5 w-full rounded-xl py-2.5 text-sm font-medium transition",
-            "border border-neutral-200 text-neutral-900 hover:shadow hover:-translate-y-[1px]",
+            "border border-neutral-200 !text-neutral-900 hover:shadow hover:-translate-y-[1px]",
             "hover:outline hover:outline-2 hover:outline-offset-2",
             "hover:[outline-color:var(--tier)] hover:[border-color:var(--tier)]",
           ].join(" ")}
