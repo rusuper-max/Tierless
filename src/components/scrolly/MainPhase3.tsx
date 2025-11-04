@@ -7,7 +7,7 @@ import { t } from "@/i18n";
 
 /* ============ ZAPEČENI DEFAULTS (ono što si podesio) ============ */
 const BOTTOM_BAR_H = 202;           // px (desktop)
-const MOBILE_BOTTOM_BAR_H = 236;    // px (mobile — par px "niže" od 240 da ne dira gornji deo)
+const MOBILE_BOTTOM_BAR_H = 236;    // px (mobile — malo niže od 240 da ne dira gornji deo)
 
 const CURVE_SIZE_VMIN = 86;         // desktop
 const MOBILE_CURVE_SIZE_VMIN = 62;  // mobilni — manja kugla
@@ -147,7 +147,7 @@ export default function MainPhase3() {
             <h1 className="text-5xl md:text-7xl font-semibold tracking-tight text-white">
               {t("Create your price page")}.
             </h1>
-            <p className="mt-4 text-white/80 text-lg md:text-xl">
+            <p className="mt-4 text-white/90 text-lg md:text-xl">
               {t("For any business on this planet")}
             </p>
           </div>
@@ -167,7 +167,7 @@ export default function MainPhase3() {
             variant="brand"
             size="lg"
             pill
-            href="/start"
+            href={href}
             label={t("Start Right Now")}
             className="pointer-events-auto"
           />
@@ -232,39 +232,54 @@ function CurvedBand({
 
   return (
     <div className="absolute inset-0 pointer-events-none" aria-hidden="true" style={{ opacity }}>
-      <svg
-        viewBox="0 0 1000 1000"
-        className="absolute left-1/2 top-1/2"
-        style={{
-          width: `var(${sizeVminVar})`,
-          height: `var(${sizeVminVar})`,
-          transform: `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`,
-          overflow: "visible",
-        }}
+      <div
+        className="curved-wrap absolute left-1/2 top-1/2"
+        style={{ transform: "translate(-50%, -50%)" }}
       >
-        <defs>
-          <path
-            id="orbitOuter"
-            d={`M500,${500 - radius} a${radius},${radius} 0 1,1 0,${radius * 2} a${radius},${radius} 0 1,1 0,-${radius * 2}`}
-          />
-          <radialGradient id="curvedGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
-            <stop offset="100%" stopColor="rgba(255,255,255,0.70)" />
-          </radialGradient>
-        </defs>
+        <svg
+          viewBox="0 0 1000 1000"
+          style={{
+            width: `var(${sizeVminVar})`,
+            height: `var(${sizeVminVar})`,
+            transform: `translate(${offsetX}px, ${offsetY}px)`,
+            overflow: "visible",
+            display: "block",
+          }}
+        >
+          <defs>
+            <path
+              id="orbitOuter"
+              d={`M500,${500 - radius} a${radius},${radius} 0 1,1 0,${radius * 2} a${radius},${radius} 0 1,1 0,-${radius * 2}`}
+            />
+            <radialGradient id="curvedGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0.70)" />
+            </radialGradient>
+          </defs>
 
-        <text fill="url(#curvedGrad)" fontSize="28" fontWeight={600} letterSpacing="2" style={{ textTransform: "uppercase" }}>
-          <textPath href="#orbitOuter" startOffset={`${leftStart}%`} textAnchor="middle">
-            {L}
-          </textPath>
-        </text>
+          <text fill="url(#curvedGrad)" fontSize="28" fontWeight={600} letterSpacing="2" style={{ textTransform: "uppercase" }}>
+            <textPath href="#orbitOuter" startOffset={`${leftStart}%`} textAnchor="middle">
+              {L}
+            </textPath>
+          </text>
 
-        <text fill="url(#curvedGrad)" fontSize="28" fontWeight={600} letterSpacing="2" style={{ textTransform: "uppercase" }}>
-          <textPath href="#orbitOuter" startOffset={`${rightStart}%`} textAnchor="middle">
-            {R}
-          </textPath>
-        </text>
-      </svg>
+          <text fill="url(#curvedGrad)" fontSize="28" fontWeight={600} letterSpacing="2" style={{ textTransform: "uppercase" }}>
+            <textPath href="#orbitOuter" startOffset={`${rightStart}%`} textAnchor="middle">
+              {R}
+            </textPath>
+          </text>
+        </svg>
+      </div>
+
+      <style jsx>{`
+        /* Mobile-only: gurni krivi tekst malo VAN globusa */
+        @media (max-width: 640px) {
+          .curved-wrap{
+            transform: translate(-50%, -50%) scale(1.16);
+            transform-origin: center;
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -296,8 +311,11 @@ function BottomBar() {
       style={{ height: "var(--p3-bottom)" }}
       aria-label="Footer links"
     >
+      {/* brand hairline separator */}
+      <div className="brand-hairline" aria-hidden="true" />
+
       <div
-        className="mx-auto w-full h-full max-w-6xl flex items-center"
+        className="mx-auto w-full h-full max-w-6xl flex items-center fb-grid"
         style={{ paddingLeft: "16px", paddingRight: "calc(16px + env(safe-area-inset-right))" }}
       >
         <div className="grid grid-cols-2 gap-x-8 gap-y-6 md:grid-cols-4 w-full">
@@ -325,6 +343,15 @@ function BottomBar() {
           </div>
         </div>
       </div>
+
+      {/* Legal row at absolute bottom of footer */}
+      <div className="legal-row">
+        <div className="legal-inner">
+          <span className="legal-left">© {new Date().getFullYear()} Tierless — All rights reserved.</span>
+          <span className="legal-right">Made with ❤️</span>
+        </div>
+      </div>
+
       <style jsx>{`
         /* Theme-aware footer container */
         .footer-bar{
@@ -338,32 +365,50 @@ function BottomBar() {
           color: #ffffff;
           border-top: 1px solid rgba(255,255,255,0.08);
         }
+
+        /* ultra-thin brand divider on top of footer */
+        .brand-hairline{
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 1px;
+          background: var(--brand-gradient);
+          opacity: .9;
+          pointer-events: none;
+        }
+        :global(html.dark) .brand-hairline{ opacity: .85; }
+
         /* Muted headings (inherit color, reduce opacity) */
         .footer-muted{ opacity: .7; }
 
-        /* Links inherit color; full-width hit area for reliable hover */
+        /* keep links grid clear of legal row at bottom */
+        .fb-grid{ padding-bottom: 38px; }
+        @media (max-width: 640px){
+          .fb-grid{ padding-bottom: 48px; }
+        }
+
+        /* Links inherit color; full-width hit area for reliable hover + brand underline */
         .footer-bar :global(a.footer-link){
           position: relative;
           text-decoration: none;
           color: inherit;
-          display: block;            /* each link on its own line; full hover zone */
+          display: block;            /* svaki link sopstvena linija; full hover zona */
           padding: 2px 0 6px;
-          line-height: 1.2;          /* stabilize baseline for underline */
+          line-height: 1.2;          /* stabilna podloga za underline */
         }
         .footer-bar :global(a.footer-link .footer-ink){
           position: relative;
-          display: inline-block;     /* shrink-wrap to text */
+          display: inline-block;     /* shrink-wrap na tekst */
         }
         .footer-bar :global(a.footer-link .footer-ink::after){
           content: "";
           position: absolute;
           left: 0;
-          bottom: 0;                       /* right under the text baseline */
-          width: 100%;                     /* only the text width */
-          height: 2px;                     /* thin underline */
+          bottom: 0;                       /* odmah ispod baseline teksta */
+          width: 100%;                     /* samo širina teksta */
+          height: 2px;                     /* tanak underline */
           background: var(--brand-gradient);
-          transform: scaleX(0);            /* collapsed by default */
-          transform-origin: left;          /* grow like a loading bar */
+          transform: scaleX(0);            /* collapsed default */
+          transform-origin: left;          /* raste kao loading bar */
           transition: transform .70s cubic-bezier(.22,1,.36,1), opacity .3s ease;
           opacity: .95;
           pointer-events: none;
@@ -372,6 +417,37 @@ function BottomBar() {
         .footer-bar :global(a.footer-link:focus-visible .footer-ink::after){
           transform: scaleX(1);
           opacity: 1;
+        }
+
+        /* legal row at the very bottom */
+        .legal-row{
+          position: absolute;
+          left: 0; right: 0; bottom: 0;
+          height: 34px;
+          border-top: 1px solid rgba(0,0,0,0.06);
+          display: flex; align-items: center;
+          background: inherit;
+        }
+        :global(html.dark) .legal-row{
+          border-top-color: rgba(255,255,255,0.08);
+        }
+        .legal-inner{
+          width: 100%;
+          max-width: 72rem;
+          margin-inline: auto;
+          padding-inline: 16px;
+          display: flex; align-items: center; justify-content: space-between;
+          font-size: 12px; line-height: 1; opacity: .85;
+        }
+        @media (max-width: 640px){
+          .legal-inner{
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            padding-top: 6px; /* mala distanca od linkova iznad */
+            text-align: center;
+          }
         }
 
         @media (prefers-reduced-motion: reduce){
