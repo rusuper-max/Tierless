@@ -154,6 +154,19 @@ export default function StartPage() {
   const [authed, setAuthed] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<PlanId | null>(null);
   const [info, setInfo] = useState<InfoModalState>({ open: false, title: "", body: "" });
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    try {
+      const html = document.documentElement;
+      const update = () => setIsDark(html.classList.contains("dark"));
+      update();
+      const obs = new MutationObserver(update);
+      obs.observe(html, { attributes: true, attributeFilter: ["class"] });
+      const onToggle = () => update();
+      window.addEventListener("TL_THEME_TOGGLED", onToggle as any);
+      return () => { obs.disconnect(); window.removeEventListener("TL_THEME_TOGGLED", onToggle as any); };
+    } catch {}
+  }, []);
 
 
   // Auth + plan
@@ -164,8 +177,8 @@ export default function StartPage() {
         setAuthed(!!st?.authenticated);
       } catch {}
       try {
-        const me = await fetch("/api/me", { credentials: "include", cache: "no-store" }).then(r => r.ok ? r.json() : null);
-        const p = me?.user?.plan;
+        const mp = await fetch("/api/me/plan", { credentials: "same-origin", cache: "no-store" }).then(r => r.ok ? r.json() : null);
+        const p = mp?.plan;
         setCurrentPlan(p && ["free","starter","growth","pro","tierless"].includes(p) ? p : null);
       } catch { setCurrentPlan(null); }
     };
@@ -196,7 +209,7 @@ export default function StartPage() {
   const closeInfo = () => setInfo(s => ({ ...s, open: false }));
 
   return (
-    <main className="bg-white text-slate-900">
+    <main className="bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-10 sm:py-12">
         {/* Title + toggle */}
         <div className="text-center mb-8 sm:mb-10">
@@ -204,7 +217,7 @@ export default function StartPage() {
           <p className="mt-3 text-slate-600">{t("Choose a plan. Switch anytime.")}</p>
 
           <div
-            className="mt-6 inline-flex items-center rounded-full border border-slate-200 bg-white p-1 shadow-sm"
+            className="mt-6 inline-flex items-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 shadow-sm"
             role="tablist"
             aria-label={t("Billing interval")}
             style={{ boxShadow: "0 6px 24px rgba(2,6,23,0.08)" }}
@@ -228,20 +241,20 @@ export default function StartPage() {
                 if (!authed) return false;
                 try {
                   const res = await fetch("/api/me/plan", {
-                    method: "POST",
+                    method: "PUT",
                     headers: { "Content-Type": "application/json" },
-                    credentials: "include",
+                    credentials: "same-origin",
                     body: JSON.stringify({ plan: planId }),
                   });
-                  const data = await res.json().catch(() => ({}));
-                  if (!res.ok || data?.ok !== true) return false;
+                  if (!res.ok) return false;
                   setCurrentPlan(planId);
-                  window.dispatchEvent(new Event("TL_AUTH_CHANGED"));
+                  try { window.dispatchEvent(new Event("TL_AUTH_CHANGED")); } catch {}
                   return true;
                 } catch {
                   return false;
                 }
               }}
+              isDark={isDark}
             />
           ))}
         </div>
@@ -302,6 +315,7 @@ function PlanCard({
   currentPlan,
   onOpenInfo,
   onPlanChange,
+  isDark,
 }: {
   plan: Plan;
   interval: Interval;
@@ -309,6 +323,7 @@ function PlanCard({
   currentPlan: PlanId | null;
   onOpenInfo: (item: SpecialItem) => void;
   onPlanChange: (planId: PlanId) => Promise<boolean>; // returns true if plan changed
+  isDark: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const isMost = !!plan.badge;
@@ -326,20 +341,21 @@ function PlanCard({
   const ctaHref = isCurrent ? "#" : `/signup?plan=${plan.id}&interval=${interval}`;
 
   // Neutral base outline; Tierless sa brand gradientom
+  const borderColor = isDark ? "#1f2937" /* slate-800 */ : "#e2e8f0" /* slate-200 */;
   const baseStyle: React.CSSProperties =
     isTierless && plan.outline === "brand"
       ? { background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box", border: "3px solid transparent" }
-      : { border: "1.5px solid #e2e8f0" };
+      : { border: `1.5px solid ${borderColor}`, background: isDark ? "#0b1220" : undefined };
 
   const { effMonthlyLabel, perYearLabel } = getYearlyPricing(plan.monthly);
 
   return (
     <div
       className={[
-        "group relative rounded-3xl bg-white isolate",
+        "group relative rounded-3xl bg-white dark:bg-slate-900 isolate",
         "min-h-[520px] grid grid-rows-[auto_auto_auto_1fr_auto] overflow-hidden",
         "transition-[box-shadow] duration-200",
-        "shadow-sm hover:shadow-lg",
+        "shadow-sm hover:shadow-lg dark:shadow-[0_0_0_1px_rgba(148,163,184,0.15)]",
       ].join(" ")}
       style={baseStyle}
     >
@@ -457,7 +473,7 @@ function PlanCard({
         </ul>
 
         {/* Divider */}
-        <div className="my-4 h-px bg-slate-200" />
+        <div className="my-4 h-px bg-slate-200 dark:bg-slate-800" />
 
         {/* Perks */}
         <ul className="space-y-1.5">
@@ -496,7 +512,7 @@ function PlanCard({
           style={
             isTierless
               ? { background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box", border: "2px solid transparent", color: "#0f172a" }
-              : { border: `2px solid ${hexToRgb(plan.color, 0.45)}`, color: "#0f172a" }
+              : { border: `2px solid ${isDark ? hexToRgb("#94a3b8", 0.35) : hexToRgb(plan.color, 0.45)}`, color: isDark ? "#e5e7eb" : "#0f172a", background: isDark ? "#0b1220" : undefined }
           }
           aria-disabled={isCurrent || busy}
           aria-label={
@@ -565,15 +581,15 @@ function InfoModal({ state, onClose }: { state: InfoModalState; onClose: () => v
       aria-describedby="tl-info-desc"
     >
       <div className="absolute inset-0 bg-slate-900/40" onClick={onClose} />
-      <div className="relative z-[61] w-full max-w-md rounded-2xl bg-white p-5 shadow-xl border border-slate-200">
-        <h2 id="tl-info-title" className="text-lg font-semibold text-slate-900">{title}</h2>
-        <p id="tl-info-desc" className="mt-2 text-sm text-slate-600">{body}</p>
+      <div className="relative z-[61] w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-xl border border-slate-200 dark:border-slate-800">
+        <h2 id="tl-info-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+        <p id="tl-info-desc" className="mt-2 text-sm text-slate-600 dark:text-slate-300">{body}</p>
 
         <div className="mt-4 flex items-center justify-between">
           {href ? (
             <Link
               href={href}
-              className="inline-flex items-center rounded-lg border px-3 py-2 text-sm font-medium text-slate-900 hover:-translate-y-[1px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400"
+              className="inline-flex items-center rounded-lg border px-3 py-2 text-sm font-medium text-slate-900 dark:text-slate-100 hover:-translate-y-[1px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 dark:border-slate-700"
               style={{ background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box", border: "2px solid transparent" }}
               aria-label={t("Open documentation")}
             >
@@ -583,7 +599,7 @@ function InfoModal({ state, onClose }: { state: InfoModalState; onClose: () => v
 
           <button
             onClick={onClose}
-            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400"
+            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400"
           >
             {t("Close")}
           </button>
