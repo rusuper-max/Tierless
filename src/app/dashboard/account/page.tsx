@@ -43,42 +43,48 @@ export default async function AccountPage() {
       <script
         dangerouslySetInnerHTML={{
           __html: `(() => {
-            const root = document.getElementById('tl-plan-controls');
-            const statusEl = document.getElementById('tl-plan-status');
-            if (!root) return;
-            const setStatus = (msg, ok=true) => {
-              if (!statusEl) return;
-              statusEl.textContent = msg || '';
-              statusEl.style.color = ok ? 'inherit' : '#ef4444';
-            };
-            root.addEventListener('click', async (e) => {
-              const el = e.target && (e.target as HTMLElement).closest('[data-plan]');
-              if (!el) return;
-              e.preventDefault();
-              const plan = (el as HTMLElement).getAttribute('data-plan');
-              if (!plan) return;
-              try {
-                setStatus('Saving…');
-                const res = await fetch('/api/me/plan', {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ plan })
-                });
-                const txt = await res.text();
-                if (!res.ok) {
-                  setStatus('Error: ' + txt, false);
-                  return;
-                }
-                // Notify the app (useAccount listens for this) and show success
-                try { window.dispatchEvent(new Event('TL_AUTH_CHANGED')); } catch {}
-                setStatus('Saved');
-                // Optional: clear status after a moment
-                setTimeout(() => setStatus(''), 1200);
-              } catch (err) {
-                setStatus('Network error', false);
-              }
-            });
-          })();`
+  const root = document.getElementById('tl-plan-controls');
+  const statusEl = document.getElementById('tl-plan-status');
+  if (!root) return;
+
+  function setStatus(msg, ok = true) {
+    if (!statusEl) return;
+    statusEl.textContent = msg || '';
+    statusEl.style.color = ok ? 'inherit' : '#ef4444';
+  }
+
+  root.addEventListener('click', async function (e) {
+    const target = e && e.target ? e.target : null;
+    const el = target && typeof target.closest === 'function' ? target.closest('[data-plan]') : null;
+    if (!el) return;
+    e.preventDefault();
+
+    const plan = el.getAttribute('data-plan');
+    if (!plan) return;
+
+    try {
+      setStatus('Saving…');
+      const res = await fetch('/api/me/plan', {
+        method: 'PUT',
+        credentials: 'same-origin', // ensure cookies are sent
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan })
+      });
+
+      const txt = await res.text();
+      if (!res.ok) {
+        setStatus('Error: ' + txt, false);
+        return;
+      }
+
+      try { window.dispatchEvent(new Event('TL_AUTH_CHANGED')); } catch {}
+      setStatus('Saved');
+      setTimeout(() => setStatus(''), 1200);
+    } catch (_err) {
+      setStatus('Network error', false);
+    }
+  });
+})();`
         }}
       />
     </main>
