@@ -39,6 +39,17 @@ export const PLAN_RANK: Record<PlanId, number> = {
 
 export const PLAN_ORDER: PlanId[] = ["free", "starter", "growth", "pro", "tierless"];
 
+// ---- Defaults & guards ----
+// default plan koji koristimo kad nema ničega u cookie/session-u
+export const DEFAULT_PLAN: PlanId = "free";
+
+// helpers
+export const isPlanId = (v: unknown): v is PlanId =>
+  typeof v === "string" && (PLAN_ORDER as readonly string[]).includes(v);
+
+export const coercePlan = (v: unknown): PlanId =>
+  isPlanId(v) ? v : DEFAULT_PLAN;
+
 // Glavna mapa: šta koji plan dozvoljava
 export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
   free: {
