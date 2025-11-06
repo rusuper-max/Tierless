@@ -1,7 +1,7 @@
 // src/app/api/account/plan/route.ts
 import { NextResponse } from "next/server";
-import type { PlanId } from "@/lib/plans";
-import { DEFAULT_PLAN } from "@/lib/plans";
+import type { PlanId } from "@/lib/entitlements";
+import { DEFAULT_PLAN } from "@/lib/entitlements";
 
 export const dynamic = "force-dynamic";
 
