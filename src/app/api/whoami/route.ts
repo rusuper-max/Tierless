@@ -3,7 +3,7 @@ import { getUserIdFromRequest } from "@/lib/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export function GET(req: Request) {
-  const userId = getUserIdFromRequest(req);
+export async function GET(req: Request) {
+  const userId = await getUserIdFromRequest(req);
   return NextResponse.json({ userId });
 }

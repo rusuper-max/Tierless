@@ -97,6 +97,26 @@ export async function getSessionUser(req?: Request): Promise<SessionUser | null>
 
 /** Helper: email ili null; koristi se u API rutama. */
 export async function getUserIdFromRequest(req?: Request): Promise<string | null> {
+  // 1) Pokušaj Cloudflare Access header (radi i kad nema app session-a)
+  try {
+    // Nabavi Headers (iz req-a ili preko next/headers)
+    const hdrs: Headers =
+      (req?.headers as unknown as Headers) ||
+      ((await (await import("next/headers")).headers()) as unknown as Headers);
+
+    const cfEmail =
+      hdrs.get?.("CF-Access-Authenticated-User-Email") ??
+      hdrs.get?.("cf-access-authenticated-user-email") ??
+      null;
+
+    if (cfEmail && cfEmail.includes("@")) {
+      return cfEmail.toLowerCase();
+    }
+  } catch {
+    // ignore i nastavi na session
+  }
+
+  // 2) Fallback: JWT session iz cookie-ja (postojeće ponašanje)
   const u = await getSessionUser(req);
   return u?.email ?? null;
 }
