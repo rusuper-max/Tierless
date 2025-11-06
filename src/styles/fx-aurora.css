@@ -6,14 +6,14 @@
 }
 
 /* Bez horizontalnog skrola */
-html, body { overflow-x: clip; }
+html[data-page="marketing"], html[data-page="marketing"] body { overflow-x: clip; }
 
 /* ===========================
    AURORA KONTEJNER
    - Global: fixed
    - Lokalno (u sceni): dodaj .is-local za absolute
    =========================== */
-.fx-aurora{
+html[data-page="marketing"] .fx-aurora{
   position: fixed;
   inset: 0;
   width: 100%;
@@ -24,12 +24,12 @@ html, body { overflow-x: clip; }
 }
 
 /* Lokalni mod: koristi u sticky sceni da aurora važi samo unutar nje */
-.fx-aurora.is-local{ position: absolute !important; }
+html[data-page="marketing"] .fx-aurora.is-local{ position: absolute !important; }
 
 /* Vizueli */
-.fx-aurora.-tight .spot{ filter: blur(40px) saturate(125%); }
+html[data-page="marketing"] .fx-aurora.-tight .spot{ filter: blur(40px) saturate(125%); }
 
-.fx-aurora .spot{
+html[data-page="marketing"] .fx-aurora .spot{
   position: absolute;
   opacity: .90;
   filter: blur(48px) saturate(125%);
@@ -38,16 +38,16 @@ html, body { overflow-x: clip; }
 }
 
 /* Theme-aware blending/opacity */
-html:not(.dark) .fx-aurora .spot{
+html[data-page="marketing"]:not(.dark) .fx-aurora .spot{
   mix-blend-mode: multiply;
   opacity: .80;
 }
-html.dark .fx-aurora .spot{
+html[data-page="marketing"].dark .fx-aurora .spot{
   mix-blend-mode: screen;   /* lifts colors on dark backgrounds */
   opacity: .92;
 }
 
-.fx-aurora .spot-tl{
+html[data-page="marketing"] .fx-aurora .spot-tl{
   left: -18vmax; top: -10vmax; width: 128vmax; height: 84vmax;
   background:
     radial-gradient(60% 60% at 30% 30%, color-mix(in oklab, var(--tl-indigo) 26%, transparent) 0 62%, transparent 62%),
@@ -63,33 +63,33 @@ html.dark .fx-aurora .spot{
 }
 
 @media (prefers-reduced-motion: reduce){
-  .fx-aurora .spot-tl{ animation: none; }
+  html[data-page="marketing"] .fx-aurora .spot-tl{ animation: none; }
 }
 
-.fx-aurora .l1, .fx-aurora .l2, .fx-aurora .l3{
+html[data-page="marketing"] .fx-aurora .l1, html[data-page="marketing"] .fx-aurora .l2, html[data-page="marketing"] .fx-aurora .l3{
   position: absolute;
   height: 2px; width: 160vmax; opacity: .18;
   will-change: transform; filter: saturate(115%);
 }
-.fx-aurora .l1{
+html[data-page="marketing"] .fx-aurora .l1{
   top: 22vh; left: -10vmax;
   background: linear-gradient(90deg, color-mix(in oklab, var(--tl-indigo) 18%, transparent) 0 35%, transparent 55% 100%);
   transform: rotate(12deg); animation: fx-line-left2right 22s linear infinite;
 }
-.fx-aurora .l2{
+html[data-page="marketing"] .fx-aurora .l2{
   top: 38vh; left: -10vmax;
   background: linear-gradient(90deg, color-mix(in oklab, var(--tl-sky) 14%, transparent) 0 35%, transparent 60% 100%);
   transform: rotate(12deg); animation: fx-line-right2left 26s linear infinite;
 }
-.fx-aurora .l3{
+html[data-page="marketing"] .fx-aurora .l3{
   top: 76vh; left: -10vmax;
   background: linear-gradient(90deg, color-mix(in oklab, var(--tl-teal) 14%, transparent) 0 35%, transparent 55% 100%);
   transform: rotate(12deg); animation: fx-line-left2right 28s linear infinite;
 }
 
-html.dark .fx-aurora .l1,
-html.dark .fx-aurora .l2,
-html.dark .fx-aurora .l3{
+html[data-page="marketing"].dark .fx-aurora .l1,
+html[data-page="marketing"].dark .fx-aurora .l2,
+html[data-page="marketing"].dark .fx-aurora .l3{
   opacity: .24;
 }
 
@@ -103,5 +103,5 @@ html.dark .fx-aurora .l3{
 }
 
 @media (prefers-reduced-motion: reduce){
-  .fx-aurora .l1, .fx-aurora .l2, .fx-aurora .l3{ animation: none; }
+  html[data-page="marketing"] .fx-aurora .l1, html[data-page="marketing"] .fx-aurora .l2, html[data-page="marketing"] .fx-aurora .l3{ animation: none; }
 }

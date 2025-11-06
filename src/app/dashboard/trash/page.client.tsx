@@ -1,9 +1,10 @@
 // src/app/dashboard/trash/page.client.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import Link from "next/link";
 import { t } from "@/i18n";
+import { GripVertical } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /* Brand outline buttons — 1:1 sa Dashboard-a                          */
@@ -49,7 +50,11 @@ function ActionButton({
   const base =
     "relative inline-flex items-center justify-center whitespace-nowrap rounded-full bg-[var(--card,white)] text-sm font-medium transition will-change-transform select-none";
   const pad = size === "xs" ? "px-3 py-1.5" : "px-3.5 py-2";
-  const text = variant === "danger" ? "text-rose-700" : "text-neutral-900";
+  // Bela slova (osim danger)
+  const text =
+  variant === "danger"
+    ? "text-rose-700 dark:text-rose-300"
+    : "text-[var(--text,#111827)]";
   const state = disabled
     ? "opacity-50 cursor-not-allowed"
     : "hover:shadow-[0_10px_24px_rgba(2,6,23,.08)] hover:-translate-y-0.5 active:translate-y-0";
@@ -118,12 +123,31 @@ type ApiList = { rows?: TrashRow[]; ttlDays?: number };
 const TRASH_MAX = 50;
 const rowKey = (r: TrashRow) => `${r.meta.slug}#${r.deletedAt}`;
 
+// LS key za redosled (stabilni ID-jevi)
+const LS_TRASH_ORDER = "tl_trash_order_v2";
+
 function daysLeft(deletedAt: string, ttlDays: number) {
   const del = new Date(deletedAt).getTime();
   const expires = del + ttlDays * 24 * 60 * 60 * 1000;
   const diff = Math.ceil((expires - Date.now()) / (24 * 60 * 60 * 1000));
   return diff < 0 ? 0 : diff;
 }
+
+const loadOrderLS = (): string[] | null => {
+  try {
+    const raw = localStorage.getItem(LS_TRASH_ORDER);
+    if (!raw) return null;
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : null;
+  } catch {
+    return null;
+  }
+};
+const saveOrderLS = (ids: string[]) => {
+  try {
+    localStorage.setItem(LS_TRASH_ORDER, JSON.stringify(ids));
+  } catch {}
+};
 
 /* ------------------------------------------------------------------ */
 /* Confirm modal                                                       */
@@ -198,6 +222,21 @@ export default function TrashPageClient() {
 
   const [freeSlots, setFreeSlots] = useState<number>(0);
 
+  // DRAG state
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const [overPos, setOverPos] = useState<"before" | "after" | null>(null);
+  const tableRef = useRef<HTMLTableElement | null>(null);
+
+  // <- FIX: koristimo ref-ove da izbegnemo stale state u onMouseUp
+  const dragIdRef = useRef<string | null>(null);
+  const overIdRef = useRef<string | null>(null);
+  const overPosRef = useRef<"before" | "after" | null>(null);
+
+  useEffect(() => { dragIdRef.current = dragId; }, [dragId]);
+  useEffect(() => { overIdRef.current = overId; }, [overId]);
+  useEffect(() => { overPosRef.current = overPos; }, [overPos]);
+
   async function refreshFreeSlots(): Promise<number> {
     try {
       const r = await fetch("/api/calculators", {
@@ -226,7 +265,26 @@ export default function TrashPageClient() {
         headers: { "x-no-cache": String(Date.now()) },
       });
       const j = (await r.json()) as ApiList;
-      const list = j?.rows ?? [];
+      let list = j?.rows ?? [];
+
+      // Primarni sort: najskorije obrisano
+      list = [...list].sort((a, b) => new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime());
+
+      // Primeni sačuvani redosled po stabilnim ID-jevima ako postoji
+      const saved = loadOrderLS();
+      if (saved && saved.length) {
+        const idxById = new Map<string, number>();
+        saved.forEach((id, i) => idxById.set(id, i));
+        list = list
+          .map((r) => ({ r, id: rowKey(r) }))
+          .sort((a, b) => {
+            const ai = idxById.has(a.id) ? (idxById.get(a.id) as number) : 999999;
+            const bi = idxById.has(b.id) ? (idxById.get(b.id) as number) : 999999;
+            return ai - bi;
+          })
+          .map(({ r }) => r);
+      }
+
       setRows(list);
       setTtl(j?.ttlDays ?? 30);
       setSelected(new Set());
@@ -250,10 +308,7 @@ export default function TrashPageClient() {
     load();
   }, []);
 
-  const sorted = useMemo(
-    () => [...rows].sort((a, b) => new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime()),
-    [rows]
-  );
+  const sorted = useMemo(() => [...rows], [rows]);
 
   function openConfirm(row: TrashRow) {
     setConfirmSlug(row.meta.slug);
@@ -285,6 +340,8 @@ export default function TrashPageClient() {
         next.delete(key);
         return next;
       });
+      const cur = loadOrderLS() || [];
+      saveOrderLS(cur.filter((id) => id !== key));
       window.dispatchEvent(new Event("TL_COUNTERS_DIRTY"));
       setFreeSlots((v) => (Number.isFinite(v) ? Math.max(0, v - 1) : v));
     } finally {
@@ -320,6 +377,8 @@ export default function TrashPageClient() {
           next.delete(key);
           return next;
         });
+        const cur = loadOrderLS() || [];
+        saveOrderLS(cur.filter((id) => id !== key));
       }
     }
     window.dispatchEvent(new Event("TL_COUNTERS_DIRTY"));
@@ -349,6 +408,8 @@ export default function TrashPageClient() {
         next.delete(confirmKey);
         return next;
       });
+      const cur = loadOrderLS() || [];
+      saveOrderLS(cur.filter((id) => id !== confirmKey));
       setConfirmSlug(null);
       setConfirmName("");
       setConfirmKey(null);
@@ -380,10 +441,10 @@ export default function TrashPageClient() {
           next.delete(key);
           return next;
         });
+        const cur = loadOrderLS() || [];
+        saveOrderLS(cur.filter((id) => id !== key));
       }
     }
-    window.dispatchEvent(new Event("TL_COUNTERS_DIRTY"));
-    setInfo(`Deleted ${removed} item(s) forever.`);
   }
 
   const allSelected = selected.size > 0 && selected.size === sorted.length;
@@ -405,23 +466,136 @@ export default function TrashPageClient() {
     [sorted.length]
   );
 
+  /* ---------------------- Drag & drop (pointer) --------------------- */
+  const startDragCleanup = useRef<null | (() => void)>(null);
+
+  const reorderById = (drag: string, over: string, pos: "before" | "after") => {
+    setRows((prev) => {
+      const withIds = prev.map((r) => ({ id: rowKey(r), row: r }));
+      const fromIdx = withIds.findIndex((x) => x.id === drag);
+      const toIdxOriginal = withIds.findIndex((x) => x.id === over);
+      if (fromIdx < 0 || toIdxOriginal < 0 || fromIdx === toIdxOriginal) return prev;
+
+      const next = [...withIds];
+      const [item] = next.splice(fromIdx, 1);
+
+      let insertIndex = toIdxOriginal;
+      if (fromIdx < toIdxOriginal) insertIndex = toIdxOriginal - 1;
+      if (pos === "after") insertIndex += 1;
+      insertIndex = Math.max(0, Math.min(next.length, insertIndex));
+
+      next.splice(insertIndex, 0, item);
+
+      // persist stable ids redosleda
+      saveOrderLS(next.map((x) => x.id));
+      return next.map((x) => x.row);
+    });
+  };
+
+  const onPointerDragStart = (id: string, e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setDragId(id);
+    dragIdRef.current = id;
+    setOverId(null);
+    overIdRef.current = null;
+    setOverPos(null);
+    overPosRef.current = null;
+
+    const prevUserSelect = document.body.style.userSelect;
+    document.body.style.userSelect = "none";
+    document.body.classList.add("tl-drag-active");
+
+    const onMove = (ev: MouseEvent) => {
+      const y = ev.clientY;
+      const table = tableRef.current;
+      if (!table) return;
+
+      const rowsEls = Array.from(table.querySelectorAll<HTMLTableRowElement>("tbody tr[data-id]"));
+      if (rowsEls.length === 0) return;
+
+      const firstRect = rowsEls[0].getBoundingClientRect();
+      const lastRect = rowsEls[rowsEls.length - 1].getBoundingClientRect();
+      if (y < firstRect.top) {
+        const id0 = rowsEls[0].dataset.id!;
+        setOverId(id0); setOverPos("before");
+        overIdRef.current = id0; overPosRef.current = "before";
+        return;
+      }
+      if (y > lastRect.bottom) {
+        const idN = rowsEls[rowsEls.length - 1].dataset.id!;
+        setOverId(idN); setOverPos("after");
+        overIdRef.current = idN; overPosRef.current = "after";
+        return;
+      }
+
+      for (const rowEl of rowsEls) {
+        const rect = rowEl.getBoundingClientRect();
+        if (y >= rect.top && y <= rect.bottom) {
+          const mid = rect.top + rect.height / 2;
+          const pos = y < mid ? "before" : "after";
+          const rid = rowEl.dataset.id!;
+          setOverId(rid); setOverPos(pos);
+          overIdRef.current = rid; overPosRef.current = pos;
+          break;
+        }
+      }
+    };
+
+    const onUp = () => {
+      const d = dragIdRef.current;
+      const o = overIdRef.current;
+      const p = overPosRef.current || "before";
+      if (d && o && d !== o) {
+        reorderById(d, o, p);
+      }
+      setDragId(null);
+      dragIdRef.current = null;
+      setOverId(null);
+      overIdRef.current = null;
+      setOverPos(null);
+      overPosRef.current = null;
+
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.userSelect = prevUserSelect;
+      document.body.classList.remove("tl-drag-active");
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+
+    startDragCleanup.current = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.userSelect = prevUserSelect;
+      document.body.classList.remove("tl-drag-active");
+    };
+  };
+
+  useEffect(() => {
+    return () => { if (startDragCleanup.current) startDragCleanup.current(); };
+  }, []);
+
+  /* ----------------------------- UI -------------------------------- */
   return (
     <main className="container-page space-y-6">
       {/* Header */}
       <header className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold">{t("Trash")}</h1>
-          <p className="text-xs text-neutral-500">
-            {t("Deleted pages are kept for")} {ttl} {t("days before permanent removal.")} •{" "}
-            <span className="font-medium text-neutral-700">
-              Trash {sorted.length} / {TRASH_MAX}
-            </span>
-          </p>
+          {/* Traženo: ceo red u belo */}
+          <p className="text-xs text-neutral-500 dark:text-white">
+  {t("Deleted pages are kept for")} {ttl} {t("days before permanent removal.")} •{" "}
+  <span className="font-medium text-neutral-700 dark:text-white">
+    Trash {sorted.length} / {TRASH_MAX}
+  </span>
+</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link className="text-sm text-neutral-700 hover:underline" href="/dashboard">
-            {t("Back to Pages")}
-          </Link>
+          {/* Traženo: white */}
+          <Link className="text-sm text-neutral-700 hover:underline dark:text-white" href="/dashboard">
+  {t("Back to Pages")}
+</Link>
         </div>
       </header>
 
@@ -489,9 +663,9 @@ export default function TrashPageClient() {
             </div>
           </div>
 
-          {/* Table (bez sečenja) */}
+          {/* Table */}
           <div className="table shadow-ambient mt-3 relative z-[1] overflow-visible pt-2">
-            <table className="w-full text-sm">
+            <table ref={tableRef} className="w-full text-sm">
               <thead className="relative z-0">
                 <tr className="text-left">
                   <th className="w-10">
@@ -507,10 +681,10 @@ export default function TrashPageClient() {
                   <th>{t("Deleted")}</th>
                   <th>{t("Expires in")}</th>
                   <th className="w-[320px]">{t("Actions")}</th>
+                  <th className="w-[110px] text-center">{t("Reorder")}</th>
                 </tr>
               </thead>
 
-              {/* KLJUČ: izolovan stacking na body + z-index po redu */}
               <tbody className="relative z-0 isolate">
                 {sorted.map((r) => {
                   const key = rowKey(r);
@@ -518,47 +692,79 @@ export default function TrashPageClient() {
                   const deletedShort = new Date(r.deletedAt).toLocaleString();
                   const isSel = selected.has(key);
                   const disableRestore = freeSlots === 0;
+                  const isDragging = dragId === key;
 
                   return (
-                    <tr key={key} className="relative z-0 hover:z-30">
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={isSel}
-                          onChange={() => toggleOne(key)}
-                          aria-label={`Select ${r.meta.name}`}
-                        />
-                      </td>
-                      <td className="font-medium">{r.meta.name}</td>
-                      <td className="text-neutral-500">{r.meta.slug}</td>
-                      <td className="text-neutral-500">{deletedShort}</td>
-                      <td className={left <= 3 ? "text-rose-600 font-semibold" : "text-neutral-600"}>
-                        {left} {t("days")}
-                      </td>
+                    <Fragment key={key}>
+                      {/* preview linija PRE */}
+                      {overId === key && overPos === "before" && (
+                        <tr className="tl-drop-gap">
+                          <td colSpan={7}>
+                            <div className="tl-gap-strip" />
+                          </td>
+                        </tr>
+                      )}
 
-                      {/* “Luft” hack: -mt-1 + pt-1 sprečava isečeni hover lift/glow bez promena layouta */}
-                      <td className="relative">
-                        <div className="min-w-[320px] overflow-x-auto relative z-10 -mt-1">
-                          <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap relative z-20 pt-1">
-                            <ActionButton
-                              label={busyKey === key ? t("Restoring…") : t("Restore")}
-                              onClick={() => restoreRow(r)}
-                              disabled={busyKey === key || disableRestore}
-                              title={disableRestore ? t("No free slots on your plan") : undefined}
-                              variant="brand"
-                              size="xs"
-                            />
-                            <ActionButton
-                              label={t("Delete forever")}
-                              onClick={() => openConfirm(r)}
-                              disabled={busyKey === key}
-                              variant="danger"
-                              size="xs"
-                            />
+                      <tr className={`relative z-0 hover:z-30 ${isDragging ? "tl-row--dragging" : ""}`} data-id={key}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={isSel}
+                            onChange={() => toggleOne(key)}
+                            aria-label={`Select ${r.meta.name}`}
+                          />
+                        </td>
+                        <td className="font-medium">{r.meta.name}</td>
+                        <td className="text-neutral-500">{r.meta.slug}</td>
+                        <td className="text-neutral-500">{deletedShort}</td>
+                        <td className={left <= 3 ? "text-rose-600 font-semibold" : "text-neutral-600"}>
+                          {left} {t("days")}
+                        </td>
+
+                        <td className="relative">
+                          <div className="min-w-[320px] overflow-visible relative z-10 -mt-1">
+                            <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap relative z-20 pt-1">
+                              <ActionButton
+                                label={busyKey === key ? t("Restoring…") : t("Restore")}
+                                onClick={() => restoreRow(r)}
+                                disabled={busyKey === key || disableRestore}
+                                title={disableRestore ? t("No free slots on your plan") : undefined}
+                                variant="brand"
+                                size="xs"
+                              />
+                              <ActionButton
+                                label={t("Delete forever")}
+                                onClick={() => openConfirm(r)}
+                                disabled={busyKey === key}
+                                variant="danger"
+                                size="xs"
+                              />
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+
+                        {/* ručka za drag */}
+                        <td className="text-center">
+                          <button
+                            className="inline-flex items-center justify-center w-11 h-11 rounded-lg text-neutral-500 cursor-grab active:cursor-grabbing hover:bg-neutral-100"
+                            title="Drag to reorder"
+                            aria-label="Drag to reorder"
+                            onMouseDown={(e) => onPointerDragStart(key, e)}
+                          >
+                            <GripVertical className="size-5" />
+                          </button>
+                        </td>
+                      </tr>
+
+                      {/* preview linija POSLE */}
+                      {overId === key && overPos === "after" && (
+                        <tr className="tl-drop-gap">
+                          <td colSpan={7}>
+                            <div className="tl-gap-strip" />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -580,6 +786,25 @@ export default function TrashPageClient() {
         onConfirm={purgeConfirmed}
         busy={!!busyKey}
       />
+
+      {/* Minimalno, samo za drag vizualno (ne menja ostatak dizajna) */}
+      <style jsx global>{`
+        .cursor-grab { cursor: grab; cursor: -webkit-grab; }
+        .cursor-grabbing { cursor: grabbing; cursor: -webkit-grabbing; }
+        .tl-row--dragging { opacity: 0; visibility: hidden; }
+        .tl-drop-gap .tl-gap-strip{
+          height: 10px;
+          position: relative;
+        }
+        .tl-drop-gap .tl-gap-strip::after{
+          content: "";
+          position: absolute;
+          left: 0; right: 0; top: 4px; height: 2px;
+          background: linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE));
+          border-radius: 2px;
+        }
+        .tl-drag-active { cursor: grabbing !important; }
+      `}</style>
     </main>
   );
 }

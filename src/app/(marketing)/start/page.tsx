@@ -155,8 +155,6 @@ export default function StartPage() {
   const [currentPlan, setCurrentPlan] = useState<PlanId | null>(null);
   const [info, setInfo] = useState<InfoModalState>({ open: false, title: "", body: "" });
 
-  // DEV bridge flag: ako je 1 → CTA može instant da zove /api/upgrade za ulogovanog usera
-  const devUpgrade = typeof process !== "undefined" && (process as any).env?.NEXT_PUBLIC_DEV_UPGRADE === "1";
 
   // Auth + plan
   useEffect(() => {
@@ -226,21 +224,23 @@ export default function StartPage() {
               authed={authed}
               currentPlan={currentPlan}
               onOpenInfo={openInfo}
-              onDevUpgrade={async (planId) => {
-                // DEV bridge: instant upgrade bez napuštanja /start
-                if (!devUpgrade || !authed) return false;
+              onPlanChange={async (planId) => {
+                if (!authed) return false;
                 try {
-                  const res = await fetch("/api/upgrade", {
+                  const res = await fetch("/api/me/plan", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
+                    credentials: "include",
                     body: JSON.stringify({ plan: planId }),
                   });
                   const data = await res.json().catch(() => ({}));
-                  if (!res.ok || !data?.ok) return false;
-                  window.dispatchEvent(new Event("TL_AUTH_CHANGED"));
+                  if (!res.ok || data?.ok !== true) return false;
                   setCurrentPlan(planId);
+                  window.dispatchEvent(new Event("TL_AUTH_CHANGED"));
                   return true;
-                } catch { return false; }
+                } catch {
+                  return false;
+                }
               }}
             />
           ))}
@@ -301,15 +301,16 @@ function PlanCard({
   authed,
   currentPlan,
   onOpenInfo,
-  onDevUpgrade,
+  onPlanChange,
 }: {
   plan: Plan;
   interval: Interval;
   authed: boolean;
   currentPlan: PlanId | null;
   onOpenInfo: (item: SpecialItem) => void;
-  onDevUpgrade: (planId: PlanId) => Promise<boolean>; // vrati true ako je dev upgrade odrađen
+  onPlanChange: (planId: PlanId) => Promise<boolean>; // returns true if plan changed
 }) {
+  const [busy, setBusy] = useState(false);
   const isMost = !!plan.badge;
   const isTierless = plan.id === "tierless";
   const isCurrent = authed && currentPlan === plan.id;
@@ -484,16 +485,20 @@ function PlanCard({
       <div className="relative z-10 px-5 pb-5 pt-3">
         <Link
           href={ctaHref}
+          prefetch={false}
           className={[
             "block w-full rounded-xl px-4 py-2.5 text-center text-sm font-medium transition",
-            "hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-            isCurrent ? "cursor-default opacity-60" : "",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+            // lift hover only when interactive
+            (!isCurrent && !busy) ? "hover:-translate-y-[2px]" : "",
+            (isCurrent || busy) ? "cursor-not-allowed opacity-60" : "",
           ].join(" ")}
           style={
             isTierless
               ? { background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box", border: "2px solid transparent", color: "#0f172a" }
               : { border: `2px solid ${hexToRgb(plan.color, 0.45)}`, color: "#0f172a" }
           }
+          aria-disabled={isCurrent || busy}
           aria-label={
             isCurrent
               ? t("You are on this tier")
@@ -504,27 +509,32 @@ function PlanCard({
               : t("Pick {name}", { name: plan.name })
           }
           onClick={async (e) => {
-            if (isCurrent) {
+            if (isCurrent || busy) {
               e.preventDefault();
               return;
             }
-            // DEV bridge: ako je ulogovan korisnik i uključen flag, radi instant upgrade
+            // If authenticated, change plan via API without leaving /start
             if (authed) {
-              const devFlag = typeof process !== "undefined" && (process as any).env?.NEXT_PUBLIC_DEV_UPGRADE === "1";
-              if (devFlag) {
-                e.preventDefault();
-                const ok = await onDevUpgrade(plan.id);
+              e.preventDefault();
+              try {
+                setBusy(true);
+                const ok = await onPlanChange(plan.id);
                 if (!ok) {
-                  // fallback: ako ne uspe dev upgrade, idi na klasični signup
-                  window.location.href = ctaHref;
+                  window.location.href = ctaHref; // fallback to classic signup
                 }
-                return;
+              } finally {
+                setBusy(false);
               }
+              return;
             }
-            // Prod ponašanje: pusti Link ka /signup
+            // Not authenticated → let Link navigate to /signup
           }}
         >
-          {hasPlan ? (isCurrent ? t("You are on this tier") : ctaLabel) : t("Pick this tier")}
+          {busy
+            ? t("Changing…")
+            : hasPlan
+              ? (isCurrent ? t("You are on this tier") : ctaLabel)
+              : t("Pick this tier")}
         </Link>
         <p className="mt-2 text-[11px] text-slate-500 text-center">
           {plan.id === "free" ? t("No credit card required") : t("Cancel anytime")}

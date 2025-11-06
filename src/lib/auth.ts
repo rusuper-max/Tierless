@@ -1,11 +1,17 @@
 // src/lib/auth.ts — JWT auth (HS256), bez cookies().get/set
 import { SignJWT, jwtVerify } from "jose";
 
-export type SessionUser = { email: string };
+// === Vaši planovi (ostaju identični logici na projektu) ===
+export type Plan = "free" | "starter" | "growth" | "pro" | "tierless";
 
+export type SessionUser = {
+  email: string;
+  plan?: Plan; // može da izostane u starijim tokenima
+};
+
+// Cookie/JWT setup
 export const SESSION_COOKIE = process.env.SESSION_COOKIE_NAME || "tl_sess";
-const SECRET =
-  process.env.SESSION_SECRET || "dev_secret_min_32_chars_000000000000000";
+const SECRET = process.env.SESSION_SECRET || "dev_secret_min_32_chars_000000000000000";
 const secretKey = new TextEncoder().encode(SECRET);
 
 export const COOKIE_BASE = {
@@ -15,6 +21,15 @@ export const COOKIE_BASE = {
   path: "/" as const,
 };
 
+// ---------- Plan helpers (validacija/normalizacija) ----------
+export function isPlan(x: unknown): x is Plan {
+  return x === "free" || x === "starter" || x === "growth" || x === "pro" || x === "tierless";
+}
+export function coercePlan(x: unknown): Plan {
+  return isPlan(x) ? x : "free";
+}
+
+// ---------- Interne cookie util funkcije ----------
 function readCookieFromHeader(header: string | null | undefined, name: string): string | null {
   if (!header) return null;
   const parts = header.split(/; */);
@@ -32,30 +47,44 @@ async function userFromToken(token: string | null): Promise<SessionUser | null> 
   try {
     const { payload } = await jwtVerify(token, secretKey);
     const u = payload.user as SessionUser | undefined;
-    return u?.email ? u : null;
+    if (!u?.email) return null;
+    return { email: u.email, plan: coercePlan(u.plan) };
   } catch {
     return null;
   }
 }
 
+// ---------- Public API ----------
 export async function signSession(user: SessionUser, days = 30): Promise<string> {
-  return new SignJWT({ user })
+  // Uvek normalizuj plan pre potpisivanja
+  const token = await new SignJWT({ user: { email: user.email, plan: coercePlan(user.plan) } })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${days}d`)
     .sign(secretKey);
+
+  const attrs: string[] = [];
+  attrs.push(`${SESSION_COOKIE}=${encodeURIComponent(token)}`);
+  attrs.push(`Path=${COOKIE_BASE.path}`);
+  if (COOKIE_BASE.httpOnly) attrs.push(`HttpOnly`);
+  attrs.push(`SameSite=${COOKIE_BASE.sameSite.charAt(0).toUpperCase() + COOKIE_BASE.sameSite.slice(1)}`);
+  if (COOKIE_BASE.secure) attrs.push(`Secure`);
+  const maxAge = Math.max(1, Math.floor(days * 24 * 60 * 60));
+  attrs.push(`Max-Age=${maxAge}`);
+
+  return attrs.join("; ");
 }
 
 /** Server-side čitanje user-a iz cookie-ja (Next 16: headers() je async). */
 export async function getSessionUser(req?: Request): Promise<SessionUser | null> {
-  // 1) API/route handler: čitaj direktno iz req.headers
+  // 1) API route: čitaj direktno iz req.headers
   let cookieHeader: string | null = req?.headers?.get("cookie") ?? null;
 
   // 2) Server component fallback (Next 16): await headers()
   if (!cookieHeader) {
     try {
       const { headers } = await import("next/headers");
-      const h = await headers();                 // ⬅️ bitno: await headers()
+      const h = await headers();
       cookieHeader = h.get("cookie");
     } catch {
       cookieHeader = null;

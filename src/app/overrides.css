@@ -1,33 +1,38 @@
 /* === FINAL OVERRIDES (učitava se POSLE Tailwinda) === */
 
-/* 1) Naša dugmad (.btn i .tl-btn) — nikad ne bela na hover */
-.btn:hover,
-.tl-btn:hover,
-a.btn:hover,
-a.tl-btn:hover,
-button.btn:hover,
-button.tl-btn:hover {
+/* Scope dashboard-specific tokens to avoid leaking into marketing */
+.tl-dashboard {
+  /* Fallbacks so overrides don’t become undefined if vars are missing */
+  --accent: var(--brand-2, #22D3EE);
+  --fg: var(--text, #111827);
+}
+html.dark .tl-dashboard {
+  --fg: var(--text, #e5e7eb);
+}
+
+/* 1) Naša dugmad (.btn i .tl-btn) — nikad ne bela na hover (scoped na dashboard) */
+.tl-dashboard :is(.btn, .tl-btn, a.btn, a.tl-btn, button.btn, button.tl-btn):hover {
   background-color: color-mix(in oklab, var(--accent) 14%, transparent) !important;
   border-color: var(--accent) !important;
   color: var(--fg) !important;
 }
 
-/* 2) Globalno ubij bela/light hover utilse gde god da se pojave */
-[class*="hover:bg-white"]:hover,
-[class*="hover:bg-neutral-50"]:hover,
-[class*="hover:bg-gray-50"]:hover,
-[class*="hover:bg-slate-50"]:hover,
-[class*="hover:bg-zinc-50"]:hover,
-.dark [class*="hover:bg-neutral-900"]:hover,
-[class*="dark:hover:bg-neutral-900"]:hover {
+/* 2) Ukloni bele/light hover utilse — samo u dashboard scope-u */
+.tl-dashboard :is([class*="hover:bg-white"],
+                 [class*="hover:bg-neutral-50"],
+                 [class*="hover:bg-gray-50"],
+                 [class*="hover:bg-slate-50"],
+                 [class*="hover:bg-zinc-50"],
+                 .dark [class*="hover:bg-neutral-900"],
+                 [class*="dark:hover:bg-neutral-900"]):hover {
   background-color: color-mix(in oklab, var(--accent) 14%, transparent) !important;
   border-color: var(--accent) !important;
   color: var(--fg) !important;
 }
 
-/* 3) Ako je neko ostavio fiksnu belu pozadinu na hover baš inline — pregazi i to */
-a:hover.bg-white,
-button:hover.bg-white {
+/* 3) Prebij inline .bg-white hover — ali samo u dashboardu */
+.tl-dashboard a:hover.bg-white,
+.tl-dashboard button:hover.bg-white {
   background-color: color-mix(in oklab, var(--accent) 14%, transparent) !important;
   border-color: var(--accent) !important;
   color: var(--fg) !important;

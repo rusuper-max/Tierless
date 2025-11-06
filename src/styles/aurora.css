@@ -5,10 +5,10 @@
 }
 
 /* Anti-drift osnove */
-html, body { overflow-x: clip; transform: none !important; }
+html[data-page="marketing"], html[data-page="marketing"] body { overflow-x: clip; transform: none !important; }
 
 /* AURORA (HeroFX) — fiksna, ne putuje sa scrollom */
-html::before{
+html[data-page="marketing"]::before{
   content:"";
   position:fixed;
   inset:0;
@@ -29,12 +29,12 @@ html::before{
   100% { transform: translate3d(1.5vmax, -1vmax, 0) scale(1.015); }
 }
 
-@media (prefers-reduced-motion: reduce){ html::before{ animation:none; } }
+@media (prefers-reduced-motion: reduce){ html[data-page="marketing"]::before{ animation:none; } }
 
 /* ===============================
    DARK THEME TUNING (Aurora + Lines)
    =============================== */
-html.dark::before{
+html[data-page="marketing"].dark::before{
   /* Stronger, brighter glows that sit nicely on dark backgrounds */
   background:
     radial-gradient(120vmax 80vmax at 10% 20%, color-mix(in oklab, var(--tl-indigo) 38%, transparent) 0 60%, transparent 60% 100%),
@@ -48,7 +48,7 @@ html.dark::before{
 }
 
 /* Light streaks on dark: a bit stronger and blended as screen */
-html.dark body::before{
+html[data-page="marketing"].dark body::before{
   background-image:
     linear-gradient(115deg, color-mix(in oklab, var(--tl-indigo) 28%, transparent) 0 2px, transparent 2px 100%),
     linear-gradient(115deg, color-mix(in oklab, var(--tl-sky)    28%, transparent) 0 2px, transparent 2px 100%),
@@ -59,7 +59,7 @@ html.dark body::before{
 
 /* Logo safe-zone mask: switch to a dark-tinted vignette in dark mode
    (prevents brightening the header area on dark background) */
-html.dark::after{
+html[data-page="marketing"].dark::after{
   background:
     radial-gradient(ellipse 60vmin 5vmin at 0rem 3.5rem,
       rgba(0,0,0,.90) 0 70%,
@@ -68,7 +68,7 @@ html.dark::after{
 }
 
 /* LIGHT STREAKS — zamena za .l1 .l2 .l3 */
-body::before{
+html[data-page="marketing"] body::before{
   content:"";
   position:fixed;
   inset:0;
@@ -87,10 +87,10 @@ body::before{
   0%  { background-position: -10vmax 22vh, 110vmax 38vh, -10vmax 76vh; }
   100%{ background-position: 110vmax 16vh,  -10vmax 50vh, 110vmax 86vh; }
 }
-@media (prefers-reduced-motion: reduce){ body::before{ animation:none; } }
+@media (prefers-reduced-motion: reduce){ html[data-page="marketing"] body::before{ animation:none; } }
 
 /* LOGO SAFE-ZONE maska — fiksna, iznad Aurore i linija, ispod sadržaja */
-html::after{
+html[data-page="marketing"]::after{
   content:"";
   position:fixed;
   inset:0;

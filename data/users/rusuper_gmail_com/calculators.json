@@ -3,29 +3,8 @@
     "meta": {
       "name": "Copy of Copy of Toping",
       "slug": "copy-of-copy-of-toping",
-      "order": 4,
+      "order": 3,
       "online": true
-    },
-    "config": {}
-  },
-  {
-    "meta": {
-      "name": "Copy of Copy of Copy of Toping",
-      "slug": "copy-of-copy-of-copy-of-toping"
-    },
-    "config": {}
-  },
-  {
-    "meta": {
-      "name": "Copy of Copy of Copy of Copy of Toping",
-      "slug": "copy-of-copy-of-copy-of-copy-of-toping"
-    },
-    "config": {}
-  },
-  {
-    "meta": {
-      "name": "Copy of Copy of Copy of Toping (2)",
-      "slug": "copy-of-copy-of-copy-of-toping-2"
     },
     "config": {}
   }

@@ -1,40 +1,82 @@
 // src/app/dashboard/layout.tsx
-// src/app/dashboard/layout.tsx
-import "@/app/overrides.css"; // ⬅️ umesto "@/styles/overrides.css"
-
+import "@/app/overrides.css";
 import type { ReactNode } from "react";
-import Nav from "@/components/Nav";
+import Nav from "@/components/dashboard/Nav";
 import Sidebar from "@/components/dashboard/Sidebar";
-import DevControls from "@/components/dev/DevControls"; // DEV-ONLY (press "D" to toggle)
+import DevControls from "@/components/dev/DevControls";
+import AccountHydrator from "@/components/providers/AccountHydrator";
+import { entitlementsFor, type Plan } from "@/lib/entitlements.adapter";
 
 export const metadata = { title: "Tierless — Dashboard" };
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+async function loadAccountSSR() {
+  try {
+    // 1) auth status
+    const sRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/auth/status`, {
+      cache: "no-store",
+      credentials: "same-origin",
+    }).catch(() => fetch("/api/auth/status", { cache: "no-store", credentials: "same-origin" }));
+    const sJson = (await sRes?.json().catch(() => ({}))) as {
+      authenticated?: boolean;
+      user?: { email?: string | null };
+    };
+
+    const authenticated = !!sJson?.authenticated;
+    const email = authenticated ? (sJson?.user?.email || null) : null;
+
+    // 2) plan (ako je auth)
+    let plan: Plan = "free";
+    if (authenticated) {
+      const mRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/me`, {
+        cache: "no-store",
+        credentials: "same-origin",
+      }).catch(() => fetch("/api/me", { cache: "no-store", credentials: "same-origin" }));
+      const mJson = (await mRes?.json().catch(() => ({}))) as { user?: { plan?: Plan }; plan?: Plan };
+      plan = (mJson?.user?.plan || mJson?.plan || "free") as Plan;
+    }
+
+    return {
+      loading: false,
+      authenticated,
+      email,
+      plan,
+      entitlements: entitlementsFor(plan),
+    };
+  } catch {
+    return {
+      loading: false,
+      authenticated: false,
+      email: null,
+      plan: "free" as Plan,
+      entitlements: entitlementsFor("free"),
+    };
+  }
+}
+
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  const initialAccount = await loadAccountSSR();
+
   return (
     <>
-      {/* Top nav ostaje isti */}
-      <div className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/80 backdrop-blur-md">
-        <Nav brandHref="/" showThemeToggle={true} />
-      </div>
+      {/* Nav (client, sticky) */}
+      <Nav />
 
-      {/* Sidebar levo, gradijent separator, sadržaj desno */}
-      <div className="min-h-screen w-full flex">
+      {/* Seed-ujemo client store pre bilo kakvog rendera (ne menja UI) */}
+      <AccountHydrator initial={initialAccount} />
+
+      {/* Sve dashboard varijable i stilovi pod .tl-dashboard */}
+      <div className="tl-dashboard min-h-screen w-full flex">
         <Sidebar />
 
-        {/* BRAND GRADIENT SEPARATOR (2px) */}
         <div
           aria-hidden
           className="hidden md:block w-[2px] shrink-0"
-          style={{
-            backgroundImage:
-              "linear-gradient(180deg, var(--brand-1,#4F46E5), var(--brand-2,#22D3EE))",
-          }}
+          style={{ backgroundImage: "linear-gradient(180deg, var(--brand-1,#4F46E5), var(--brand-2,#22D3EE))" }}
         />
 
         <div className="flex-1 min-w-0">{children}</div>
       </div>
 
-      {/* DEV-ONLY — ukloniti pre produkcije */}
       <DevControls />
     </>
   );

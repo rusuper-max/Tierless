@@ -13,6 +13,12 @@
 
   --border: #e5e7eb;
   --radius: 16px;
+
+  /* --- Added brand tokens used by outlines/aurora in light theme --- */
+  --brand-3: #14B8A6;
+  --brand-3-rgb: 20 184 166;
+  --brand-gradient: linear-gradient(90deg, var(--brand-1) 0%, var(--brand-2) 50%, var(--brand-3) 100%);
+  --accent: var(--brand-2);
 }
 
 /* ========= Tokens (dark) ========= */
@@ -27,10 +33,29 @@ html.dark {
 .marketing-root{
   color-scheme: light;
   background: var(--bg);
-  /* NOTE: do not set color here – let components control text color */
+  color: var(--ink); /* ensure readable text in dark too */
+  position: relative;
+  isolation: isolate; /* allow a fixed ::before aurora layer without leaking */
 }
 
 html.dark .marketing-root{ color-scheme: dark; }
+
+/* Global aurora for marketing (fixed to viewport, sits under content) */
+.marketing-root::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;            /* below content; see .marketing-shell */
+  pointer-events: none;
+  background:
+    radial-gradient(120vmax 80vmax at 10% 20%, rgba(99,102,241,.18), transparent 60%),
+    radial-gradient(90vmax 60vmax at 80% 30%, rgba(56,189,248,.18), transparent 60%),
+    radial-gradient(100vmax 70vmax at 60% 80%, rgba(45,212,191,.16), transparent 65%);
+  filter: saturate(120%);
+}
+html.dark .marketing-root::before{
+  filter: saturate(120%);
+}
 
 /* ===== Dark-mode readability overrides (marketing) =====
    Ensure all common text elements render light in dark mode,
@@ -215,27 +240,11 @@ html.dark .marketing-hero-bg{
    ========================= */
 
 /* Anti-drift osnove: bez horizontalnog skrola i bez transform na korenu */
-html, body {
+.marketing-root {
   overflow-x: clip;
   transform: none !important;
 }
 
-/* AURORA (HeroFX) — fiksna, ne putuje sa scrollom */
-html::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 6;            /* ispod maske, iznad bilo kog bg-a */
-  pointer-events: none;
-
-  /* >>> PREBACI OVDE TVOJ TAČAN FX IZ .fx-aurora <<< 
-     Privremeni “približan” efekat: */
-  background:
-    radial-gradient(120vmax 80vmax at 10% 20%, rgba(99,102,241,.18), transparent 60%),
-    radial-gradient(90vmax 60vmax at 80% 30%, rgba(56,189,248,.18), transparent 60%),
-    radial-gradient(100vmax 70vmax at 60% 80%, rgba(45,212,191,.16), transparent 65%);
-  filter: saturate(120%);
-}
 
 
 /* Sadržaj i header iznad maske */

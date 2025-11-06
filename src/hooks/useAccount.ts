@@ -111,3 +111,23 @@ export function useAccount(): AccountSnapshot {
     () => state
   );
 }
+
+// === SSR hydration =========================================
+export function injectInitialAccountSnapshot(s: AccountSnapshot) {
+  // prihvati samo ako je legitimno i bolje od trenutnog
+  if (!s) return;
+  // ne dopuštamo downgrade sa plaćenog na "free" ako je authenticated=true
+  const stronger =
+    s.authenticated && (s.plan !== "free" || state.plan === "free");
+
+  if (stronger || state.loading) {
+    state = {
+      loading: false,
+      authenticated: !!s.authenticated,
+      email: s.email ?? null,
+      plan: s.plan,
+      entitlements: Array.isArray(s.entitlements) ? s.entitlements : entitlementsFor(s.plan),
+    };
+    notify();
+  }
+}

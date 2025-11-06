@@ -12,6 +12,8 @@ import {
   User,
   LayoutGrid,
   Trash2,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useAccount } from "@/hooks/useAccount";
 import { t } from "@/i18n";
@@ -58,6 +60,24 @@ export default function Sidebar() {
     return () => window.removeEventListener("TL_TRASH_FLASH", onFlash);
   }, []);
 
+  // Theme toggle state (sidebar-only control)
+  const [isDark, setIsDark] = useState<boolean>(false);
+  useEffect(() => {
+    // read from html class on mount
+    const html = document.documentElement;
+    const dark = html.classList.contains("dark");
+    setIsDark(dark);
+  }, []);
+  const toggleTheme = () => {
+    const html = document.documentElement;
+    const next = !isDark;
+    html.classList.toggle("dark", next);
+    try { localStorage.setItem("theme", next ? "dark" : "light"); } catch {}
+    setIsDark(next);
+    // notify rest of app, if anyone listens
+    window.dispatchEvent(new CustomEvent("TL_THEME_TOGGLED", { detail: { dark: next } }));
+  };
+
   const NAV: Item[] = [
     { href: "/dashboard",              label: t("Pages"),        icon: LayoutDashboard, exact: true, navKey: "pages" },
     { href: "/dashboard/stats",        label: t("Stats"),        icon: BarChart3,                          navKey: "stats" },
@@ -73,9 +93,18 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="hidden md:flex md:flex-col md:w-64 lg:w-72 bg-[var(--panel,white)]/90 backdrop-blur-md"
+            className="hidden md:flex md:flex-col md:w-64 lg:w-72 bg-[var(--card)] text-[var(--text)]"
       aria-label={t("Dashboard sidebar")}
     >
+      {/* Shared brand gradient for icons */}
+      <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
+        <defs>
+          <linearGradient id="tlSidebarGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="var(--brand-1,#4F46E5)" />
+            <stop offset="100%" stopColor="var(--brand-2,#22D3EE)" />
+          </linearGradient>
+        </defs>
+      </svg>
       {/* Header — levo: gradient “Dashboard”, desno: plan pill */}
       <div className="px-4 py-4 border-b border-[var(--border)] flex items-center justify-between gap-3">
         <h2
@@ -111,6 +140,7 @@ export default function Sidebar() {
                   href={it.href}
                   className={[
                     "group relative flex items-center gap-3 rounded-[var(--radius,0.75rem)] px-3 py-2.5 text-sm transition bg-[var(--card,white)]",
+                    "text-[var(--text)]",
                     active
                       ? "border border-transparent"
                       : "border border-transparent hover:border-[var(--border)] hover:bg-[color:var(--card,white)]/70",
@@ -156,7 +186,8 @@ export default function Sidebar() {
                   )}
 
                   <it.icon
-                    className={["size-[18px] transition-colors", active ? "text-[var(--brand-1,#4F46E5)]" : "text-neutral-800/80"].join(" ")}
+                    className="size-[18px]"
+                    style={{ stroke: "url(#tlSidebarGrad)" }}
                     aria-hidden
                   />
                   <span className="leading-none">{it.label}</span>
@@ -171,8 +202,46 @@ export default function Sidebar() {
               </li>
             );
           })}
+          {/* Theme toggle — placed directly under Account item */}
+          <li key="theme-toggle">
+            <button
+              onClick={toggleTheme}
+              aria-pressed={isDark}
+              className={[
+                "group relative flex w-full items-center gap-3 rounded-[var(--radius,0.75rem)] px-3 py-2.5 text-sm transition bg-[var(--card,white)] cursor-pointer",
+                "border border-transparent hover:border-[var(--border)] hover:bg-[color:var(--card,white)]/70",
+                "text-left",
+                "text-[var(--text)]"
+              ].join(" ")}
+              title={isDark ? t("Switch to Light mode") : t("Switch to Dark mode")}
+            >
+              {/* hover brand outline (same as nav items) */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-[var(--radius,0.75rem)] opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                style={{
+                  padding: 1.5,
+                  background: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
+                  WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                  WebkitMaskComposite: "xor" as any,
+                  maskComposite: "exclude",
+                }}
+              />
+              {/* icon */}
+              {isDark ? (
+                <Sun className="size-[18px]" style={{ stroke: "url(#tlSidebarGrad)" }} aria-hidden />
+              ) : (
+                <Moon className="size-[18px]" style={{ stroke: "url(#tlSidebarGrad)" }} aria-hidden />
+              )}
+              {/* label */}
+              <span className="leading-none">
+                {isDark ? t("Light mode") : t("Dark mode")}
+              </span>
+            </button>
+          </li>
         </ul>
       </nav>
+
 
       {/* Footer mini help */}
       <div className="px-3 py-3 text-[11px] text-neutral-500 border-t border-[var(--border)]">
@@ -239,7 +308,7 @@ function PlanPill({ plan }: { plan: string }) {
           }}
         />
         <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "var(--brand-2,#22D3EE)" }} aria-hidden />
-        <span className="text-neutral-600">{t("Plan")}:</span>{" "}
+        <span className="text-[var(--muted)]">{t("Plan")}:</span>{" "}
         <b
           className="uppercase"
           style={{
@@ -263,7 +332,7 @@ function PlanPill({ plan }: { plan: string }) {
       style={{ border: `1.5px solid ${hex}` }}
     >
       <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: hex }} aria-hidden />
-      <span className="text-neutral-600">{t("Plan")}:</span>{" "}
+      <span className="text-[var(--muted)]">{t("Plan")}:</span>{" "}
       <b className="uppercase" style={{ color: hex }}>{pretty}</b>
     </div>
   );
