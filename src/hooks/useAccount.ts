@@ -47,17 +47,13 @@ async function fetchStatusAndMe() {
 
     let plan: Plan = "free";
     if (authenticated) {
-      const mRes = await fetch("/api/me", {
+      const mRes = await fetch("/api/me/plan", {
         cache: "no-store",
         credentials: "same-origin",
         headers: { "x-no-cache": String(Date.now()) },
       });
-      const mJson = (await mRes.json().catch(() => ({}))) as {
-        user?: { plan?: Plan };
-        plan?: Plan;
-        authenticated?: boolean;
-      };
-      plan = (mJson?.user?.plan || mJson?.plan || "free") as Plan;
+      const mJson = (await mRes.json().catch(() => ({}))) as { plan?: Plan };
+      plan = (mJson?.plan ?? "free") as Plan;
     }
 
     state = {
