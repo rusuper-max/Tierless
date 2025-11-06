@@ -1,33 +1,46 @@
-// src/app/api/me/route.ts
+import { NextResponse } from "next/server";
+import { headers } from "next/headers";
+import type { PlanId } from "@/lib/entitlements";
+import { isPlanId, DEFAULT_PLAN } from "@/lib/entitlements";
+import { getPool } from "@/lib/db";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
-import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth";
-import { getUserPlan } from "@/lib/account-store";
+function getUserIdFromHeaders(): string | null {
+  const h = headers() as unknown as Headers;
+  const cf =
+    h.get?.("CF-Access-Authenticated-User-Email") ??
+    h.get?.("cf-access-authenticated-user-email") ??
+    null;
+  return cf && cf.includes("@") ? cf.toLowerCase() : null;
+}
 
-export async function GET(req: Request) {
-  // 1) Pročitaj user-a iz session cookie-ja (JWT)
-  const user = await getSessionUser(req);
+async function ensureTable() {
+  const pool = getPool();
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_plans (
+      user_id TEXT PRIMARY KEY,
+      plan TEXT NOT NULL
+    )
+  `);
+}
 
-  if (!user) {
-    // Nema sesije
-    return NextResponse.json(
-      { authenticated: false, user: null, plan: "free" },
-      { status: 200, headers: { "Cache-Control": "no-store", Vary: "Cookie" } }
-    );
+export async function GET() {
+  await ensureTable();
+  const pool = getPool();
+  const uid = getUserIdFromHeaders();
+
+  if (!uid) {
+    return NextResponse.json({ id: null, email: null, plan: DEFAULT_PLAN });
   }
 
-  // 2) Ako cookie nema plan, povuci ga iz server-side storage-a (izvor istine)
-  const plan = user.plan ?? (await getUserPlan(user.email));
-
-  return NextResponse.json(
-    {
-      authenticated: true,
-      user: { email: user.email, plan },
-      plan,
-    },
-    { headers: { "Cache-Control": "no-store", Vary: "Cookie" } }
+  const { rows } = await pool.query(
+    "SELECT plan FROM user_plans WHERE user_id = $1 LIMIT 1",
+    [uid]
   );
+  const plan = rows[0]?.plan;
+  const normalized: PlanId = isPlanId(plan) ? (plan as PlanId) : DEFAULT_PLAN;
+
+  return NextResponse.json({ id: uid, email: uid, plan: normalized });
 }
