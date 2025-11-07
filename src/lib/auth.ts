@@ -1,5 +1,6 @@
 // src/lib/auth.ts — JWT auth (HS256), bez cookies().get/set
 import { SignJWT, jwtVerify } from "jose";
+import { getPool } from "@/lib/db";
 
 // === Vaši planovi (ostaju identični logici na projektu) ===
 export type Plan = "free" | "starter" | "growth" | "pro" | "tierless";
@@ -27,6 +28,34 @@ export function isPlan(x: unknown): x is Plan {
 }
 export function coercePlan(x: unknown): Plan {
   return isPlan(x) ? x : "free";
+}
+
+// ---------- DB helpers for user plan ----------
+async function ensureUserPlansTable() {
+  const pool = getPool();
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_plans (
+      user_id TEXT PRIMARY KEY,
+      plan TEXT NOT NULL
+    )
+  `);
+}
+
+/** Authoritative plan lookup from DB (fallback to "free"). */
+export async function getUserPlan(userId: string): Promise<Plan> {
+  await ensureUserPlansTable();
+  try {
+    const pool = getPool();
+    const { rows } = await pool.query(
+      "SELECT plan FROM user_plans WHERE user_id = $1 LIMIT 1",
+      [userId]
+    );
+    const plan = rows?.[0]?.plan;
+    return coercePlan(plan);
+  } catch {
+    // On any DB error, never block: default to free
+    return "free";
+  }
 }
 
 // ---------- Interne cookie util funkcije ----------
@@ -93,6 +122,16 @@ export async function getSessionUser(req?: Request): Promise<SessionUser | null>
 
   const token = readCookieFromHeader(cookieHeader, SESSION_COOKIE);
   return userFromToken(token);
+}
+
+/** Unified helper: always return same identity + authoritative plan. */
+export async function getUserAndPlan(req?: Request): Promise<{ id: string | null; plan: Plan }> {
+  const id = await getUserIdFromRequest(req);
+  if (!id) {
+    return { id: null, plan: "free" };
+  }
+  const plan = await getUserPlan(id);
+  return { id, plan };
 }
 
 /** Helper: email ili null; koristi se u API rutama. */

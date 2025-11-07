@@ -1,6 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@/lib/auth";
+
+// Edge-safe: do NOT import server-only modules here
+const SESSION_COOKIE = process.env.NEXT_PUBLIC_SESSION_COOKIE_NAME || "tl_sess";
 
 export function middleware(req: NextRequest) {
   const isPrivate =

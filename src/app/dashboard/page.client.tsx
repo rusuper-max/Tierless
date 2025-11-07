@@ -353,6 +353,8 @@ function PageRow({
   busySlug,
   isDragging,
   onPointerDragStart,
+  publishedCount,
+  publishedLimit,
 }: {
   row: MiniCalc;
   index: number;
@@ -367,6 +369,8 @@ function PageRow({
   busySlug: string | null;
   isDragging: boolean;
   onPointerDragStart: (slug: string, e: React.MouseEvent<HTMLButtonElement>) => void;
+  publishedCount: number;
+  publishedLimit: number; // Infinity for unlimited
 }) {
   const { slug, name, favorite, createdAt } = row.meta;
   const published = !!(row.meta.published ?? row.meta.online);
@@ -417,7 +421,10 @@ function PageRow({
               : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-400 hover:dark:bg-rose-900/30"
           }`}
           onClick={() => onToggleOnline(slug, !published)}
-          disabled={busySlug === slug}
+          disabled={
+            busySlug === slug ||
+            (!published && Number.isFinite(publishedLimit) && publishedCount >= publishedLimit)
+          }
           aria-label={published ? "Unpublish" : "Publish"}
           title={published ? "Unpublish" : "Publish"}
         >
@@ -732,19 +739,17 @@ export default function DashboardPageClient() {
         const slug = r.meta.slug;
         // stabilize createdAt
         let createdAt: number;
-// 1) LS ima prioritet — ako je već sačuvan, koristi njega
-const existing = createdLS[slug];
-if (Number.isFinite(existing)) {
-  createdAt = existing;
-} else if (typeof r.meta.createdAt === "number") {
-  createdAt = Number(r.meta.createdAt);
-} else if (typeof r.meta.updatedAt === "number") {
-  createdAt = Number(r.meta.updatedAt);
-} else {
-  createdAt = Date.now();
-}
-// 2) U LS upisujemo SAMO ako vrednost nije već postojala
-if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
+        const existing = createdLS[slug];
+        if (Number.isFinite(existing)) {
+          createdAt = existing;
+        } else if (typeof r.meta.createdAt === "number") {
+          createdAt = Number(r.meta.createdAt);
+        } else if (typeof r.meta.updatedAt === "number") {
+          createdAt = Number(r.meta.updatedAt);
+        } else {
+          createdAt = Date.now();
+        }
+        if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
 
         const favorite = favsLS[slug] ?? !!r.meta.favorite;
 
@@ -816,8 +821,14 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
   const pagesLimit = limits?.pages ?? "unlimited";
   const totalPages = rows.length;
 
-  const publishedCount = useMemo(() => rows.reduce((acc, r) => (r.meta.published ? acc + 1 : acc), 0), [rows]);
-  const publishedLimit = (limits as any)?.maxPublicPages ?? (typeof pagesLimit === "number" ? pagesLimit : Infinity);
+  const publishedCount = useMemo(
+    () => rows.reduce((acc, r) => (r.meta.published ? acc + 1 : acc), 0),
+    [rows]
+  );
+  const _publishedLimit =
+    (limits as any)?.maxPublicPages ??
+    (typeof pagesLimit === "number" ? pagesLimit : Infinity);
+  const publishedLimitNum = Number.isFinite(_publishedLimit) ? (_publishedLimit as number) : Infinity;
 
   const canCreate = useMemo(() => {
     if (pagesLimit === "unlimited") return true;
@@ -829,7 +840,7 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
     return Math.min(100, Math.round((totalPages / Math.max(1, pagesLimit as number)) * 100));
   }, [pagesLimit, totalPages]);
 
-  // Derived list
+
   const derived = useMemo(() => {
     const term = q.trim().toLowerCase();
 
@@ -895,10 +906,15 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
     }
     return `${base} (${Date.now()})`;
   };
+  
 
   /* --------------------- CRUD helpers --------------------- */
   async function createBlank() {
-    if (!canCreate) return;
+    if (!canCreate) {
+      alert("You've reached the pages limit for your plan. Manage plan in Account.");
+      return;
+    }
+
     setBusy("new");
     try {
       const now = Date.now();
@@ -907,21 +923,40 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({}),
+        cache: "no-store",
       });
-      const payload = await r.text();
+
+      const payloadText = await r.text();
+      let payloadJson: any = null;
+      try { payloadJson = JSON.parse(payloadText); } catch {}
+
       if (!r.ok) {
-        console.error("CREATE /api/calculators ->", payload);
-        throw new Error(`create_failed: ${payload}`);
+        if (r.status === 409 && payloadJson?.error === "PLAN_LIMIT" && payloadJson?.key === "pages") {
+          const allow = payloadJson?.allow;
+          const need = payloadJson?.need;
+          const planName = payloadJson?.plan || plan;
+          alert(
+            `Your plan (“${planName}”) allows ${allow} page(s).\n` +
+            `You tried to create ${need}. Upgrade your plan to add more pages.`
+          );
+          return;
+        }
+
+        console.error("CREATE /api/calculators ->", payloadText || r.statusText);
+        showToast("Could not create page. Try again.");
+        return;
       }
-      const json = JSON.parse(payload) as { slug?: string };
+
+      const json = payloadJson || {};
       if (json?.slug) {
         setRows((prev) => [
           ...prev,
           { meta: { name: "Untitled Page", slug: json.slug!, published: false, createdAt: now, updatedAt: now } },
         ]);
-        // persist createdAt locally so refresh doesn't move it
         setCreatedLS(json.slug!, now);
         window.location.href = `/editor/${json.slug}`;
+      } else {
+        window.location.reload();
       }
     } finally {
       setBusy(null);
@@ -929,6 +964,10 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
   }
 
   async function duplicate(slug: string, name: string) {
+    if (!canCreate) {
+      alert("You've reached the pages limit for your plan. Manage plan in Account.");
+      return;
+    }
     setBusy(slug);
     try {
       const now = Date.now();
@@ -959,7 +998,7 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
   }
 
   async function setOnline(slug: string, next: boolean) {
-    if (next && typeof publishedLimit === "number" && publishedCount >= publishedLimit) {
+    if (next && typeof publishedLimitNum === "number" && publishedCount >= publishedLimitNum) {
       showToast("Online limit reached for your plan");
       return;
     }
@@ -997,11 +1036,8 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
   }
 
   async function toggleFavorite(slug: string, next: boolean) {
-    // optimistic UI
     setRows((prev) => prev.map((x) => (x.meta.slug === slug ? { ...x, meta: { ...x.meta, favorite: next } } : x)));
-    // persist client-side to survive refresh
     setFavLS(slug, next);
-    // best effort server sync
     await fetch(`/api/calculators/${encodeURIComponent(slug)}/meta`, {
       method: "POST",
       credentials: "same-origin",
@@ -1071,7 +1107,6 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
         return;
       }
       setRows((prev) => prev.filter((x) => x.meta.slug !== slug));
-      // cleanup LS caches
       deleteFavLS(slug);
       deleteCreatedLS(slug);
       window.dispatchEvent(new Event("TL_TRASH_BLINK"));
@@ -1123,21 +1158,6 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
     });
   };
 
-  async function bulkPublish(next: boolean) {
-    const list = allOnPage.filter((s) => selected.has(s));
-    for (const slug of list) {
-      await setOnline(slug, next);
-    }
-    setSelected(new Set());
-  }
-  async function bulkDuplicate() {
-    const list = allOnPage.filter((s) => selected.has(s));
-    for (const slug of list) {
-      const row = rows.find((r) => r.meta.slug === slug);
-      if (row) await duplicate(slug, row.meta.name);
-    }
-    setSelected(new Set());
-  }
   async function bulkDelete() {
     const list = allOnPage.filter((s) => selected.has(s));
     for (const slug of list) {
@@ -1186,7 +1206,7 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
                 aria-hidden
               />
               <div
-                className="absolute right-0 mt-2 w-48 rounded-xl border border-[var(--border)] bg-white dark:bg-white text-black dark:text-black shadow-[0_20px_40px_rgba(0,0,0,.70)] p-1 z-[100]"
+                className="absolute right-0 mt-2 w-48 rounded-xl border border-[var(--border)] bg-white dark:bg_white text-black dark:text-black shadow-[0_20px_40px_rgba(0,0,0,.70)] p-1 z-[100]"
                 style={{ color: "#000" }}
               >
                 <button
@@ -1236,7 +1256,7 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
               className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-sm text-[var(--text)] shadow-sm"
               title="Published pages in your plan"
             >
-              {publishedCount} / {Number.isFinite(publishedLimit) ? publishedLimit : "∞"} published
+              {publishedCount} / {Number.isFinite(publishedLimitNum) ? publishedLimitNum : "∞"} published
             </span>
           </div>
         </div>
@@ -1272,15 +1292,12 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
 
       {/* Bulk bar */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-2 text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2">
-          <div className="font-medium text-[var(--text)]">{selected.size} selected</div>
-          <div className="grow" />
-          <ActionButton label="Publish" onClick={() => bulkPublish(true)} variant="brand" />
-          <ActionButton label="Unpublish" onClick={() => bulkPublish(false)} variant="brand" />
-          <ActionButton label="Duplicate" onClick={bulkDuplicate} variant="brand" />
-          <ActionButton label="Delete" onClick={bulkDelete} variant="danger" />
-        </div>
-      )}
+  <div className="flex items-center gap-2 text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2">
+    <div className="font-medium text-[var(--text)]">{selected.size} selected</div>
+    <div className="grow" />
+    <ActionButton label="Delete" onClick={bulkDelete} variant="danger" />
+  </div>
+)}
 
       {/* Table with gradient frame in dark */}
       {loading ? (
@@ -1357,6 +1374,8 @@ if (!Number.isFinite(existing)) setCreatedLS(slug, createdAt);
                       onToggleFavorite={toggleFavorite}
                       busySlug={busy}
                       onPointerDragStart={onPointerDragStart}
+                      publishedCount={publishedCount}
+                      publishedLimit={publishedLimitNum}
                     />
 
                     {/* GAP after */}

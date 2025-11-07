@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import type { Plan } from "@/lib/auth";
 import { coercePlan, getUserIdFromRequest } from "@/lib/auth";
 import { getPool } from "@/lib/db";
+import { getPublishedCap, type PlanId } from "@/lib/entitlements";
+import * as calcsStore from "@/lib/calcsStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,30 +23,49 @@ export async function GET() {
   await ensureTable();
   const pool = getPool();
 
-  const id = await getUserIdFromRequest(); // ← bez req, jer smo u Next route handleru
-  if (!id) return NextResponse.json({ plan: "free" });
+  // Jedinstven način dobijanja user-a (CF Access -> session fallback)
+  const id = await getUserIdFromRequest(); // bez req-a u Next route handleru
+  if (!id) {
+    return NextResponse.json(
+      { id: null, email: null, plan: "free" as PlanId },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  }
 
+  // Čitanje plana iz tabele + normalizacija
   const { rows } = await pool.query(
     "SELECT plan FROM user_plans WHERE user_id = $1 LIMIT 1",
     [id]
   );
-  const plan = rows[0]?.plan ?? "free";
-  return NextResponse.json({ plan });
+  const plan = coercePlan(rows[0]?.plan as Plan | undefined) as PlanId;
+
+  return NextResponse.json(
+    { id, email: id, plan },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }
 
 export async function PUT(req: Request) {
   await ensureTable();
   const pool = getPool();
 
-  const id = await getUserIdFromRequest(req); // ← ⚠️ proslediti req!
-  if (!id) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  // Jedinstven izvor identiteta (CF Access -> session fallback)
+  const id = await getUserIdFromRequest(req);
+  if (!id) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
 
   let body: unknown;
-  try { body = await req.json(); } catch {
+  try {
+    body = await req.json();
+  } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const nextPlan = coercePlan((body as any)?.plan as Plan);
+  // Napomena: u produkciji plan se menja isključivo billing webhookom ili admin akcijom.
+  const nextPlan = coercePlan((body as any)?.plan as Plan) as PlanId;
+
+  // Upis plana
   await pool.query(
     `INSERT INTO user_plans (user_id, plan)
      VALUES ($1, $2)
@@ -52,5 +73,21 @@ export async function PUT(req: Request) {
     [id, nextPlan]
   );
 
-  return NextResponse.json({ ok: true, plan: nextPlan });
+  // Nakon promene plana — enforce publish cap:
+  // zadrži najnovijih N online, ostale automatski ugasi.
+  let unpublished = 0;
+  const cap = getPublishedCap(nextPlan);
+  if (cap !== "unlimited") {
+    try {
+      unpublished = await calcsStore.bulkUnpublishAboveLimit(id, cap);
+    } catch (e) {
+      // Ne ruši zahtev zbog ovoga; samo zabeleži pa nastavi.
+      console.error("bulkUnpublishAboveLimit failed:", e);
+    }
+  }
+
+  return NextResponse.json(
+    { ok: true, id, plan: nextPlan, unpublished },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }

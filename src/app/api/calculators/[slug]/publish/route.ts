@@ -1,133 +1,131 @@
 // src/app/api/calculators/[slug]/publish/route.ts
 import { NextResponse } from "next/server";
-import { ENTITLEMENTS, type PlanId } from "@/lib/entitlements";
-import { getSession } from "@/lib/session";
-import { mini } from "@/lib/mini";
+import path from "path";
+import fs from "fs/promises";
+
+import { getUserIdFromRequest } from "@/lib/auth";
+import { getPool } from "@/lib/db";
+import { coercePlan, type Plan } from "@/lib/auth";
+import { getPublishedCap, type PlanId } from "@/lib/entitlements";
+import * as calcsStore from "@/lib/calcsStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
-type PublishPayload = { publish?: boolean; published?: boolean; slug?: string };
+/* ------------------------------------------------------------ */
+/* Minimalni helpers za write (ne diramo calcsStore API)        */
+/* ------------------------------------------------------------ */
+const USERS_ROOT = path.join(process.cwd(), "data", "users");
 
-async function safeJson<T>(req: Request): Promise<T | null> {
-  try {
-    return (await req.json()) as T;
-  } catch {
-    return null;
-  }
+function safeUserId(userId: string) {
+  return (userId || "anon")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 120) || "anon";
+}
+function fileFor(userId: string) {
+  const uid = safeUserId(userId);
+  return path.join(USERS_ROOT, uid, "calculators.json");
+}
+async function writeAll(userId: string, rows: any[]) {
+  const file = fileFor(userId);
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(file, JSON.stringify(rows, null, 2), "utf8");
 }
 
-function getCookie(req: Request, name: string): string | null {
-  const raw = req.headers.get("cookie") || "";
-  if (!raw) return null;
-  for (const part of raw.split(";")) {
-    const p = part.trim();
-    const i = p.indexOf("=");
-    if (i === -1) continue;
-    if (p.slice(0, i) === name) return decodeURIComponent(p.slice(i + 1));
-  }
-  return null;
+/* ------------------------------------------------------------ */
+/* Helper: dohvati plan iz user_plans                           */
+/* ------------------------------------------------------------ */
+async function getUserPlan(userId: string): Promise<PlanId> {
+  const pool = getPool();
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_plans (
+      user_id TEXT PRIMARY KEY,
+      plan TEXT NOT NULL
+    )
+  `);
+  const { rows } = await pool.query(
+    "SELECT plan FROM user_plans WHERE user_id = $1 LIMIT 1",
+    [userId]
+  );
+  return coercePlan(rows[0]?.plan as Plan | undefined) as PlanId;
 }
 
-function getPlanFromReq(req: Request): PlanId {
-  const hdr = (req.headers.get("x-plan") || "").toLowerCase() as PlanId;
-  if (hdr && ENTITLEMENTS[hdr]) return hdr;
-  const c = (getCookie(req, "tl_plan") || "").toLowerCase() as PlanId;
-  if (c && ENTITLEMENTS[c]) return c;
-  return "free";
-}
+/* ------------------------------------------------------------ */
 
-function extractSlugFromUrl(url: string): string | null {
-  try {
-    const m = new URL(url).pathname.match(/\/api\/calculators\/([^/]+)\/publish/i);
-    return m?.[1] ?? null;
-  } catch {
-    return null;
-  }
-}
-
-const isValidSlug = (s: string) => /^[a-z0-9-]{3,120}$/i.test(s);
-
-export async function POST(req: Request, ctx: { params?: { slug?: string } }) {
-  const body = (await safeJson<PublishPayload>(req)) ?? {};
-  const raw =
-    ctx?.params?.slug ||
-    body.slug ||
-    extractSlugFromUrl(req.url) ||
-    "";
-  const slug = raw ? decodeURIComponent(raw) : "";
-
-  if (!isValidSlug(slug)) {
-    return NextResponse.json({ error: "bad_slug" }, { status: 400 });
-  }
-
-  // 1) pokušaj iron-session (cookies() u App Routeru)
-  //    tvoj SessionData ima samo user?.email
-  const session = await getSession().catch(() => null as any);
-  const emailFromSession = (session?.user?.email || "").trim();
-
-  // 2) fallback-ovi (ako sess nije setovan)
-  const fallbackCookie = (getCookie(req, "tl_uid") || "").trim();
-  const fallbackHeader = (req.headers.get("x-user-id") || "").trim();
-
-  const userId = emailFromSession || fallbackCookie || fallbackHeader;
+export async function POST(
+  req: Request,
+  { params }: { params: { slug: string } }
+) {
+  const userId = await getUserIdFromRequest(req);
   if (!userId) {
-    return NextResponse.json({ error: "no_user_id" }, { status: 401 });
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const row = await mini.get(userId, slug).catch(() => null);
-  if (!row) {
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const { slug } = params || {};
+  if (!slug) {
+    return NextResponse.json({ error: "Missing slug" }, { status: 400 });
   }
 
-  const wantPublish = body.publish ?? body.published ?? false;
+  let body: any = null;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  const nextPublish = !!body?.publish;
 
-  // limit (koristimo limits.online ili limits.published, u nedostatku unlimited)
-  if (wantPublish) {
-    const plan = getPlanFromReq(req);
-    const limits: any = ENTITLEMENTS[plan]?.limits || {};
-    const cap: number | "unlimited" =
-      typeof limits.online === "number"
-        ? limits.online
-        : typeof limits.published === "number"
-        ? limits.published
-        : "unlimited";
+  // Učitaj listu
+  const rows = await calcsStore.list(userId);
+  const idx = rows.findIndex((r: any) => r?.meta?.slug === slug);
+  if (idx === -1) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
+  // Ako tražimo publish=true — proveri cap
+  if (nextPublish) {
+    const plan = await getUserPlan(userId);
+    const cap = getPublishedCap(plan);
     if (cap !== "unlimited") {
-      const list = await mini.list(userId).catch(() => []);
-      // broj trenutno online, ne računamo ovaj slug ako je već online
-      const current = list.filter(
-        (r: any) => r?.meta?.online === true && r?.meta?.slug !== slug
-      ).length;
-      const already = !!row?.meta?.online;
-      if (!already && current >= cap) {
+      // koliko je trenutno online (bez trenutnog sluga koji tek palimo)
+      const already = rows.reduce((acc: number, r: any) => {
+        if (!r?.meta) return acc;
+        if (r.meta.slug === slug) return acc;
+        return r.meta.published ? acc + 1 : acc;
+      }, 0);
+
+      if (already >= cap) {
+        // standardizovana poruka za UI (vidi page.client.tsx)
         return NextResponse.json(
-          { error: "publish_limit_reached", limit: cap },
+          {
+            error: "PLAN_LIMIT",
+            key: "maxPublicPages",
+            need: already + 1,
+            allow: cap,
+            plan,
+          },
           { status: 409 }
         );
       }
     }
   }
 
-  const nextMeta = { ...(row.meta || {}), online: wantPublish };
+  // Upis stanja (published on/off) + updatedAt
+  const now = Date.now();
+  const row = rows[idx];
+  const meta = { ...(row.meta || {}) };
+  meta.published = nextPublish;
+  meta.updatedAt = now;
 
-  // tolerantno prema različitim mini implementacijama
-  const anyMini = mini as any;
-  if (typeof anyMini.update === "function") {
-    await anyMini.update(userId, slug, { meta: nextMeta });
-  } else if (typeof anyMini.put === "function") {
-    await anyMini.put(userId, slug, { ...row, meta: nextMeta });
-  } else if (typeof anyMini.set === "function") {
-    await anyMini.set(userId, slug, { ...row, meta: nextMeta });
-  } else if (typeof anyMini.save === "function") {
-    await anyMini.save(userId, slug, { ...row, meta: nextMeta });
-  } else {
-    return NextResponse.json(
-      { error: "storage_not_supported" },
-      { status: 500 }
-    );
-  }
+  const next = [...rows];
+  next[idx] = { ...row, meta };
 
-  return NextResponse.json({ ok: true, online: wantPublish });
+  await writeAll(userId, next);
+
+  return NextResponse.json(
+    { ok: true, slug, published: nextPublish, updatedAt: now },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }

@@ -1,138 +1,107 @@
+// src/app/api/calculators/route.ts
 import { NextResponse } from "next/server";
-import path from "path";
 import { getUserIdFromRequest } from "@/lib/auth";
-import * as mini from "@/lib/data/calcs";
-import * as trash from "@/lib/data/trash";
-import * as fullStore from "@/lib/fullStore";
+import * as calcsStore from "@/lib/calcsStore"; // ← obrati pažnju na "s"
 import { ENTITLEMENTS, type PlanId } from "@/lib/entitlements";
+import { getPool } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function safeUserId(userId: string) {
-  return (userId || "anon")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 120) || "anon";
-}
-function debugFile(userId: string) {
-  const uid = safeUserId(userId);
-  return path.join(process.cwd(), "data", "users", uid, "calculators.json");
-}
-function jsonNoCache(data: any, status = 200) {
-  const res = NextResponse.json(data, { status });
-  res.headers.set("cache-control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
-  return res;
+/** Ensure plans table exists (safe on cold start). */
+async function ensurePlansTable() {
+  const pool = getPool();
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_plans (
+      user_id TEXT PRIMARY KEY,
+      plan TEXT NOT NULL
+    )
+  `);
 }
 
-// ——— Plan helper (bez cookies().get)
-function getPlanFromReq(req: Request): PlanId {
-  const cookie = req.headers.get("cookie") || "";
-  const m = cookie.match(/(?:^|;\s*)tl_plan=([^;]+)/);
-  const raw = decodeURIComponent(m?.[1] || "").toLowerCase();
-  const ok: PlanId[] = ["free","starter","growth","pro","tierless"];
-  return (ok.includes(raw as PlanId) ? (raw as PlanId) : "free");
-}
-function pagesLimit(plan: PlanId): number | "unlimited" {
-  const lim = ENTITLEMENTS?.[plan]?.limits?.pages;
-  return typeof lim === "number" ? lim : "unlimited";
+/** Read normalized plan for a user from DB (fallback "free"). */
+async function getPlanForUser(userId: string): Promise<PlanId> {
+  await ensurePlansTable();
+  const pool = getPool();
+  const { rows } = await pool.query(
+    "SELECT plan FROM user_plans WHERE user_id = $1 LIMIT 1",
+    [userId]
+  );
+  const raw = rows[0]?.plan as string | undefined;
+  const isPlan =
+    raw === "free" || raw === "starter" || raw === "growth" || raw === "pro" || raw === "tierless";
+  return (isPlan ? raw : "free") as PlanId;
 }
 
+/* ======================= GET (list) ======================= */
 export async function GET(req: Request) {
   const userId = await getUserIdFromRequest(req);
-  if (!userId) return jsonNoCache({ error: "unauthorized" }, 401);
-
-  try {
-    const plan = getPlanFromReq(req);
-    const limit = pagesLimit(plan);
-
-    // 1) Active rows
-    let rows = await mini.list(userId);
-
-    // (OPCIONO) sort po meta.order DESC — veći order = veći prioritet
-    rows = [...rows].sort((a: any, b: any) => {
-      const ao = Number(a?.meta?.order ?? 0);
-      const bo = Number(b?.meta?.order ?? 0);
-      // veći order gore
-      if (bo !== ao) return bo - ao;
-      return 0;
-    });
-
-    // 2) GC starih iz Trash + broj
-    await trash.gc(userId).catch(() => {});
-
-    // 3) Ako je preko limita — zadržavamo PRVIH `limit`, OSTATAK šaljemo u Trash
-    let autoTrashed = 0;
-    if (typeof limit === "number" && rows.length > limit) {
-      const toMove = rows.slice(limit);
-      for (const r of toMove) {
-        await trash.push(userId, r);
-        await fullStore.deleteFull(userId, r.meta.slug).catch(() => {});
-        await mini.remove(userId, r.meta.slug).catch(() => {});
-        autoTrashed++;
-      }
-      rows = await mini.list(userId);
-      // i ponovo sortiramo (da ostane isti red)
-      rows = [...rows].sort((a: any, b: any) => {
-        const ao = Number(a?.meta?.order ?? 0);
-        const bo = Number(b?.meta?.order ?? 0);
-        if (bo !== ao) return bo - ao;
-        return 0;
-      });
-    }
-
-    // 4) Trash count
-    let trashedCount = 0;
-    try { trashedCount = await trash.count(userId); } catch { trashedCount = 0; }
-
-    const notice =
-      autoTrashed > 0 && typeof limit === "number"
-        ? `Your plan allows ${limit} page(s). ${autoTrashed} page(s) were moved to Trash and will be permanently deleted after 30 days. Consider upgrading to keep them.`
-        : undefined;
-
-    return jsonNoCache({
-      rows,
-      trashedCount,
-      plan,
-      limit,
-      autoTrashed,
-      notice,
-      __debug: { userId, file: debugFile(userId) },
-    });
-  } catch (e: any) {
-    console.error("LIST /api/calculators failed:", e);
-    return jsonNoCache({ error: "list_failed", detail: e?.stack ?? String(e) }, 500);
+  if (!userId) {
+    return NextResponse.json({ rows: [], notice: "Not authenticated" }, { headers: { "Cache-Control": "no-store" } });
   }
+
+  // Plan iz baze (isti izvor istine za sve rute)
+  const plan = await getPlanForUser(userId);
+  const limits = ENTITLEMENTS[plan]?.limits;
+  const pagesAllow = limits?.pages ?? "unlimited";
+  const publishedAllow = (limits as any)?.maxPublicPages ?? (typeof pagesAllow === "number" ? pagesAllow : Infinity);
+
+  const rows = await calcsStore.list(userId);
+
+  // Debug info da odmah vidiš šta server “misli”
+  const __debug = {
+    userId,
+    plan,
+    allowPages: pagesAllow,
+    allowPublished: publishedAllow,
+    file: "(fs) /data/users/<uid>/calculators.json",
+  };
+
+  return NextResponse.json(
+    { rows, __debug },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }
 
+/* ======================= POST (create / duplicate) ======================= */
 export async function POST(req: Request) {
   const userId = await getUserIdFromRequest(req);
-  if (!userId) return jsonNoCache({ error: "unauthorized" }, 401);
+  if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
+  const plan = await getPlanForUser(userId);
+  const limits = ENTITLEMENTS[plan]?.limits;
+  const pagesAllow = limits?.pages ?? "unlimited";
+
+  let body: any = null;
   try {
-    const plan = getPlanFromReq(req);
-    const limit = pagesLimit(plan);
-    const act = await mini.list(userId);
-
-    if (typeof limit === "number" && act.length >= limit) {
-      return jsonNoCache({ error: "limit_reached", limit }, 403);
-    }
-
-    const body = await req.json().catch(() => ({} as any));
-
-    if (body?.from && body?.name) {
-      const slug = await mini.duplicate(userId, body.from, body.name);
-      if (!slug) return jsonNoCache({ error: "not_found" }, 404);
-      return jsonNoCache({ slug, __debug: { userId, file: debugFile(userId) } });
-    }
-
-    const name = (body?.name ?? "Untitled Page") as string;
-    const row = await mini.create(userId, name);
-    return jsonNoCache({ slug: row.meta.slug, __debug: { userId, file: debugFile(userId) } });
-  } catch (e: any) {
-    console.error("CREATE /api/calculators failed:", e);
-    return jsonNoCache({ error: "create_failed", detail: e?.stack ?? String(e) }, 500);
+    body = await req.json();
+  } catch {
+    body = {};
   }
+
+  // trenutna potrošnja
+  const all = await calcsStore.list(userId);
+  const current = all.length;
+
+  // koliki bi bio "need" za create/duplicate
+  const need = current + 1;
+
+  // guard: pages
+  if (pagesAllow !== "unlimited" && typeof pagesAllow === "number" && need > pagesAllow) {
+    return NextResponse.json(
+      { error: "PLAN_LIMIT", key: "pages", need, allow: pagesAllow, plan },
+      { status: 409 }
+    );
+  }
+
+  // create vs duplicate
+  if (body?.from && typeof body.from === "string") {
+    const name = (body?.name && String(body.name)) || "Copy";
+    const slug = await calcsStore.duplicate(userId, body.from, name);
+    if (!slug) return NextResponse.json({ error: "not_found" }, { status: 404 });
+    return NextResponse.json({ ok: true, slug }, { headers: { "Cache-Control": "no-store" } });
+  }
+
+  const created = await calcsStore.create(userId, "Untitled Page");
+  return NextResponse.json({ ok: true, slug: created.meta.slug }, { headers: { "Cache-Control": "no-store" } });
 }
