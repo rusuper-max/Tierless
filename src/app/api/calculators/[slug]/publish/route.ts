@@ -54,32 +54,37 @@ async function getUserPlan(userId: string): Promise<PlanId> {
 }
 
 /* ------------------------------------------------------------ */
-
 export async function POST(
   req: Request,
-  { params }: { params: { slug: string } }
+  context: { params?: { slug?: string } }
 ) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const { slug } = params || {};
-  if (!slug) {
+  // --- Robusno dohvatanje sluga: prvo iz params, pa iz URL-a ---
+  const url = new URL(req.url);
+  const slugFromUrl =
+    context?.params?.slug ??
+    decodeURIComponent(url.pathname.split("/").slice(-2, -1)[0] || "");
+
+  if (!slugFromUrl) {
     return NextResponse.json({ error: "Missing slug" }, { status: 400 });
   }
 
-  let body: any = null;
+  // Telo je opcionalno – ne vraćamo 400 ako nije validan JSON
+  let body: any = {};
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    body = {};
   }
-  const nextPublish = !!body?.publish;
+  const nextPublish = !!body.publish;
 
   // Učitaj listu
   const rows = await calcsStore.list(userId);
-  const idx = rows.findIndex((r: any) => r?.meta?.slug === slug);
+  const idx = rows.findIndex((r: any) => r?.meta?.slug === slugFromUrl);
   if (idx === -1) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -92,12 +97,11 @@ export async function POST(
       // koliko je trenutno online (bez trenutnog sluga koji tek palimo)
       const already = rows.reduce((acc: number, r: any) => {
         if (!r?.meta) return acc;
-        if (r.meta.slug === slug) return acc;
+        if (r.meta.slug === slugFromUrl) return acc;
         return r.meta.published ? acc + 1 : acc;
       }, 0);
 
       if (already >= cap) {
-        // standardizovana poruka za UI (vidi page.client.tsx)
         return NextResponse.json(
           {
             error: "PLAN_LIMIT",
@@ -125,7 +129,7 @@ export async function POST(
   await writeAll(userId, next);
 
   return NextResponse.json(
-    { ok: true, slug, published: nextPublish, updatedAt: now },
+    { ok: true, slug: slugFromUrl, published: nextPublish, updatedAt: now },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

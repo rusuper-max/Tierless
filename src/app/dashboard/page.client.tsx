@@ -414,23 +414,35 @@ function PageRow({
       <td className="text-[var(--muted)] text-center">{fmtDateTime(createdAt)}</td>
 
       <td className="text-center">
-        <button
-          className={`group inline-flex items-center rounded-full border px-3 py-1 text-sm transition cursor-pointer ${
-            published
-              ? "bg-green-50 text-green-700 border-green-300 hover:bg-green-100 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-400 hover:dark:bg-emerald-900/30"
-              : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-400 hover:dark:bg-rose-900/30"
-          }`}
-          onClick={() => onToggleOnline(slug, !published)}
-          disabled={
-            busySlug === slug ||
-            (!published && Number.isFinite(publishedLimit) && publishedCount >= publishedLimit)
-          }
-          aria-label={published ? "Unpublish" : "Publish"}
-          title={published ? "Unpublish" : "Publish"}
-        >
-          <span className="block group-hover:hidden">{published ? "Online" : "Offline"}</span>
-          <span className="hidden group-hover:block">{published ? "Unpublish" : "Publish"}</span>
-        </button>
+       <button
+  className={`group inline-flex items-center rounded-full border px-3 py-1 text-sm transition cursor-pointer ${
+    published
+      ? "bg-green-50 text-green-700 border-green-300 hover:bg-green-100 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-400 hover:dark:bg-emerald-900/30"
+      : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-400 hover:dark:bg-rose-900/30"
+  }`}
+  onClick={() => onToggleOnline(slug, !published)}
+  disabled={
+    busySlug === slug ||
+    (!published && Number.isFinite(publishedLimit) && publishedCount >= publishedLimit)
+  }
+  aria-label={
+    (!published && Number.isFinite(publishedLimit) && publishedCount >= publishedLimit)
+      ? "Online limit reached for your plan"
+      : (published ? "Unpublish" : "Publish")
+  }
+  title={
+    (!published && Number.isFinite(publishedLimit) && publishedCount >= publishedLimit)
+      ? "Online limit reached for your plan"
+      : (published ? "Unpublish" : "Publish")
+  }
+>
+  <span className="block group-hover:hidden">
+    {published ? "Online" : "Offline"}
+  </span>
+  <span className="hidden group-hover:block">
+    {published ? "Unpublish" : "Publish"}
+  </span>
+</button>
       </td>
 
       <td className="align-middle">
@@ -997,43 +1009,57 @@ export default function DashboardPageClient() {
     }
   }
 
+function publishLimitMsg(planName: string) {
+  if (planName === "tierless") {
+    return "You've reached the maximum number of online pages for Tierless.";
+  }
+  return "Online limit reached for your plan. Upgrade your plan to publish more pages.";
+}
+
   async function setOnline(slug: string, next: boolean) {
-    if (next && typeof publishedLimitNum === "number" && publishedCount >= publishedLimitNum) {
-      showToast("Online limit reached for your plan");
-      return;
-    }
-    setBusy(slug);
-    try {
-      const r = await fetch(`/api/calculators/${encodeURIComponent(slug)}/publish`, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "content-type": "application/json",
-          "x-plan": plan,
-          "x-user-id": (account?.email || (account as any)?.user?.email || ""),
-        },
-        body: JSON.stringify({ publish: next, slug }),
-      });
-      const txt = await r.text();
-      if (!r.ok) {
-        if (r.status === 409 || txt.includes("publish_limit_reached")) {
-          showToast("Online limit reached for your plan");
-          return;
-        }
-        console.error("PUBLISH /api/calculators ->", txt);
-        showToast("Failed to change status");
+  // 1) Pre-submit guard (UI)
+  if (next && Number.isFinite(publishedLimitNum) && publishedCount >= publishedLimitNum) {
+    alert(publishLimitMsg(plan));
+    return;
+  }
+
+  setBusy(slug);
+  try {
+    const r = await fetch(`/api/calculators/${encodeURIComponent(slug)}/publish`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "content-type": "application/json",
+        "x-plan": plan,
+        "x-user-id": (account?.email || (account as any)?.user?.email || ""),
+      },
+      body: JSON.stringify({ publish: next, slug }),
+    });
+
+    const txt = await r.text();
+
+    // 2) Server guard (sigurnosna mreža)
+    if (!r.ok) {
+      if (r.status === 409 || txt.includes("publish_limit_reached")) {
+        alert(publishLimitMsg(plan));
         return;
       }
-      setRows((prev) =>
-        prev.map((x) =>
-          x.meta.slug === slug ? { ...x, meta: { ...x.meta, published: next, updatedAt: Date.now() } } : x
-        )
-      );
-      showToast(next ? "Now online" : "Now offline");
-    } finally {
-      setBusy(null);
+      console.error("PUBLISH /api/calculators ->", txt);
+      showToast("Failed to change status");
+      return;
     }
+
+    // 3) Optimistično ažuriranje UI
+    setRows((prev) =>
+      prev.map((x) =>
+        x.meta.slug === slug ? { ...x, meta: { ...x.meta, published: next, updatedAt: Date.now() } } : x
+      )
+    );
+    showToast(next ? "Now online" : "Now offline");
+  } finally {
+    setBusy(null);
   }
+}
 
   async function toggleFavorite(slug: string, next: boolean) {
     setRows((prev) => prev.map((x) => (x.meta.slug === slug ? { ...x, meta: { ...x.meta, favorite: next } } : x)));

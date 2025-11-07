@@ -179,6 +179,11 @@ export type UsageNeeds = Partial<
   Pick<Limits, "pages" | "tiersPerPage" | "items" | "maxPublicPages" | "teamSeats" | "customDomains">
 >;
 
+export type LimitsCheck = {
+  ok: boolean;
+  failures: Array<{ key: keyof Limits; need: number; allow: number | "unlimited" }>;
+};
+
 // Nađi najniži plan koji zadovoljava zadate potrebe (brojčani limiti)
 export function findPlanForNeeds(needs: UsageNeeds): PlanId {
   const ok = (p: PlanId) => withinLimits(needs, p).ok;
@@ -189,7 +194,7 @@ export function findPlanForNeeds(needs: UsageNeeds): PlanId {
 export function withinLimits(
   needs: UsageNeeds,
   plan: PlanId
-): { ok: boolean; failures: Array<{ key: keyof Limits; need: number; allow: number | "unlimited" }> } {
+): LimitsCheck {
   const lim = ENTITLEMENTS[plan].limits;
   const failures: Array<{ key: keyof Limits; need: number; allow: number | "unlimited" }> = [];
 
@@ -215,3 +220,4 @@ export function suggestPlanByLimits(needs: UsageNeeds, current: PlanId): PlanId 
 export function getPublishedCap(plan: PlanId): number | "unlimited" {
   return ENTITLEMENTS[plan].limits.maxPublicPages;
 }
+

@@ -1,4 +1,3 @@
-// src/components/publish/PublishGuardButton.tsx
 "use client";
 
 import { useState } from "react";
@@ -36,17 +35,18 @@ export default function PublishGuardButton({
   const [open, setOpen] = useState(false);
   const { success, info, error } = useToast();
 
-  const { loading, plan, limits, suggestPlan, openUpsell } = useEntitlement({
+  const { loading, plan, limits: limitsResult, suggestPlan, openUpsell } = useEntitlement({
     feature: undefined,
     needs,
     planOverride,
   });
+  const limitsOk = limitsResult?.ok ?? true;
 
   const handleClick = async () => {
     if (disabled || loading) return;
-    track("publish_clicked", { needs, plan: plan ?? null, ok: !!limits.ok });
+    track("publish_clicked", { needs, plan: plan ?? null, ok: limitsOk });
 
-    if (!limits.ok) {
+    if (!limitsOk) {
       setOpen(true);
       info(t("Upgrade required"), t("You have reached your current plan limits."));
       track("publish_blocked", { needs, plan: plan ?? null, suggestPlan: suggestPlan ?? "tierless" });
@@ -92,13 +92,13 @@ export default function PublishGuardButton({
       {open && (
         <div className="fixed inset-0 z-[85] flex items-center justify-center p-4" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-slate-900/40" onClick={() => setOpen(false)} />
-          <div className="relative z-[86] w-full max-w-md rounded-2xl bg-white p-5 shadow-xl border border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-900">{t("You can't publish yet")}</h2>
-            <p className="mt-1 text-sm text-slate-600">
+          <div className="relative z-[86] w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-xl border border-slate-200 dark:border-slate-800">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t("You can't publish yet")}</h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
               {t("Your current plan doesn't meet the limits required to publish this page.")}
             </p>
 
-            <pre className="mt-3 rounded-lg bg-slate-50 p-3 text-[11px] text-slate-700 overflow-auto">
+            <pre className="mt-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 p-3 text-[11px] text-slate-700 dark:text-slate-200 overflow-auto">
 {JSON.stringify(needs, null, 2)}
             </pre>
 
@@ -114,7 +114,7 @@ export default function PublishGuardButton({
                 <Link
                   href={`/start?highlight=${target}&interval=${deeplinkInterval}`}
                   onClick={() => track("see_plans_clicked", { target, interval: deeplinkInterval })}
-                  className="rounded-lg border px-3 py-2 text-sm font-medium transition hover:-translate-y-[1px]"
+                  className="rounded-lg border px-3 py-2 text-sm font-medium transition hover:-translate-y-[1px] dark:text-slate-100"
                   style={{
                     background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box",
                     border: "2px solid transparent",
@@ -130,7 +130,7 @@ export default function PublishGuardButton({
                     info(t("Opening upgrade…"));
                     track("upsell_opened", { requiredPlan: target, entrypoint: "limits", interval: deeplinkInterval });
                   }}
-                  className="rounded-lg border px-3 py-2 text-sm font-medium transition hover:-translate-y-[1px]"
+                  className="rounded-lg border px-3 py-2 text-sm font-medium transition hover:-translate-y-[1px] dark:text-slate-100"
                   style={{
                     background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box",
                     border: "2px solid transparent",
