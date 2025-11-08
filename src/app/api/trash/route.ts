@@ -54,12 +54,30 @@ export async function POST(req: Request) {
     }
 
     const plan = getPlanFromReq(req);
-    const limit = pagesLimit(plan);
-    const act = await mini.list(userId);
+const limit = pagesLimit(plan);
 
-    if (typeof limit === "number" && act.length >= limit) {
-      return jsonNoCache({ error: "limit_reached", limit }, 403);
+// Broj aktivnih – preferiraj countAll, fallback na list().length
+let actCount = 0;
+try {
+  const maybeCountAll = (mini as any).countAll;
+  if (typeof maybeCountAll === "function") {
+    actCount = await maybeCountAll(userId);
+  } else {
+    const maybeList = (mini as any).list;
+    if (typeof maybeList === "function") {
+      const rows = await maybeList(userId);
+      actCount = Array.isArray(rows) ? rows.length : 0;
+    } else {
+      actCount = 0;
     }
+  }
+} catch {
+  actCount = 0;
+}
+
+if (typeof limit === "number" && actCount >= limit) {
+  return jsonNoCache({ error: "limit_reached", limit, actCount }, 403);
+}
 
     const newSlug = await trash.restore(userId, String(body.slug));
     if (!newSlug) return jsonNoCache({ error: "not_found" }, 404);
