@@ -4,10 +4,11 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "@/lib/auth";
+
 import * as fullStore from "@/lib/fullStore";
 import * as mini from "@/lib/data/calcs";
 import * as trash from "@/lib/data/trash";
-import { putPublic /*, deletePublic*/ } from "@/lib/publicStore";
+import { putPublic /* , deletePublic */ } from "@/lib/publicStore";
 
 function jsonNoCache(data: any, status = 200) {
   const res = NextResponse.json(data, { status });
@@ -22,9 +23,12 @@ function extractSlug(req: Request, params?: { slug?: string }) {
     const parts = url.pathname.split("/").filter(Boolean);
     s = parts[parts.length - 1] ?? "";
   }
-  return s;
+  return decodeURIComponent(s || "");
 }
 
+/* ------------------------------------------------------------------ */
+/* UI helpers                                                          */
+/* ------------------------------------------------------------------ */
 function autoBlocksFrom(calc: any) {
   const hasPackages = Array.isArray(calc?.packages) && calc.packages.length > 0;
   const hasItems    = Array.isArray(calc?.items) && calc.items.length > 0;
@@ -45,6 +49,9 @@ function autoBlocksFrom(calc: any) {
   return blocks;
 }
 
+/* ------------------------------------------------------------------ */
+/* GET                                                                 */
+/* ------------------------------------------------------------------ */
 export async function GET(req: Request, ctx: { params: { slug?: string } }) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) return jsonNoCache({ error: "unauthorized" }, 401);
@@ -56,7 +63,10 @@ export async function GET(req: Request, ctx: { params: { slug?: string } }) {
     const full = await fullStore.getFull(userId, slug);
     if (full) return jsonNoCache({ ...full, meta: { ...full.meta, slug } });
 
-    const miniRow = await mini.get(userId, slug);
+    const miniRow = typeof (mini as any).get === "function"
+      ? await (mini as any).get(userId, slug)
+      : (await (mini as any).list(userId)).find((r: any) => r?.meta?.slug === slug);
+
     if (miniRow) {
       const { calcFromMetaConfig } = await import("@/lib/calc-init");
       const seeded = calcFromMetaConfig(miniRow);
@@ -67,11 +77,14 @@ export async function GET(req: Request, ctx: { params: { slug?: string } }) {
 
     return jsonNoCache({ error: "not_found", slug }, 404);
   } catch (e: any) {
-    console.error("GET full error:", e);
+    console.error("GET /api/calculators/[slug] failed:", e);
     return jsonNoCache({ error: "get_failed", detail: e?.stack ?? String(e) }, 500);
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* PUT                                                                 */
+/* ------------------------------------------------------------------ */
 export async function PUT(req: Request, ctx: { params: { slug?: string } }) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) return jsonNoCache({ error: "unauthorized" }, 401);
@@ -90,18 +103,22 @@ export async function PUT(req: Request, ctx: { params: { slug?: string } }) {
     await fullStore.putFull(userId, slug, normalized);
 
     const newName = String(body?.meta?.name ?? "").trim();
-    if (newName) await mini.updateName(userId, slug, newName);
+    if (newName && typeof (mini as any).updateName === "function") {
+      await (mini as any).updateName(userId, slug, newName);
+    }
 
     await putPublic(slug, normalized);
     return jsonNoCache({ ok: true, slug });
   } catch (e: any) {
-    console.error("PUT full error:", e);
+    console.error("PUT /api/calculators/[slug] failed:", e);
     return jsonNoCache({ error: "invalid_payload", detail: e?.stack ?? String(e) }, 400);
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* DELETE  — move to Trash (robustno)                                  */
+/* ------------------------------------------------------------------ */
 export async function DELETE(req: Request, ctx: { params: { slug?: string } }) {
-  // SOFT DELETE → move to Trash
   const userId = await getUserIdFromRequest(req);
   if (!userId) return jsonNoCache({ error: "unauthorized" }, 401);
 
@@ -109,19 +126,43 @@ export async function DELETE(req: Request, ctx: { params: { slug?: string } }) {
   if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
   try {
-    // uzmi mini zapis (ako postoji) i gurni u trash
-    const row = await mini.get(userId, slug);
-    if (row) {
-      await trash.push(userId, row);
+    // 1) Pronađi mini zapis, i dalje nastavljamo ako ga nema (očistićemo full store).
+    let miniRow: any | undefined;
+    if (typeof (mini as any).get === "function") {
+      miniRow = await (mini as any).get(userId, slug);
+    } else if (typeof (mini as any).list === "function") {
+      const all = await (mini as any).list(userId);
+      miniRow = all.find((r: any) => r?.meta?.slug === slug);
     }
 
-    // očisti full + mini
-    await fullStore.deleteFull(userId, slug).catch(() => {});
-    const removedMini = await mini.remove(userId, slug).catch(() => false);
+    // 2) Pokušaj da ga prebaciš u trash (ako trash modul to podržava).
+    let trashed = false;
+    if (miniRow) {
+      if (typeof (trash as any).move === "function") {
+        trashed = !!(await (trash as any).move(userId, slug));
+      } else if (typeof (trash as any).push === "function") {
+        await (trash as any).push(userId, miniRow);
+        trashed = true;
+      } else if (typeof (trash as any).add === "function") {
+        await (trash as any).add(userId, miniRow);
+        trashed = true;
+      } else if (typeof (trash as any).put === "function") {
+        await (trash as any).put(userId, miniRow);
+        trashed = true;
+      }
+    }
 
-    return jsonNoCache({ ok: true, trashed: true, removedMini, slug });
+    // 3) Očisti full + mini (idempotentno).
+    await fullStore.deleteFull(userId, slug).catch(() => {});
+    let removedMini = false;
+    if (typeof (mini as any).remove === "function") {
+      removedMini = !!(await (mini as any).remove(userId, slug).catch(() => false));
+    }
+
+    // 4) Odgovor prema UI-ju
+    return jsonNoCache({ ok: true, slug, trashed, removedMini });
   } catch (e: any) {
-    console.error("DELETE full error:", e);
+    console.error("DELETE /api/calculators/[slug] failed:", e);
     return jsonNoCache({ error: "delete_failed", detail: e?.stack ?? String(e) }, 500);
   }
 }
