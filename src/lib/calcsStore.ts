@@ -50,7 +50,7 @@ function rowToCalc(r: any): Calc {
       order: typeof r.order === "number" ? r.order : 0,
       createdAt: Number(r.created_at) || Date.now(),
       updatedAt: Number(r.updated_at) || Number(r.created_at) || Date.now(),
-      views7d: typeof r.views7d === "number" ? r.views7d : 0,
+      views7d: typeof (r.views7d ?? r.views7d) === "number" ? (r.views7d ?? r.views7d) : 0,
     },
     template: r.template ?? undefined,
     config: r.config ?? {},
@@ -233,13 +233,18 @@ export async function setFavorite(userId: string, slug: string, next: boolean): 
 
 export async function setOrder(userId: string, slugsInOrder: string[]): Promise<void> {
   await ensureTable();
-  // minimalno: updejtuj redom
-  for (let i = 0; i < slugsInOrder.length; i++) {
-    await pool.query(
-      `UPDATE calculators SET "order"=$1 WHERE user_id=$2 AND slug=$3`,
-      [i, userId, slugsInOrder[i]]
-    );
-  }
+  if (!slugsInOrder || slugsInOrder.length === 0) return;
+
+  // Build VALUES table for (slug, order)
+  const values = slugsInOrder.map((slug, i) => `('${slug.replace(/'/g, "''")}', ${i})`).join(", ");
+  // Update using a derived table for better performance and fewer roundtrips
+  const sql = `
+    UPDATE calculators AS c
+    SET "order" = v.ordinal
+    FROM (VALUES ${values}) AS v(slug, ordinal)
+    WHERE c.user_id = $1 AND c.slug = v.slug
+  `;
+  await pool.query(sql, [userId]);
 }
 
 // =============== Counting & batch unpublish ======================
