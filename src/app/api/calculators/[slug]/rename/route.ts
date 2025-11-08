@@ -1,76 +1,74 @@
 // src/app/api/calculators/[slug]/rename/route.ts
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "@/lib/auth";
-import { promises as fs } from "fs";
-import path from "path";
+import * as calcsStore from "@/lib/calcsStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function safeUserId(userId: string) {
-  return (userId || "anon")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 120) || "anon";
-}
-function userCalcsFile(userId: string) {
-  const uid = safeUserId(userId);
-  return path.join(process.cwd(), "data", "users", uid, "calculators.json");
-}
-async function readRows(file: string) {
-  try {
-    const txt = await fs.readFile(file, "utf8");
-    const json = JSON.parse(txt);
-    return Array.isArray(json) ? json : json?.rows ?? [];
-  } catch {
-    return [];
-  }
-}
-async function writeRows(file: string, rows: any[]) {
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, JSON.stringify(rows, null, 2), "utf8");
-}
-
+/**
+ * POST /api/calculators/[slug]/rename
+ * Body: { name: string }
+ * Res:  200 { ok: true }  | 4xx { error: "..." }
+ */
 export async function POST(
   req: Request,
-  ctx: { params: { slug: string } }
+  context: { params?: { slug?: string } }
 ) {
+  // 1) Auth
   const userId = await getUserIdFromRequest(req);
-  if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!userId) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
 
+  // 2) Slug (robusno: iz params ili iz URL-a)
+  const url = new URL(req.url);
+  const slug =
+    context?.params?.slug ??
+    decodeURIComponent(url.pathname.split("/").slice(-2, -1)[0] || "");
+  if (!slug) {
+    return NextResponse.json({ error: "bad_slug" }, { status: 400 });
+  }
+
+  // 3) Telo (tolerantno čitanje)
   let body: any = {};
-  try { body = await req.json(); } catch {}
+  try {
+    body = await req.json();
+  } catch {
+    body = {};
+  }
+  const name = String(body?.name || "").trim();
+  if (!name) {
+    return NextResponse.json({ error: "bad_name" }, { status: 400 });
+  }
 
-  const paramSlug = decodeURIComponent((ctx?.params?.slug ?? "").toString());
-  const slug = (paramSlug || body?.slug || "").trim();
-  if (!slug) return NextResponse.json({ error: "bad_slug" }, { status: 400 });
+  // 4) Mora da postoji postojeća strana
+  const all = await calcsStore.list(userId);
+  const row = all.find((r) => r?.meta?.slug === slug);
+  if (!row) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
 
-  const name = (body?.name ?? "").toString().trim();
-  if (!name) return NextResponse.json({ error: "bad_name" }, { status: 400 });
-
-  const file = userCalcsFile(userId);
-  const rows = await readRows(file);
-
-  const idx = rows.findIndex((r: any) => r?.meta?.slug === slug);
-  if (idx < 0) return NextResponse.json({ error: "not_found" }, { status: 404 });
-
-  // ❗ zabrana duplih imena (case-insensitive), osim ako je isti slug
-  const exists = rows.some(
-    (r: any) =>
-      r?.meta?.slug !== slug &&
-      (r?.meta?.name || "").toString().trim().toLowerCase() === name.toLowerCase()
+  // 5) Zabrani duplo ime (case-insensitive), osim ako je isti slug
+  const nameLower = name.toLowerCase();
+  const conflict = all.some(
+    (r) =>
+      r.meta.slug !== slug &&
+      (r.meta.name || "").toString().trim().toLowerCase() === nameLower
   );
-  if (exists) {
+  if (conflict) {
     return NextResponse.json({ error: "name_exists" }, { status: 409 });
   }
 
-  rows[idx] = {
-    ...rows[idx],
-    meta: { ...(rows[idx]?.meta || {}), name },
-  };
+  // 6) Upis imena preko calcsStore (setuje i updatedAt)
+  const ok = await calcsStore.updateName(userId, slug, name);
+  if (!ok) {
+    return NextResponse.json({ error: "update_failed" }, { status: 500 });
+  }
 
-  await writeRows(file, rows);
-  return NextResponse.json({ ok: true });
+  // 7) Sve OK – odgovori formatom koji UI već koristi
+  return NextResponse.json(
+    { ok: true },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }

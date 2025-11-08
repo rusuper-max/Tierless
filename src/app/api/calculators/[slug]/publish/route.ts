@@ -1,7 +1,5 @@
 // src/app/api/calculators/[slug]/publish/route.ts
 import { NextResponse } from "next/server";
-import path from "path";
-import fs from "fs/promises";
 
 import { getUserIdFromRequest } from "@/lib/auth";
 import { getPool } from "@/lib/db";
@@ -11,29 +9,6 @@ import * as calcsStore from "@/lib/calcsStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-/* ------------------------------------------------------------ */
-/* Minimalni helpers za write (ne diramo calcsStore API)        */
-/* ------------------------------------------------------------ */
-const USERS_ROOT = path.join(process.cwd(), "data", "users");
-
-function safeUserId(userId: string) {
-  return (userId || "anon")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 120) || "anon";
-}
-function fileFor(userId: string) {
-  const uid = safeUserId(userId);
-  return path.join(USERS_ROOT, uid, "calculators.json");
-}
-async function writeAll(userId: string, rows: any[]) {
-  const file = fileFor(userId);
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, JSON.stringify(rows, null, 2), "utf8");
-}
 
 /* ------------------------------------------------------------ */
 /* Helper: dohvati plan iz user_plans                           */
@@ -63,45 +38,40 @@ export async function POST(
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // --- Robusno dohvatanje sluga: prvo iz params, pa iz URL-a ---
+  // Robusno dohvatanje sluga (params ili iz URL-a)
   const url = new URL(req.url);
-  const slugFromUrl =
+  const slug =
     context?.params?.slug ??
     decodeURIComponent(url.pathname.split("/").slice(-2, -1)[0] || "");
 
-  if (!slugFromUrl) {
+  if (!slug) {
     return NextResponse.json({ error: "Missing slug" }, { status: 400 });
   }
 
-  // Telo je opcionalno – ne vraćamo 400 ako nije validan JSON
+  // Telo je opcionalno
   let body: any = {};
   try {
     body = await req.json();
   } catch {
     body = {};
   }
-  const nextPublish = !!body.publish;
+  const nextPublish: boolean = !!body.publish;
 
-  // Učitaj listu
-  const rows = await calcsStore.list(userId);
-  const idx = rows.findIndex((r: any) => r?.meta?.slug === slugFromUrl);
-  if (idx === -1) {
+  // Učitaj trenutni zapis (iz PG backed calcsStore)
+  const current = await calcsStore.get(userId, slug);
+  if (!current) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  const isCurrentlyPublished = !!current.meta?.published;
 
-  // Ako tražimo publish=true — proveri cap
-  if (nextPublish) {
+  // Ako zaista prelazimo iz off->on, proveri cap
+  if (nextPublish && !isCurrentlyPublished) {
     const plan = await getUserPlan(userId);
     const cap = getPublishedCap(plan);
     if (cap !== "unlimited") {
-      // koliko je trenutno online (bez trenutnog sluga koji tek palimo)
-      const already = rows.reduce((acc: number, r: any) => {
-        if (!r?.meta) return acc;
-        if (r.meta.slug === slugFromUrl) return acc;
-        return r.meta.published ? acc + 1 : acc;
-      }, 0);
-
-      if (already >= cap) {
+      const already = await calcsStore.countPublished(userId);
+      // posle ovog publish-a bilo bi already + 1
+      if (already + 1 > cap) {
         return NextResponse.json(
           {
             error: "PLAN_LIMIT",
@@ -116,20 +86,14 @@ export async function POST(
     }
   }
 
-  // Upis stanja (published on/off) + updatedAt
-  const now = Date.now();
-  const row = rows[idx];
-  const meta = { ...(row.meta || {}) };
-  meta.published = nextPublish;
-  meta.updatedAt = now;
-
-  const next = [...rows];
-  next[idx] = { ...row, meta };
-
-  await writeAll(userId, next);
+  // Zapiši novo stanje (PG) — bez FS-a
+  const ok = await calcsStore.setPublished(userId, slug, nextPublish);
+  if (!ok) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   return NextResponse.json(
-    { ok: true, slug: slugFromUrl, published: nextPublish, updatedAt: now },
+    { ok: true, slug, published: nextPublish, updatedAt: Date.now() },
     { headers: { "Cache-Control": "no-store" } }
   );
 }
