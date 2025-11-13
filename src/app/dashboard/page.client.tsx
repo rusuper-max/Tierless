@@ -335,7 +335,26 @@ function SortDropdown({
     </div>
   );
 }
-
+// --- Public URL helper: /p/{id}-{slug} (fallback /p/slug) -------
+async function getPublicUrlForSlug(slug: string): Promise<string> {
+  try {
+    const r = await fetch(`/api/calculators/${encodeURIComponent(slug)}`, {
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    });
+    if (r.ok) {
+      const j = await r.json();
+      const id = j?.meta?.id;
+      console.log("PUBLIC LINK DEBUG → meta.id =", j?.meta?.id, "slug =", slug, "full response:", j);
+      if (id && typeof id === "string") {
+        return `/p/${encodeURIComponent(id)}-${encodeURIComponent(slug)}`;
+      }
+    }
+  } catch {}
+  // Fallback (starije strane bez id-a)
+  return `/p/${encodeURIComponent(slug)}`;
+}
 /* ------------------------------------------------------------------ */
 /* Jedan red tabele                                                    */
 /* ------------------------------------------------------------------ */
@@ -448,7 +467,16 @@ function PageRow({
       <td className="align-middle">
         <div className="w-full flex justify-center">
           <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap">
-            <ActionButton label="Public" href={`/p/${slug}`} variant="brand" />
+          <ActionButton
+  label="Public"
+  onClick={() => {
+    const id = (row as any)?.meta?.id ? String((row as any).meta.id) : "";
+    const pretty = id ? `/p/${id}-${slug}` : `/p/${slug}`;
+    // otvorimo odmah pretty URL (nema blokera, nema about:blank)
+    window.open(pretty, "_blank", "noopener,noreferrer");
+  }}
+  variant="brand"
+/>
             <ActionButton label="Edit" href={`/editor/${slug}`} variant="brand" />
             <ActionButton label="Rename" onClick={() => onRenameStart(slug, name)} variant="brand" />
             <ActionButton
@@ -918,7 +946,25 @@ export default function DashboardPageClient() {
     }
     return `${base} (${Date.now()})`;
   };
-  
+  // --- Public URL helper: /p/{id}-{slug} (fallback /p/slug) -------
+async function getPublicUrlForSlug(slug: string) {
+  try {
+    const r = await fetch(`/api/calculators/${encodeURIComponent(slug)}`, {
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    });
+    if (r.ok) {
+      const j = await r.json();
+      const id = j?.meta?.id;
+      if (id && typeof id === "string") {
+        return `/p/${encodeURIComponent(id)}-${encodeURIComponent(slug)}`;
+      }
+    }
+  } catch {}
+  // fallback za starije zapise bez id-a
+  return `/p/${encodeURIComponent(slug)}`;
+}
 
   /* --------------------- CRUD helpers --------------------- */
   async function createBlank() {
@@ -1165,13 +1211,17 @@ function publishLimitMsg(planName: string) {
   };
 
   const copyUrl = async (slug: string) => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${origin}/p/${slug}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      showToast("Copied to clipboard");
-    } catch {}
-  };
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const path = await getPublicUrlForSlug(slug);
+  const url = `${origin}${path}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast("Copied to clipboard");
+  } catch {
+    // fallback: bar pokaži URL da user može ručno da kopira
+    alert(url);
+  }
+};
 
   const allOnPage = derived.map((r) => r.meta.slug);
   const allSelected = allOnPage.length > 0 && allOnPage.every((s) => selected.has(s));
@@ -1185,14 +1235,31 @@ function publishLimitMsg(planName: string) {
   };
 
   async function bulkDelete() {
-    const list = allOnPage.filter((s) => selected.has(s));
+  const list = allOnPage.filter((s) => selected.has(s));
+  if (list.length === 0) return;
+
+  setBusy("bulk-delete");
+  try {
     for (const slug of list) {
-      setConfirmSlug(slug);
-      setConfirmName(rows.find((r) => r.meta.slug === slug)?.meta.name || "");
-      await removeConfirmed();
+      // direktno ping na API, bez setConfirmSlug/confirm modal logike
+      await fetch(`/api/calculators/${encodeURIComponent(slug)}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      }).catch(() => {});
+      // lokalno očisti
+      deleteFavLS(slug);
+      deleteCreatedLS(slug);
     }
+    // izbaci iz tabele u jednom potezu
+    setRows((prev) => prev.filter((x) => !list.includes(x.meta.slug)));
     setSelected(new Set());
+    // možeš i da “blinkneš” Trash ikonicu:
+    window.dispatchEvent(new Event("TL_TRASH_BLINK"));
+    window.dispatchEvent(new Event("TL_COUNTERS_DIRTY"));
+  } finally {
+    setBusy(null);
   }
+}
 
   /* --------------------- UI --------------------- */
   return (

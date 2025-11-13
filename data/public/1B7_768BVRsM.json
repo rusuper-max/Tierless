@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "name": "Copy of Za sada sve radi",
+    "slug": "copy-of-za-sada-sve-radi",
+    "branding": {
+      "theme": "dark",
+      "accent": "#7c3aed",
+      "layout": "cards",
+      "hideBadge": false
+    },
+    "id": "1B7_768BVRsM",
+    "editorMode": "simple"
+  },
+  "i18n": {
+    "locale": "en",
+    "currency": "EUR",
+    "decimals": 0
+  },
+  "pricingMode": "packages",
+  "packages": [],
+  "items": [
+    {
+      "id": "it_iguuae9le9",
+      "label": "Item A",
+      "price": 25
+    },
+    {
+      "id": "it_xl6gzb9le9",
+      "label": "Item B",
+      "price": 49
+    },
+    {
+      "id": "it_5wg3w19le9",
+      "label": "Item C",
+      "price": 99
+    }
+  ],
+  "addons": [
+    {
+      "id": "x_izsz2hiy2z",
+      "text": "New extra",
+      "price": 0,
+      "selected": false
+    }
+  ],
+  "fields": [
+    {
+      "id": "rng_84aif0j2d5",
+      "title": "Range",
+      "type": "range",
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "unit": "",
+      "base": 0,
+      "pricing": {
+        "mode": "linear",
+        "deltaPerUnit": 0
+      }
+    }
+  ],
+  "blocks": [
+    {
+      "id": "b_pkgs",
+      "type": "packages",
+      "title": "Plans",
+      "layout": "cards"
+    }
+  ]
+}

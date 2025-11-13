@@ -21,8 +21,8 @@ async function listUserDirs(root: string) {
   }
 }
 
-export async function GET(req: Request, ctx: { params: { slug?: string } }) {
-  const slug = ctx.params?.slug ?? "";
+export async function GET(req: Request, ctx: { params: Promise<{ slug?: string }> }) {
+  const { slug } = await ctx.params;              // ← AWAIT params
   if (!slug) return NextResponse.json({ ok:false, error:"bad_slug" }, { status: 400 });
 
   const url = new URL(req.url);

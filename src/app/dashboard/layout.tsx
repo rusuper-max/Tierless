@@ -3,7 +3,6 @@ import "@/app/overrides.css";
 import type { ReactNode } from "react";
 import Nav from "@/components/dashboard/Nav";
 import Sidebar from "@/components/dashboard/Sidebar";
-import DevControls from "@/components/dev/DevControls";
 import AccountHydrator from "@/components/providers/AccountHydrator";
 import { entitlementsFor, type Plan } from "@/lib/entitlements.adapter";
 
@@ -76,8 +75,6 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
         <div className="flex-1 min-w-0">{children}</div>
       </div>
-
-      <DevControls />
     </>
   );
 }

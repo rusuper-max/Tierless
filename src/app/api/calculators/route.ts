@@ -1,9 +1,11 @@
 // src/app/api/calculators/route.ts
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "@/lib/auth";
-import * as calcsStore from "@/lib/calcsStore"; // ← obrati pažnju na "s"
+import * as calcsStore from "@/lib/calcsStore";
 import { ENTITLEMENTS, type PlanId } from "@/lib/entitlements";
 import { getPool } from "@/lib/db";
+import * as fullStore from "@/lib/fullStore";
+import { randomBytes } from "crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,22 +35,71 @@ async function getPlanForUser(userId: string): Promise<PlanId> {
   return (isPlan ? raw : "free") as PlanId;
 }
 
+/* -------- ID helpers (isti princip kao u [slug]/route) ------------------ */
+function genId(): string {
+  return randomBytes(9).toString("base64url"); // ~12 chars, URL-safe
+}
+async function ensureIdOnFull(userId: string, slug: string, full: any) {
+  if (full?.meta?.id) return full;
+  const withId = { ...full, meta: { ...(full?.meta || {}), id: genId() } };
+  await fullStore.putFull(userId, slug, withId);
+  return withId;
+}
+
 /* ======================= GET (list) ======================= */
 export async function GET(req: Request) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) {
-    return NextResponse.json({ rows: [], notice: "Not authenticated" }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(
+      { rows: [], notice: "Not authenticated" },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   }
 
-  // Plan iz baze (isti izvor istine za sve rute)
   const plan = await getPlanForUser(userId);
   const limits = ENTITLEMENTS[plan]?.limits;
   const pagesAllow = limits?.pages ?? "unlimited";
-  const publishedAllow = (limits as any)?.maxPublicPages ?? (typeof pagesAllow === "number" ? pagesAllow : Infinity);
+  const publishedAllow =
+    (limits as any)?.maxPublicPages ??
+    (typeof pagesAllow === "number" ? pagesAllow : Infinity);
 
   const rows = await calcsStore.list(userId);
 
-  // Debug info da odmah vidiš šta server “misli”
+   // Osiguraj da svi kalkulatori imaju meta.id (ako nemaju, generiši i upiši)
+  for (const r of rows) {
+    const slug = r?.meta?.slug;
+    if (!slug) continue;
+    try {
+      let full = await fullStore.getFull(userId, slug);
+      if (!full) {
+        // Ako nema full fajl, napravi ga iz mini zapisa
+        const { calcFromMetaConfig } = await import("@/lib/calc-init");
+        full = calcFromMetaConfig(r);
+      }
+      if (!full?.meta?.id) {
+        await ensureIdOnFull(userId, slug, full);
+      }
+    } catch {
+      // ignoriši pojedinačne greške
+    }
+  }
+
+  // Enrichment: pridruži meta.id iz fullStore (i garantuj da postoji)
+  const enriched = await Promise.all(
+    rows.map(async (r) => {
+      const slug = r?.meta?.slug;
+      if (!slug) return r;
+      try {
+        const full = await fullStore.getFull(userId, slug);
+        if (!full) return r; // još nije otvoreno u editoru – ok, bez id-a
+        const withId = await ensureIdOnFull(userId, slug, full);
+        return { ...r, meta: { ...r.meta, id: withId.meta.id } };
+      } catch {
+        return r;
+      }
+    })
+  );
+
   const __debug = {
     userId,
     plan,
@@ -58,7 +109,7 @@ export async function GET(req: Request) {
   };
 
   return NextResponse.json(
-    { rows, __debug },
+    { rows: enriched, __debug },
     { headers: { "Cache-Control": "no-store" } }
   );
 }
@@ -79,14 +130,10 @@ export async function POST(req: Request) {
     body = {};
   }
 
-  // trenutna potrošnja
   const all = await calcsStore.list(userId);
   const current = all.length;
-
-  // koliki bi bio "need" za create/duplicate
   const need = current + 1;
 
-  // guard: pages
   if (pagesAllow !== "unlimited" && typeof pagesAllow === "number" && need > pagesAllow) {
     return NextResponse.json(
       { error: "PLAN_LIMIT", key: "pages", need, allow: pagesAllow, plan },
@@ -94,7 +141,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // create vs duplicate
   if (body?.from && typeof body.from === "string") {
     const name = (body?.name && String(body.name)) || "Copy";
     const slug = await calcsStore.duplicate(userId, body.from, name);
@@ -103,5 +149,8 @@ export async function POST(req: Request) {
   }
 
   const created = await calcsStore.create(userId, "Untitled Page");
-  return NextResponse.json({ ok: true, slug: created.meta.slug }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json(
+    { ok: true, slug: created.meta.slug },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }

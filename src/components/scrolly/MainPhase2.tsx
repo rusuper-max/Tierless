@@ -179,7 +179,7 @@ export default function MainPhase2({
     return {
       basic:     { x: 0, y: -280, scale: 0.95, rot: 0 },
       standard:  { x: 0, y: -120, scale: 0.96, rot: 0 },
-      business:  { x: 0, y:   0,  scale: 0.98, rot: 0 },
+      business:  { x: 0, y:  -24,  scale: 0.98, rot: 0 },
       premium:   { x: 0, y:  200, scale: 0.96, rot: 0 },
       signature: { x: 0, y:  360, scale: 0.96, rot: 0 },
     } as const;
