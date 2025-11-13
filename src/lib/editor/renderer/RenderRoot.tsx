@@ -24,12 +24,11 @@ export default function RenderRoot({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold">{calc?.meta?.name ?? t("Untitled")}</h1>
         {calc?.meta?.description ? (
-          <p className="text-[var(--muted,#9aa0a6)]">{calc.meta.description}</p>
-        ) : null}
-      </header>
+    <p className="text-[var(--muted,#9aa0a6)]">
+      {String(calc.meta.description)}
+    </p>
+  ) : null}
 
       {/* Blocks */}
       {blocks.length === 0 ? (
