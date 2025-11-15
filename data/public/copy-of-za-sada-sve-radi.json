@@ -1,6 +1,6 @@
 {
   "meta": {
-    "name": "Copy of Za sada sve radi",
+    "name": "Test stranice da li radi sve",
     "slug": "copy-of-za-sada-sve-radi",
     "branding": {
       "theme": "dark",
@@ -9,7 +9,7 @@
       "hideBadge": false
     },
     "id": "1B7_768BVRsM",
-    "editorMode": "simple"
+    "editorMode": "tiers"
   },
   "i18n": {
     "locale": "en",
@@ -17,24 +17,42 @@
     "decimals": 0
   },
   "pricingMode": "packages",
-  "packages": [],
-  "items": [
+  "packages": [
     {
-      "id": "it_iguuae9le9",
-      "label": "Item A",
-      "price": 25
+      "id": "pkg_hi5cj2o550",
+      "label": "Basic",
+      "basePrice": 19,
+      "description": "",
+      "featured": false,
+      "color": "#b51a00",
+      "priceText": "Free",
+      "colorMode": "gradient"
     },
     {
-      "id": "it_xl6gzb9le9",
-      "label": "Item B",
-      "price": 49
+      "id": "pkg_hc5d14o550",
+      "label": "Pro",
+      "basePrice": 39,
+      "description": "For growing teams",
+      "featured": false,
+      "color": "#f5ec00"
     },
     {
-      "id": "it_5wg3w19le9",
-      "label": "Item C",
-      "price": 99
+      "id": "pkg_vmxsl3o550",
+      "label": "Business",
+      "basePrice": 79,
+      "description": "Best value",
+      "featured": false,
+      "color": "#d95000"
+    },
+    {
+      "id": "pkg_0nfsrjo6aw",
+      "label": "Package 4",
+      "basePrice": 0,
+      "description": "",
+      "featured": false
     }
   ],
+  "items": [],
   "addons": [
     {
       "id": "x_izsz2hiy2z",
@@ -45,18 +63,70 @@
   ],
   "fields": [
     {
-      "id": "rng_84aif0j2d5",
-      "title": "Range",
-      "type": "range",
-      "min": 0,
-      "max": 10,
-      "step": 1,
-      "unit": "",
-      "base": 0,
-      "pricing": {
-        "mode": "linear",
-        "deltaPerUnit": 0
-      }
+      "id": "feat_xenf1lo550",
+      "title": "Features",
+      "type": "features",
+      "pkgId": "pkg_hi5cj2o550",
+      "options": [
+        {
+          "id": "f_vgzce6o550",
+          "label": "Bleja",
+          "highlighted": true
+        },
+        {
+          "id": "f_ti5xoio550",
+          "label": "Email support"
+        },
+        {
+          "id": "f_5fzqhl59tr",
+          "label": "New feature",
+          "highlighted": false
+        },
+        {
+          "id": "f_3zukp35a5w",
+          "label": "New feature",
+          "highlighted": false
+        },
+        {
+          "id": "f_0kezga5ah9",
+          "label": "New feature",
+          "highlighted": false
+        }
+      ]
+    },
+    {
+      "id": "feat_qw190do550",
+      "title": "Features",
+      "type": "features",
+      "pkgId": "pkg_hc5d14o550",
+      "options": [
+        {
+          "id": "f_mux6cpo550",
+          "label": "Everything in Basic"
+        },
+        {
+          "id": "f_uqyejto550",
+          "label": "5 projects",
+          "highlighted": true
+        }
+      ]
+    },
+    {
+      "id": "feat_1ok07fo550",
+      "title": "Features",
+      "type": "features",
+      "pkgId": "pkg_vmxsl3o550",
+      "options": [
+        {
+          "id": "f_j8ugdno550",
+          "label": "Unlimited projects"
+        },
+        {
+          "id": "f_wmrti0o550",
+          "label": "Priority support",
+          "highlighted": true
+        }
+      ]
     }
   ],
   "blocks": [
