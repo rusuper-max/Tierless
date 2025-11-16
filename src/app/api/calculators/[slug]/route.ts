@@ -70,12 +70,36 @@ function normalizeBlocks(input: any) {
   const mode = input?.pricingMode ?? (hasItems ? "list" : "packages");
 
   if (mode === "packages" && hasPackages) {
-    blocks.push({ id: "b_pkgs", type: "packages", title: "Plans", data: { packages: input.packages } });
+    blocks.push({
+      id: "b_pkgs",
+      type: "packages",
+      title: "Plans",
+      data: { packages: input.packages },
+    });
   } else if (mode === "list") {
-    blocks.push({ id: "b_items", type: "items", title: "Price list", data: { rows: input.items ?? [] } });
+    blocks.push({
+      id: "b_items",
+      type: "items",
+      title: "Price list",
+      data: { rows: input.items ?? [] },
+    });
   }
-  if (hasFields) blocks.push({ id: "b_opts", type: "options", title: "Options", data: { rows: input.fields } });
-  if (hasAddons) blocks.push({ id: "b_extras", type: "extras", title: "Extras", data: { note: "" } });
+  if (hasFields) {
+    blocks.push({
+      id: "b_opts",
+      type: "options",
+      title: "Options",
+      data: { rows: input.fields },
+    });
+  }
+  if (hasAddons) {
+    blocks.push({
+      id: "b_extras",
+      type: "extras",
+      title: "Extras",
+      data: { note: "" },
+    });
+  }
 
   return blocks;
 }
@@ -89,17 +113,33 @@ export async function GET(req: Request, ctx: { params?: { slug?: string } }) {
   if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
   try {
-    // 1) FULL
+    // Uvek prvo mini red – zbog imena, published itd.
+    const miniRow = await calcsStore.get(userId, slug);
+
+    // 1) FULL iz storage-a
     const full = await fullStore.getFull(userId, slug);
     if (full) {
       const id = full?.meta?.id || genId();
-      const ready = { ...full, meta: { ...full.meta, slug, id } };
-      if (!full?.meta?.id) await fullStore.putFull(userId, slug, ready);
+
+      // Merge meta: uzmi sve iz FULL, ali ime pregazi vrednošću iz mini reda, ako postoji
+      const mergedMeta = {
+        ...(full.meta || {}),
+        ...(miniRow?.meta?.name ? { name: miniRow.meta.name } : {}),
+        slug,
+        id,
+      };
+
+      const ready = { ...full, meta: mergedMeta };
+
+      // Ako ranije nije imao id ili je ime promenjeno – upiši nazad u fullStore
+      if (!full?.meta?.id || full?.meta?.name !== mergedMeta.name) {
+        await fullStore.putFull(userId, slug, ready);
+      }
+
       return jsonNoCache(ready);
     }
 
-    // 2) MINI -> seed -> FULL (prvi put)
-    const miniRow = await calcsStore.get(userId, slug);
+    // 2) Nema FULL – seed iz mini reda (ako postoji)
     if (miniRow) {
       const { calcFromMetaConfig } = await import("@/lib/calc-init");
       const seeded = calcFromMetaConfig(miniRow);
@@ -112,6 +152,7 @@ export async function GET(req: Request, ctx: { params?: { slug?: string } }) {
       return jsonNoCache(normalized);
     }
 
+    // 3) Ni full ni mini – 404
     return jsonNoCache({ error: "not_found", slug }, 404);
   } catch (e: any) {
     console.error("GET full error:", e);
@@ -141,10 +182,9 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
 
     // Root arrays — sanitize to arrays
     let packages = Array.isArray(body.packages) ? body.packages : [];
-    let items    = Array.isArray(body.items)    ? body.items    : [];
-    let fields   = Array.isArray(body.fields)   ? body.fields   : [];
-    let addons   = Array.isArray(body.addons)   ? body.addons   : [];
-
+    let items = Array.isArray(body.items) ? body.items : [];
+    let fields = Array.isArray(body.fields) ? body.fields : [];
+    let addons = Array.isArray(body.addons) ? body.addons : [];
 
     const id = body?.meta?.id || genId();
 
@@ -164,7 +204,9 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
 
     // mini ime (dashboard)
     const newName = String(body?.meta?.name ?? "").trim();
-    if (newName) await calcsStore.updateName(userId, slug, newName).catch(() => {});
+    if (newName) {
+      await calcsStore.updateName(userId, slug, newName).catch(() => {});
+    }
 
     // PUBLIC sync (slug + id)
     try {

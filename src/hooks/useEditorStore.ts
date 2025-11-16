@@ -36,7 +36,13 @@ export type Pkg = {
   color?: string;
 };
 
-export type ItemRow = { id: string; label: string; price: number | null; note?: string };
+export type ItemRow = {
+  id: string;
+  label: string;
+  price: number | null;
+  note?: string;
+  imageUrl?: string; // <— NEW: URL slike za simple list
+};
 
 export type CalcMeta = {
   id?: string;
@@ -243,30 +249,57 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     } else if (mode === "tiers") {
       // 3 paketa spremna odmah
       if (!next.packages.length) {
-        const p1: Pkg = { id: genId("pkg"), label: "Basic", basePrice: 19, description: "Good for starters", featured: false };
-        const p2: Pkg = { id: genId("pkg"), label: "Pro", basePrice: 39, description: "For growing teams", featured: true };
-        const p3: Pkg = { id: genId("pkg"), label: "Business", basePrice: 79, description: "Best value", featured: false };
+        const p1: Pkg = {
+          id: genId("pkg"),
+          label: "Basic",
+          basePrice: 19,
+          description: "Good for starters",
+          featured: false,
+        };
+        const p2: Pkg = {
+          id: genId("pkg"),
+          label: "Pro",
+          basePrice: 39,
+          description: "For growing teams",
+          featured: true,
+        };
+        const p3: Pkg = {
+          id: genId("pkg"),
+          label: "Business",
+          basePrice: 79,
+          description: "Best value",
+          featured: false,
+        };
         next.packages = [p1, p2, p3];
         next.fields.push({
           id: genId("feat"),
           title: "Features",
           type: "features",
           pkgId: p1.id,
-          options: [{ id: genId("f"), label: "1 project" }, { id: genId("f"), label: "Email support" }],
+          options: [
+            { id: genId("f"), label: "1 project" },
+            { id: genId("f"), label: "Email support" },
+          ],
         });
         next.fields.push({
           id: genId("feat"),
           title: "Features",
           type: "features",
           pkgId: p2.id,
-          options: [{ id: genId("f"), label: "Everything in Basic" }, { id: genId("f"), label: "5 projects", highlighted: true }],
+          options: [
+            { id: genId("f"), label: "Everything in Basic" },
+            { id: genId("f"), label: "5 projects", highlighted: true },
+          ],
         });
         next.fields.push({
           id: genId("feat"),
           title: "Features",
           type: "features",
           pkgId: p3.id,
-          options: [{ id: genId("f"), label: "Unlimited projects" }, { id: genId("f"), label: "Priority support", highlighted: true }],
+          options: [
+            { id: genId("f"), label: "Unlimited projects" },
+            { id: genId("f"), label: "Priority support", highlighted: true },
+          ],
         });
       }
       next.items = [];
@@ -275,7 +308,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     } else {
       // advanced
       if (!next.packages.length && (!next.items || !next.items.length)) {
-        const p = { id: genId("pkg"), label: "Starter", basePrice: 29, description: "", featured: false } as Pkg;
+        const p = {
+          id: genId("pkg"),
+          label: "Starter",
+          basePrice: 29,
+          description: "",
+          featured: false,
+        } as Pkg;
         next.packages = [p];
         next.fields.push({
           id: genId("feat"),
@@ -327,7 +366,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     if (!calc) return;
     const next = clone(calc);
     next.packages = next.packages.filter((p) => p.id !== id);
-    next.fields = next.fields.filter((g) => !(g.type === "features" && g.pkgId === id));
+    next.fields = next.fields.filter(
+      (g) => !(g.type === "features" && g.pkgId === id)
+    );
     set({ calc: next, isDirty: true });
   },
 
@@ -339,9 +380,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const next = clone(calc);
     const src = next.packages[idx];
     const newId = genId("pkg");
-    const dup: Pkg = { ...src, id: newId, label: `${src.label || "Package"} (copy)` };
+    const dup: Pkg = {
+      ...src,
+      id: newId,
+      label: `${src.label || "Package"} (copy)`,
+    };
     next.packages.splice(idx + 1, 0, dup);
-    const oldGrp = next.fields.find((g) => g.type === "features" && g.pkgId === src.id);
+    const oldGrp = next.fields.find(
+      (g) => g.type === "features" && g.pkgId === src.id
+    );
     if (oldGrp) {
       next.fields.push({
         ...clone(oldGrp),
@@ -369,7 +416,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   /* ---------------- Features ---------------- */
   ensureFeatureGroup: (pkgId) => {
     const calc = get().calc!;
-    const existing = calc.fields.find((g) => g.type === "features" && g.pkgId === pkgId);
+    const existing = calc.fields.find(
+      (g) => g.type === "features" && g.pkgId === pkgId
+    );
     if (existing) return existing.id;
     const id = genId("feat");
     const next = clone(calc);
@@ -383,7 +432,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const next = clone(calc);
     let grp = next.fields.find((g) => g.type === "features" && g.pkgId === pkgId);
     if (!grp) {
-      grp = { id: genId("feat"), title: "Features", type: "features", pkgId, options: [] };
+      grp = {
+        id: genId("feat"),
+        title: "Features",
+        type: "features",
+        pkgId,
+        options: [],
+      };
       next.fields.push(grp);
     }
     const id = genId("f");
@@ -401,7 +456,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const next = clone(calc);
     const grp = next.fields.find((g) => g.type === "features" && g.pkgId === pkgId);
     if (!grp || !grp.options) return;
-    grp.options = (grp.options as FeatureOption[]).map((f) => (f.id === featId ? { ...f, ...patch } : f));
+    grp.options = (grp.options as FeatureOption[]).map((f) =>
+      f.id === featId ? { ...f, ...patch } : f
+    );
     set({ calc: next, isDirty: true });
   },
 
@@ -419,7 +476,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const calc = get().calc!;
     const next = clone(calc);
     const id = genId("x");
-    next.addons.push({ id, text: text ?? "New extra", price: 0, selected: false });
+    next.addons.push({
+      id,
+      text: text ?? "New extra",
+      price: 0,
+      selected: false,
+    });
     set({ calc: next, isDirty: true });
     return id;
   },
@@ -478,7 +540,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const next = clone(calc);
     const id = genId("it");
     if (!Array.isArray(next.items)) next.items = [];
-    next.items.push({ id, label: label ?? "Item", price: Number.isFinite(price) ? price! : 0 });
+    next.items.push({
+      id,
+      label: label ?? "Item",
+      price: Number.isFinite(price) ? price! : 0,
+    });
     set({ calc: next, isDirty: true });
     return id;
   },
@@ -514,7 +580,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setMaxPackages: (n) => set({ maxPackages: Math.max(0, n) }),
   setPlanCaps: (plan) => {
-    const map: Record<string, number> = { free: 1, starter: 3, growth: 5, pro: 8, tierless: 12 };
+    const map: Record<string, number> = {
+      free: 1,
+      starter: 3,
+      growth: 5,
+      pro: 8,
+      tierless: 12,
+    };
     const n = map[plan] ?? 6;
     set({ maxPackages: n });
   },

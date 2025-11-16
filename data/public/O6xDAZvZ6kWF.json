@@ -1,0 +1,61 @@
+{
+  "i18n": {
+    "locale": "en",
+    "currency": "EUR",
+    "decimals": 0
+  },
+  "meta": {
+    "id": "O6xDAZvZ6kWF",
+    "name": "Za sada sve radi",
+    "slug": "copy-of-copy-of-untitled-page-2",
+    "branding": {
+      "theme": "dark",
+      "accent": "#7c3aed",
+      "layout": "cards",
+      "hideBadge": false
+    },
+    "editorMode": "tiers"
+  },
+  "items": [],
+  "addons": [],
+  "blocks": [
+    {
+      "id": "b_pkgs",
+      "type": "packages",
+      "title": "Plans",
+      "layout": "cards"
+    }
+  ],
+  "fields": [],
+  "packages": [
+    {
+      "id": "basic",
+      "label": "Basic",
+      "featured": true,
+      "basePrice": 0,
+      "description": ""
+    },
+    {
+      "id": "pkg_lp8swtr90n",
+      "label": "Package 2",
+      "basePrice": 0,
+      "description": "",
+      "featured": false
+    },
+    {
+      "id": "pkg_ecq62fr991",
+      "label": "Package 3",
+      "basePrice": 0,
+      "description": "",
+      "featured": false
+    },
+    {
+      "id": "pkg_www1jzr9qj",
+      "label": "Package 4",
+      "basePrice": 0,
+      "description": "",
+      "featured": false
+    }
+  ],
+  "pricingMode": "packages"
+}

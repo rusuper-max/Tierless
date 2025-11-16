@@ -1,0 +1,60 @@
+{
+  "i18n": {
+    "locale": "en",
+    "currency": "EUR",
+    "decimals": 0
+  },
+  "meta": {
+    "id": "W8ZakFiX2qPu",
+    "name": "Copy of Za sada sve radi (2)",
+    "slug": "copy-of-za-sada-sve-radi-2",
+    "branding": {
+      "theme": "dark",
+      "accent": "#7c3aed",
+      "layout": "cards",
+      "hideBadge": false
+    },
+    "editorMode": "simple"
+  },
+  "items": [
+    {
+      "id": "it_d2fqo3wr7o",
+      "label": "Espresso",
+      "price": null
+    },
+    {
+      "id": "it_qmbyvqwr7o",
+      "label": "Cappuccino",
+      "price": 3
+    },
+    {
+      "id": "it_wiqn9iwr7o",
+      "label": "Latte",
+      "price": 3.5
+    },
+    {
+      "id": "it_k3rnsowwvg",
+      "label": "New item",
+      "price": 0
+    }
+  ],
+  "addons": [
+    {
+      "id": "x_eh0zyqwuen",
+      "text": "New extra",
+      "price": 0,
+      "selected": false
+    }
+  ],
+  "blocks": [
+    {
+      "id": "b_pkgs",
+      "type": "packages",
+      "title": "Plans",
+      "layout": "cards"
+    }
+  ],
+  "fields": [],
+  "packages": [],
+  "pricingMode": "packages"
+}

@@ -9,8 +9,16 @@ import { useEditorStore, type CalcJson, type Mode } from "@/hooks/useEditorStore
 import EditorNavBar from "./components/EditorNavBar";
 
 // Shared renderer
-const PublicRenderer = dynamic(() => import("@/components/PublicRenderer"), { ssr: false });
-const BlocksPanel = dynamic(() => import("./panels/BlocksPanel"), { ssr: false });
+const PublicRenderer = dynamic(() => import("@/components/PublicRenderer"), {
+  ssr: false,
+});
+const BlocksPanel = dynamic(() => import("./panels/BlocksPanel"), {
+  ssr: false,
+});
+const SimpleListPanel = dynamic(
+  () => import("./panels/SimpleListPanel"),
+  { ssr: false }
+);
 
 type Props = { slug: string; initialCalc: CalcJson };
 type PreviewMode = "off" | "desktop" | "mobile";
@@ -32,7 +40,12 @@ export default function EditorShell({ slug, initialCalc }: Props) {
     let stored: Mode | null = null;
     try {
       const raw = window.localStorage.getItem(key) as Mode | null;
-      if (raw === "setup" || raw === "tiers" || raw === "simple" || raw === "advanced") {
+      if (
+        raw === "setup" ||
+        raw === "tiers" ||
+        raw === "simple" ||
+        raw === "advanced"
+      ) {
         stored = raw;
       }
     } catch {
@@ -79,7 +92,10 @@ export default function EditorShell({ slug, initialCalc }: Props) {
       (useEditorStore as any).setState({ isSaving: true });
       const r = await fetch(`/api/calculators/${encodeURIComponent(slug)}`, {
         method: "PUT",
-        headers: { "content-type": "application/json", Accept: "application/json" },
+        headers: {
+          "content-type": "application/json",
+          Accept: "application/json",
+        },
         cache: "no-store",
         body: JSON.stringify(calc),
       });
@@ -98,7 +114,11 @@ export default function EditorShell({ slug, initialCalc }: Props) {
       setToast(t("Saved"));
       setTimeout(() => setToast(null), 1000);
     } finally {
-      (useEditorStore as any).setState({ isSaving: false, isDirty: false, lastSaved: Date.now() });
+      (useEditorStore as any).setState({
+        isSaving: false,
+        isDirty: false,
+        lastSaved: Date.now(),
+      });
     }
   };
 
@@ -133,34 +153,34 @@ export default function EditorShell({ slug, initialCalc }: Props) {
         {/* Quick preview toolbar – samo kad smo u editor modu */}
         {!inSetup && (
           <div className="mb-3 flex items-center justify-end">
-<button
-  type="button"
-  onClick={() => openPreview("desktop")}
-  className="relative inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-3.5 py-2 text-xs sm:text-sm group hover:shadow-[0_10px_24px_rgba(2,6,23,.10)] hover:-translate-y-0.5 transition"
->
-  {/* Brand outline */}
-  <span
-    aria-hidden
-    className="pointer-events-none absolute inset-0 rounded-full"
-    style={{
-      padding: 1.5,
-      background:
-        "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
-      WebkitMask:
-        "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-      WebkitMaskComposite: "xor" as any,
-      maskComposite: "exclude",
-    }}
-  />
+            <button
+              type="button"
+              onClick={() => openPreview("desktop")}
+              className="relative inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-3.5 py-2 text-xs sm:text-sm group hover:shadow-[0_10px_24px_rgba(2,6,23,.10)] hover:-translate-y-0.5 transition"
+            >
+              {/* Brand outline */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-full"
+                style={{
+                  padding: 1.5,
+                  background:
+                    "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
+                  WebkitMask:
+                    "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                  WebkitMaskComposite: "xor" as any,
+                  maskComposite: "exclude",
+                }}
+              />
 
-  {/* Sadržaj dugmeta */}
-  <span className="relative z-[1] inline-flex items-center gap-2">
-    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--surface)] mr-1">
-      <Monitor className="h-3.5 w-3.5" />
-    </span>
-    {t("Quick preview")}
-  </span>
-</button>
+              {/* Sadržaj dugmeta */}
+              <span className="relative z-[1] inline-flex items-center gap-2">
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--surface)] mr-1">
+                  <Monitor className="h-3.5 w-3.5" />
+                </span>
+                {t("Quick preview")}
+              </span>
+            </button>
           </div>
         )}
 
@@ -173,28 +193,36 @@ export default function EditorShell({ slug, initialCalc }: Props) {
                   {t("Choose editor mode")}
                 </h2>
                 <p className="text-sm text-[var(--muted)] mt-1">
-                  {t("Pick a starting point. You can switch to Advanced later.")}
+                  {t(
+                    "Pick a starting point. You can switch to Advanced later."
+                  )}
                 </p>
 
                 <div className="grid gap-4 mt-4 md:grid-cols-3">
                   <ModeTile
                     active={uiMode === ("tiers" as Mode)}
                     title={t("Tier Based Price Page")}
-                    text={t("Multiple tiers + feature checklist. Friendly defaults.")}
+                    text={t(
+                      "Multiple tiers + feature checklist. Friendly defaults."
+                    )}
                     cta={t("Start with tiers")}
                     onClick={() => setModeBoth("tiers")}
                   />
                   <ModeTile
                     active={uiMode === ("simple" as Mode)}
                     title={t("Tierless Price Page")}
-                    text={t("Simple list of items and prices. Perfect for menus or clinics.")}
+                    text={t(
+                      "Simple list of items and prices. Perfect for menus or clinics."
+                    )}
                     cta={t("Start simple")}
                     onClick={() => setModeBoth("simple")}
                   />
                   <ModeTile
                     active={uiMode === ("advanced" as Mode)}
                     title={t("Advanced editor")}
-                    text={t("Full control with packages, features, extras and sliders.")}
+                    text={t(
+                      "Full control with packages, features, extras and sliders."
+                    )}
                     cta={t("Go advanced")}
                     onClick={() => setModeBoth("advanced")}
                   />
@@ -202,7 +230,7 @@ export default function EditorShell({ slug, initialCalc }: Props) {
               </div>
             ) : (
               <section className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)]">
-                <BlocksPanel />
+                {uiMode === "simple" ? <SimpleListPanel /> : <BlocksPanel />}
               </section>
             )}
           </section>

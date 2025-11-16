@@ -1,67 +1,238 @@
 // src/components/PublicRenderer.tsx
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 import type { CalcJson, OptionGroup, Pkg } from "@/hooks/useEditorStore";
 
 type ColorMode = "solid" | "gradient";
+type CurrencyPosition = "prefix" | "suffix";
+
+const BRAND_GRADIENT =
+  "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))";
 
 function useCurrency(calc?: CalcJson) {
   const cur = calc?.i18n?.currency ?? "€";
   const decimals = Number.isFinite(calc?.i18n?.decimals)
     ? (calc!.i18n!.decimals as number)
     : 0;
-  const fmt = (n: number | null | undefined) =>
-    `${cur}${Number(n ?? 0).toFixed(decimals)}`;
-  return { cur, decimals, fmt };
+
+  const position: CurrencyPosition =
+    (calc?.i18n as any)?.currencyPosition === "suffix" ? "suffix" : "prefix";
+
+  const space = (calc?.i18n as any)?.currencySpace === false ? "" : " ";
+
+  const fmt = (n: number | null | undefined) => {
+    const amount = Number(n ?? 0).toFixed(decimals);
+    return position === "prefix"
+      ? `${cur}${space}${amount}`
+      : `${amount}${space}${cur}`;
+  };
+
+  return { cur, decimals, fmt, position, space };
 }
 
 export default function PublicRenderer({ calc }: { calc: CalcJson }) {
   const mode = calc?.meta?.editorMode || "advanced";
   const { fmt } = useCurrency(calc);
 
+  // Selekcija itema za SIMPLE mode
+  const [simpleSelectedIds, setSimpleSelectedIds] = useState<Set<string>>(
+    () => new Set()
+  );
+
+  const toggleSimpleSelection = (id: string) => {
+    setSimpleSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const simpleSelectionTotal = useMemo(() => {
+    if (!calc || calc.meta?.editorMode !== "simple") return 0;
+    const items = calc.items ?? [];
+    if (!items.length) return 0;
+    const priceById = new Map(
+      items.map((it: any) => [it.id, Number(it.price ?? 0)])
+    );
+    let sum = 0;
+    simpleSelectedIds.forEach((id) => {
+      sum += priceById.get(id) ?? 0;
+    });
+    return sum;
+  }, [calc, simpleSelectedIds]);
+
   /* ------------ SIMPLE LIST MODE ------------ */
   if (mode === "simple") {
     const items = calc.items ?? [];
     const addons = calc.addons ?? [];
+    const meta = (calc.meta || {}) as any;
+
+    const simpleTitle: string = meta.simpleTitle ?? "";
+    const simpleBg: string = meta.simpleBg ?? "";
+    const simpleTextColor: string = meta.simpleTextColor ?? "";
+    const simpleBorderColor: string = meta.simpleBorderColor ?? "";
+    const simpleFont: string = meta.simpleFont ?? "system";
+    const simpleFontSize: "sm" | "md" | "lg" = meta.simpleFontSize ?? "md";
+    const simpleSpacing: string = meta.simpleSpacing ?? "cozy";
+    const showTierlessBadge: boolean = meta.simpleShowBadge ?? true;
+    const simpleDots: boolean = meta.simpleDots === true;
+    const simpleAllowSelection: boolean = meta.simpleAllowSelection === true;
+    const simpleShowInquiry: boolean = meta.simpleShowInquiry === true;
+
+    // TODO: kasnije ovo povezati sa Account email verification
+    const inquiryVerified: boolean =
+      (meta.inquiryVerified as boolean | undefined) ?? true;
+
+    const wrapperStyle: React.CSSProperties = {};
+    if (simpleBg) {
+      if (simpleBg.startsWith("linear-gradient")) {
+        wrapperStyle.backgroundImage = simpleBg;
+      } else {
+        wrapperStyle.backgroundColor = simpleBg;
+      }
+    }
+    if (simpleTextColor) {
+      wrapperStyle.color = simpleTextColor;
+    }
+
+    const spacingClass =
+      simpleSpacing === "compact"
+        ? "space-y-2"
+        : simpleSpacing === "relaxed"
+        ? "space-y-4"
+        : "space-y-3";
+
+    const fontFamilyClass =
+      simpleFont === "serif"
+        ? "font-serif"
+        : simpleFont === "rounded"
+        ? "font-[system-ui,ui-rounded,sans-serif]"
+        : simpleFont === "mono"
+        ? "font-mono"
+        : "font-sans";
+
+    const fontSizeClass =
+      simpleFontSize === "sm"
+        ? "text-[13px]"
+        : simpleFontSize === "lg"
+        ? "text-[16px]"
+        : "text-[14px]";
+
+    const itemBorderBase: React.CSSProperties = {};
+    if (simpleBorderColor) {
+      if (simpleBorderColor.startsWith("linear-gradient")) {
+        itemBorderBase.border = "1px solid transparent";
+        (itemBorderBase as any).borderImage = `${simpleBorderColor} 1`;
+      } else {
+        itemBorderBase.borderColor = simpleBorderColor;
+      }
+    }
+
+    const selectedCount = simpleSelectedIds.size;
+    const showTotalBar = simpleAllowSelection;
+
     return (
-      <div className="space-y-6">
-        {/* Items */}
-        <div className="rounded-2xl border border-[var(--border)] overflow-hidden bg-[var(--card)]">
-          <table className="w-full text-sm">
-            <tbody>
-              {items.map((it) => (
-                <tr
-                  key={it.id}
-                  className="border-b last:border-b-0 border-[var(--border)]"
-                >
-                  <td className="p-3">
-                    <div className="font-medium text-[var(--text)]">
-                      {it.label}
-                    </div>
-                    {it.note ? (
-                      <div className="text-[var(--muted)] text-xs mt-0.5">
-                        {it.note}
-                      </div>
-                    ) : null}
-                  </td>
-                  <td className="p-3 text-right font-semibold text-[var(--text)]">
-                    {fmt(it.price ?? 0)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div
+        className={`rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 ${fontFamilyClass} ${fontSizeClass}`}
+        style={wrapperStyle}
+      >
+        {/* Title + Tierless badge gore desno */}
+        <div className="mb-3 sm:mb-4 flex items-center justify-between gap-3">
+          {simpleTitle ? (
+            <h1 className="text-lg sm:text-xl font-semibold text-[var(--text)]">
+              {simpleTitle}
+            </h1>
+          ) : (
+            <div />
+          )}
+
+          {showTierlessBadge && (
+            <a
+              href="https://tierless.net"
+              target="_blank"
+              rel="noreferrer"
+              className="relative inline-flex items-center rounded-full bg-[var(--card)] px-3 py-1.5 text-[10px] sm:text-xs text-[var(--text)] hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(2,6,23,.18)]"
+            >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-full"
+                style={{
+                  padding: 1,
+                  background: BRAND_GRADIENT,
+                  WebkitMask:
+                    "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                  WebkitMaskComposite: "xor" as any,
+                  maskComposite: "exclude" as any,
+                }}
+              />
+              <span className="relative z-[1] font-medium">
+                Powered by Tierless
+              </span>
+            </a>
+          )}
         </div>
 
-        {/* Extras */}
+        {/* Items */}
+        <div className={spacingClass}>
+          {items.map((it: any) => {
+            const isSelected = simpleSelectedIds.has(it.id);
+
+            return (
+              <div
+                key={it.id}
+                className="flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm"
+                style={itemBorderBase}
+              >
+                {simpleAllowSelection && (
+                  <div className="pt-1">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 cursor-pointer accent-[var(--brand-1,#4F46E5)]"
+                      checked={isSelected}
+                      onChange={() => toggleSimpleSelection(it.id)}
+                    />
+                  </div>
+                )}
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <div className="font-medium text-[var(--text)] truncate">
+                      {it.label}
+                    </div>
+                    {simpleDots && (
+                      <div className="flex-1 border-b-2 border-dotted border-[var(--border)] opacity-80" />
+                    )}
+                    <div className="text-sm font-semibold text-[var(--text)] whitespace-nowrap">
+                      {fmt(it.price ?? 0)}
+                    </div>
+                  </div>
+                  {it.note && (
+                    <div className="mt-0.5 text-xs text-[var(--muted)]">
+                      {it.note}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {items.length === 0 && (
+            <div className="text-sm text-[var(--muted)]">
+              No items yet. The owner hasn&apos;t added anything.
+            </div>
+          )}
+        </div>
+
+        {/* Extras (addons) */}
         {addons.length > 0 && (
-          <div className="rounded-2xl border border-[var(--border)] p-3 bg-[var(--card)]">
+          <div className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-3 sm:px-4 sm:py-3">
             <div className="text-sm font-medium text-[var(--text)] mb-2">
               Extras
             </div>
             <ul className="space-y-1 text-sm">
-              {addons.map((x) => (
+              {addons.map((x: any) => (
                 <li
                   key={x.id}
                   className="flex items-center justify-between"
@@ -73,6 +244,47 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Total bar + inquiry dugme */}
+        {showTotalBar && (
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm">
+            <div className="text-[var(--muted)]">
+              {selectedCount === 0
+                ? "No items selected."
+                : `${selectedCount} item(s) selected.`}
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-sm font-semibold text-[var(--text)]">
+                Total: {fmt(simpleSelectionTotal)}
+              </div>
+              {simpleShowInquiry && (
+                <button
+                  type="button"
+                  disabled={!inquiryVerified}
+                  className={`relative inline-flex items-center rounded-full bg-[var(--card)] px-3 py-1.5 text-xs sm:text-sm text-[var(--text)] ${
+                    inquiryVerified
+                      ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(2,6,23,.18)]"
+                      : "cursor-not-allowed opacity-60"
+                  }`}
+                >
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 rounded-full"
+                    style={{
+                      padding: 1,
+                      background: BRAND_GRADIENT,
+                      WebkitMask:
+                        "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                      WebkitMaskComposite: "xor" as any,
+                      maskComposite: "exclude" as any,
+                    }}
+                  />
+                  <span className="relative z-[1]">Send inquiry</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -99,29 +311,20 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
       {pkgs.map((p) => {
         const group = featByPkg.get(p.id);
         const feats = (group?.options ?? []).filter(Boolean);
-
-        // raw accent iz editora
-        const rawAccent = (p as any).color || "#14b8a6";
-        const rawColor2 = (p as any).color2 || "var(--brand-2,#22D3EE)";
-        const accentEnabled = !!p.featured; // "Use accent color on card outline"
-
-        // efektivna accent boja – samo ako je uključeno
-        const accent = accentEnabled ? rawAccent : "var(--border)";
-        const color2 = accentEnabled ? rawColor2 : "var(--border)";
-
+        const accent = (p as any).color || "#14b8a6";
+        const color2 =
+          (p as any).color2 || "var(--brand-2,#22D3EE)";
         const rawMode = (p as any).colorMode as
           | ColorMode
           | "animated"
           | undefined;
         const colorMode: ColorMode =
           rawMode === "gradient" ? "gradient" : "solid";
-
         const rounded = (p as any).rounded;
         const priceText: string | undefined = (p as any).priceText;
         const cardRadiusClass =
           rounded === false ? "rounded-2xl" : "rounded-[30px]";
 
-        // Common header/body part
         const content = (
           <div
             className={`${cardRadiusClass} h-full bg-[var(--card)] border border-[var(--border)] p-4 flex flex-col`}
@@ -130,7 +333,7 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
               <div className="flex items-center gap-2">
                 <span
                   className="inline-block h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: accentEnabled ? accent : "var(--muted)" }}
+                  style={{ backgroundColor: accent }}
                 />
                 <div className="text-sm font-semibold text-[var(--text)]">
                   {p.label}
@@ -170,7 +373,7 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
                           className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold"
                           style={{
                             borderColor: accent,
-                            color: accentEnabled ? accent : "var(--text)",
+                            color: accent,
                           }}
                         >
                           {f.label}
@@ -178,14 +381,7 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
                       )
                     ) : (
                       <span className="inline-flex items-center text-[var(--muted)]">
-                        <span
-                          className="mr-2 inline-flex h-1.5 w-1.5 rounded-full"
-                          style={{
-                            backgroundColor: accentEnabled
-                              ? accent
-                              : "var(--border)",
-                          }}
-                        />
+                        <span className="mr-2 inline-flex h-1.5 w-1.5 rounded-full bg-[var(--muted)]" />
                         <span>{f.label}</span>
                       </span>
                     )}
@@ -222,14 +418,13 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
           </div>
         );
 
-        // SOLID: običan border + opcioni accent za featured
         if (colorMode === "solid") {
           return (
             <div
               key={p.id}
               className={`${cardRadiusClass} h-full border p-0 bg-[var(--card)]`}
               style={
-                accentEnabled
+                p.featured
                   ? {
                       borderColor: accent,
                       boxShadow: `0 0 0 1px ${accent}10`,
@@ -242,7 +437,6 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
           );
         }
 
-        // GRADIENT: wrapper sa gradient outline (neutralan ako accent nije uključen)
         return (
           <div
             key={p.id}

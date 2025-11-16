@@ -1,0 +1,77 @@
+{
+  "i18n": {
+    "locale": "en",
+    "currency": "EUR",
+    "decimals": 0
+  },
+  "meta": {
+    "id": "prvjVmVklCjo",
+    "name": "Copy of Test stranica",
+    "slug": "copy-of-test-stranica",
+    "branding": {
+      "theme": "dark",
+      "accent": "#7c3aed",
+      "layout": "cards",
+      "hideBadge": false
+    },
+    "editorMode": "tiers"
+  },
+  "items": [],
+  "addons": [],
+  "blocks": [
+    {
+      "id": "b_pkgs",
+      "type": "packages",
+      "title": "Plans",
+      "layout": "cards"
+    }
+  ],
+  "fields": [
+    {
+      "id": "feat_x47j6djvta",
+      "title": "Features",
+      "type": "features",
+      "pkgId": "pkg_oglcj3llqr",
+      "options": [
+        {
+          "id": "f_6se5u1jvtb",
+          "label": "Test",
+          "highlighted": false
+        },
+        {
+          "id": "f_u3q70ejw71",
+          "label": "Test highlight",
+          "highlighted": true
+        }
+      ]
+    }
+  ],
+  "packages": [
+    {
+      "id": "basic",
+      "label": "Basic",
+      "featured": true,
+      "basePrice": 0,
+      "description": ""
+    },
+    {
+      "id": "pkg_m2ck39llfh",
+      "label": "Package 2",
+      "featured": true,
+      "basePrice": 0,
+      "description": "",
+      "color": "#e32400"
+    },
+    {
+      "id": "pkg_oglcj3llqr",
+      "label": "Package 3",
+      "featured": true,
+      "basePrice": 0,
+      "description": "",
+      "color": "#0061ff",
+      "colorMode": "gradient",
+      "color2": "#fffc41"
+    }
+  ],
+  "pricingMode": "packages"
+}
