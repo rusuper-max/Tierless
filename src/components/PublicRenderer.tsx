@@ -99,15 +99,23 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
       {pkgs.map((p) => {
         const group = featByPkg.get(p.id);
         const feats = (group?.options ?? []).filter(Boolean);
-        const accent = (p as any).color || "#14b8a6";
-        const color2 =
-          (p as any).color2 || "var(--brand-2,#22D3EE)";
+
+        // raw accent iz editora
+        const rawAccent = (p as any).color || "#14b8a6";
+        const rawColor2 = (p as any).color2 || "var(--brand-2,#22D3EE)";
+        const accentEnabled = !!p.featured; // "Use accent color on card outline"
+
+        // efektivna accent boja – samo ako je uključeno
+        const accent = accentEnabled ? rawAccent : "var(--border)";
+        const color2 = accentEnabled ? rawColor2 : "var(--border)";
+
         const rawMode = (p as any).colorMode as
           | ColorMode
           | "animated"
           | undefined;
         const colorMode: ColorMode =
           rawMode === "gradient" ? "gradient" : "solid";
+
         const rounded = (p as any).rounded;
         const priceText: string | undefined = (p as any).priceText;
         const cardRadiusClass =
@@ -122,7 +130,7 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
               <div className="flex items-center gap-2">
                 <span
                   className="inline-block h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: accent }}
+                  style={{ backgroundColor: accentEnabled ? accent : "var(--muted)" }}
                 />
                 <div className="text-sm font-semibold text-[var(--text)]">
                   {p.label}
@@ -162,7 +170,7 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
                           className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold"
                           style={{
                             borderColor: accent,
-                            color: accent,
+                            color: accentEnabled ? accent : "var(--text)",
                           }}
                         >
                           {f.label}
@@ -172,7 +180,11 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
                       <span className="inline-flex items-center text-[var(--muted)]">
                         <span
                           className="mr-2 inline-flex h-1.5 w-1.5 rounded-full"
-                          style={{ backgroundColor: accent }}
+                          style={{
+                            backgroundColor: accentEnabled
+                              ? accent
+                              : "var(--border)",
+                          }}
                         />
                         <span>{f.label}</span>
                       </span>
@@ -217,7 +229,7 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
               key={p.id}
               className={`${cardRadiusClass} h-full border p-0 bg-[var(--card)]`}
               style={
-                p.featured
+                accentEnabled
                   ? {
                       borderColor: accent,
                       boxShadow: `0 0 0 1px ${accent}10`,
@@ -230,7 +242,7 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
           );
         }
 
-        // GRADIENT: wrapper sa gradient outline
+        // GRADIENT: wrapper sa gradient outline (neutralan ako accent nije uključen)
         return (
           <div
             key={p.id}
