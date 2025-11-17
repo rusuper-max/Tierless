@@ -3,6 +3,7 @@ import "@/app/overrides.css";
 import type { ReactNode } from "react";
 import Nav from "@/components/dashboard/Nav";
 import Sidebar from "@/components/dashboard/Sidebar";
+import DashboardTabs from "@/components/dashboard/DashboardTabs";
 import AccountHydrator from "@/components/providers/AccountHydrator";
 import { entitlementsFor, type Plan } from "@/lib/entitlements.adapter";
 
@@ -62,6 +63,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
       {/* Seed-ujemo client store pre bilo kakvog rendera (ne menja UI) */}
       <AccountHydrator initial={initialAccount} />
+
+      {/* Mobile nav tabs */}
+      <div className="md:hidden border-b border-[var(--border)] bg-[var(--card)]/80 backdrop-blur supports-[backdrop-filter]:bg-[var(--card)]/60">
+        <DashboardTabs />
+      </div>
 
       {/* Sve dashboard varijable i stilovi pod .tl-dashboard */}
       <div className="tl-dashboard min-h-screen w-full flex flex-col md:flex-row">

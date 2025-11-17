@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import Link from "next/link";
 import { useAccount } from "@/hooks/useAccount";
 import { ENTITLEMENTS, type PlanId } from "@/lib/entitlements";
+import { t } from "@/i18n";
 import { GripVertical, Copy as CopyIcon, Star } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -503,6 +504,123 @@ function PageRow({
         </button>
       </td>
     </tr>
+  );
+}
+
+type PageCardProps = {
+  row: MiniCalc;
+  isSelected: boolean;
+  onSelectToggle: (slug: string) => void;
+  onCopyUrl: (slug: string) => void;
+  onRenameStart: (slug: string, name: string) => void;
+  onDuplicate: (slug: string, name: string) => void;
+  onDelete: (slug: string, name: string) => void;
+  onToggleOnline: (slug: string, next: boolean) => void;
+  onToggleFavorite: (slug: string, next: boolean) => void;
+  busySlug: string | null;
+  publishedCount: number;
+  publishedLimit: number;
+  moveBy: (slug: string, dir: -1 | 1) => void;
+};
+
+function PageCard({
+  row,
+  isSelected,
+  onSelectToggle,
+  onCopyUrl,
+  onRenameStart,
+  onDuplicate,
+  onDelete,
+  onToggleOnline,
+  onToggleFavorite,
+  busySlug,
+  publishedCount,
+  publishedLimit,
+  moveBy,
+}: PageCardProps) {
+  const { slug, name, favorite, createdAt } = row.meta;
+  const published = !!(row.meta.published ?? row.meta.online);
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 space-y-3 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <input type="checkbox" checked={isSelected} onChange={() => onSelectToggle(slug)} aria-label="Select" />
+          <div>
+            <button
+              className="p-1 rounded-md hover:bg-[var(--surface)]"
+              title={favorite ? "Unpin" : "Pin"}
+              onClick={() => onToggleFavorite(slug, !favorite)}
+            >
+              <FavoriteStar active={!!favorite} />
+            </button>
+            <div className="font-semibold text-[var(--text)]">{name}</div>
+            <p className="text-xs text-[var(--muted)]">{fmtDateTime(createdAt)}</p>
+          </div>
+        </div>
+        <IconButton title="Copy public link" ariaLabel="Copy public link" onClick={() => onCopyUrl(slug)}>
+          <CopyIcon className="size-4" />
+        </IconButton>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          className={`inline-flex items-center rounded-full border px-3 py-1 text-xs transition ${
+            published
+              ? "bg-green-50 text-green-700 border-green-300"
+              : "bg-rose-50 text-rose-700 border-rose-200"
+          }`}
+          onClick={() => onToggleOnline(slug, !published)}
+          disabled={
+            busySlug === slug ||
+            (!published && Number.isFinite(publishedLimit) && publishedCount >= publishedLimit)
+          }
+        >
+          {published ? "Online" : "Offline"}
+        </button>
+        <ActionButton
+          label="Public"
+          onClick={() => {
+            const id = (row as any)?.meta?.id ? String((row as any).meta.id) : "";
+            const pretty = id ? `/p/${id}-${slug}` : `/p/${slug}`;
+            window.open(pretty, "_blank", "noopener,noreferrer");
+          }}
+          variant="brand"
+          size="xs"
+        />
+        <ActionButton label="Edit" href={`/editor/${slug}`} variant="brand" size="xs" />
+        <ActionButton label="Rename" onClick={() => onRenameStart(slug, name)} variant="brand" size="xs" />
+        <ActionButton
+          label={busySlug === slug ? "Duplicating…" : "Duplicate"}
+          onClick={() => onDuplicate(slug, name)}
+          disabled={busySlug === slug}
+          variant="brand"
+          size="xs"
+        />
+        <ActionButton
+          label="Delete"
+          onClick={() => onDelete(slug, name)}
+          disabled={busySlug === slug}
+          variant="danger"
+          size="xs"
+        />
+      </div>
+
+      <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
+        <button
+          className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-[var(--border)]"
+          onClick={() => moveBy(slug, -1)}
+        >
+          ‹
+        </button>
+        <button
+          className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-[var(--border)]"
+          onClick={() => moveBy(slug, 1)}
+        >
+          ›
+        </button>
+        <span>{t("Reorder")}</span>
+      </div>
+    </div>
   );
 }
 
@@ -1456,8 +1574,37 @@ function publishLimitMsg(planName: string) {
           </div>
         </div>
       ) : (
-        <div className="tl-grad-frame overflow-x-auto">
-          <table ref={tableRef} className="w-full min-w-[960px] text-sm">
+        <>
+          <div className="sm:hidden space-y-3">
+            {derived.map((r) => (
+              <PageCard
+                key={r.meta.slug}
+                row={r}
+                isSelected={selected.has(r.meta.slug)}
+                onSelectToggle={toggleSelect}
+                onCopyUrl={copyUrl}
+                onRenameStart={(slug, name) => {
+                  setRenSlug(slug);
+                  setRenName(name);
+                  setRenError(null);
+                }}
+                onDuplicate={duplicate}
+                onDelete={(slug, name) => {
+                  setConfirmSlug(slug);
+                  setConfirmName(name);
+                }}
+                onToggleOnline={setOnline}
+                onToggleFavorite={toggleFavorite}
+                busySlug={busy}
+                publishedCount={publishedCount}
+                publishedLimit={publishedLimitNum}
+                moveBy={moveBy}
+              />
+            ))}
+          </div>
+
+          <div className="hidden sm:block tl-grad-frame overflow-x-auto">
+            <table ref={tableRef} className="w-full min-w-[960px] text-sm">
             <thead>
               <tr className="text-left">
                 <th className="w-[42px] text-center">
@@ -1536,6 +1683,7 @@ function publishLimitMsg(planName: string) {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* Modals */}
