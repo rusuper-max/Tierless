@@ -221,9 +221,13 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
                         >
                           {it.label}
                         </div>
-                        {simpleDots && (
-                          <div className="flex-1 border-b-2 border-dotted border-[var(--border)] opacity-80" />
-                        )}
+                        <div
+                          className={`flex-1 ${
+                            simpleDots
+                              ? "border-b-2 border-dotted border-[var(--border)] opacity-80"
+                              : ""
+                          }`}
+                        />
                         <div
                           className="text-sm font-semibold whitespace-nowrap"
                           style={{ color: priceColor }}
@@ -268,9 +272,13 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
                     >
                       {it.label}
                     </div>
-                    {simpleDots && (
-                      <div className="flex-1 border-b-2 border-dotted border-[var(--border)] opacity-80" />
-                    )}
+                    <div
+                      className={`flex-1 ${
+                        simpleDots
+                          ? "border-b-2 border-dotted border-[var(--border)] opacity-80"
+                          : ""
+                      }`}
+                    />
                     <div
                       className="text-sm font-semibold whitespace-nowrap"
                       style={{ color: priceColor }}

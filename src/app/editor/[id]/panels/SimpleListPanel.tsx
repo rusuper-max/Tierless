@@ -345,6 +345,7 @@ export default function SimpleListPanel() {
               placeholder={t("e.g. McDonald’s – Main menu")}
               value={simpleTitle}
               onChange={(e) => setMeta({ simpleTitle: e.target.value })}
+              data-tour-id="tour-title"
             />
           </div>
 
@@ -858,7 +859,7 @@ export default function SimpleListPanel() {
       </div>
 
       {/* Items list */}
-      <div className="space-y-3">
+      <div className="space-y-3" data-tour-id="tour-items">
         {items.map((it, index) => (
           <div
             key={it.id}

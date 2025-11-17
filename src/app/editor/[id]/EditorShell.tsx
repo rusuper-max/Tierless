@@ -154,6 +154,7 @@ export default function EditorShell({ slug, initialCalc }: Props) {
         {!inSetup && (
           <div className="mb-3 flex items-center justify-end">
             <button
+              data-tour-id="tour-quick-preview"
               type="button"
               onClick={() => openPreview("desktop")}
               className="relative inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-3.5 py-2 text-xs sm:text-sm group hover:shadow-[0_10px_24px_rgba(2,6,23,.10)] hover:-translate-y-0.5 transition"
