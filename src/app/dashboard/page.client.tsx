@@ -124,6 +124,7 @@ function ActionButton({
   }
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       aria-disabled={disabled}
@@ -154,6 +155,7 @@ function IconButton({
     : "cursor-pointer hover:shadow-[0_8px_18px_rgba(2,6,23,.08)] hover:-translate-y-0.5 active:translate-y-0";
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       title={title}
@@ -607,12 +609,14 @@ function PageCard({
 
       <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
         <button
+          type="button"
           className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-[var(--border)]"
           onClick={() => moveBy(slug, -1)}
         >
           ‹
         </button>
         <button
+          type="button"
           className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-[var(--border)]"
           onClick={() => moveBy(slug, 1)}
         >

@@ -166,16 +166,6 @@ export default function Nav() {
     }
   }
 
-  const mobileLinks = [
-    { href: "/dashboard", label: t("Pages") },
-    { href: "/dashboard/stats", label: t("Stats") },
-    { href: "/templates", label: t("Templates") },
-    { href: "/dashboard/integrations", label: t("Integrations") },
-    { href: "/dashboard/settings", label: t("Settings") },
-    { href: "/dashboard/trash", label: t("Trash") },
-    { href: "/dashboard/account", label: t("Account") },
-  ];
-
   return (
     <header
       className="sticky top-0 z-40 w-full border-b border-[var(--border)] bg-[var(--card)]/90 backdrop-blur supports-[backdrop-filter]:bg-[var(--card)]/80 overflow-visible tl-nav text-[var(--text)]"
@@ -207,14 +197,6 @@ export default function Nav() {
 
         {/* Right actions */}
         <nav className="hidden md:flex items-center gap-4 sm:gap-5 md:gap-6 text-[color:var(--text)]">
-          <ActionButton
-            label="View Site"
-            title="Open tierless website"
-            href="/"
-            external
-            variant="brand"
-            size="xs"
-          />
           <ActionButton
             label="FAQ"
             title="Open docs / FAQ"
@@ -279,7 +261,6 @@ export default function Nav() {
             </div>
 
             <div className="grid gap-3">
-              <ActionButton label="View Site" href="/" variant="brand" size="sm" />
               <ActionButton label="FAQ" href="/help" variant="brand" size="sm" />
               <ActionButton label="View Plans" href="/start" variant="brand" size="sm" />
               <ActionButton
@@ -289,24 +270,6 @@ export default function Nav() {
                 variant="danger"
                 size="sm"
               />
-            </div>
-
-            <div className="pt-2 border-t border-[var(--border)]">
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3 text-[var(--muted)]">{t("Navigate")}</p>
-              <ul className="space-y-2">
-                {mobileLinks.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="flex items-center justify-between rounded-xl border border-[var(--border)] px-4 py-2 text-sm"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <span>{link.label}</span>
-                      <span aria-hidden>›</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
         </div>
