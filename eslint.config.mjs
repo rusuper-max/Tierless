@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Project-specific: archived code snapshots should not fail lint.
+    "_trash_*/**",
   ]),
 ]);
 

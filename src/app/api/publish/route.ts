@@ -35,13 +35,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing slug" }, { status: 400 });
   }
 
-  // 1) plan + trenutno objavljene
   const plan = await getPlanForUser(userId);
-  const all = await calcsStore.list(userId);
-  const publishedNow = all.filter((r: any) => r?.config?.published === true).length;
+  const current = await calcsStore.get(userId, slug);
+  if (!current) {
+    return NextResponse.json({ error: "Page not found" }, { status: 404 });
+  }
+  const alreadyPublished = !!current.meta?.published;
 
-  // Ako objavljujemo → proveri cap
-  if (publish === true) {
+  if (publish === true && !alreadyPublished) {
+    const publishedNow = await calcsStore.countPublished(userId);
     const needs = { maxPublicPages: publishedNow + 1 };
     const limit = withinLimits(needs, plan);
     if (!limit.ok) {

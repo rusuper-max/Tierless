@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { signSession, getSessionUser } from "@/lib/auth";
-import { getUserPlan } from "@/lib/account-store";
+import { signSession, getUserPlan } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

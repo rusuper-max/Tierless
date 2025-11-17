@@ -85,7 +85,16 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
     const inquiryVerified: boolean =
       (meta.inquiryVerified as boolean | undefined) ?? true;
 
-    const wrapperStyle: React.CSSProperties = {};
+    // Resetujemo theme varijable za preview da bude uvek "light"
+    const lightVars: React.CSSProperties = {
+      ["--bg" as any]: "#f3f4f6",
+      ["--card" as any]: "#ffffff",
+      ["--text" as any]: "#020617",
+      ["--muted" as any]: "#6b7280",
+      ["--border" as any]: "rgba(148,163,184,0.7)",
+    };
+
+    const wrapperStyle: React.CSSProperties = { ...lightVars };
     if (simpleBg) {
       if (simpleBg.startsWith("linear-gradient")) {
         wrapperStyle.backgroundImage = simpleBg;
@@ -96,6 +105,9 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
     if (simpleTextColor) {
       wrapperStyle.color = simpleTextColor;
     }
+
+    const titleColor = simpleTextColor || "var(--text)";
+    const priceColor = simpleTextColor || "var(--text)";
 
     const spacingClass =
       simpleSpacing === "compact"
@@ -120,14 +132,13 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
         ? "text-[16px]"
         : "text-[14px]";
 
+    const isGradientBorder =
+      typeof simpleBorderColor === "string" &&
+      simpleBorderColor.startsWith("linear-gradient");
+
     const itemBorderBase: React.CSSProperties = {};
-    if (simpleBorderColor) {
-      if (simpleBorderColor.startsWith("linear-gradient")) {
-        itemBorderBase.border = "1px solid transparent";
-        (itemBorderBase as any).borderImage = `${simpleBorderColor} 1`;
-      } else {
-        itemBorderBase.borderColor = simpleBorderColor;
-      }
+    if (!isGradientBorder && simpleBorderColor) {
+      itemBorderBase.borderColor = simpleBorderColor;
     }
 
     const selectedCount = simpleSelectedIds.size;
@@ -141,7 +152,10 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
         {/* Title + Tierless badge gore desno */}
         <div className="mb-3 sm:mb-4 flex items-center justify-between gap-3">
           {simpleTitle ? (
-            <h1 className="text-lg sm:text-xl font-semibold text-[var(--text)]">
+            <h1
+              className="text-lg sm:text-xl font-semibold"
+              style={{ color: titleColor }}
+            >
               {simpleTitle}
             </h1>
           ) : (
@@ -179,6 +193,56 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
           {items.map((it: any) => {
             const isSelected = simpleSelectedIds.has(it.id);
 
+            // Gradient outline — wrapper sa paddingom i inherit radius
+            if (isGradientBorder) {
+              return (
+                <div
+                  key={it.id}
+                  className="rounded-xl p-[1.5px]"
+                  style={{ backgroundImage: simpleBorderColor }}
+                >
+                  <div className="flex items-start gap-3 rounded-[inherit] border border-transparent bg-[var(--card)] px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm">
+                    {simpleAllowSelection && (
+                      <div className="pt-1">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 cursor-pointer accent-[var(--brand-1,#4F46E5)]"
+                          checked={isSelected}
+                          onChange={() => toggleSimpleSelection(it.id)}
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2">
+                        <div
+                          className="font-medium truncate"
+                          style={{ color: titleColor }}
+                        >
+                          {it.label}
+                        </div>
+                        {simpleDots && (
+                          <div className="flex-1 border-b-2 border-dotted border-[var(--border)] opacity-80" />
+                        )}
+                        <div
+                          className="text-sm font-semibold whitespace-nowrap"
+                          style={{ color: priceColor }}
+                        >
+                          {fmt(it.price ?? 0)}
+                        </div>
+                      </div>
+                      {it.note && (
+                        <div className="mt-0.5 text-xs text-[var(--muted)]">
+                          {it.note}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // Klasičan slučaj (solid outline)
             return (
               <div
                 key={it.id}
@@ -198,13 +262,19 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2">
-                    <div className="font-medium text-[var(--text)] truncate">
+                    <div
+                      className="font-medium truncate"
+                      style={{ color: titleColor }}
+                    >
                       {it.label}
                     </div>
                     {simpleDots && (
                       <div className="flex-1 border-b-2 border-dotted border-[var(--border)] opacity-80" />
                     )}
-                    <div className="text-sm font-semibold text-[var(--text)] whitespace-nowrap">
+                    <div
+                      className="text-sm font-semibold whitespace-nowrap"
+                      style={{ color: priceColor }}
+                    >
                       {fmt(it.price ?? 0)}
                     </div>
                   </div>
@@ -228,17 +298,20 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
         {/* Extras (addons) */}
         {addons.length > 0 && (
           <div className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-3 sm:px-4 sm:py-3">
-            <div className="text-sm font-medium text-[var(--text)] mb-2">
+            <div
+              className="text-sm font-medium mb-2"
+              style={{ color: titleColor }}
+            >
               Extras
             </div>
             <ul className="space-y-1 text-sm">
               {addons.map((x: any) => (
-                <li
-                  key={x.id}
-                  className="flex items-center justify-between"
-                >
-                  <span className="text-[var(--text)]">{x.text}</span>
-                  <span className="text-[var(--text)] font-semibold">
+                <li key={x.id} className="flex items-center justify-between">
+                  <span style={{ color: titleColor }}>{x.text}</span>
+                  <span
+                    className="font-semibold"
+                    style={{ color: priceColor }}
+                  >
                     {fmt(x.price ?? 0)}
                   </span>
                 </li>
@@ -256,7 +329,10 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
                 : `${selectedCount} item(s) selected.`}
             </div>
             <div className="flex items-center gap-3">
-              <div className="text-sm font-semibold text-[var(--text)]">
+              <div
+                className="text-sm font-semibold"
+                style={{ color: priceColor }}
+              >
                 Total: {fmt(simpleSelectionTotal)}
               </div>
               {simpleShowInquiry && (

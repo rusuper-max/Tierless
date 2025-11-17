@@ -430,7 +430,7 @@ function PageRow({
         </div>
       </td>
 
-      <td className="text-[var(--muted)] text-center">{fmtDateTime(createdAt)}</td>
+      <td className="text-[var(--muted)] text-center hidden sm:table-cell">{fmtDateTime(createdAt)}</td>
 
       <td className="text-center">
        <button
@@ -466,7 +466,7 @@ function PageRow({
 
       <td className="align-middle">
         <div className="w-full flex justify-center">
-          <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap">
+          <div className="flex items-center justify-center gap-2 flex-wrap whitespace-normal">
           <ActionButton
   label="Public"
   onClick={() => {
@@ -491,7 +491,7 @@ function PageRow({
       </td>
 
       {/* Reorder handle kolona */}
-      <td className="text-center">
+      <td className="text-center hidden lg:table-cell">
         <button
           className="tl-reorder-handle inline-flex items-center justify-center w-11 h-11 rounded-lg text-[var(--muted)] cursor-grab active:cursor-grabbing hover:bg-[var(--surface)]"
           title="Drag to reorder"
@@ -1168,9 +1168,11 @@ function publishLimitMsg(planName: string) {
     const slug = confirmSlug;
     setBusy(slug);
     try {
-      const r = await fetch(`/api/calculators/${encodeURIComponent(slug)}`, {
+      const r = await fetch(`/api/calculators`, {
         method: "DELETE",
         credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ slugs: [slug] }),
       });
       const payload = await r.text().catch(() => "");
       if (!r.ok) {
@@ -1235,31 +1237,39 @@ function publishLimitMsg(planName: string) {
   };
 
   async function bulkDelete() {
-  const list = allOnPage.filter((s) => selected.has(s));
-  if (list.length === 0) return;
+    const list = allOnPage.filter((s) => selected.has(s));
+    if (list.length === 0) return;
 
-  setBusy("bulk-delete");
-  try {
-    for (const slug of list) {
-      // direktno ping na API, bez setConfirmSlug/confirm modal logike
-      await fetch(`/api/calculators/${encodeURIComponent(slug)}`, {
+    setBusy("bulk-delete");
+    try {
+      const r = await fetch(`/api/calculators`, {
         method: "DELETE",
         credentials: "same-origin",
-      }).catch(() => {});
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ slugs: list }),
+      });
+      const payload = await r.text().catch(() => "");
+      if (!r.ok) {
+        console.error("BULK DELETE /api/calculators ->", payload);
+        alert("Failed to move selected pages to Trash.");
+        return;
+      }
+
       // lokalno očisti
-      deleteFavLS(slug);
-      deleteCreatedLS(slug);
+      list.forEach((slug) => {
+        deleteFavLS(slug);
+        deleteCreatedLS(slug);
+      });
+
+      // izbaci iz tabele u jednom potezu
+      setRows((prev) => prev.filter((x) => !list.includes(x.meta.slug)));
+      setSelected(new Set());
+      window.dispatchEvent(new Event("TL_TRASH_BLINK"));
+      window.dispatchEvent(new Event("TL_COUNTERS_DIRTY"));
+    } finally {
+      setBusy(null);
     }
-    // izbaci iz tabele u jednom potezu
-    setRows((prev) => prev.filter((x) => !list.includes(x.meta.slug)));
-    setSelected(new Set());
-    // možeš i da “blinkneš” Trash ikonicu:
-    window.dispatchEvent(new Event("TL_TRASH_BLINK"));
-    window.dispatchEvent(new Event("TL_COUNTERS_DIRTY"));
-  } finally {
-    setBusy(null);
   }
-}
 
   /* --------------------- UI --------------------- */
   return (
@@ -1355,58 +1365,99 @@ function publishLimitMsg(planName: string) {
         </div>
       </section>
 
-      {/* Search + Filters + Sort */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <input
-            ref={searchRef}
-            className="field w-full max-w-md bg-[var(--card)] text-[var(--text)]"
-            placeholder="Search by name or slug… (press / to focus)"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-          <div className="text-xs text-[var(--muted)]">{derived.length} total</div>
-        </div>
-
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <FilterChip label="All" active={activeFilter === "all"} onClick={() => setActiveFilter("all")} />
-            <FilterChip label="Online" active={activeFilter === "online"} onClick={() => setActiveFilter("online")} />
-            <FilterChip label="Offline" active={activeFilter === "offline"} onClick={() => setActiveFilter("offline")} />
-            <FilterChip label="Favorites" active={activeFilter === "favorites"} onClick={() => setActiveFilter("favorites")} />
+      {/* Search + Filters + Sort (hide when there are no pages) */}
+      {totalPages > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <input
+              ref={searchRef}
+              className="field w-full max-w-md bg-[var(--card)] text-[var(--text)]"
+              placeholder="Search by name or slug… (press / to focus)"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            <div className="text-xs text-[var(--muted)]">{derived.length} total</div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-[var(--muted)]">Sort</span>
-            <SortDropdown value={sortBy} onChange={setSortBy} />
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <FilterChip label="All" active={activeFilter === "all"} onClick={() => setActiveFilter("all")} />
+              <FilterChip label="Online" active={activeFilter === "online"} onClick={() => setActiveFilter("online")} />
+              <FilterChip label="Offline" active={activeFilter === "offline"} onClick={() => setActiveFilter("offline")} />
+              <FilterChip label="Favorites" active={activeFilter === "favorites"} onClick={() => setActiveFilter("favorites")} />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-[var(--muted)]">Sort</span>
+              <SortDropdown value={sortBy} onChange={setSortBy} />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Bulk bar */}
       {selected.size > 0 && (
-  <div className="flex items-center gap-2 text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2">
-    <div className="font-medium text-[var(--text)]">{selected.size} selected</div>
-    <div className="grow" />
-    <ActionButton label="Delete" onClick={bulkDelete} variant="danger" />
-  </div>
-)}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2">
+          <div className="font-medium text-[var(--text)]">{selected.size} selected</div>
+          <div className="sm:grow" />
+          <ActionButton label="Delete" onClick={bulkDelete} variant="danger" />
+        </div>
+      )}
 
       {/* Table with gradient frame in dark */}
       {loading ? (
         <div className="text-sm text-[var(--muted)]">Loading…</div>
       ) : derived.length === 0 ? (
-        <div className="card p-6 text-sm bg-[var(--card)] border border-[var(--border)]">
-          <div className="font-medium mb-2 text-[var(--text)]">No pages found</div>
-          <p className="text-[var(--muted)]">Try a different search, create a blank page or pick a template.</p>
-          <div className="mt-3 flex gap-2 flex-nowrap whitespace-nowrap">
-            <ActionButton label="New Page" onClick={createBlank} disabled={!canCreate} variant="brand" />
-            <ActionButton label="Browse Templates" href="/templates" variant="brand" />
+        <div className="tl-empty-wrap">
+          <div className="w-full flex flex-col gap-4">
+            <button
+              type="button"
+              className="tl-empty-card tl-empty-card--click tl-empty-card--primary text-left"
+              onClick={createBlank}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-xs font-semibold tracking-wide uppercase text-[var(--muted)] mb-1">
+                    First steps
+                  </div>
+                  <div className="mt-1 text-2xl font-semibold text-[var(--text)]">
+                    Create your first page
+                  </div>
+                  <p className="mt-2 text-sm text-[var(--muted)]">
+                    Create a blank page.
+                  </p>
+                </div>
+                <div className="mt-1 shrink-0">
+                  <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide">
+                    <span className="bg-gradient-to-r from-[var(--brand-1,#4F46E5)] to-[var(--brand-2,#22D3EE)] bg-clip-text text-transparent">
+                      Recommended
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </button>
+
+            <Link
+              href="/templates"
+              className="tl-empty-card tl-empty-card--click tl-empty-card--secondary block text-left no-underline"
+            >
+              <div className="flex flex-col gap-2">
+                <div className="text-xs font-semibold tracking-wide uppercase text-[var(--muted)] mb-1">
+                  First steps
+                </div>
+                <div className="text-2xl font-semibold text-[var(--text)]">
+                  Create your first page from template
+                </div>
+                <p className="mt-2 text-sm text-[var(--muted)]">
+                  Start from a template.
+                </p>
+              </div>
+            </Link>
           </div>
         </div>
       ) : (
-        <div className="tl-grad-frame">
-          <table ref={tableRef} className="w-full text-sm">
+        <div className="tl-grad-frame overflow-x-auto">
+          <table ref={tableRef} className="w-full min-w-[960px] text-sm">
             <thead>
               <tr className="text-left">
                 <th className="w-[42px] text-center">
@@ -1423,12 +1474,12 @@ function publishLimitMsg(planName: string) {
                 </th>
                 <th className="text-[var(--text)]">Name</th>
                 <th className="text-[var(--text)] text-center">Link</th>
-                <th className="text-[var(--text)] text-center">Created</th>
+                <th className="text-[var(--text)] text-center hidden sm:table-cell">Created</th>
                 <th className="w-[140px] text-[var(--text)] text-center">Status</th>
                 <th className="w-[560px] text-[var(--text)] text-center">
                   <span className="inline-block">Actions</span>
                 </th>
-                <th className="w-[110px] text-[var(--text)] text-center">Reorder (drag)</th>
+                <th className="w-[110px] text-[var(--text)] text-center hidden lg:table-cell">Reorder (drag)</th>
               </tr>
             </thead>
             <tbody>
@@ -1595,6 +1646,89 @@ function publishLimitMsg(planName: string) {
 
         .tl-row--dragging { opacity: 0; visibility: hidden; }
         .tl-drag-active { cursor: grabbing !important; }
+        .tl-empty-wrap{
+          display:flex;
+          justify-content:center;
+          align-items:stretch;
+        }
+        .tl-empty-card{
+          position:relative;
+          width:100%;
+          max-width:960px;
+          margin:24px auto 0;
+          padding:28px 32px;
+          border-radius:24px;
+          background:var(--card);
+          overflow:hidden;
+        }
+        .tl-empty-card::before{
+          content:"";
+          position:absolute;
+          inset:0;
+          padding:1.5px;
+          border-radius:inherit;
+          background:linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE));
+          -webkit-mask:
+            linear-gradient(#000 0 0) content-box,
+            linear-gradient(#000 0 0);
+          -webkit-mask-composite:xor;
+          mask-composite:exclude;
+          pointer-events:none;
+        }
+        html.dark .tl-empty-card{
+          box-shadow:0 16px 40px rgba(0,0,0,.55);
+        }
+        .tl-empty-card--click{
+          cursor:pointer;
+          transition:transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+        }
+        .tl-empty-card--click:hover{
+          transform:translateY(-1px);
+          box-shadow:0 18px 40px rgba(15,23,42,.18);
+        }
+        .tl-empty-card--click:active{
+          transform:translateY(0);
+        }
+
+        /* Primary empty-state card (default path) */
+        .tl-empty-card--primary{
+          background:
+            radial-gradient(130% 160% at 0% 0%, rgba(79,70,229,.06), transparent 60%),
+            radial-gradient(120% 140% at 100% 0%, rgba(34,211,238,.05), transparent 55%),
+            var(--card);
+        }
+        html.dark .tl-empty-card--primary{
+          background:
+            radial-gradient(130% 160% at 0% 0%, rgba(124,123,255,.14), transparent 60%),
+            radial-gradient(120% 140% at 100% 0%, rgba(45,212,191,.12), transparent 55%),
+            var(--card);
+        }
+        .tl-empty-card--primary::after{
+          content:"";
+          position:absolute;
+          inset:-2px;
+          border-radius:inherit;
+          background:radial-gradient(120% 160% at 0% 0%, rgba(79,70,229,.35), transparent 60%);
+          opacity:0;
+          pointer-events:none;
+          animation:tlEmptyPulse 3.2s ease-out .5s 2;
+        }
+
+        @keyframes tlEmptyPulse{
+          0%{opacity:0;}
+          18%{opacity:.6;}
+          40%{opacity:0;}
+          100%{opacity:0;}
+        }
+
+        /* Secondary empty-state card (templates) */
+        .tl-empty-card--secondary::before{
+          background:linear-gradient(90deg,rgba(148,163,184,.6),rgba(148,163,184,.3));
+        }
+
+        html.dark .tl-empty-card--click:hover{
+          box-shadow:0 18px 40px rgba(0,0,0,.70);
+        }
       `}</style>
     </main>
   );

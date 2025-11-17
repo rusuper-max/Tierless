@@ -113,7 +113,7 @@ function ActionButton({
 /* Types & utils                                                       */
 /* ------------------------------------------------------------------ */
 type TrashRow = {
-  meta: { name: string; slug: string };
+  meta: { name: string; slug: string; originalSlug?: string };
   template?: string;
   config?: any;
   deletedAt: string; // ISO
@@ -122,6 +122,7 @@ type ApiList = { rows?: TrashRow[]; ttlDays?: number };
 
 const TRASH_MAX = 50;
 const rowKey = (r: TrashRow) => `${r.meta.slug}#${r.deletedAt}`;
+const displaySlug = (r: TrashRow) => r.meta.originalSlug ?? r.meta.slug;
 
 // LS key za redosled (stabilni ID-jevi)
 const LS_TRASH_ORDER = "tl_trash_order_v2";
@@ -636,7 +637,7 @@ export default function TrashPageClient() {
       ) : (
         <>
           {/* Toolbar */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ActionButton
               label={allSelected ? t("Unselect all") : t("Select all")}
               onClick={() => toggleAll()}
@@ -664,8 +665,8 @@ export default function TrashPageClient() {
           </div>
 
           {/* Table */}
-          <div className="table shadow-ambient mt-3 relative z-[1] overflow-visible pt-2">
-            <table ref={tableRef} className="w-full text-sm">
+          <div className="table shadow-ambient mt-3 relative z-[1] overflow-visible pt-2 overflow-x-auto">
+            <table ref={tableRef} className="w-full min-w-[800px] text-sm">
               <thead className="relative z-0">
                 <tr className="text-left">
                   <th className="w-10">
@@ -678,10 +679,10 @@ export default function TrashPageClient() {
                   </th>
                   <th>{t("Name")}</th>
                   <th>{t("Slug")}</th>
-                  <th>{t("Deleted")}</th>
-                  <th>{t("Expires in")}</th>
+                  <th className="hidden sm:table-cell">{t("Deleted")}</th>
+                  <th className="hidden md:table-cell">{t("Expires in")}</th>
                   <th className="w-[320px]">{t("Actions")}</th>
-                  <th className="w-[110px] text-center">{t("Reorder")}</th>
+                  <th className="w-[110px] text-center hidden lg:table-cell">{t("Reorder")}</th>
                 </tr>
               </thead>
 
@@ -715,15 +716,15 @@ export default function TrashPageClient() {
                           />
                         </td>
                         <td className="font-medium">{r.meta.name}</td>
-                        <td className="text-neutral-500">{r.meta.slug}</td>
-                        <td className="text-neutral-500">{deletedShort}</td>
-                        <td className={left <= 3 ? "text-rose-600 font-semibold" : "text-neutral-600"}>
+                        <td className="text-neutral-500">{displaySlug(r)}</td>
+                        <td className="text-neutral-500 hidden sm:table-cell">{deletedShort}</td>
+                        <td className={`${left <= 3 ? "text-rose-600 font-semibold" : "text-neutral-600"} hidden md:table-cell`}>
                           {left} {t("days")}
                         </td>
 
                         <td className="relative">
                           <div className="min-w-[320px] overflow-visible relative z-10 -mt-1">
-                            <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap relative z-20 pt-1">
+                            <div className="flex flex-wrap items-center gap-2 whitespace-normal relative z-20 pt-1">
                               <ActionButton
                                 label={busyKey === key ? t("Restoring…") : t("Restore")}
                                 onClick={() => restoreRow(r)}
@@ -744,7 +745,7 @@ export default function TrashPageClient() {
                         </td>
 
                         {/* ručka za drag */}
-                        <td className="text-center">
+                        <td className="text-center hidden lg:table-cell">
                           <button
                             className="inline-flex items-center justify-center w-11 h-11 rounded-lg text-neutral-500 cursor-grab active:cursor-grabbing hover:bg-neutral-100"
                             title="Drag to reorder"

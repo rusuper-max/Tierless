@@ -65,7 +65,10 @@ export default function SimpleListPanel() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [pendingFor, setPendingFor] = useState<string | null>(null);
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const isCollapsed: boolean =
+    typeof (meta as any)?.simpleCollapsed === "boolean"
+      ? (meta as any).simpleCollapsed
+      : true;
 
   const simpleTitle: string = meta.simpleTitle ?? "";
   const simpleBg: string = meta.simpleBg ?? "";
@@ -347,7 +350,10 @@ export default function SimpleListPanel() {
 
           <button
             type="button"
-            onClick={() => setIsCollapsed((v) => !v)}
+            onClick={() => {
+              const next = !isCollapsed;
+              setMeta({ simpleCollapsed: next });
+            }}
             className="relative mt-1 sm:mt-6 inline-flex cursor-pointer items-center self-start rounded-full bg-[var(--card)] px-3 py-1.5 text-[11px] sm:text-xs text-[var(--text)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(2,6,23,.18)]"
           >
             <span

@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo, useRef, useLayoutEffect, useEffect, CSSProperties, useCallback } from "react";
+import {
+  useState,
+  useMemo,
+  useRef,
+  useLayoutEffect,
+  useEffect,
+  CSSProperties,
+  useCallback,
+} from "react";
 import { useRouter } from "next/navigation";
 import CTAButton from "@/components/marketing/CTAButton";
 import { t } from "@/i18n/t";
@@ -20,7 +28,9 @@ export default function MarketingHeader() {
       const onScroll = () => {
         const vis = window.scrollY > 24;
         setRailVisible(vis);
-        window.dispatchEvent(new CustomEvent("TL_RAIL_VISIBLE", { detail: { visible: vis } }));
+        window.dispatchEvent(
+          new CustomEvent("TL_RAIL_VISIBLE", { detail: { visible: vis } })
+        );
       };
       onScroll();
       window.addEventListener("scroll", onScroll, { passive: true });
@@ -31,7 +41,9 @@ export default function MarketingHeader() {
         const e = entries[0];
         const vis = !e.isIntersecting;
         setRailVisible(vis);
-        window.dispatchEvent(new CustomEvent("TL_RAIL_VISIBLE", { detail: { visible: vis } }));
+        window.dispatchEvent(
+          new CustomEvent("TL_RAIL_VISIBLE", { detail: { visible: vis } })
+        );
       },
       { rootMargin: "-10% 0px -75% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] }
     );
@@ -83,8 +95,8 @@ export default function MarketingHeader() {
   const [accOpen, setAccOpen] = useState(false);
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
-      const t = e.target as HTMLElement;
-      if (!t.closest?.("#hdr-acc-dd")) setAccOpen(false);
+      const tEl = e.target as HTMLElement;
+      if (!tEl.closest?.("#hdr-acc-dd")) setAccOpen(false);
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -143,7 +155,9 @@ export default function MarketingHeader() {
       <header
         className={[
           "fixed inset-x-0 top-0 z-40 transition-all duration-200",
-          hiddenNow ? "opacity-0 -translate-y-2 pointer-events-none" : "opacity-100 translate-y-0",
+          hiddenNow
+            ? "opacity-0 -translate-y-2 pointer-events-none"
+            : "opacity-100 translate-y-0",
         ].join(" ")}
         aria-label={t("Main header")}
       >
@@ -155,8 +169,15 @@ export default function MarketingHeader() {
           }}
         >
           {/* Logo: SAMO 'T' je klikabilan + hover trigger */}
-          <div className="inline-flex select-none ml-0" style={{ lineHeight: 1, alignItems: "baseline" }}>
-            <Link href="/" aria-label={`${t("brand.name")} — home`} className="inline-flex">
+          <div
+            className="inline-flex select-none ml-0"
+            style={{ lineHeight: 1, alignItems: "baseline" }}
+          >
+            <Link
+              href="/"
+              aria-label={`${t("brand.name")} — home`}
+              className="inline-flex"
+            >
               <span
                 onMouseEnter={onEnterT}
                 onMouseLeave={onLeaveT}
@@ -176,7 +197,7 @@ export default function MarketingHeader() {
               </span>
             </Link>
 
-            {/* "ierless" NIJE klikabilan, nema hover handlere, i ne prima pointer evente */}
+            {/* "ierless" NIJE klikabilan */}
             <span
               ref={wrapRef}
               aria-hidden
@@ -202,9 +223,15 @@ export default function MarketingHeader() {
                   backgroundClip: "text",
                   color: "transparent",
                   WebkitTextFillColor: "transparent",
-                  backgroundSize: totalW ? `${totalW}px 100%` : "100% 100%",
-                  backgroundPosition: totalW ? `-${offsets[i] || 0}px 0` : "0 0",
-                  transform: hovered ? "translateX(0) translateY(0)" : "translateX(-0.6ch) translateY(0.15em)",
+                  backgroundSize: totalW
+                    ? `${totalW}px 100%`
+                    : "100% 100%",
+                  backgroundPosition: totalW
+                    ? `-${offsets[i] || 0}px 0`
+                    : "0 0",
+                  transform: hovered
+                    ? "translateX(0) translateY(0)"
+                    : "translateX(-0.6ch) translateY(0.15em)",
                   opacity: hovered ? 1 : 0,
                   transitionProperty: "transform, opacity",
                   transitionDuration: `${DURATION}ms`,
@@ -227,7 +254,7 @@ export default function MarketingHeader() {
             </span>
           </div>
 
-          {/* Right: auth actions */}
+          {/* Right: auth actions + theme toggle */}
           <nav className="flex items-center gap-3">
             {!authed ? (
               <>
@@ -268,17 +295,36 @@ export default function MarketingHeader() {
                     aria-haspopup="menu"
                     aria-expanded={accOpen}
                     className="flex size-10 items-center justify-center rounded-full ring-1 ring-inset ring-white/12 bg-black/30 text-white/90 hover:ring-cyan-300/60 transition"
+                    type="button"
                   >
                     <span className="inline-flex items-center justify-center size-8 rounded-full bg-cyan-500/25 text-cyan-100 font-semibold">
-                      A
+                      {userInitial}
                     </span>
                   </button>
                   {accOpen && (
                     <div className="absolute right-0 mt-2 min-w-56 rounded-2xl border border-cyan-400/30 bg-[rgba(10,20,28,0.95)] p-2 shadow-2xl backdrop-blur">
                       <ul className="flex flex-col gap-1">
-                        <li><MenuBtn label={t("Profile")} onClick={() => { setAccOpen(false); router.push("/account"); }} /></li>
-                        <li><MenuBtn label={t("Subscription")} onClick={() => { setAccOpen(false); router.push("/billing"); }} /></li>
-                        <li><MenuBtn label={t("Log out")} onClick={doLogout} /></li>
+                        <li>
+                          <MenuBtn
+                            label={t("Profile")}
+                            onClick={() => {
+                              setAccOpen(false);
+                              router.push("/account");
+                            }}
+                          />
+                        </li>
+                        <li>
+                          <MenuBtn
+                            label={t("Subscription")}
+                            onClick={() => {
+                              setAccOpen(false);
+                              router.push("/billing");
+                            }}
+                          />
+                        </li>
+                        <li>
+                          <MenuBtn label={t("Log out")} onClick={doLogout} />
+                        </li>
                       </ul>
                     </div>
                   )}
@@ -315,13 +361,17 @@ function MenuBtn({ label, onClick }: { label: string; onClick: () => void }) {
     <button
       onClick={onClick}
       className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-white/95 transition hover:bg-white/10"
+      type="button"
     >
       <span className="text-base">{label}</span>
       <svg
         className="size-4 opacity-70"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
         aria-hidden
       >
         <path d="M9 18l6-6-6-6" />

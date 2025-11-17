@@ -6,6 +6,7 @@ import { ENTITLEMENTS, type PlanId } from "@/lib/entitlements";
 import { getPool } from "@/lib/db";
 import * as fullStore from "@/lib/fullStore";
 import { randomBytes } from "crypto";
+import * as trash from "@/lib/data/trash";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,7 +66,7 @@ export async function GET(req: Request) {
 
   const rows = await calcsStore.list(userId);
 
-   // Osiguraj da svi kalkulatori imaju meta.id (ako nemaju, generiši i upiši)
+  // Osiguraj da svi kalkulatori imaju meta.id (ako nemaju, generiši i upiši)
   for (const r of rows) {
     const slug = r?.meta?.slug;
     if (!slug) continue;
@@ -151,6 +152,80 @@ export async function POST(req: Request) {
   const created = await calcsStore.create(userId, "Untitled Page");
   return NextResponse.json(
     { ok: true, slug: created.meta.slug },
+    { headers: { "Cache-Control": "no-store" } }
+  );
+}
+
+/* ======================= DELETE (remove / move to trash) ======================= */
+export async function DELETE(req: Request) {
+  const userId = await getUserIdFromRequest(req);
+  if (!userId) {
+    return NextResponse.json(
+      { error: "Not authenticated" },
+      { status: 401 }
+    );
+  }
+
+  let body: any = null;
+  try {
+    body = await req.json();
+  } catch {
+    body = null;
+  }
+
+  let slugs: string[] = [];
+
+  // Pokušaj da podržiš više formata koje frontend može da pošalje
+  if (body) {
+    if (Array.isArray(body.ids)) {
+      slugs = body.ids.map((x: any) => String(x));
+    } else if (Array.isArray(body.slugs)) {
+      slugs = body.slugs.map((x: any) => String(x));
+    } else if (typeof body.slug === "string") {
+      slugs = [body.slug];
+    } else if (typeof body.id === "string") {
+      slugs = [body.id];
+    }
+  }
+
+  if (!slugs.length) {
+    return NextResponse.json(
+      { error: "Missing slugs" },
+      { status: 400 }
+    );
+  }
+
+  let removed = 0;
+
+  for (const slug of slugs) {
+    try {
+      // 1) Učitaj mini red pre brisanja
+      const row = await calcsStore.get(userId, slug);
+
+      // 2) Obriši iz active tabele
+      const ok = await calcsStore.remove(userId, slug);
+      if (!ok) continue;
+
+      removed++;
+
+      // 3) Ako imamo row – gurni u Trash (soft delete)
+      if (row) {
+        try {
+          await trash.push(userId, row);
+        } catch (e) {
+          console.error("trash.push failed for", slug, e);
+        }
+      }
+
+      // 4) Pokušaj da obrišeš i FULL verziju iz fs-a (ignoriši greške)
+      await fullStore.deleteFull(userId, slug).catch(() => {});
+    } catch (e) {
+      console.error("DELETE /api/calculators failed:", { userId, slug, error: e });
+    }
+  }
+
+  return NextResponse.json(
+    { ok: true, removed },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

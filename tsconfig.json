@@ -8,7 +8,9 @@
     ],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -19,6 +21,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@components/*": [
+        "./src/components/*"
       ]
     },
     "allowJs": true,
@@ -36,9 +41,10 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "types/*.d.ts"
-, "src/components/upsell/UpgradeSheet.dev"  ],
+    "types/*.d.ts",
+    "src/components/upsell/UpgradeSheet.dev",
+    ".next/dev/types/**/*.ts"
+  ],
   "exclude": [
     "node_modules",
     ".next",

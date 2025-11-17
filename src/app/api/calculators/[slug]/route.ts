@@ -8,6 +8,7 @@ import * as fullStore from "@/lib/fullStore";
 import * as calcsStore from "@/lib/calcsStore";
 import { randomBytes } from "crypto";
 import { putPublic } from "@/lib/publicStore";
+import * as trash from "@/lib/data/trash";
 
 function jsonNoCache(data: any, status = 200) {
   const res = NextResponse.json(data, { status });
@@ -218,5 +219,49 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
   } catch (e: any) {
     console.error("PUT full error:", e);
     return jsonNoCache({ error: "invalid_payload", detail: e?.stack ?? String(e) }, 400);
+  }
+}
+
+/* ------------------------------ DELETE ------------------------------- */
+export async function DELETE(req: Request, ctx: { params?: { slug?: string } }) {
+  const userId = await getUserIdFromRequest(req);
+  if (!userId) return jsonNoCache({ error: "unauthorized" }, 401);
+
+  const slug = await extractSlug(req, ctx);
+  if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
+
+  try {
+    // 1) Učitaj mini red – treba nam za Trash
+    const row = await calcsStore.get(userId, slug);
+
+    // 2) Obriši iz calculators
+    const ok = await calcsStore.remove(userId, slug);
+    if (!ok) {
+      return jsonNoCache({ error: "not_found" }, 404);
+    }
+
+    // 3) Gurni u Trash ako imamo podatke
+    if (row) {
+      try {
+        await trash.push(userId, row);
+      } catch (e) {
+        console.error("trash.push failed for", slug, e);
+      }
+    }
+
+    // 4) Obrisi full config iz storage-a (best effort)
+    try {
+      await fullStore.deleteFull(userId, slug);
+    } catch {
+      // ignorišemo grešku – bitno je da je active red otišao i da je u Trashu
+    }
+
+    return jsonNoCache({ ok: true, slug });
+  } catch (e: any) {
+    console.error("DELETE full error:", e);
+    return jsonNoCache(
+      { error: "delete_failed", detail: e?.stack ?? String(e) },
+      500
+    );
   }
 }

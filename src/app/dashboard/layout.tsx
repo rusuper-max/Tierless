@@ -64,7 +64,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       <AccountHydrator initial={initialAccount} />
 
       {/* Sve dashboard varijable i stilovi pod .tl-dashboard */}
-      <div className="tl-dashboard min-h-screen w-full flex">
+      <div className="tl-dashboard min-h-screen w-full flex flex-col md:flex-row">
         <Sidebar />
 
         <div
@@ -73,7 +73,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           style={{ backgroundImage: "linear-gradient(180deg, var(--brand-1,#4F46E5), var(--brand-2,#22D3EE))" }}
         />
 
-        <div className="flex-1 min-w-0">{children}</div>
+        <div className="flex-1 min-w-0 w-full md:w-auto">{children}</div>
       </div>
     </>
   );

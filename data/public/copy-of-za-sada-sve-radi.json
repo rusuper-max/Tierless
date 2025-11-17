@@ -2,7 +2,7 @@
   "i18n": {
     "locale": "en",
     "currency": "EUR",
-    "decimals": 1
+    "decimals": 2
   },
   "meta": {
     "id": "Io5C6QN2LM3o",
@@ -14,8 +14,9 @@
       "layout": "cards",
       "hideBadge": false
     },
-    "simpleBg": "#fef3c7",
+    "simpleBg": "linear-gradient(90deg,#fef3c7,#ecfdf5)",
     "editorMode": "simple",
+    "simpleDots": true,
     "simpleFont": "rounded",
     "simpleTitle": "Jelovnik test Restoran XYZ",
     "simpleLayout": {
@@ -23,42 +24,48 @@
       "textSize": "lg",
       "showImages": true
     },
+    "simpleBgGrad1": "#fef3c7",
+    "simpleBgGrad2": "#ecfdf5",
     "simpleSpacing": "compact",
+    "simpleFontSize": "lg",
     "simpleTextMode": "preset",
+    "simpleCollapsed": false,
     "simpleHideBadge": false,
     "simpleShowBadge": true,
     "simpleTextColor": "",
     "simpleBorderColor": "",
-    "simpleFontSize": "lg",
-    "simpleAllowSelection": false,
-    "simpleShowInquiry": false,
-    "simpleDots": true
+    "simpleShowInquiry": true,
+    "simpleAllowSelection": false
   },
   "items": [
     {
       "id": "it_48qzzt9jgp",
       "note": "300g piletina, sos od pečuraka, pomfrit",
-      "label": "Test Piletina",
-      "price": 0
+      "label": "Piletina",
+      "price": 7.5
     },
     {
       "id": "it_mmabcx9d29",
-      "label": "Cappuccino",
-      "price": 3
+      "note": "Pomfrit, 300g Biftek na žaru, paradajz",
+      "label": "Biftek",
+      "price": 25
     },
     {
       "id": "it_7rznhf9d29",
-      "label": "Latte",
-      "price": 3.5
+      "note": "300g riblji file, pomfrit, hleb",
+      "label": "Riblji file",
+      "price": 7
     },
     {
       "id": "it_04peq0wf3e",
-      "label": "New item",
-      "price": 0
+      "note": "35cm, Mozzarella, Paradajz sos",
+      "label": "Pizza Margarita",
+      "price": 8
     },
     {
       "id": "it_gqo81jam5l",
-      "label": "New item",
+      "note": "random shit 500g",
+      "label": "Neki random shit",
       "price": 0
     }
   ],

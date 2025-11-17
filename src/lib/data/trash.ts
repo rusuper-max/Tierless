@@ -8,6 +8,7 @@ export type Calc = {
   meta: {
     name: string;
     slug: string;
+    originalSlug?: string;
     published?: boolean;
     favorite?: boolean;
     order?: number;
@@ -25,12 +26,14 @@ export type TrashItem = Calc & {
 
 const pool = getPool();
 const DEFAULT_TTL_DAYS = 30;
+const SLUG_SUFFIX = "-trash";
 
 async function ensureTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS trash_items (
       user_id     TEXT NOT NULL,
       slug        TEXT NOT NULL,         -- stari slug (iz aktivne tabele)
+      original_slug TEXT,
       name        TEXT NOT NULL,
       template    TEXT,
       config      JSONB,
@@ -39,7 +42,36 @@ async function ensureTable() {
     );
     CREATE INDEX IF NOT EXISTS idx_trash_user ON trash_items(user_id);
     CREATE INDEX IF NOT EXISTS idx_trash_user_deleted ON trash_items(user_id, deleted_at DESC);
+    ALTER TABLE trash_items
+      ADD COLUMN IF NOT EXISTS original_slug TEXT;
   `);
+}
+
+function normalizeSlug(s: string | undefined) {
+  return (
+    (s || "")
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .replace(/--+/g, "-")
+      .slice(0, 60) || "deleted"
+  );
+}
+
+async function uniqueTrashSlug(userId: string, base: string): Promise<string> {
+  const cleanBase = normalizeSlug(base);
+  let candidate = cleanBase;
+  let i = 1;
+  for (;;) {
+    const { rows } = await pool.query(
+      `SELECT 1 FROM trash_items WHERE user_id=$1 AND slug=$2 LIMIT 1`,
+      [userId, candidate]
+    );
+    if (!rows.length) return candidate;
+    candidate = `${cleanBase}${SLUG_SUFFIX}-${i++}`;
+  }
 }
 
 function rowToItem(r: any): TrashItem {
@@ -47,6 +79,7 @@ function rowToItem(r: any): TrashItem {
     meta: {
       name: r.name,
       slug: r.slug,
+      originalSlug: r.original_slug ?? undefined,
       // trash ne drži published/favorite/order – nisu bitni u otpadu
       createdAt: undefined,
       updatedAt: undefined,
@@ -62,17 +95,15 @@ function rowToItem(r: any): TrashItem {
 export async function push(userId: string, row: Calc) {
   await ensureTable();
   const now = Date.now();
+  const desiredSlug = row.meta.slug || "deleted";
+  const uniqueSlug = await uniqueTrashSlug(userId, desiredSlug);
   await pool.query(
-    `INSERT INTO trash_items (user_id, slug, name, template, config, deleted_at)
-     VALUES ($1,$2,$3,$4,$5,$6)
-     ON CONFLICT (user_id, slug) DO UPDATE
-       SET name=excluded.name,
-           template=excluded.template,
-           config=excluded.config,
-           deleted_at=excluded.deleted_at`,
+    `INSERT INTO trash_items (user_id, slug, original_slug, name, template, config, deleted_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
     [
       userId,
-      row.meta.slug,
+      uniqueSlug,
+      row.meta.slug ?? null,
       row.meta.name || "Untitled Page",
       row.template ?? null,
       row.config ?? {},
@@ -117,7 +148,7 @@ export async function restore(userId: string, slug: string): Promise<string | un
   // Ubaci u calculators sa unikat slug-om (koristimo postojeći calcsStore PG)
   const restored = await calcsStore.createWithSlug(
     userId,
-    item.meta.slug,           // željeni (može biti zauzet – helper rešava)
+    item.meta.originalSlug || item.meta.slug, // željeni (može biti zauzet – helper rešava)
     item.meta.name || "Restored Page",
     item.config ?? {},
     item.template ?? undefined

@@ -1,9 +1,11 @@
-// src/components/dashboard/Nav.tsx
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Menu, X } from "lucide-react";
+import ThemeToggle from "@/components/nav/ThemeToggle";
+import { t } from "@/i18n";
 
 /* ------------------------------------------------------------------ */
 /* ActionButton (consistent with Dashboard buttons)                    */
@@ -130,6 +132,7 @@ function ActionButton({
       className={`inline-flex group ${
         disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
       }`}
+      type="button"
     >
       {content}
     </button>
@@ -146,6 +149,7 @@ const LOGOUT_REDIRECT = "/signin";
 export default function Nav() {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   async function onLogout() {
     try {
@@ -162,12 +166,22 @@ export default function Nav() {
     }
   }
 
+  const mobileLinks = [
+    { href: "/dashboard", label: t("Pages") },
+    { href: "/dashboard/stats", label: t("Stats") },
+    { href: "/templates", label: t("Templates") },
+    { href: "/dashboard/integrations", label: t("Integrations") },
+    { href: "/dashboard/settings", label: t("Settings") },
+    { href: "/dashboard/trash", label: t("Trash") },
+    { href: "/dashboard/account", label: t("Account") },
+  ];
+
   return (
     <header
       className="sticky top-0 z-40 w-full border-b border-[var(--border)] bg-[var(--card)]/90 backdrop-blur supports-[backdrop-filter]:bg-[var(--card)]/80 overflow-visible tl-nav text-[var(--text)]"
       aria-label="Top navigation"
     >
-      <div className="mx-auto max-w-[1536px] px-5 sm:px-7 lg:px-10 min-h-[50px] py-1 flex items-center justify-between">
+      <div className="mx-auto max-w-[1536px] px-5 sm:px-7 lg:px-10 min-h-[56px] py-2 flex items-center justify-between gap-3 flex-wrap">
         {/* Logo → marketing site */}
         <div className="flex items-center gap-2 select-none">
           <Link
@@ -192,7 +206,7 @@ export default function Nav() {
         </div>
 
         {/* Right actions */}
-        <nav className="flex items-center gap-4 sm:gap-5 md:gap-6 text-[color:var(--text)]">
+        <nav className="hidden md:flex items-center gap-4 sm:gap-5 md:gap-6 text-[color:var(--text)]">
           <ActionButton
             label="View Site"
             title="Open tierless website"
@@ -215,6 +229,7 @@ export default function Nav() {
             variant="brand"
             size="xs"
           />
+          <ThemeToggle />
           <ActionButton
             label={loggingOut ? "Signing out…" : "Logout"}
             title="Sign out"
@@ -224,6 +239,17 @@ export default function Nav() {
             size="xs"
           />
         </nav>
+        <div className="flex md:hidden items-center gap-2 ml-auto">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="inline-flex items-center justify-center rounded-full border border-[var(--border)] w-10 h-10 text-[var(--text)]"
+            aria-label="Open menu"
+          >
+            <Menu className="size-5" />
+          </button>
+        </div>
       </div>
 
       {/* Brand hairline */}
@@ -231,6 +257,60 @@ export default function Nav() {
         aria-hidden
         className="h-px w-full bg-gradient-to-r from-[var(--brand-1,#4F46E5)] to-[var(--brand-2,#22D3EE)]"
       />
+
+      {/* Mobile sheet */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile menu"
+        >
+          <div className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-[var(--card)] text-[var(--text)] p-6 space-y-5 shadow-[0_-15px_45px_rgba(0,0,0,0.35)] max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold">{t("Quick actions")}</p>
+              <button
+                className="size-10 inline-flex items-center justify-center rounded-full border border-[var(--border)]"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Close menu"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <div className="grid gap-3">
+              <ActionButton label="View Site" href="/" variant="brand" size="sm" />
+              <ActionButton label="FAQ" href="/help" variant="brand" size="sm" />
+              <ActionButton label="View Plans" href="/start" variant="brand" size="sm" />
+              <ActionButton
+                label={loggingOut ? "Signing out…" : "Logout"}
+                onClick={onLogout}
+                disabled={loggingOut}
+                variant="danger"
+                size="sm"
+              />
+            </div>
+
+            <div className="pt-2 border-t border-[var(--border)]">
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3 text-[var(--muted)]">{t("Navigate")}</p>
+              <ul className="space-y-2">
+                {mobileLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="flex items-center justify-between rounded-xl border border-[var(--border)] px-4 py-2 text-sm"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <span>{link.label}</span>
+                      <span aria-hidden>›</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
