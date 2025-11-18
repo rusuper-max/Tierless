@@ -11,10 +11,10 @@ import {
   Moon,
 } from "lucide-react";
 import { t } from "@/i18n";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useAccount } from "@/hooks/useAccount";
 import type { PlanId } from "@/lib/entitlements";
-import type { CSSProperties } from "react";
+import type { Mode } from "@/hooks/useEditorStore";
 
 type BtnVariant = "brand" | "neutral" | "danger";
 type BtnSize = "xs" | "sm";
@@ -157,7 +157,9 @@ function ThemeToggle() {
         onClick={toggle}
         variant="brand"
         size="xs"
-        title={t("Switch the editor theme. This only affects your view, not the public page.")}
+        title={t(
+          "Switch the editor theme. This only affects your view, not the public page."
+        )}
       />
     </div>
   );
@@ -250,7 +252,7 @@ function PlanBadge() {
           className="mr-2 inline-block h-2.5 w-2.5 rounded-full"
           style={{ backgroundColor: cfg.dot }}
         />
-        <span className="mr-1 text-[var(--muted)] text-[11px]">
+        <span className="mr-1 text-[11px] text-[var(--muted)]">
           {t("Plan")}:
         </span>
         <span className="font-semibold uppercase tracking-wide">
@@ -273,19 +275,20 @@ type TourStepDef = {
 function EditorTourOverlay({
   stepIndex,
   onStepChange,
+  editorMode,
 }: {
   stepIndex: number;
   onStepChange: (next: number | null) => void;
+  editorMode: Mode;
 }) {
-  const steps: TourStepDef[] = useMemo(
-    () => [
+  const steps: TourStepDef[] = useMemo(() => {
+    // Base steps – nav + “scroll down”
+    const base: TourStepDef[] = [
       {
         id: "plan",
         targetId: "tour-plan",
         title: t("Your plan"),
-        body: t(
-          "Here you can see which Tierless plan you are on right now."
-        ),
+        body: t("Here you can see which Tierless plan you are on right now."),
       },
       {
         id: "theme",
@@ -319,33 +322,79 @@ function EditorTourOverlay({
           "Scroll down from this header to reach the main editor area where you actually build your price page."
         ),
       },
-      {
-        id: "title",
-        targetId: "tour-title",
-        title: t("Page name"),
-        body: t(
-          "Start by giving your calculator or price page a clear name. This title will be visible to visitors."
-        ),
-      },
-      {
-        id: "items",
-        targetId: "tour-items",
-        title: t("Packages and items"),
-        body: t(
-          "Here you edit packages or line items: labels, descriptions and prices. This is the core of what your visitors will be choosing from."
-        ),
-      },
-      {
-        id: "quick-preview",
-        targetId: "tour-quick-preview",
-        title: t("Quick preview"),
-        body: t(
-          "Use Quick preview to see how your changes look without leaving the editor. It mirrors the public page so you can iterate fast."
-        ),
-      },
-    ],
-    []
-  );
+    ];
+
+    // Setup mode – samo navbar stvari
+    if (editorMode === "setup") {
+      return base;
+    }
+
+    // Mode-specific editor steps
+    const modeSteps: TourStepDef[] = [];
+
+    if (editorMode === "simple") {
+      modeSteps.push(
+        {
+          id: "title",
+          targetId: "tour-title",
+          title: t("Page name"),
+          body: t(
+            "Start by giving your menu or price page a clear name. This title will be visible to visitors."
+          ),
+        },
+        {
+          id: "items",
+          targetId: "tour-items",
+          title: t("Items and prices"),
+          body: t(
+            "Here you manage your list of items: labels, descriptions and prices. Perfect for restaurants, clinics and salons."
+          ),
+        },
+        {
+          id: "quick-preview",
+          targetId: "tour-quick-preview",
+          title: t("Quick preview"),
+          body: t(
+            "Use Quick preview to see how your simple price page looks on desktop and mobile without leaving the editor."
+          ),
+        }
+      );
+       } else if (editorMode === "tiers") {
+      // Za tier-based editor za sada ne dodajemo dodatne in-editor stepove,
+      // dok ne ubacimo posebne data-tour-id hookove u BlocksPanel.
+      // Tako izbegavamo korake koji pokušavaju da objasne simple-list polja
+      // koja ovde ne postoje.
+    } else if (editorMode === "advanced") {
+      modeSteps.push(
+        {
+          id: "title",
+          targetId: "tour-title",
+          title: t("Page name"),
+          body: t(
+            "Name your advanced calculator or page so visitors immediately understand what they are configuring."
+          ),
+        },
+        {
+          id: "items",
+          targetId: "tour-items",
+          title: t("Packages, extras and sliders"),
+          body: t(
+            "In the advanced editor you combine tiers, add-ons and sliders into powerful, flexible pricing logic."
+          ),
+        },
+        {
+          id: "quick-preview",
+          targetId: "tour-quick-preview",
+          title: t("Quick preview"),
+          body: t(
+            "Use Quick preview to test how your advanced setup feels to a visitor before you share the link."
+          ),
+        }
+      );
+    }
+
+    return [...base, ...modeSteps];
+  }, [editorMode]);
 
   const step = steps[stepIndex];
   const total = steps.length;
@@ -388,7 +437,9 @@ function EditorTourOverlay({
     rafRef.current = window.requestAnimationFrame(update);
 
     const onResize = () => {
-      window.cancelAnimationFrame(rafRef.current ?? 0);
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current);
+      }
       rafRef.current = window.requestAnimationFrame(update);
     };
 
@@ -424,44 +475,35 @@ function EditorTourOverlay({
       )}
 
       {rect && (
-        (() => {
-          const wide = rect.width > 360 || rect.height > 120;
-          const padX = wide ? 16 : 6;
-          const padY = wide ? 18 : 6;
-          const radius = wide ? 24 : rect.height + padY * 2;
-          return (
-            <div
-              aria-hidden
-              className="pointer-events-none fixed z-[81]"
-              style={{
-                left: rect.left - padX,
-                top: rect.top - padY,
-                width: rect.width + padX * 2,
-                height: rect.height + padY * 2,
-                borderRadius: radius,
-                boxShadow:
-                  "0 0 0 2000px rgba(6,13,28,0.82), 0 0 0 2px rgba(148,163,184,.85), 0 0 26px 10px rgba(34,211,238,.38)",
-                background: "rgba(255,255,255,0.12)",
-              }}
-            />
-          );
-        })()
+        <div
+          aria-hidden
+          className="pointer-events-none fixed z-[81]"
+          style={{
+            left: rect.left - 10,
+            top: rect.top - 10,
+            width: rect.width + 20,
+            height: rect.height + 20,
+            borderRadius: 18,
+            boxShadow:
+              "0 0 0 2000px rgba(6,13,28,0.82), 0 0 0 2px rgba(148,163,184,.85), 0 0 26px 10px rgba(34,211,238,.35)",
+          }}
+        />
       )}
 
       {/* Kartica sa tekstom – dole, centrirana, ne prekriva nav */}
       <div className="relative z-[82] w-full max-w-md rounded-2xl border border-white/12 bg-[rgba(10,18,32,0.96)] p-4 sm:p-5 shadow-2xl">
         <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
-          <span className="uppercase tracking-wide text-[11px]">
+          <span className="text-[11px] uppercase tracking-wide">
             {t("Quick tour")}
           </span>
           <span>
             {t("Step")} {stepIndex + 1} {t("of")} {total}
           </span>
         </div>
-        <h2 className="text-base sm:text-lg font-semibold text-slate-50 mb-1.5">
+        <h2 className="mb-1.5 text-base sm:text-lg font-semibold text-slate-50">
           {step.title}
         </h2>
-        <p className="text-sm text-slate-300 mb-4">{step.body}</p>
+        <p className="mb-4 text-sm text-slate-300">{step.body}</p>
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
@@ -477,14 +519,14 @@ function EditorTourOverlay({
                 onStepChange(stepIndex > 0 ? stepIndex - 1 : stepIndex)
               }
               disabled={stepIndex === 0}
-              className={`rounded-full px-3 py-1.5 text-xs sm:text-sm border border-slate-500/60 text-slate-100 disabled:opacity-40 disabled:cursor-not-allowed`}
+              className="rounded-full border border-slate-500/60 px-3 py-1.5 text-xs sm:text-sm text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {t("Back")}
             </button>
             <button
               type="button"
               onClick={handleNext}
-              className="rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-medium text-slate-900 bg-[var(--brand-1,#4F46E5)] hover:bg-[var(--brand-2,#22D3EE)] transition-colors"
+              className="rounded-full bg-[var(--brand-1,#4F46E5)] px-3.5 py-1.5 text-xs sm:text-sm font-medium text-slate-900 hover:bg-[var(--brand-2,#22D3EE)] transition-colors"
             >
               {isLast ? t("Done") : t("Next")}
             </button>
@@ -505,6 +547,7 @@ export default function EditorNavBar({
   isSaving,
   isDirty,
   publicHref,
+  editorMode,
 }: {
   calcName?: string;
   showBack?: boolean;
@@ -513,20 +556,21 @@ export default function EditorNavBar({
   isSaving?: boolean;
   isDirty?: boolean;
   publicHref: string;
+  editorMode: Mode;
 }) {
   const [tourStep, setTourStep] = useState<number | null>(null);
 
   return (
     <>
-      <nav className="sticky top-0 z-[60] bg-[var(--bg)] border-b border-[var(--border)] tl-navbar">
-        <div className="px-4 lg:px-8 h-14 flex items-center justify-between">
+      <nav className="tl-navbar sticky top-0 z-[60] border-b border-[var(--border)] bg-[var(--bg)]">
+        <div className="flex h-14 items-center justify-between px-4 lg:px-8">
           <div className="flex items-center gap-3">
             {/* Tierless logo link – marketing / main site */}
             <Link
               href="https://tierless.net"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center font-semibold text-sm bg-clip-text text-transparent"
+              className="hidden items-center bg-clip-text text-sm font-semibold text-transparent sm:inline-flex"
               style={{ backgroundImage: BRAND_GRADIENT }}
             >
               Tierless
@@ -542,7 +586,7 @@ export default function EditorNavBar({
             />
             {showBack && (
               <button
-                className="inline-flex group cursor-pointer"
+                className="group inline-flex cursor-pointer"
                 onClick={onBack}
                 title={t("Back")}
               >
@@ -611,7 +655,11 @@ export default function EditorNavBar({
       </nav>
 
       {tourStep !== null && (
-        <EditorTourOverlay stepIndex={tourStep} onStepChange={setTourStep} />
+        <EditorTourOverlay
+          stepIndex={tourStep}
+          onStepChange={setTourStep}
+          editorMode={editorMode}
+        />
       )}
     </>
   );

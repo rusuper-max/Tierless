@@ -19,6 +19,10 @@ const SimpleListPanel = dynamic(
   () => import("./panels/SimpleListPanel"),
   { ssr: false }
 );
+const AdvancedPanel = dynamic(
+  () => import("./panels/AdvancedPanel"),
+  { ssr: false }
+);
 
 type Props = { slug: string; initialCalc: CalcJson };
 type PreviewMode = "off" | "desktop" | "mobile";
@@ -147,6 +151,7 @@ export default function EditorShell({ slug, initialCalc }: Props) {
         isSaving={isSaving}
         isDirty={isDirty}
         publicHref={publicHref}
+        editorMode={uiMode}
       />
 
       <div className="px-4 lg:px-8 py-5">
@@ -232,7 +237,13 @@ export default function EditorShell({ slug, initialCalc }: Props) {
               </div>
             ) : (
               <section className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)]">
-                {uiMode === "simple" ? <SimpleListPanel /> : <BlocksPanel />}
+                {uiMode === "simple" ? (
+                  <SimpleListPanel />
+                ) : uiMode === "advanced" ? (
+                  <AdvancedPanel />
+                ) : (
+                  <BlocksPanel />
+                )}
               </section>
             )}
           </section>

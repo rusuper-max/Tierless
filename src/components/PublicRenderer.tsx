@@ -3,6 +3,7 @@
 
 import React, { useMemo, useState } from "react";
 import type { CalcJson, OptionGroup, Pkg } from "@/hooks/useEditorStore";
+import AdvancedPublicRenderer from "./AdvancedPublicRenderer";
 
 type ColorMode = "solid" | "gradient";
 type CurrencyPosition = "prefix" | "suffix";
@@ -39,6 +40,16 @@ type SimpleSection = {
 export default function PublicRenderer({ calc }: { calc: CalcJson }) {
   const mode = calc?.meta?.editorMode || "advanced";
   const { fmt } = useCurrency(calc);
+
+  // NEW: ako smo u advanced modu i imamo advancedNodes, koristi poseban renderer
+  const hasAdvancedNodes =
+    mode === "advanced" &&
+    Array.isArray((calc as any)?.meta?.advancedNodes) &&
+    ((calc as any).meta.advancedNodes as any[]).length > 0;
+
+  if (hasAdvancedNodes) {
+    return <AdvancedPublicRenderer calc={calc} />;
+  }
 
   // Selekcija itema za SIMPLE mode
   const [simpleSelectedIds, setSimpleSelectedIds] = useState<Set<string>>(
@@ -439,7 +450,7 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
     );
   }
 
-  /* ------------ TIERS / ADVANCED MODE ------------ */
+  /* ------------ TIERS / LEGACY ADVANCED MODE ------------ */
   const pkgs: Pkg[] = calc.packages ?? [];
   const featByPkg = new Map<string, OptionGroup>();
   (calc.fields ?? []).forEach((g) => {

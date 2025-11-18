@@ -6,7 +6,7 @@
   },
   "meta": {
     "id": "prvjVmVklCjo",
-    "name": "Copy of Test stranica",
+    "name": "Test ADVANCED EDITOR",
     "slug": "copy-of-test-stranica",
     "branding": {
       "theme": "dark",
@@ -14,7 +14,63 @@
       "layout": "cards",
       "hideBadge": false
     },
-    "editorMode": "tiers"
+    "editorMode": "advanced",
+    "advancedNodes": [
+      {
+        "id": "adv_ovaok9p1",
+        "max": null,
+        "min": null,
+        "kind": "tier",
+        "step": null,
+        "label": "Tier 1",
+        "price": 9.99,
+        "description": ""
+      },
+      {
+        "id": "adv_9q4qe3f0",
+        "max": null,
+        "min": null,
+        "kind": "tier",
+        "step": null,
+        "label": "Tier 2",
+        "price": 0,
+        "description": ""
+      },
+      {
+        "id": "adv_233alloa",
+        "max": null,
+        "min": null,
+        "kind": "tier",
+        "step": null,
+        "label": "Tier 3",
+        "price": 0,
+        "description": ""
+      },
+      {
+        "id": "adv_rb4jl5wk",
+        "max": 100,
+        "min": 0,
+        "kind": "slider",
+        "step": 1,
+        "label": "Slider 1",
+        "price": null,
+        "description": ""
+      },
+      {
+        "id": "adv_9k7bbo7p",
+        "kind": "item",
+        "label": "Item 1",
+        "description": "",
+        "price": 0,
+        "min": null,
+        "max": null,
+        "step": null,
+        "accentColor": null,
+        "textColor": null,
+        "inquiryOnly": true,
+        "features": []
+      }
+    ]
   },
   "items": [],
   "addons": [],
@@ -56,21 +112,21 @@
     },
     {
       "id": "pkg_m2ck39llfh",
+      "color": "#e32400",
       "label": "Package 2",
       "featured": true,
       "basePrice": 0,
-      "description": "",
-      "color": "#e32400"
+      "description": ""
     },
     {
       "id": "pkg_oglcj3llqr",
+      "color": "#0061ff",
       "label": "Package 3",
+      "color2": "#fffc41",
       "featured": true,
       "basePrice": 0,
-      "description": "",
-      "color": "#0061ff",
       "colorMode": "gradient",
-      "color2": "#fffc41"
+      "description": ""
     }
   ],
   "pricingMode": "packages"
