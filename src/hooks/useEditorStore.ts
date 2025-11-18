@@ -41,7 +41,7 @@ export type ItemRow = {
   label: string;
   price: number | null;
   note?: string;
-  imageUrl?: string; // <— NEW: URL slike za simple list
+  imageUrl?: string; // URL slike za simple list
 };
 
 export type CalcMeta = {
@@ -167,6 +167,12 @@ type EditorState = {
   updateItem: (id: string, patch: Partial<ItemRow>) => void;
   removeItem: (id: string) => void;
   reorderItem: (id: string, dir: -1 | 1) => void;
+
+  // Bulk items (OCR, import, sl.)
+  bulkAddItems: (
+    items: { label: string; price: number | null; note?: string }[],
+    mode?: "append" | "replace"
+  ) => void;
 
   // Limits / misc
   setMaxPackages: (n: number) => void;
@@ -540,10 +546,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const next = clone(calc);
     const id = genId("it");
     if (!Array.isArray(next.items)) next.items = [];
-    next.items.push({
+    next.items.unshift({
       id,
       label: label ?? "Item",
-      price: Number.isFinite(price) ? price! : 0,
+      price: Number.isFinite(price) ? (price as number) : 0,
     });
     set({ calc: next, isDirty: true });
     return id;
@@ -575,6 +581,46 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     if (to === idx) return;
     const [row] = next.items!.splice(idx, 1);
     next.items!.splice(to, 0, row);
+    set({ calc: next, isDirty: true });
+  },
+
+  bulkAddItems: (items, mode = "append") => {
+    const calc = get().calc;
+    if (!calc) return;
+
+    const next = clone(calc);
+    if (!Array.isArray(next.items)) next.items = [];
+
+    const prepared = items
+      .map((it) => {
+        const label = (it.label || "").trim();
+        if (!label) return null;
+
+        const price =
+          it.price === null || typeof it.price === "undefined"
+            ? 0
+            : Number(it.price);
+
+        return {
+          id: genId("it"),
+          label,
+          price: Number.isFinite(price) ? price : 0,
+          note: it.note ?? "",
+        } as ItemRow;
+      })
+      .filter(Boolean) as ItemRow[];
+
+    if (!prepared.length) {
+      return;
+    }
+
+    if (mode === "replace") {
+      next.items = prepared;
+    } else {
+      // append na kraj liste
+      next.items = [...(next.items || []), ...prepared];
+    }
+
     set({ calc: next, isDirty: true });
   },
 

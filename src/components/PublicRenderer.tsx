@@ -31,6 +31,11 @@ function useCurrency(calc?: CalcJson) {
   return { cur, decimals, fmt, position, space };
 }
 
+type SimpleSection = {
+  id: string;
+  label: string;
+};
+
 export default function PublicRenderer({ calc }: { calc: CalcJson }) {
   const mode = calc?.meta?.editorMode || "advanced";
   const { fmt } = useCurrency(calc);
@@ -51,7 +56,7 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
 
   const simpleSelectionTotal = useMemo(() => {
     if (!calc || calc.meta?.editorMode !== "simple") return 0;
-    const items = calc.items ?? [];
+    const items = (calc.items ?? []) as any[];
     if (!items.length) return 0;
     const priceById = new Map(
       items.map((it: any) => [it.id, Number(it.price ?? 0)])
@@ -65,8 +70,8 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
 
   /* ------------ SIMPLE LIST MODE ------------ */
   if (mode === "simple") {
-    const items = calc.items ?? [];
-    const addons = calc.addons ?? [];
+    const items = (calc.items ?? []) as any[];
+    const addons = (calc.addons ?? []) as any[];
     const meta = (calc.meta || {}) as any;
 
     const simpleTitle: string = meta.simpleTitle ?? "";
@@ -80,12 +85,16 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
     const simpleDots: boolean = meta.simpleDots === true;
     const simpleAllowSelection: boolean = meta.simpleAllowSelection === true;
     const simpleShowInquiry: boolean = meta.simpleShowInquiry === true;
+    const simpleSectionOutlinePublic: boolean =
+      meta.simpleSectionOutlinePublic === true;
 
-    // TODO: kasnije ovo povezati sa Account email verification
+    const simpleSections: SimpleSection[] = meta.simpleSections ?? [];
+
+    // TODO: kasnije povezati sa Account email verification
     const inquiryVerified: boolean =
       (meta.inquiryVerified as boolean | undefined) ?? true;
 
-    // Resetujemo theme varijable za preview da bude uvek "light"
+    // Reset theme varijable za preview da bude uvek "light"
     const lightVars: React.CSSProperties = {
       ["--bg" as any]: "#f3f4f6",
       ["--card" as any]: "#ffffff",
@@ -144,6 +153,158 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
     const selectedCount = simpleSelectedIds.size;
     const showTotalBar = simpleAllowSelection;
 
+    // grupisanje po sekcijama
+    const unsectionedItems = items.filter((it) => !it.simpleSectionId);
+    const itemsBySection = new Map<string, any[]>();
+    items.forEach((it) => {
+      const sid = it.simpleSectionId as string | undefined;
+      if (!sid) return;
+      if (!itemsBySection.has(sid)) itemsBySection.set(sid, []);
+      itemsBySection.get(sid)!.push(it);
+    });
+
+    const renderItemRow = (it: any) => {
+      const isSelected = simpleSelectedIds.has(it.id);
+
+      if (isGradientBorder) {
+        return (
+          <div
+            key={it.id}
+            className="rounded-xl p-[1px]"
+            style={{ backgroundImage: simpleBorderColor }}
+          >
+            <div className="flex items-start gap-3 rounded-[inherit] border border-transparent bg-[var(--card)] px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm">
+              {simpleAllowSelection && (
+                <div className="pt-1">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 cursor-pointer accent-[var(--brand-1,#4F46E5)]"
+                    checked={isSelected}
+                    onChange={() => toggleSimpleSelection(it.id)}
+                  />
+                </div>
+              )}
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <div
+                    className="font-medium truncate"
+                    style={{ color: titleColor }}
+                  >
+                    {it.label}
+                  </div>
+                  <div
+                    className={`flex-1 ${
+                      simpleDots
+                        ? "border-b-2 border-dotted border-[var(--border)] opacity-80"
+                        : ""
+                    }`}
+                  />
+                  <div
+                    className="text-sm font-semibold whitespace-nowrap"
+                    style={{ color: priceColor }}
+                  >
+                    {fmt(it.price ?? 0)}
+                  </div>
+                </div>
+                {it.note && (
+                  <div className="mt-0.5 text-xs text-[var(--muted)]">
+                    {it.note}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Klasičan slučaj (solid outline)
+      return (
+        <div
+          key={it.id}
+          className="flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm"
+          style={itemBorderBase}
+        >
+          {simpleAllowSelection && (
+            <div className="pt-1">
+              <input
+                type="checkbox"
+                className="h-4 w-4 cursor-pointer accent-[var(--brand-1,#4F46E5)]"
+                checked={isSelected}
+                onChange={() => toggleSimpleSelection(it.id)}
+              />
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-2">
+              <div
+                className="font-medium truncate"
+                style={{ color: titleColor }}
+              >
+                {it.label}
+              </div>
+              <div
+                className={`flex-1 ${
+                  simpleDots
+                    ? "border-b-2 border-dotted border-[var(--border)] opacity-80"
+                    : ""
+                }`}
+              />
+              <div
+                className="text-sm font-semibold whitespace-nowrap"
+                style={{ color: priceColor }}
+              >
+                {fmt(it.price ?? 0)}
+              </div>
+            </div>
+            {it.note && (
+              <div className="mt-0.5 text-xs text-[var(--muted)]">
+                {it.note}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const renderSectionBlock = (section: SimpleSection) => {
+      const sectionItems = itemsBySection.get(section.id) ?? [];
+      if (!sectionItems.length) return null;
+
+      const inner = (
+        <div className="rounded-[inherit] border border-[var(--border)] bg-[var(--card)] px-3 py-3 sm:px-4 sm:py-4">
+          <div
+            className="mb-2 text-sm sm:text-base font-semibold"
+            style={{ color: titleColor }}
+          >
+            {section.label}
+          </div>
+          <div className={spacingClass}>
+            {sectionItems.map((it) => renderItemRow(it))}
+          </div>
+        </div>
+      );
+
+      if (!simpleSectionOutlinePublic) {
+        return (
+          <div key={section.id} className="rounded-2xl">
+            {inner}
+          </div>
+        );
+      }
+
+      return (
+        <div
+          key={section.id}
+          className="rounded-2xl p-[1px]"
+          style={{ backgroundImage: BRAND_GRADIENT }}
+        >
+          {inner}
+        </div>
+      );
+    };
+
     return (
       <div
         className={`rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 ${fontFamilyClass} ${fontSizeClass}`}
@@ -188,120 +349,23 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
           )}
         </div>
 
-        {/* Items */}
+        {/* Items bez sekcije */}
         <div className={spacingClass}>
-          {items.map((it: any) => {
-            const isSelected = simpleSelectedIds.has(it.id);
+          {unsectionedItems.map((it) => renderItemRow(it))}
 
-            // Gradient outline — wrapper sa paddingom i inherit radius
-            if (isGradientBorder) {
-              return (
-                <div
-                  key={it.id}
-                  className="rounded-xl p-[1.5px]"
-                  style={{ backgroundImage: simpleBorderColor }}
-                >
-                  <div className="flex items-start gap-3 rounded-[inherit] border border-transparent bg-[var(--card)] px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm">
-                    {simpleAllowSelection && (
-                      <div className="pt-1">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 cursor-pointer accent-[var(--brand-1,#4F46E5)]"
-                          checked={isSelected}
-                          onChange={() => toggleSimpleSelection(it.id)}
-                        />
-                      </div>
-                    )}
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <div
-                          className="font-medium truncate"
-                          style={{ color: titleColor }}
-                        >
-                          {it.label}
-                        </div>
-                        <div
-                          className={`flex-1 ${
-                            simpleDots
-                              ? "border-b-2 border-dotted border-[var(--border)] opacity-80"
-                              : ""
-                          }`}
-                        />
-                        <div
-                          className="text-sm font-semibold whitespace-nowrap"
-                          style={{ color: priceColor }}
-                        >
-                          {fmt(it.price ?? 0)}
-                        </div>
-                      </div>
-                      {it.note && (
-                        <div className="mt-0.5 text-xs text-[var(--muted)]">
-                          {it.note}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-
-            // Klasičan slučaj (solid outline)
-            return (
-              <div
-                key={it.id}
-                className="flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm"
-                style={itemBorderBase}
-              >
-                {simpleAllowSelection && (
-                  <div className="pt-1">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 cursor-pointer accent-[var(--brand-1,#4F46E5)]"
-                      checked={isSelected}
-                      onChange={() => toggleSimpleSelection(it.id)}
-                    />
-                  </div>
-                )}
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2">
-                    <div
-                      className="font-medium truncate"
-                      style={{ color: titleColor }}
-                    >
-                      {it.label}
-                    </div>
-                    <div
-                      className={`flex-1 ${
-                        simpleDots
-                          ? "border-b-2 border-dotted border-[var(--border)] opacity-80"
-                          : ""
-                      }`}
-                    />
-                    <div
-                      className="text-sm font-semibold whitespace-nowrap"
-                      style={{ color: priceColor }}
-                    >
-                      {fmt(it.price ?? 0)}
-                    </div>
-                  </div>
-                  {it.note && (
-                    <div className="mt-0.5 text-xs text-[var(--muted)]">
-                      {it.note}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-
-          {items.length === 0 && (
+          {unsectionedItems.length === 0 && simpleSections.length === 0 && (
             <div className="text-sm text-[var(--muted)]">
               No items yet. The owner hasn&apos;t added anything.
             </div>
           )}
         </div>
+
+        {/* Sekcije */}
+        {simpleSections.length > 0 && (
+          <div className={`mt-4 ${spacingClass}`}>
+            {simpleSections.map((s) => renderSectionBlock(s))}
+          </div>
+        )}
 
         {/* Extras (addons) */}
         {addons.length > 0 && (
@@ -396,8 +460,7 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
         const group = featByPkg.get(p.id);
         const feats = (group?.options ?? []).filter(Boolean);
         const accent = (p as any).color || "#14b8a6";
-        const color2 =
-          (p as any).color2 || "var(--brand-2,#22D3EE)";
+        const color2 = (p as any).color2 || "var(--brand-2,#22D3EE)";
         const rawMode = (p as any).colorMode as
           | ColorMode
           | "animated"

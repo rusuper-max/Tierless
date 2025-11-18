@@ -202,27 +202,28 @@ export default function EditorShell({ slug, initialCalc }: Props) {
                 <div className="grid gap-4 mt-4 md:grid-cols-3">
                   <ModeTile
                     active={uiMode === ("tiers" as Mode)}
-                    title={t("Tier Based Price Page")}
+                    title={t("Tier-based price page")}
                     text={t(
-                      "Multiple tiers + feature checklist. Friendly defaults."
+                      "Stacked plans with feature checklist. Great for SaaS, agencies and subscriptions."
                     )}
                     cta={t("Start with tiers")}
                     onClick={() => setModeBoth("tiers")}
                   />
                   <ModeTile
                     active={uiMode === ("simple" as Mode)}
-                    title={t("Tierless Price Page")}
+                    title={t("Tierless price page")}
                     text={t(
-                      "Simple list of items and prices. Perfect for menus or clinics."
+                      "Single list of items and prices. Ideal for restaurants, clinics, salons and local businesses."
                     )}
                     cta={t("Start simple")}
+                    badge={t("Most used option")}
                     onClick={() => setModeBoth("simple")}
                   />
                   <ModeTile
                     active={uiMode === ("advanced" as Mode)}
                     title={t("Advanced editor")}
                     text={t(
-                      "Full control with packages, features, extras and sliders."
+                      "Full control with tiers, packages, extras and sliders for demanding setups."
                     )}
                     cta={t("Go advanced")}
                     onClick={() => setModeBoth("advanced")}
@@ -331,12 +332,14 @@ function ModeTile({
   title,
   text,
   cta,
+  badge,
   onClick,
 }: {
   active?: boolean;
   title: string;
   text: string;
   cta: string;
+  badge?: string;
   onClick: () => void;
 }) {
   return (
@@ -346,6 +349,7 @@ function ModeTile({
         className={`tl-tile ${active ? "is-active" : ""}`}
         onClick={onClick}
       >
+        {badge && <span className="tl-badge">{badge}</span>}
         <div className="tl-head">{title}</div>
         <p className="tl-desc">{text}</p>
         <span className="tl-cta">{cta}</span>
@@ -410,6 +414,25 @@ function ModeTile({
           opacity:.95;
         }
 
+        .tl-badge {
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          padding:2px 9px;
+          margin-bottom:6px;
+          border-radius:999px;
+          font-size:10px;
+          font-weight:500;
+          background:rgba(79,70,229,0.08);
+          border:1px solid rgba(129,140,248,0.6);
+          background-image:linear-gradient(
+            90deg,
+            rgba(79,70,229,0.12),
+            rgba(34,211,238,0.10)
+          );
+          color:#4f46e5;
+        }
+
         .tl-head {
           font-size:1.25rem;
           line-height:1.75rem;
@@ -433,6 +456,15 @@ function ModeTile({
           background:var(--card,#111214);
           border-color:rgba(255,255,255,.12);
           box-shadow:0 10px 24px rgba(0,0,0,.30);
+        }
+        :global(html.dark) .tl-badge {
+          background-image:linear-gradient(
+            90deg,
+            rgba(129,140,248,0.20),
+            rgba(45,212,191,0.16)
+          );
+          border-color:rgba(165,180,252,0.9);
+          color:#e5e7eb;
         }
       `}</style>
     </>

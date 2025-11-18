@@ -1,7 +1,7 @@
 {
   "i18n": {
     "locale": "en",
-    "currency": "EUR",
+    "currency": "RSD",
     "decimals": 2
   },
   "meta": {
@@ -35,38 +35,99 @@
     "simpleTextColor": "",
     "simpleBorderColor": "",
     "simpleShowInquiry": true,
-    "simpleAllowSelection": false
+    "simpleAllowSelection": false,
+    "simpleSections": [
+      {
+        "id": "sec_urr5vh0u",
+        "label": "Salate"
+      },
+      {
+        "id": "sec_fiw3gys4",
+        "label": "Pića"
+      },
+      {
+        "id": "sec_efkfvxxz",
+        "label": "Pizza"
+      },
+      {
+        "id": "sec_5c1somzz",
+        "label": "Riba"
+      },
+      {
+        "id": "sec_1rjnrgjt",
+        "label": "Meso"
+      }
+    ],
+    "simpleSectionStates": {
+      "sec_1rjnrgjt": false,
+      "sec_5c1somzz": false,
+      "sec_efkfvxxz": false,
+      "sec_fiw3gys4": false,
+      "sec_urr5vh0u": false
+    }
   },
   "items": [
+    {
+      "id": "it_aikcq0vdiz",
+      "label": "Ljuta paprika",
+      "price": 150,
+      "simpleSectionId": "sec_urr5vh0u"
+    },
+    {
+      "id": "it_zemiiqv79h",
+      "label": "Kupus",
+      "price": 200,
+      "simpleSectionId": "sec_urr5vh0u",
+      "note": "njam-njam"
+    },
+    {
+      "id": "it_6y6nroutz7",
+      "label": "Šopska",
+      "price": 300,
+      "simpleSectionId": "sec_urr5vh0u",
+      "note": "Paradajz,Krastavac,Sir"
+    },
+    {
+      "id": "it_w0zk7mtxpy",
+      "label": "Red Bull",
+      "price": 250,
+      "simpleSectionId": "sec_fiw3gys4",
+      "note": "Tu-Tu-Du... Max Verstappen"
+    },
     {
       "id": "it_48qzzt9jgp",
       "note": "300g piletina, sos od pečuraka, pomfrit",
       "label": "Piletina",
-      "price": 7.5
+      "price": 900,
+      "simpleSectionId": "sec_1rjnrgjt"
     },
     {
       "id": "it_mmabcx9d29",
       "note": "Pomfrit, 300g Biftek na žaru, paradajz",
       "label": "Biftek",
-      "price": 25
+      "price": 2500,
+      "simpleSectionId": "sec_1rjnrgjt"
     },
     {
       "id": "it_7rznhf9d29",
       "note": "300g riblji file, pomfrit, hleb",
       "label": "Riblji file",
-      "price": 7
+      "price": 850,
+      "simpleSectionId": "sec_5c1somzz"
     },
     {
       "id": "it_04peq0wf3e",
       "note": "35cm, Mozzarella, Paradajz sos",
       "label": "Pizza Margarita",
-      "price": 8
+      "price": 1000,
+      "simpleSectionId": "sec_efkfvxxz"
     },
     {
       "id": "it_gqo81jam5l",
-      "note": "random shit 500g",
+      "note": "random shit 500ml",
       "label": "Neki random shit",
-      "price": 0
+      "price": 999,
+      "simpleSectionId": "sec_fiw3gys4"
     }
   ],
   "addons": [],
