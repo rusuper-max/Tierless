@@ -594,7 +594,7 @@ function ShareQrModal({
 
   const handlePrint = () => {
     if (!qrUrl) return;
-    const w = window.open("", "_blank", "noopener,noreferrer");
+    const w = window.open("", "_blank");
     if (!w) return;
     const html = `<!doctype html>
 <html>
@@ -607,14 +607,41 @@ function ShareQrModal({
   </style>
 </head>
 <body>
-  <img src="${qrUrl}" alt="QR code" />
+  <img id="qr-print-image" src="${qrUrl}" alt="QR code" />
 </body>
 </html>`;
     w.document.open();
     w.document.write(html);
     w.document.close();
-    w.focus();
-    w.print();
+    const triggerPrint = () => {
+      try {
+        w.focus();
+        w.print();
+      } catch {
+        // ignore
+      }
+    };
+    const img = w.document.getElementById("qr-print-image") as HTMLImageElement | null;
+    if (img) {
+      if (img.complete) {
+        triggerPrint();
+      } else {
+        const onReady = () => {
+          img.removeEventListener("load", onReady);
+          img.removeEventListener("error", onReady);
+          triggerPrint();
+        };
+        img.addEventListener("load", onReady);
+        img.addEventListener("error", onReady);
+      }
+    } else {
+      triggerPrint();
+    }
+    w.onafterprint = () => {
+      try {
+        w.close();
+      } catch {}
+    };
   };
 
   return (
