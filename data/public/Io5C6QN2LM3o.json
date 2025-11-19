@@ -1,12 +1,12 @@
 {
   "i18n": {
     "locale": "en",
-    "currency": "RSD",
+    "currency": "€",
     "decimals": 2
   },
   "meta": {
     "id": "Io5C6QN2LM3o",
-    "name": "TEST ITEM BASED PAGE",
+    "name": "TEST",
     "slug": "copy-of-za-sada-sve-radi",
     "branding": {
       "theme": "dark",
@@ -18,6 +18,8 @@
     "editorMode": "simple",
     "simpleDots": true,
     "simpleFont": "rounded",
+    "description": "",
+    "publicTitle": "Testiranje 3 Tiera",
     "simpleTitle": "Jelovnik test Restoran XYZ",
     "simpleLayout": {
       "spacing": "roomy",
@@ -28,6 +30,20 @@
     "simpleBgGrad2": "#ecfdf5",
     "simpleSpacing": "compact",
     "simpleFontSize": "lg",
+    "simpleSections": [
+      {
+        "id": "sec_hukb7mx6",
+        "label": "Main Course"
+      },
+      {
+        "id": "sec_cjt8d6ra",
+        "label": "Beverages"
+      },
+      {
+        "id": "sec_gk4tqiaa",
+        "label": "Appetizers"
+      }
+    ],
     "simpleTextMode": "preset",
     "simpleCollapsed": false,
     "simpleHideBadge": false,
@@ -35,99 +51,231 @@
     "simpleTextColor": "",
     "simpleBorderColor": "",
     "simpleShowInquiry": true,
+    "simpleSectionStates": {},
     "simpleAllowSelection": false,
-    "simpleSections": [
+    "advancedNodes": [
       {
-        "id": "sec_urr5vh0u",
-        "label": "Salate"
+        "id": "adv_u8swu39d",
+        "kind": "tier",
+        "label": "New tier",
+        "description": "",
+        "price": 0,
+        "min": null,
+        "max": null,
+        "step": null,
+        "pricePerStep": null,
+        "accentColor": null,
+        "textColor": null,
+        "useAccentOutline": true,
+        "features": [],
+        "badgeText": null,
+        "badgeColor": null
       },
       {
-        "id": "sec_fiw3gys4",
-        "label": "Pića"
+        "id": "adv_c7gjtlej",
+        "kind": "tier",
+        "label": "New tier",
+        "description": "",
+        "price": 0,
+        "min": null,
+        "max": null,
+        "step": null,
+        "pricePerStep": null,
+        "accentColor": null,
+        "textColor": null,
+        "useAccentOutline": true,
+        "features": [],
+        "badgeText": null,
+        "badgeColor": null
       },
       {
-        "id": "sec_efkfvxxz",
-        "label": "Pizza"
+        "id": "adv_z89zsudq",
+        "kind": "addon",
+        "label": "New addon",
+        "description": "",
+        "price": 0,
+        "min": null,
+        "max": null,
+        "step": null,
+        "pricePerStep": null,
+        "accentColor": null,
+        "textColor": null,
+        "useAccentOutline": true,
+        "badgeText": null,
+        "badgeColor": null
       },
       {
-        "id": "sec_5c1somzz",
-        "label": "Riba"
+        "id": "adv_zklcfobw",
+        "kind": "addon",
+        "label": "New addon",
+        "description": "",
+        "price": 0,
+        "min": null,
+        "max": null,
+        "step": null,
+        "pricePerStep": null,
+        "accentColor": null,
+        "textColor": null,
+        "useAccentOutline": true,
+        "badgeText": null,
+        "badgeColor": null
       },
       {
-        "id": "sec_1rjnrgjt",
-        "label": "Meso"
+        "id": "adv_mk18rggh",
+        "kind": "item",
+        "label": "New item",
+        "description": "",
+        "price": 0,
+        "min": null,
+        "max": null,
+        "step": null,
+        "pricePerStep": null,
+        "accentColor": null,
+        "textColor": null,
+        "useAccentOutline": true,
+        "badgeText": null,
+        "badgeColor": null
+      },
+      {
+        "id": "adv_x0bqs1db",
+        "kind": "item",
+        "label": "New item",
+        "description": "",
+        "price": 0,
+        "min": null,
+        "max": null,
+        "step": null,
+        "pricePerStep": null,
+        "accentColor": null,
+        "textColor": null,
+        "useAccentOutline": true,
+        "badgeText": null,
+        "badgeColor": null
+      },
+      {
+        "id": "adv_uyxdimd4",
+        "kind": "slider",
+        "label": "New slider",
+        "description": "",
+        "price": null,
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "pricePerStep": 0,
+        "accentColor": null,
+        "textColor": null,
+        "useAccentOutline": true,
+        "badgeText": null,
+        "badgeColor": null
+      },
+      {
+        "id": "adv_tk6in89w",
+        "kind": "slider",
+        "label": "New slider",
+        "description": "",
+        "price": null,
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "pricePerStep": 0,
+        "accentColor": null,
+        "textColor": null,
+        "useAccentOutline": true,
+        "badgeText": null,
+        "badgeColor": null
       }
-    ],
-    "simpleSectionStates": {
-      "sec_1rjnrgjt": false,
-      "sec_5c1somzz": false,
-      "sec_efkfvxxz": false,
-      "sec_fiw3gys4": false,
-      "sec_urr5vh0u": false
-    }
+    ]
   },
   "items": [
     {
-      "id": "it_aikcq0vdiz",
-      "label": "Ljuta paprika",
-      "price": 150,
-      "simpleSectionId": "sec_urr5vh0u"
+      "id": "it_mqq98nyi",
+      "label": "Cheeseburger",
+      "price": 34,
+      "simpleSectionId": "sec_hukb7mx6"
     },
     {
-      "id": "it_zemiiqv79h",
-      "label": "Kupus",
-      "price": 200,
-      "simpleSectionId": "sec_urr5vh0u",
-      "note": "njam-njam"
+      "id": "it_ingo2zvh",
+      "label": "Cheese sandwich",
+      "price": 22,
+      "simpleSectionId": "sec_hukb7mx6"
     },
     {
-      "id": "it_6y6nroutz7",
-      "label": "Šopska",
-      "price": 300,
-      "simpleSectionId": "sec_urr5vh0u",
-      "note": "Paradajz,Krastavac,Sir"
+      "id": "it_c510bki7",
+      "label": "Chicken burgers",
+      "price": 23,
+      "simpleSectionId": "sec_hukb7mx6"
     },
     {
-      "id": "it_w0zk7mtxpy",
-      "label": "Red Bull",
-      "price": 250,
-      "simpleSectionId": "sec_fiw3gys4",
-      "note": "Tu-Tu-Du... Max Verstappen"
+      "id": "it_pz2wx2hv",
+      "label": "Spicy chicken",
+      "price": 33,
+      "simpleSectionId": "sec_hukb7mx6"
     },
     {
-      "id": "it_48qzzt9jgp",
-      "note": "300g piletina, sos od pečuraka, pomfrit",
-      "label": "Piletina",
-      "price": 900,
-      "simpleSectionId": "sec_1rjnrgjt"
+      "id": "it_y27aqlib",
+      "label": "Hot dog",
+      "price": 24,
+      "simpleSectionId": "sec_hukb7mx6"
     },
     {
-      "id": "it_mmabcx9d29",
-      "note": "Pomfrit, 300g Biftek na žaru, paradajz",
-      "label": "Biftek",
-      "price": 2500,
-      "simpleSectionId": "sec_1rjnrgjt"
+      "id": "it_izs2xsez",
+      "label": "Milk Shake",
+      "price": 3,
+      "simpleSectionId": "sec_cjt8d6ra"
     },
     {
-      "id": "it_7rznhf9d29",
-      "note": "300g riblji file, pomfrit, hleb",
-      "label": "Riblji file",
-      "price": 850,
-      "simpleSectionId": "sec_5c1somzz"
+      "id": "it_rg6oi0jl",
+      "label": "Iced Tea",
+      "price": 2,
+      "simpleSectionId": "sec_cjt8d6ra"
     },
     {
-      "id": "it_04peq0wf3e",
-      "note": "35cm, Mozzarella, Paradajz sos",
-      "label": "Pizza Margarita",
-      "price": 1000,
-      "simpleSectionId": "sec_efkfvxxz"
+      "id": "it_jwtxl012",
+      "label": "Orange Juice",
+      "price": 4,
+      "simpleSectionId": "sec_cjt8d6ra"
     },
     {
-      "id": "it_gqo81jam5l",
-      "note": "random shit 500ml",
-      "label": "Neki random shit",
-      "price": 999,
-      "simpleSectionId": "sec_fiw3gys4"
+      "id": "it_3936lbxx",
+      "label": "Lemon Tea",
+      "price": 3,
+      "simpleSectionId": "sec_cjt8d6ra"
+    },
+    {
+      "id": "it_pzm50ljm",
+      "label": "Coffee",
+      "price": 5,
+      "simpleSectionId": "sec_cjt8d6ra"
+    },
+    {
+      "id": "it_nqb67pv3",
+      "label": "Fruit Salad",
+      "price": 13,
+      "simpleSectionId": "sec_gk4tqiaa"
+    },
+    {
+      "id": "it_ih0dip3m",
+      "label": "Cocktails",
+      "price": 12,
+      "simpleSectionId": "sec_gk4tqiaa"
+    },
+    {
+      "id": "it_fj2jgvda",
+      "label": "Nuggets",
+      "price": 14,
+      "simpleSectionId": "sec_gk4tqiaa"
+    },
+    {
+      "id": "it_nasy85jw",
+      "label": "Sandwich",
+      "price": 13,
+      "simpleSectionId": "sec_gk4tqiaa"
+    },
+    {
+      "id": "it_jb7r7b6t",
+      "label": "French Fries",
+      "price": 15,
+      "simpleSectionId": "sec_gk4tqiaa"
     }
   ],
   "addons": [],
@@ -139,7 +287,80 @@
       "layout": "cards"
     }
   ],
-  "fields": [],
-  "packages": [],
+  "fields": [
+    {
+      "id": "feat_49ev8m8ezp",
+      "title": "Features",
+      "type": "features",
+      "pkgId": "pkg_demm6w8ezp",
+      "options": [
+        {
+          "id": "f_ru6c1k8ezp",
+          "label": "1 project"
+        },
+        {
+          "id": "f_m6f1vh8ezp",
+          "label": "Email support"
+        }
+      ]
+    },
+    {
+      "id": "feat_7n4qk68ezp",
+      "title": "Features",
+      "type": "features",
+      "pkgId": "pkg_wbrm7q8ezp",
+      "options": [
+        {
+          "id": "f_fyu3t98ezp",
+          "label": "Everything in Basic"
+        },
+        {
+          "id": "f_dymqdo8ezp",
+          "label": "5 projects",
+          "highlighted": true
+        }
+      ]
+    },
+    {
+      "id": "feat_abj1308ezp",
+      "title": "Features",
+      "type": "features",
+      "pkgId": "pkg_sy5fuf8ezp",
+      "options": [
+        {
+          "id": "f_t0a5f58ezp",
+          "label": "Unlimited projects"
+        },
+        {
+          "id": "f_a598dj8ezp",
+          "label": "Priority support",
+          "highlighted": true
+        }
+      ]
+    }
+  ],
+  "packages": [
+    {
+      "id": "pkg_demm6w8ezp",
+      "label": "Basic",
+      "featured": false,
+      "basePrice": 19,
+      "description": "Good for starters"
+    },
+    {
+      "id": "pkg_wbrm7q8ezp",
+      "label": "Pro",
+      "featured": true,
+      "basePrice": 39,
+      "description": "For growing teams"
+    },
+    {
+      "id": "pkg_sy5fuf8ezp",
+      "label": "Business",
+      "featured": false,
+      "basePrice": 79,
+      "description": "Best value"
+    }
+  ],
   "pricingMode": "packages"
 }

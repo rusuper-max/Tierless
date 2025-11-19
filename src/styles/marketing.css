@@ -249,6 +249,12 @@ html.dark .marketing-hero-bg{
 
 /* Sadržaj i header iznad maske */
 .marketing-shell { position: relative; z-index: 12; }
+
+.marketing-shell-inner {
+  width: 100%;
+  margin: 0 auto;
+  padding-inline: clamp(1.25rem, 4vw, 4.5rem);
+}
 header.marketing { position: relative; z-index: 20; }
 
 /* Marketing-only global background (fiksiran za viewport) */

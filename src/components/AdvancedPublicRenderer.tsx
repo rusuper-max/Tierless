@@ -117,8 +117,29 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
     );
   }
 
+  const title =
+    typeof meta.publicTitle === "string" ? meta.publicTitle.trim() : "";
+
+  const description =
+    typeof meta.publicDescription === "string"
+      ? meta.publicDescription.trim()
+      : "";
+
   return (
     <div className="space-y-6">
+      {(title || description) && (
+        <header className="space-y-1">
+          {title && (
+            <h1 className="text-xl font-semibold text-[var(--text)]">
+              {title}
+            </h1>
+          )}
+          {description && (
+            <p className="text-sm text-[var(--muted)]">{description}</p>
+          )}
+        </header>
+      )}
+
       {/* Paketi (tiers) */}
       {tierNodes.length > 0 && (
         <section className="space-y-3">

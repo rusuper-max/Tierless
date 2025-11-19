@@ -22,14 +22,14 @@ export default function RenderRoot({
   const blocks: any[] = Array.isArray(calc?.blocks) ? (calc.blocks as any[]) : [];
 
   const title =
-    calc?.meta?.name && typeof calc.meta.name === "string"
-      ? calc.meta.name
-      : t("Untitled");
+    typeof calc?.meta?.publicTitle === "string"
+      ? calc.meta.publicTitle.trim()
+      : "";
 
   const description =
-    calc?.meta?.description && typeof calc.meta.description === "string"
-      ? calc.meta.description
-      : null;
+    typeof calc?.meta?.publicDescription === "string"
+      ? calc.meta.publicDescription.trim()
+      : "";
 
   return (
     <div className="space-y-6">

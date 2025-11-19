@@ -452,6 +452,7 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
 
   /* ------------ TIERS / LEGACY ADVANCED MODE ------------ */
   const pkgs: Pkg[] = calc.packages ?? [];
+  const metaCommon = (calc.meta || {}) as any;
   const featByPkg = new Map<string, OptionGroup>();
   (calc.fields ?? []).forEach((g) => {
     if (g.type === "features" && g.pkgId) featByPkg.set(g.pkgId, g);
@@ -465,8 +466,32 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
     );
   }
 
+  const title =
+    typeof metaCommon.publicTitle === "string"
+      ? metaCommon.publicTitle.trim()
+      : "";
+
+  const description =
+    typeof metaCommon.publicDescription === "string"
+      ? metaCommon.publicDescription.trim()
+      : "";
+
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+    <div className="space-y-6">
+      {(title || description) && (
+        <header className="space-y-1">
+          {title && (
+            <h1 className="text-xl font-semibold text-[var(--text)]">
+              {title}
+            </h1>
+          )}
+          {description && (
+            <p className="text-sm text-[var(--muted)]">{description}</p>
+          )}
+        </header>
+      )}
+
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
       {pkgs.map((p) => {
         const group = featByPkg.get(p.id);
         const feats = (group?.options ?? []).filter(Boolean);
@@ -607,6 +632,7 @@ export default function PublicRenderer({ calc }: { calc: CalcJson }) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

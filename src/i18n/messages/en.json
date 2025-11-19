@@ -12,10 +12,10 @@
     "signout": "Sign out"
   },
   "hero": {
-    "title": "Build a pricing page in minutes",
-    "subtitle": "A clean, embeddable one-page calculator for your business.",
+    "title": "Skip the website. Give your prices a page and QR code",
+    "subtitle": "For cafés, restaurants, salons and small businesses that just need a clean price page. Add your items and prices, get a link and QR code, and let customers see your prices on their device.",
     "ctaPrimary": "Start free",
-    "ctaSecondary": "See templates"
+    "ctaSecondary": "See live demo"
   },
   "features": {
     "block1Title": "No code required",

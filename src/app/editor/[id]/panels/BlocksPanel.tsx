@@ -131,10 +131,21 @@ function ColorModeToggle({
 
 function PageHeaderSettings() {
   const calc = useEditorStore((s) => s.calc);
-  const name = calc?.meta?.name ?? "";
-  const description: string = String(calc?.meta?.description ?? "");
+  const title =
+    (typeof calc?.meta?.publicTitle === "string"
+      ? calc.meta.publicTitle
+      : calc?.meta?.name) ?? "";
+  const description: string =
+    (typeof calc?.meta?.publicDescription === "string"
+      ? calc.meta.publicDescription
+      : typeof calc?.meta?.description === "string"
+      ? calc.meta.description
+      : "") ?? "";
 
-  const setMeta = (patch: { name?: string; description?: string }) => {
+  const setMeta = (patch: {
+    publicTitle?: string;
+    publicDescription?: string;
+  }) => {
     const { calc: current } = useEditorStore.getState();
     if (!current) return;
     const next = {
@@ -148,8 +159,8 @@ function PageHeaderSettings() {
     <section className="mb-5 space-y-2">
       <InlineInput
         placeholder={t("Page title (optional)")}
-        value={name}
-        onChange={(e) => setMeta({ name: e.target.value })}
+        value={title}
+        onChange={(e) => setMeta({ publicTitle: e.target.value })}
         className="w-full text-base font-semibold"
       />
       <textarea
@@ -157,7 +168,7 @@ function PageHeaderSettings() {
         rows={2}
         placeholder={t("Short intro or description…")}
         value={description}
-        onChange={(e) => setMeta({ description: e.target.value })}
+        onChange={(e) => setMeta({ publicDescription: e.target.value })}
       />
     </section>
   );

@@ -249,9 +249,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
               { id: genId("it"), label: "Cappuccino", price: 3 },
               { id: genId("it"), label: "Latte", price: 3.5 },
             ];
-      next.packages = [];
-      // ukloni features vezane za pakete; range ostavi ako je globalan
-      next.fields = next.fields.filter((g) => g.type !== "features");
     } else if (mode === "tiers") {
       // 3 paketa spremna odmah
       if (!next.packages.length) {
@@ -308,9 +305,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           ],
         });
       }
-      next.items = [];
-      // ukloni range (da bude “friendly”)
-      next.fields = next.fields.filter((g) => g.type !== "range");
     } else {
       // advanced
       if (!next.packages.length && (!next.items || !next.items.length)) {
