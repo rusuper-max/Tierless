@@ -9,6 +9,7 @@ import {
   Save as SaveIcon,
   Sun,
   Moon,
+  Share2,
 } from "lucide-react";
 import { t } from "@/i18n";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
@@ -124,7 +125,6 @@ function ThemeToggle() {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    // init from DOM/localStorage
     const root = document.documentElement;
     const ls =
       typeof window !== "undefined" ? localStorage.getItem("theme") : null;
@@ -207,7 +207,6 @@ function PlanBadge() {
   if (!cfg) return null;
 
   if (cfg.gradient) {
-    // Tierless – gradient outline + gradient text
     return (
       <div className="hidden sm:inline-flex" data-tour-id="tour-plan">
         <div className="relative inline-flex items-center rounded-full bg-[var(--card)] px-3.5 py-1.5 text-xs font-medium">
@@ -241,7 +240,6 @@ function PlanBadge() {
     );
   }
 
-  // ostali planovi – običan outline u boji plana
   return (
     <div className="hidden sm:inline-flex" data-tour-id="tour-plan">
       <div
@@ -282,7 +280,6 @@ function EditorTourOverlay({
   editorMode: Mode;
 }) {
   const steps: TourStepDef[] = useMemo(() => {
-    // Base steps – nav + “scroll down”
     const base: TourStepDef[] = [
       {
         id: "plan",
@@ -315,6 +312,14 @@ function EditorTourOverlay({
         ),
       },
       {
+        id: "share",
+        targetId: "tour-share",
+        title: t("Share & QR"),
+        body: t(
+          "Need a quick link or QR code for tables, flyers or stickers? Use Share to copy the link, download the QR image or print it right away."
+        ),
+      },
+      {
         id: "scroll-editor",
         targetId: "tour-scroll-editor",
         title: t("Editor lives below"),
@@ -324,12 +329,10 @@ function EditorTourOverlay({
       },
     ];
 
-    // Setup mode – samo navbar stvari
     if (editorMode === "setup") {
       return base;
     }
 
-    // Mode-specific editor steps
     const modeSteps: TourStepDef[] = [];
 
     if (editorMode === "simple") {
@@ -359,11 +362,8 @@ function EditorTourOverlay({
           ),
         }
       );
-       } else if (editorMode === "tiers") {
-      // Za tier-based editor za sada ne dodajemo dodatne in-editor stepove,
-      // dok ne ubacimo posebne data-tour-id hookove u BlocksPanel.
-      // Tako izbegavamo korake koji pokušavaju da objasne simple-list polja
-      // koja ovde ne postoje.
+    } else if (editorMode === "tiers") {
+      // rezervisano za kasnije kad dodamo tour hookove u BlocksPanel
     } else if (editorMode === "advanced") {
       modeSteps.push(
         {
@@ -416,7 +416,6 @@ function EditorTourOverlay({
         return;
       }
 
-      // za editor stepove lagano ga centriramo u viewportu
       if (
         step.targetId === "tour-title" ||
         step.targetId === "tour-items" ||
@@ -433,7 +432,6 @@ function EditorTourOverlay({
       setRect(r);
     };
 
-    // malo odložimo da se layout smiri
     rafRef.current = window.requestAnimationFrame(update);
 
     const onResize = () => {
@@ -485,12 +483,11 @@ function EditorTourOverlay({
             height: rect.height + 20,
             borderRadius: 18,
             boxShadow:
-              "0 0 0 2000px rgba(6,13,28,0.82), 0 0 0 2px rgba(148,163,184,.85), 0 0 26px 10px rgba(34,211,238,.35)",
+              "0 0 0 6000px rgba(6,13,28,0.82), 0 0 0 2px rgba(148,163,184,.85), 0 0 26px 10px rgba(34,211,238,.35)",
           }}
         />
       )}
 
-      {/* Kartica sa tekstom – dole, centrirana, ne prekriva nav */}
       <div className="relative z-[82] w-full max-w-md rounded-2xl border border-white/12 bg-[rgba(10,18,32,0.96)] p-4 sm:p-5 shadow-2xl">
         <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
           <span className="text-[11px] uppercase tracking-wide">
@@ -537,6 +534,179 @@ function EditorTourOverlay({
   );
 }
 
+/* ---------------- Share / QR modal ---------------- */
+
+function ShareQrModal({
+  open,
+  onClose,
+  url,
+}: {
+  open: boolean;
+  onClose: () => void;
+  url: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const qrUrl = useMemo(() => {
+    if (!url) return "";
+    const encoded = encodeURIComponent(url);
+    return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encoded}`;
+  }, [url]);
+
+  useEffect(() => {
+    if (!open) setCopied(false);
+  }, [open]);
+
+  if (!open) return null;
+
+  const handleCopy = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = url;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      }
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!qrUrl) return;
+    const a = document.createElement("a");
+    a.href = qrUrl;
+    a.download = "tierless-qr.png";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handlePrint = () => {
+    if (!qrUrl) return;
+    const w = window.open("", "_blank", "noopener,noreferrer");
+    if (!w) return;
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>QR code</title>
+  <style>
+    body { margin: 0; padding: 24px; display:flex; align-items:center; justify-content:center; }
+    img { max-width:100%; height:auto; }
+  </style>
+</head>
+<body>
+  <img src="${qrUrl}" alt="QR code" />
+</body>
+</html>`;
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.print();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
+      <div
+        className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative z-[71] w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 shadow-2xl">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <h2 className="text-sm sm:text-base font-semibold text-[var(--text)]">
+            {t("Share this page")}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full px-2 py-1 text-xs text-[var(--muted)] hover:bg-[var(--surface)] cursor-pointer"
+          >
+            {t("Close")}
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {/* Link + copy */}
+          <div className="space-y-1">
+            <label className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
+              {t("Public link")}
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={url}
+                className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1.5 text-xs sm:text-[13px] text-[var(--text)]"
+              />
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-1.5 text-[11px] sm:text-xs text-[var(--text)] hover:bg-[var(--surface)] cursor-pointer"
+              >
+                {copied ? t("Copied") : t("Copy")}
+              </button>
+            </div>
+          </div>
+
+          {/* QR */}
+          <div className="space-y-2">
+            <label className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
+              {t("QR code")}
+            </label>
+            <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--bg)] px-4 py-3">
+              {qrUrl ? (
+                <img
+                  src={qrUrl}
+                  alt={t("QR code for this page")}
+                  className="h-40 w-40 sm:h-44 sm:w-44 rounded-lg bg-white"
+                />
+              ) : (
+                <div className="text-xs text-[var(--muted)]">
+                  {t("Unable to generate QR code.")}
+                </div>
+              )}
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  className="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-[11px] sm:text-xs text-[var(--text)] hover:bg-[var(--surface)] cursor-pointer"
+                >
+                  {t("Download QR")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-[11px] sm:text-xs text-[var(--text)] hover:bg-[var(--surface)] cursor-pointer"
+                >
+                  {t("Print")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-3 text-[11px] text-[var(--muted)]">
+          {t(
+            "You can put this QR code on tables, windows or cards. When customers scan it, they will open this public page."
+          )}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------- Main nav ---------------- */
 
 export default function EditorNavBar({
@@ -559,13 +729,23 @@ export default function EditorNavBar({
   editorMode: Mode;
 }) {
   const [tourStep, setTourStep] = useState<number | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  const fullPublicUrl = useMemo(() => {
+    if (!publicHref) return "";
+    if (publicHref.startsWith("http://") || publicHref.startsWith("https://")) {
+      return publicHref;
+    }
+    if (typeof window === "undefined") return publicHref;
+    const origin = window.location.origin || "";
+    return `${origin}${publicHref}`;
+  }, [publicHref]);
 
   return (
     <>
       <nav className="tl-navbar sticky top-0 z-[60] border-b border-[var(--border)] bg-[var(--bg)]">
-        <div className="flex h-14 items-center justify-between px-4 lg:px-8">
-          <div className="flex items-center gap-3">
-            {/* Tierless logo link – marketing / main site */}
+        <div className="flex h-14 items-center justify-between px-3 sm:px-4 lg:px-8">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Link
               href="https://tierless.net"
               target="_blank"
@@ -601,9 +781,11 @@ export default function EditorNavBar({
                 </span>
               </button>
             )}
-            <span className="text-sm text-[var(--muted)]">/</span>
+            <span className="hidden xs:inline text-sm text-[var(--muted)]">
+              /
+            </span>
             <span
-              className="text-sm text-[var(--text)]"
+              className="max-w-[16ch] truncate text-sm text-[var(--text)]"
               data-tour-id="tour-scroll-editor"
             >
               {calcName || t("Untitled")}
@@ -612,7 +794,6 @@ export default function EditorNavBar({
 
           <div className="flex items-center gap-2">
             <PlanBadge />
-            {/* Guide dugme */}
             <ActionButton
               label={t("Guide")}
               onClick={() => setTourStep(0)}
@@ -633,21 +814,32 @@ export default function EditorNavBar({
                 size="sm"
               />
             </div>
-            {/* Public link — otvara novi tab */}
-            <div data-tour-id="tour-public">
-              <ActionButton
-                label={t("Public")}
-                icon={<ExternalLink className="size-4" />}
-                href={publicHref}
-                target="_blank"
-                variant="brand"
-                size="sm"
-                title={t("Open public page in a new tab")}
-              />
+            <div className="flex items-center gap-1">
+              <div data-tour-id="tour-public">
+                <ActionButton
+                  label={t("Public")}
+                  icon={<ExternalLink className="size-4" />}
+                  href={publicHref}
+                  target="_blank"
+                  variant="brand"
+                  size="sm"
+                  title={t("Open public page in a new tab")}
+                />
+              </div>
+              <div data-tour-id="tour-share">
+                <ActionButton
+                  label={t("Share")}
+                  icon={<Share2 className="size-4" />}
+                  onClick={() => setShareOpen(true)}
+                  variant="brand"
+                  size="xs"
+                  title={t("Show link and QR code for this page")}
+                  disabled={!fullPublicUrl}
+                />
+              </div>
             </div>
           </div>
         </div>
-        {/* brand linija ispod dugmadi */}
         <div
           className="h-[3px] bg-[linear-gradient(90deg,var(--brand-1),var(--brand-2))] shadow-[0_6px_18px_rgba(34,211,238,.18)]"
           aria-hidden
@@ -661,6 +853,12 @@ export default function EditorNavBar({
           editorMode={editorMode}
         />
       )}
+
+      <ShareQrModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        url={fullPublicUrl}
+      />
     </>
   );
 }

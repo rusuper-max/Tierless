@@ -1,5 +1,6 @@
 // src/lib/calcsStore.ts
 import { getPool } from "@/lib/db";
+import { syncPublicationState } from "@/lib/publishSync";
 
 export type Calc = {
   meta: {
@@ -218,7 +219,11 @@ export async function setPublished(userId: string, slug: string, next: boolean):
     `UPDATE calculators SET published=$1, updated_at=$2 WHERE user_id=$3 AND slug=$4`,
     [!!next, now, userId, slug]
   );
-  return (res.rowCount ?? 0) > 0;
+  const ok = (res.rowCount ?? 0) > 0;
+  if (ok) {
+    await syncPublicationState(userId, slug, !!next);
+  }
+  return ok;
 }
 
 export async function setFavorite(userId: string, slug: string, next: boolean): Promise<boolean> {
@@ -299,7 +304,14 @@ export async function bulkUnpublishAboveLimit(userId: string, keep: number): Pro
       `UPDATE calculators SET published=FALSE, updated_at=$1 WHERE user_id=$2 AND slug=$3`,
       [now, userId, slug]
     );
-    if ((res.rowCount ?? 0) > 0) changed++;
+    if ((res.rowCount ?? 0) > 0) {
+      try {
+        await syncPublicationState(userId, slug, false);
+      } catch (err) {
+        console.error("syncPublicationState failed for", slug, err);
+      }
+      changed++;
+    }
   }
   return changed;
 }

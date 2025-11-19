@@ -1,8 +1,9 @@
 // src/app/dashboard/page.client.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState, Fragment } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, Fragment } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAccount } from "@/hooks/useAccount";
 import { ENTITLEMENTS, type PlanId } from "@/lib/entitlements";
 import { t } from "@/i18n";
@@ -208,6 +209,7 @@ type MiniCalc = {
   meta: {
     name: string;
     slug: string;
+    id?: string;
     published?: boolean;
     online?: boolean;
     favorite?: boolean;
@@ -367,6 +369,8 @@ function PageRow({
   isSelected,
   onSelectToggle,
   onCopyUrl,
+  onOpenPublic,
+  onEdit,
   onRenameStart,
   onDuplicate,
   onDelete,
@@ -383,6 +387,8 @@ function PageRow({
   isSelected: boolean;
   onSelectToggle: (slug: string) => void;
   onCopyUrl: (slug: string) => void;
+  onOpenPublic: (row: MiniCalc) => void;
+  onEdit: (slug: string) => void;
   onRenameStart: (slug: string, name: string) => void;
   onDuplicate: (slug: string, name: string) => void;
   onDelete: (slug: string, name: string) => void;
@@ -470,17 +476,8 @@ function PageRow({
       <td className="align-middle">
         <div className="w-full flex justify-center">
           <div className="flex items-center justify-center gap-2 flex-wrap whitespace-normal">
-          <ActionButton
-  label="Public"
-  onClick={() => {
-    const id = (row as any)?.meta?.id ? String((row as any).meta.id) : "";
-    const pretty = id ? `/p/${id}-${slug}` : `/p/${slug}`;
-    // otvorimo odmah pretty URL (nema blokera, nema about:blank)
-    window.open(pretty, "_blank", "noopener,noreferrer");
-  }}
-  variant="brand"
-/>
-            <ActionButton label="Edit" href={`/editor/${slug}`} variant="brand" />
+            <ActionButton label="Public" onClick={() => onOpenPublic(row)} variant="brand" />
+            <ActionButton label="Edit" onClick={() => onEdit(slug)} variant="brand" />
             <ActionButton label="Rename" onClick={() => onRenameStart(slug, name)} variant="brand" />
             <ActionButton
               label={busySlug === slug ? "Duplicating…" : "Duplicate"}
@@ -514,6 +511,8 @@ type PageCardProps = {
   isSelected: boolean;
   onSelectToggle: (slug: string) => void;
   onCopyUrl: (slug: string) => void;
+  onOpenPublic: (row: MiniCalc) => void;
+  onEdit: (slug: string) => void;
   onRenameStart: (slug: string, name: string) => void;
   onDuplicate: (slug: string, name: string) => void;
   onDelete: (slug: string, name: string) => void;
@@ -530,6 +529,8 @@ function PageCard({
   isSelected,
   onSelectToggle,
   onCopyUrl,
+  onOpenPublic,
+  onEdit,
   onRenameStart,
   onDuplicate,
   onDelete,
@@ -579,17 +580,8 @@ function PageCard({
         >
           {published ? "Online" : "Offline"}
         </button>
-        <ActionButton
-          label="Public"
-          onClick={() => {
-            const id = (row as any)?.meta?.id ? String((row as any).meta.id) : "";
-            const pretty = id ? `/p/${id}-${slug}` : `/p/${slug}`;
-            window.open(pretty, "_blank", "noopener,noreferrer");
-          }}
-          variant="brand"
-          size="xs"
-        />
-        <ActionButton label="Edit" href={`/editor/${slug}`} variant="brand" size="xs" />
+        <ActionButton label="Public" onClick={() => onOpenPublic(row)} variant="brand" size="xs" />
+        <ActionButton label="Edit" onClick={() => onEdit(slug)} variant="brand" size="xs" />
         <ActionButton label="Rename" onClick={() => onRenameStart(slug, name)} variant="brand" size="xs" />
         <ActionButton
           label={busySlug === slug ? "Duplicating…" : "Duplicate"}
@@ -635,6 +627,7 @@ type FilterId = "all" | "online" | "offline" | "favorites";
 
 export default function DashboardPageClient() {
   const account = useAccount();
+  const router = useRouter();
 
   const [rows, setRows] = useState<MiniCalc[]>([]);
   const [loading, setLoading] = useState(true);
@@ -724,6 +717,7 @@ export default function DashboardPageClient() {
   };
 
   const reorderBySlug = (fromSlug: string, toSlug: string, pos: "before" | "after" = "before") => {
+    if (guardOverLimit()) return;
     setRows((prev) => {
       const fromIdx = prev.findIndex((x) => x.meta.slug === fromSlug);
       const toIdxOriginal = prev.findIndex((x) => x.meta.slug === toSlug);
@@ -757,6 +751,7 @@ export default function DashboardPageClient() {
   const startDragCleanup = useRef<null | (() => void)>(null);
 
   const onPointerDragStart = (slug: string, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (guardOverLimit()) return;
     e.preventDefault();
     setDragSlug(slug);
     dragSlugRef.current = slug;
@@ -856,10 +851,30 @@ export default function DashboardPageClient() {
 
   const [notice, setNotice] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const showToast = (msg: string) => {
+  const toastTimerRef = useRef<number | null>(null);
+  const showToast = useCallback((msg: string) => {
     setToast(msg);
-    window.setTimeout(() => setToast(null), 1300);
-  };
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 1600);
+  }, []);
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  const [limitPulse, setLimitPulse] = useState(false);
+  const limitPulseTimerRef = useRef<number | null>(null);
+  const bumpLimitPulse = useCallback(() => {
+    setLimitPulse(true);
+    if (limitPulseTimerRef.current) window.clearTimeout(limitPulseTimerRef.current);
+    limitPulseTimerRef.current = window.setTimeout(() => setLimitPulse(false), 1500);
+  }, []);
+  useEffect(() => {
+    return () => {
+      if (limitPulseTimerRef.current) window.clearTimeout(limitPulseTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -1001,6 +1016,37 @@ export default function DashboardPageClient() {
     if (pagesLimit === "unlimited") return 0;
     return Math.min(100, Math.round((totalPages / Math.max(1, pagesLimit as number)) * 100));
   }, [pagesLimit, totalPages]);
+
+  const isOverPagesLimit = typeof pagesLimit === "number" && totalPages > pagesLimit;
+  const overLimitMessage =
+    "You're over the page limit for your plan. Resolve it by deleting pages or upgrading your plan.";
+  useEffect(() => {
+    if (isOverPagesLimit) bumpLimitPulse();
+  }, [isOverPagesLimit, bumpLimitPulse]);
+  const guardOverLimit = useCallback(() => {
+    if (!isOverPagesLimit) return false;
+    showToast(overLimitMessage);
+    bumpLimitPulse();
+    return true;
+  }, [isOverPagesLimit, bumpLimitPulse, showToast]);
+
+  const startRename = useCallback(
+    (slug: string, name: string) => {
+      if (guardOverLimit()) return;
+      setRenSlug(slug);
+      setRenName(name);
+      setRenError(null);
+    },
+    [guardOverLimit]
+  );
+  const pagesCounterClass = [
+    "mt-1 text-xs",
+    isOverPagesLimit ? "text-rose-600 font-semibold" : "text-[var(--muted)]",
+    limitPulse ? "animate-pulse" : "",
+  ]
+    .join(" ")
+    .trim();
+  const progressGlowClass = limitPulse ? "shadow-[0_0_0_3px_rgba(248,113,113,0.35)]" : "";
 
 
   const derived = useMemo(() => {
@@ -1185,7 +1231,8 @@ function publishLimitMsg(planName: string) {
 }
 
   async function setOnline(slug: string, next: boolean) {
-  // 1) Pre-submit guard (UI)
+    if (guardOverLimit()) return;
+    // 1) Pre-submit guard (UI)
   if (next && Number.isFinite(publishedLimitNum) && publishedCount >= publishedLimitNum) {
     alert(publishLimitMsg(plan));
     return;
@@ -1230,6 +1277,7 @@ function publishLimitMsg(planName: string) {
 }
 
   async function toggleFavorite(slug: string, next: boolean) {
+    if (guardOverLimit()) return;
     setRows((prev) => prev.map((x) => (x.meta.slug === slug ? { ...x, meta: { ...x.meta, favorite: next } } : x)));
     setFavLS(slug, next);
     await fetch(`/api/calculators/${encodeURIComponent(slug)}/meta`, {
@@ -1253,6 +1301,10 @@ function publishLimitMsg(planName: string) {
 
   async function renameConfirmed(newName: string) {
     if (!renSlug) return;
+    if (guardOverLimit()) {
+      setRenError(overLimitMessage);
+      return;
+    }
     const slug = renSlug;
     setBusy(slug);
     setRenError(null);
@@ -1315,6 +1367,7 @@ function publishLimitMsg(planName: string) {
   }
 
   const moveBy = (slug: string, dir: -1 | 1) => {
+    if (guardOverLimit()) return;
     setRows((prev) => {
       const idx = prev.findIndex((x) => x.meta.slug === slug);
       if (idx < 0) return prev;
@@ -1335,17 +1388,37 @@ function publishLimitMsg(planName: string) {
   };
 
   const copyUrl = async (slug: string) => {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const path = await getPublicUrlForSlug(slug);
-  const url = `${origin}${path}`;
-  try {
-    await navigator.clipboard.writeText(url);
-    showToast("Copied to clipboard");
-  } catch {
-    // fallback: bar pokaži URL da user može ručno da kopira
-    alert(url);
-  }
-};
+    if (guardOverLimit()) return;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const path = await getPublicUrlForSlug(slug);
+    const url = `${origin}${path}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("Copied to clipboard");
+    } catch {
+      // fallback: bar pokaži URL da user može ručno da kopira
+      alert(url);
+    }
+  };
+
+  const openPublicPage = useCallback(
+    (row: MiniCalc) => {
+      if (guardOverLimit()) return;
+      const slug = row.meta.slug;
+      const id = row.meta?.id ? String(row.meta.id) : "";
+      const pretty = id ? `/p/${id}-${slug}` : `/p/${slug}`;
+      window.open(pretty, "_blank", "noopener,noreferrer");
+    },
+    [guardOverLimit]
+  );
+
+  const handleEdit = useCallback(
+    (slug: string) => {
+      if (guardOverLimit()) return;
+      router.push(`/editor/${slug}`);
+    },
+    [guardOverLimit, router]
+  );
 
   const allOnPage = derived.map((r) => r.meta.slug);
   const allSelected = allOnPage.length > 0 && allOnPage.every((s) => selected.has(s));
@@ -1404,6 +1477,21 @@ function publishLimitMsg(planName: string) {
         </div>
       )}
 
+      {isOverPagesLimit && (
+        <div className="rounded-[var(--radius)] border border-amber-300/80 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/60 dark:bg-amber-500/10 dark:text-amber-50">
+          <div className="font-semibold">You&apos;re over the page limit for your plan.</div>
+          <p className="mt-1 text-xs">
+            Delete some pages or upgrade your plan to continue editing or publishing.
+          </p>
+          <Link
+            href="/dashboard/account"
+            className="mt-2 inline-flex text-xs font-semibold text-amber-900 underline decoration-dotted underline-offset-2 hover:decoration-solid dark:text-amber-100"
+          >
+            Manage plan →
+          </Link>
+        </div>
+      )}
+
       <header className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold text-[var(--text)]">Pages</h1>
@@ -1459,18 +1547,26 @@ function publishLimitMsg(planName: string) {
       </header>
 
       {/* Usage / quotas */}
-      <section className="card p-4 border border-[var(--border)] rounded-[var(--radius)] bg-[var(--card)]">
+      <section
+        className={`card p-4 rounded-[var(--radius)] bg-[var(--card)] border ${
+          isOverPagesLimit ? "border-rose-300/80" : "border-[var(--border)]"
+        } ${limitPulse && isOverPagesLimit ? "ring-2 ring-rose-200/60" : ""}`}
+      >
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <div className="text-sm font-medium text-[var(--text)]">Pages</div>
             <div className="mt-2 h-2 w-full rounded-full bg-[var(--track,#f3f4f6)]">
               <div
-                className="h-2 rounded-full bg-gradient-to-r from-[var(--brand-1,#4F46E5)] to-[var(--brand-2,#22D3EE)] transition-[width]"
+                className={`h-2 rounded-full transition-[width] bg-gradient-to-r ${
+                  isOverPagesLimit
+                    ? "from-rose-500 to-rose-400"
+                    : "from-[var(--brand-1,#4F46E5)] to-[var(--brand-2,#22D3EE)]"
+                } ${progressGlowClass}`}
                 style={{ width: `${pagesPct}%` }}
                 aria-hidden
               />
             </div>
-            <div className="mt-1 text-xs text-[var(--muted)]">
+            <div className={pagesCounterClass}>
               {typeof pagesLimit === "number" ? `${totalPages} / ${pagesLimit}` : `${totalPages} / ∞`}
             </div>
           </div>
@@ -1587,11 +1683,9 @@ function publishLimitMsg(planName: string) {
                 isSelected={selected.has(r.meta.slug)}
                 onSelectToggle={toggleSelect}
                 onCopyUrl={copyUrl}
-                onRenameStart={(slug, name) => {
-                  setRenSlug(slug);
-                  setRenName(name);
-                  setRenError(null);
-                }}
+                onOpenPublic={openPublicPage}
+                onEdit={handleEdit}
+                onRenameStart={startRename}
                 onDuplicate={duplicate}
                 onDelete={(slug, name) => {
                   setConfirmSlug(slug);
@@ -1655,11 +1749,9 @@ function publishLimitMsg(planName: string) {
                       isDragging={dragSlug === slug}
                       onSelectToggle={toggleSelect}
                       onCopyUrl={copyUrl}
-                      onRenameStart={(slug, name) => {
-                        setRenSlug(slug);
-                        setRenName(name);
-                        setRenError(null);
-                      }}
+                      onOpenPublic={openPublicPage}
+                      onEdit={handleEdit}
+                      onRenameStart={startRename}
                       onDuplicate={duplicate}
                       onDelete={(slug, name) => {
                         setConfirmSlug(slug);

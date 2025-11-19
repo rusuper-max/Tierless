@@ -65,6 +65,13 @@ export default async function PublicPage(
   const { id, slug } = parseKey(idOrSlug);
   const calc = await loadPublic(id, slug || idOrSlug);
   if (!calc) notFound();
+  const isPublished =
+    typeof calc?.meta?.published === "boolean"
+      ? calc.meta.published
+      : typeof calc?.meta?.online === "boolean"
+        ? calc.meta.online
+        : false;
+  if (!isPublished) notFound();
 
   return (
     <main className="min-h-screen bg-[#f8fafc] text-[#020617] dark:bg-[#05010d] dark:text-white">
