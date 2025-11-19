@@ -134,6 +134,9 @@ export default function EditorShell({ slug, initialCalc }: Props) {
       ? `/p/${encodeURIComponent(String(id))}-${encodeURIComponent(String(sl))}`
       : `/p/${encodeURIComponent(String(sl))}`;
   })();
+  const isPublished = !!(
+    (calc as any)?.meta?.published ?? (calc as any)?.meta?.online
+  );
 
   return (
     <main className="tl-editor min-h-screen">
@@ -151,6 +154,7 @@ export default function EditorShell({ slug, initialCalc }: Props) {
         isSaving={isSaving}
         isDirty={isDirty}
         publicHref={publicHref}
+        isPublished={isPublished}
         editorMode={uiMode}
       />
 

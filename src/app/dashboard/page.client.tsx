@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 import { useAccount } from "@/hooks/useAccount";
 import { ENTITLEMENTS, type PlanId } from "@/lib/entitlements";
 import { t } from "@/i18n";
-import { GripVertical, Copy as CopyIcon, Star } from "lucide-react";
+import { GripVertical, Share2, Star } from "lucide-react";
+import ShareQrModal from "@/components/share/ShareQrModal";
 
 /* ------------------------------------------------------------------ */
 /* Mini UI tokens                                                      */
@@ -368,7 +369,7 @@ function PageRow({
   index,
   isSelected,
   onSelectToggle,
-  onCopyUrl,
+  onShare,
   onOpenPublic,
   onEdit,
   onRenameStart,
@@ -386,7 +387,7 @@ function PageRow({
   index: number;
   isSelected: boolean;
   onSelectToggle: (slug: string) => void;
-  onCopyUrl: (slug: string) => void;
+  onShare: (slug: string) => void;
   onOpenPublic: (row: MiniCalc) => void;
   onEdit: (slug: string) => void;
   onRenameStart: (slug: string, name: string) => void;
@@ -433,8 +434,17 @@ function PageRow({
 
       <td className="text-[var(--muted)] text-center">
         <div className="flex items-center gap-2 justify-center">
-          <IconButton title="Copy public link" ariaLabel="Copy public link" onClick={() => onCopyUrl(slug)}>
-            <CopyIcon className="size-4" />
+          <IconButton
+            title={
+              published
+                ? "Share link & QR code"
+                : 'Publish this page from the dashboard ("Offline" button) to enable sharing'
+            }
+            ariaLabel="Share link and QR code"
+            onClick={() => onShare(slug)}
+            disabled={!published}
+          >
+            <Share2 className="size-4" />
           </IconButton>
         </div>
       </td>
@@ -476,7 +486,17 @@ function PageRow({
       <td className="align-middle">
         <div className="w-full flex justify-center">
           <div className="flex items-center justify-center gap-2 flex-wrap whitespace-normal">
-            <ActionButton label="Public" onClick={() => onOpenPublic(row)} variant="brand" />
+        <ActionButton
+          label="Public"
+          onClick={() => onOpenPublic(row)}
+          variant="brand"
+          disabled={!published}
+          title={
+            published
+              ? undefined
+              : 'Publish this page from the dashboard ("Offline" button) to open the link'
+          }
+        />
             <ActionButton label="Edit" onClick={() => onEdit(slug)} variant="brand" />
             <ActionButton label="Rename" onClick={() => onRenameStart(slug, name)} variant="brand" />
             <ActionButton
@@ -510,7 +530,7 @@ type PageCardProps = {
   row: MiniCalc;
   isSelected: boolean;
   onSelectToggle: (slug: string) => void;
-  onCopyUrl: (slug: string) => void;
+  onShare: (slug: string) => void;
   onOpenPublic: (row: MiniCalc) => void;
   onEdit: (slug: string) => void;
   onRenameStart: (slug: string, name: string) => void;
@@ -528,7 +548,7 @@ function PageCard({
   row,
   isSelected,
   onSelectToggle,
-  onCopyUrl,
+  onShare,
   onOpenPublic,
   onEdit,
   onRenameStart,
@@ -560,8 +580,17 @@ function PageCard({
             <p className="text-xs text-[var(--muted)]">{fmtDateTime(createdAt)}</p>
           </div>
         </div>
-        <IconButton title="Copy public link" ariaLabel="Copy public link" onClick={() => onCopyUrl(slug)}>
-          <CopyIcon className="size-4" />
+        <IconButton
+          title={
+            published
+              ? "Share link & QR code"
+              : 'Publish this page from the dashboard ("Offline" button) to enable sharing'
+          }
+          ariaLabel="Share link and QR code"
+          onClick={() => onShare(slug)}
+          disabled={!published}
+        >
+          <Share2 className="size-4" />
         </IconButton>
       </div>
 
@@ -580,7 +609,18 @@ function PageCard({
         >
           {published ? "Online" : "Offline"}
         </button>
-        <ActionButton label="Public" onClick={() => onOpenPublic(row)} variant="brand" size="xs" />
+        <ActionButton
+          label="Public"
+          onClick={() => onOpenPublic(row)}
+          variant="brand"
+          size="xs"
+          disabled={!published}
+          title={
+            published
+              ? undefined
+              : 'Publish this page from the dashboard ("Offline" button) to open the link'
+          }
+        />
         <ActionButton label="Edit" onClick={() => onEdit(slug)} variant="brand" size="xs" />
         <ActionButton label="Rename" onClick={() => onRenameStart(slug, name)} variant="brand" size="xs" />
         <ActionButton
@@ -863,6 +903,10 @@ export default function DashboardPageClient() {
     };
   }, []);
 
+  const [shareSlug, setShareSlug] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState<string>("");
+  const [shareLoading, setShareLoading] = useState(false);
+
   const [limitPulse, setLimitPulse] = useState(false);
   const limitPulseTimerRef = useRef<number | null>(null);
   const bumpLimitPulse = useCallback(() => {
@@ -1029,6 +1073,39 @@ export default function DashboardPageClient() {
     bumpLimitPulse();
     return true;
   }, [isOverPagesLimit, bumpLimitPulse, showToast]);
+
+  const openShareModal = useCallback(
+    async (slug: string) => {
+      if (guardOverLimit()) return;
+      const target = rows.find((r) => r.meta.slug === slug);
+      const published = !!(target?.meta?.published ?? target?.meta?.online);
+      if (!published) {
+        showToast('Publish this page from the dashboard ("Offline" button) to share it.');
+        return;
+      }
+      try {
+        setShareSlug(slug);
+        setShareUrl("");
+        setShareLoading(true);
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const path = await getPublicUrlForSlug(slug);
+        setShareUrl(`${origin}${path}`);
+      } catch (err) {
+        console.error("openShareModal failed:", err);
+        showToast("Could not prepare share link.");
+        setShareSlug(null);
+        setShareUrl("");
+      } finally {
+        setShareLoading(false);
+      }
+    },
+    [guardOverLimit, rows, showToast]
+  );
+
+  const closeShareModal = useCallback(() => {
+    setShareSlug(null);
+    setShareUrl("");
+  }, []);
 
   const startRename = useCallback(
     (slug: string, name: string) => {
@@ -1387,24 +1464,15 @@ function publishLimitMsg(planName: string) {
     });
   };
 
-  const copyUrl = async (slug: string) => {
-    if (guardOverLimit()) return;
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const path = await getPublicUrlForSlug(slug);
-    const url = `${origin}${path}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      showToast("Copied to clipboard");
-    } catch {
-      // fallback: bar pokaži URL da user može ručno da kopira
-      alert(url);
-    }
-  };
-
   const openPublicPage = useCallback(
     (row: MiniCalc) => {
       if (guardOverLimit()) return;
       const slug = row.meta.slug;
+      const published = !!(row.meta.published ?? row.meta.online);
+      if (!published) {
+        showToast('Publish this page from the dashboard ("Offline" button) to open the link.');
+        return;
+      }
       const id = row.meta?.id ? String(row.meta.id) : "";
       const pretty = id ? `/p/${id}-${slug}` : `/p/${slug}`;
       window.open(pretty, "_blank", "noopener,noreferrer");
@@ -1682,7 +1750,7 @@ function publishLimitMsg(planName: string) {
                 row={r}
                 isSelected={selected.has(r.meta.slug)}
                 onSelectToggle={toggleSelect}
-                onCopyUrl={copyUrl}
+                onShare={openShareModal}
                 onOpenPublic={openPublicPage}
                 onEdit={handleEdit}
                 onRenameStart={startRename}
@@ -1748,7 +1816,7 @@ function publishLimitMsg(planName: string) {
                       isSelected={isSel}
                       isDragging={dragSlug === slug}
                       onSelectToggle={toggleSelect}
-                      onCopyUrl={copyUrl}
+                      onShare={openShareModal}
                       onOpenPublic={openPublicPage}
                       onEdit={handleEdit}
                       onRenameStart={startRename}
@@ -1820,6 +1888,13 @@ function publishLimitMsg(planName: string) {
           </div>
         </div>
       )}
+
+      <ShareQrModal
+        open={!!shareSlug}
+        url={shareUrl}
+        loading={shareLoading && !shareUrl}
+        onClose={closeShareModal}
+      />
 
       {/* Scoped theme tokens + effects */}
       <style jsx global>{`
