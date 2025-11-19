@@ -15,7 +15,9 @@ function parseKey(key: string) {
 }
 
 function baseUrl() {
-  const env = process.env.NEXT_PUBLIC_BASE_URL;
+  const env =
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
   return (env ? env : "http://localhost:3000").replace(/\/$/, "");
 }
 function apiUrl(segment: string) {
