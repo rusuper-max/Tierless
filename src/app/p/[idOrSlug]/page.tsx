@@ -1,6 +1,5 @@
 // src/app/p/[idOrSlug]/page.tsx
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import type { CalcJson } from "@/hooks/useEditorStore";
 import PublicPageClient from "./PublicPageClient";
 
@@ -15,28 +14,14 @@ function parseKey(key: string) {
   return { id: "", slug: key };
 }
 
-function baseUrl() {
-  const env =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+const ENV_BASE =
+  process.env.NEXT_PUBLIC_BASE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
 
-  if (env) return env.replace(/\/$/, "");
-
-  try {
-    const hdrs = headers();
-    const host =
-      hdrs.get("x-forwarded-host") ||
-      hdrs.get("host") ||
-      "localhost:3000";
-    const proto =
-      hdrs.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
-    return `${proto}://${host}`.replace(/\/$/, "");
-  } catch {
-    return "http://localhost:3000";
-  }
-}
 function apiUrl(segment: string) {
-  return new URL(segment, baseUrl()).toString();
+  if (!segment.startsWith("/")) segment = `/${segment}`;
+  if (ENV_BASE) return new URL(segment, ENV_BASE).toString();
+  return segment;
 }
 
 async function loadPublic(id: string, slug: string) {
