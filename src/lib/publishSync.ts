@@ -1,6 +1,5 @@
 // src/lib/publishSync.ts
 import * as fullStore from "@/lib/fullStore";
-import { putPublic, deletePublic } from "@/lib/publicStore";
 
 /**
  * Keeps calc_full + public store in sync with the latest published flag.
@@ -22,22 +21,5 @@ export async function syncPublicationState(
 
   await fullStore.putFull(userId, slug, updated);
 
-  const slugKey = updated.meta?.slug;
-  const idKey = updated.meta?.id;
-
-  if (publish) {
-    if (slugKey) await putPublic(slugKey, updated);
-    if (idKey) await putPublic(idKey, updated);
-  } else {
-    if (slugKey) {
-      try {
-        await deletePublic(slugKey);
-      } catch {}
-    }
-    if (idKey) {
-      try {
-        await deletePublic(idKey);
-      } catch {}
-    }
-  }
+  // No separate public store anymore; calc_full now serves public traffic directly.
 }

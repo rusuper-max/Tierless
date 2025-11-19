@@ -5,7 +5,6 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "@/lib/auth";
 import * as fullStore from "@/lib/fullStore";
-import { putPublic } from "@/lib/publicStore";
 
 function jsonNoCache(data: any, status = 200) {
   const res = NextResponse.json(data, { status });
@@ -35,9 +34,6 @@ export async function POST(req: Request, ctx: any) {
 
     const id = full?.meta?.id;
     if (!id) return jsonNoCache({ ok: false, error: "missing_id" }, 400);
-
-    await putPublic(slug, full);
-    await putPublic(id, full);
 
     return jsonNoCache({
       ok: true,

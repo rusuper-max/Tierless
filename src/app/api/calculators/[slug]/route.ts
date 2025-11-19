@@ -7,7 +7,6 @@ import { getUserIdFromRequest } from "@/lib/auth";
 import * as fullStore from "@/lib/fullStore";
 import * as calcsStore from "@/lib/calcsStore";
 import { randomBytes } from "crypto";
-import { putPublic } from "@/lib/publicStore";
 import * as trash from "@/lib/data/trash";
 
 function jsonNoCache(data: any, status = 200) {
@@ -208,12 +207,6 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
     if (newName) {
       await calcsStore.updateName(userId, slug, newName).catch(() => {});
     }
-
-    // PUBLIC sync (slug + id)
-    try {
-      await putPublic(slug, normalized);
-      await putPublic(id, normalized);
-    } catch {}
 
     return jsonNoCache(normalized);
   } catch (e: any) {

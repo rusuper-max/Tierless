@@ -10,6 +10,30 @@ import * as calcsStore from "@/lib/calcsStore";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+async function resolveSlug(
+  req: Request,
+  ctx?:
+    | { params?: { slug?: string } }
+    | { params?: Promise<{ slug?: string }> }
+): Promise<string> {
+  try {
+    const raw = (ctx as any)?.params;
+    const params = typeof raw?.then === "function" ? await raw : raw;
+    if (params?.slug && params.slug !== "undefined" && params.slug !== "null") {
+      return decodeURIComponent(String(params.slug));
+    }
+  } catch {}
+  try {
+    const url = new URL(req.url);
+    const parts = url.pathname.split("/").filter(Boolean);
+    const idx = parts.lastIndexOf("calculators");
+    const candidate =
+      idx >= 0 ? parts[idx + 1] : parts[parts.length - 1];
+    if (candidate) return decodeURIComponent(candidate);
+  } catch {}
+  return "";
+}
+
 /* ------------------------------------------------------------ */
 /* Helper: dohvati plan iz user_plans                           */
 /* ------------------------------------------------------------ */
@@ -38,11 +62,7 @@ export async function POST(
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // Robusno dohvatanje sluga (params ili iz URL-a)
-  const url = new URL(req.url);
-  const slug =
-    context?.params?.slug ??
-    decodeURIComponent(url.pathname.split("/").slice(-2, -1)[0] || "");
+  const slug = await resolveSlug(req, context);
 
   if (!slug) {
     return NextResponse.json({ error: "Missing slug" }, { status: 400 });

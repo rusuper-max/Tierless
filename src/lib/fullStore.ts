@@ -13,6 +13,7 @@ async function ensureTable() {
       PRIMARY KEY (user_id, slug)
     );
     CREATE INDEX IF NOT EXISTS idx_calc_full_slug ON calc_full(slug);
+    CREATE INDEX IF NOT EXISTS idx_calc_full_meta_id ON calc_full((calc->'meta'->>'id'));
   `);
 }
 
@@ -67,6 +68,18 @@ export async function findFullBySlug(slug: string): Promise<any | undefined> {
   const { rows } = await pool.query(
     `SELECT calc FROM calc_full WHERE slug = $1 LIMIT 1`,
     [slug]
+  );
+  return rows[0]?.calc ?? undefined;
+}
+
+/**
+ * Cross-user finder: prvi FULL kalkulator sa datim public ID-jem.
+ */
+export async function findFullById(id: string): Promise<any | undefined> {
+  await ensureTable();
+  const { rows } = await pool.query(
+    `SELECT calc FROM calc_full WHERE calc->'meta'->>'id' = $1 LIMIT 1`,
+    [id]
   );
   return rows[0]?.calc ?? undefined;
 }

@@ -184,10 +184,10 @@
     "simpleTextColor": "#ff9300",
     "simpleBorderColor": "linear-gradient(90deg,#10b981,#e11d48)",
     "simpleShowInquiry": true,
-    "simpleSectionStates": {},
-    "simpleAllowSelection": false,
     "simpleOutlineGrad1": "#10b981",
     "simpleOutlineGrad2": "#e11d48",
+    "simpleSectionStates": {},
+    "simpleAllowSelection": false,
     "simpleSectionOutlinePublic": true
   },
   "items": [

@@ -1,36 +1,17 @@
 // src/app/api/public/[idOrSlug]/route.ts
 import { NextResponse } from "next/server";
-import path from "path";
-import fs from "fs/promises";
-import { calcFromMetaConfig } from "@/lib/calc-init"; // NOTE: adjust if your path is "@/lib/calc-init" (see below)
+import * as fullStore from "@/lib/fullStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function jsonNoCache(data: any, status = 200) {
   const res = NextResponse.json(data, { status });
-  res.headers.set("cache-control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+  res.headers.set(
+    "cache-control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+  );
   return res;
-}
-
-function safeUserId(userId: string) {
-  return (userId || "anon")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 120) || "anon";
-}
-
-async function readJson(file: string) {
-  try { return JSON.parse(await fs.readFile(file, "utf8")); }
-  catch { return undefined; }
-}
-async function listUserDirs(root: string) {
-  try {
-    const entries = await fs.readdir(root, { withFileTypes: true });
-    return entries.filter(e => e.isDirectory()).map(e => e.name);
-  } catch { return []; }
 }
 
 /* ---------------- smarter id/slug parse ---------------- */
@@ -52,7 +33,7 @@ function parseIdOrSlug(key: string): { id: string; slug: string } {
       prefix.length <= MAX_ID &&
       reB64Url.test(prefix)
     ) {
-      cut = i; // najdesniji validan prefix
+      cut = i;
     }
   }
   if (cut !== -1 && cut + 1 < key.length) {
@@ -61,10 +42,13 @@ function parseIdOrSlug(key: string): { id: string; slug: string } {
   return { id: "", slug: key };
 }
 
-/* ---------------- robust param extraction ---------------- */
 async function extractKey(
   req: Request,
-  ctx?: { params?: { idOrSlug?: string; slug?: string } } | { params: Promise<{ idOrSlug?: string; slug?: string }> } | any
+  ctx?: {
+    params?:
+      | { idOrSlug?: string; slug?: string }
+      | Promise<{ idOrSlug?: string; slug?: string }>;
+  }
 ): Promise<string> {
   let fromCtx: string | undefined;
   try {
@@ -86,8 +70,16 @@ async function extractKey(
   return "";
 }
 
-/* ---------------- GET ---------------- */
-export async function GET(req: Request, ctx: { params?: { idOrSlug?: string } }) {
+function isPublished(meta: any): boolean {
+  if (typeof meta?.published === "boolean") return meta.published;
+  if (typeof meta?.online === "boolean") return meta.online;
+  return false;
+}
+
+export async function GET(
+  req: Request,
+  ctx: { params?: { idOrSlug?: string } }
+) {
   const key = await extractKey(req, ctx);
   if (!key || key === "public") {
     return jsonNoCache({ ok: false, error: "bad_key" }, 400);
@@ -96,97 +88,49 @@ export async function GET(req: Request, ctx: { params?: { idOrSlug?: string } })
   const { id, slug } = parseIdOrSlug(key);
   const url = new URL(req.url);
   const owner = url.searchParams.get("u") || "";
-  const wantDebug = url.searchParams.get("debug") === "1";
 
-  const USERS_ROOT = path.join(process.cwd(), "data", "users");
-  const PUBLIC_ROOT = path.join(process.cwd(), "data", "public");
-  const attempts: string[] = [];
+  let calc: any | undefined;
 
-  // 0) PUBLIC BY ID (kanonski)
-  if (id) {
-    const publicFileById = path.join(PUBLIC_ROOT, `${id}.json`);
-    attempts.push(`public_id:${publicFileById}`);
-    const byId = await readJson(publicFileById);
-    if (byId) {
-      const currentSlug = (byId.meta?.slug ?? "") as string;
-      const fixedSlug = slug || currentSlug;
-      const needsFix = !fixedSlug || fixedSlug === id || currentSlug === id;
-      const data = { ...byId, meta: { ...(byId.meta || {}), id, slug: fixedSlug } };
-      if (needsFix && fixedSlug && fixedSlug !== id) {
-        try {
-          await fs.mkdir(PUBLIC_ROOT, { recursive: true });
-          await fs.writeFile(publicFileById, JSON.stringify(data, null, 2), "utf8");
-          await fs.writeFile(path.join(PUBLIC_ROOT, `${fixedSlug}.json`), JSON.stringify(data, null, 2), "utf8");
-        } catch {}
-      }
-      return jsonNoCache({ ok: true, data, attempts: wantDebug ? attempts : undefined }, 200);
+  if (owner && slug) {
+    try {
+      calc = await fullStore.getFull(owner, slug);
+    } catch {
+      calc = undefined;
     }
   }
-
-  // 1) PUBLIC BY SLUG
-  if (slug) {
-    const publicFileBySlug = path.join(PUBLIC_ROOT, `${slug}.json`);
-    attempts.push(`public_slug:${publicFileBySlug}`);
-    const bySlug = await readJson(publicFileBySlug);
-    if (bySlug) {
-      const data = { ...bySlug, meta: { ...((bySlug as any).meta || {}), slug, id: ((bySlug as any)?.meta?.id as string) || id || "" } };
-      return jsonNoCache({ ok: true, data, attempts: wantDebug ? attempts : undefined }, 200);
-    }
-  } else {
-    // fallback: ceo key kao slug
-    const publicFileBySlug = path.join(PUBLIC_ROOT, `${key}.json`);
-    attempts.push(`public_slug_fallback:${publicFileBySlug}`);
-    const bySlug = await readJson(publicFileBySlug);
-    if (bySlug) {
-      const data = { ...bySlug, meta: { ...(bySlug.meta || {}), slug: key, id: bySlug.meta?.id || "" } };
-      return jsonNoCache({ ok: true, data, attempts: wantDebug ? attempts : undefined }, 200);
-    }
+  if (!calc && id) {
+    calc = await fullStore.findFullById(id);
+  }
+  if (!calc && slug) {
+    calc = await fullStore.findFullBySlug(slug);
+  }
+  if (!calc && !slug && id) {
+    // fallback: treat the entire key as slug if id lookup failed
+    calc = await fullStore.findFullBySlug(key);
   }
 
-  // 2) FULL by owner (?u=)
-  if (owner) {
-    const uid = safeUserId(owner);
-    const s = slug || key;
-    const file = path.join(USERS_ROOT, uid, "full", `${s}.json`);
-    attempts.push(`full_owner:${file}`);
-    const data = await readJson(file);
-    if (data) {
-      const merged = { ...data, meta: { ...((data as any).meta || {}), slug: s, id: ((data as any)?.meta?.id as string) || id || "" } };
-      return jsonNoCache({ ok: true, data: merged, attempts: wantDebug ? attempts : undefined }, 200);
-    }
+  if (!calc) {
+    return jsonNoCache({ ok: false, error: "not_found", key }, 404);
   }
 
-  // 3) FULL scan svih usera
-  {
-    const s = slug || key;
-    for (const uid of await listUserDirs(USERS_ROOT)) {
-      const file = path.join(USERS_ROOT, uid, "full", `${s}.json`);
-      attempts.push(`full_scan:${file}`);
-      const data = await readJson(file);
-      if (data) {
-        const merged = { ...data, meta: { ...((data as any).meta || {}), slug: s, id: ((data as any)?.meta?.id as string) || id || "" } };
-        return jsonNoCache({ ok: true, data: merged, attempts: wantDebug ? attempts : undefined }, 200);
-      }
-    }
+  const meta = {
+    ...(calc.meta || {}),
+    slug: (calc.meta?.slug as string) || slug || key,
+    id: (calc.meta?.id as string) || id || "",
+  };
+
+  if (!isPublished(meta)) {
+    return jsonNoCache({ ok: false, error: "not_published" }, 404);
   }
 
-  // 4) MINI seed
-  {
-    const s = slug || key;
-    for (const uid of await listUserDirs(USERS_ROOT)) {
-      const file = path.join(USERS_ROOT, uid, "calculators.json");
-      attempts.push(`mini_scan:${file}`);
-      const arr = await readJson(file);
-      if (Array.isArray(arr)) {
-        const row = arr.find((r: any) => r?.meta?.slug === s);
-        if (row) {
-          const seeded = calcFromMetaConfig(row);
-          const merged = { ...seeded, meta: { ...((seeded as any).meta || {}), slug: s, id: ((seeded as any)?.meta?.id as string) || id || "" } };
-          return jsonNoCache({ ok: true, data: merged, attempts: wantDebug ? attempts : undefined }, 200);
-        }
-      }
-    }
-  }
-
-  return jsonNoCache({ ok: false, error: "not_found", key }, 404);
+  return jsonNoCache(
+    {
+      ok: true,
+      data: {
+        ...calc,
+        meta,
+      },
+    },
+    200
+  );
 }
