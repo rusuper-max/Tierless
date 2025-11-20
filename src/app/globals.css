@@ -1,6 +1,9 @@
 /* Tailwind v4 import */
 @import "tailwindcss";
 
+/* Use class-based dark mode controlled via .dark on <html> */
+@custom-variant dark (&:is(.dark &));
+
 /* =========================================
    Design tokens / brand
 ========================================= */

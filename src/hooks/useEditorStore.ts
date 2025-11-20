@@ -4,7 +4,7 @@ import { create } from "zustand";
 /* --------------------------------------------------------- */
 /* Types                                                     */
 /* --------------------------------------------------------- */
-export type Mode = "setup" | "simple" | "tiers" | "advanced";
+export type Mode = "setup" | "simple" | "advanced";
 
 export type FeatureOption = { id: string; label: string; highlighted?: boolean };
 export type Extra = { id: string; text: string; price?: number; selected?: boolean };
@@ -249,62 +249,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
               { id: genId("it"), label: "Cappuccino", price: 3 },
               { id: genId("it"), label: "Latte", price: 3.5 },
             ];
-    } else if (mode === "tiers") {
-      // 3 paketa spremna odmah
-      if (!next.packages.length) {
-        const p1: Pkg = {
-          id: genId("pkg"),
-          label: "Basic",
-          basePrice: 19,
-          description: "Good for starters",
-          featured: false,
-        };
-        const p2: Pkg = {
-          id: genId("pkg"),
-          label: "Pro",
-          basePrice: 39,
-          description: "For growing teams",
-          featured: true,
-        };
-        const p3: Pkg = {
-          id: genId("pkg"),
-          label: "Business",
-          basePrice: 79,
-          description: "Best value",
-          featured: false,
-        };
-        next.packages = [p1, p2, p3];
-        next.fields.push({
-          id: genId("feat"),
-          title: "Features",
-          type: "features",
-          pkgId: p1.id,
-          options: [
-            { id: genId("f"), label: "1 project" },
-            { id: genId("f"), label: "Email support" },
-          ],
-        });
-        next.fields.push({
-          id: genId("feat"),
-          title: "Features",
-          type: "features",
-          pkgId: p2.id,
-          options: [
-            { id: genId("f"), label: "Everything in Basic" },
-            { id: genId("f"), label: "5 projects", highlighted: true },
-          ],
-        });
-        next.fields.push({
-          id: genId("feat"),
-          title: "Features",
-          type: "features",
-          pkgId: p3.id,
-          options: [
-            { id: genId("f"), label: "Unlimited projects" },
-            { id: genId("f"), label: "Priority support", highlighted: true },
-          ],
-        });
-      }
     } else {
       // advanced
       if (!next.packages.length && (!next.items || !next.items.length)) {

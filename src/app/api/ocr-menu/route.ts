@@ -35,6 +35,62 @@ type ParsedMenu = {
 };
 
 /**
+ * Pokušaj da pametno isečemo "naziv + opis" ako je GPT sve stavio u name.
+ * Heuristika:
+ * - ako je string kratak, tretiramo ga kao čist naziv (bez opisa)
+ * - ako je duži, probamo da isečemo po:
+ *   - " - ", " – ", " — ", ":" ili
+ *   - prepoznavanju reči tipa " sa ", " na ", " uz ", " with ", " served with "
+ *   tako da:
+ *     name = kraći front deo,
+ *     description = ostatak.
+ */
+function splitNameAndDescription(raw: string): { name: string; description?: string } {
+  if (!raw || typeof raw !== "string") {
+    return { name: "" };
+  }
+
+  const clean = raw.replace(/\s+/g, " ").trim();
+  if (!clean) return { name: "" };
+
+  // Kratki nazivi – ne cepamo ih
+  if (clean.length <= 40) {
+    return { name: clean };
+  }
+
+  // 1) Separatori tipa " - ", " – ", " — ", ":"
+  const separators = [" - ", " – ", " — ", ": "];
+  for (const sep of separators) {
+    const idx = clean.indexOf(sep);
+    if (idx > 0) {
+      const left = clean.slice(0, idx).trim();
+      const right = clean.slice(idx + sep.length).trim();
+      if (left.length >= 3 && right.length >= 8) {
+        return { name: left, description: right };
+      }
+    }
+  }
+
+  // 2) Reči koje često uvode opis (sa / na / uz / with / served with)
+  const lower = clean.toLowerCase();
+  const markers = [" sa ", " na ", " uz ", " with ", " served with "];
+
+  for (const marker of markers) {
+    const idx = lower.indexOf(marker);
+    if (idx > 0) {
+      const left = clean.slice(0, idx).trim();
+      const right = clean.slice(idx).trim(); // zadržavamo "sa / with" u opisu
+      if (left.length >= 3 && right.length >= 8) {
+        return { name: left, description: right };
+      }
+    }
+  }
+
+  // Ako nismo našli dobar split, tretiramo sve kao naziv
+  return { name: clean };
+}
+
+/**
  * GPT parser – od raw OCR teksta napravi sekcije + stavke.
  * Ako bilo šta krene po zlu, baci error pa ćemo fallback-ovati na regex parser.
  */
@@ -44,40 +100,65 @@ async function parseWithChatGpt(ocrText: string): Promise<ParsedMenu> {
   }
 
   const systemPrompt =
-    "You take raw OCR text of a restaurant or services menu and return a clean JSON menu. " +
-    "You must infer sections (like 'Main course', 'Appetizers', 'Beverages', etc.) and items with prices. " +
-    "If you are unsure about a line or cannot find a price, skip that line. " +
-    "Prices must be numeric only (no currency symbols).";
+  "You take raw OCR text of a restaurant or services menu and return a clean JSON menu. " +
+  "You must infer sections (like headings for groups of items) and items with prices. " +
+  "You MUST NOT translate, localize, or rename any text. " +
+  "Section names, item names and descriptions must stay in the original language and reuse the original wording from the OCR text, except for trimming spaces and removing prices. " +
+  "If you are unsure about a line or cannot find a price, skip that line. " +
+  "Prices must be numeric only (no currency symbols). " +
+  "Your job is to structure the menu, not to rewrite it.";
 
   const userPrompt = [
-    "Convert the following OCR menu text into JSON.",
-    "",
-    "Return JSON with this shape:",
-    "{",
-    '  "sections": [',
-    "    {",
-    '      "name": string,',
-    '      "items": [',
-    "        {",
-    '          "name": string,',
-    '          "price": number,',
-    '          "description": string | null',
-    "        }",
-    "      ]",
-    "    }",
-    "  ]",
-    "}",
-    "",
-    "Rules:",
-    "- Group items into logical sections if possible.",
-    "- Items without a clear price should be skipped.",
-    "- description can contain extra notes if the line has them, otherwise null.",
-    "",
-    "Here is the OCR text:",
-    '"""',
-    ocrText,
-    '"""',
-  ].join("\n");
+  "Convert the following OCR menu text into JSON.",
+  "",
+  "Return JSON with this shape:",
+  "{",
+  '  "sections": [',
+  "    {",
+  '      "name": string,',
+  '      "items": [',
+  "        {",
+  '          "name": string,',
+  '          "price": number,',
+  '          "description": string | null',
+  "        }",
+  "      ]",
+  "    }",
+  "  ]",
+  "}",
+  "",
+  "Very important:",
+  "- Do NOT translate or localize anything.",
+  "- Do NOT invent new section names like 'Meat & Poultry' if the OCR text says 'Meso'. Use the heading exactly as it appears in the OCR text (trim spaces only).",
+  "- Do NOT replace words with English synonyms. If the menu is in Serbian, keep it in Serbian.",
+  "",
+  "Rules:",
+  "- Group items into logical sections only if there are clear headings in the OCR text.",
+  "- Items without a clear price should be skipped.",
+  "- 'name' should be a SHORT label for the item (usually 2–5 words), using the original wording of the dish.",
+  "- If the original line contains BOTH a dish name AND preparation/side details, you SHOULD split:",
+  "  - Put only the core dish name into 'name'.",
+  "  - Put ALL extra details (sides, preparation, sauces, etc.) into 'description'.",
+  "- If there is no obvious extra text, set description to null.",
+  "",
+  "Examples of splitting logic (these are logic examples only, you must always keep the original language of the menu):",
+  '  Line: \"Riblji paprikaš 1150\"',
+  '  → name: \"Riblji paprikaš\"',
+  '  → description: null',
+  "",
+  '  Line: \"Fileti morske ribe sa blitvom i krompirom 1550\"',
+  '  → name: \"Fileti morske ribe\"',
+  '  → description: \"sa blitvom i krompirom\"',
+  "",
+  '  Line: \"Teleći medaljoni na žaru uz povrće i sos 1850\"',
+  '  → name: \"Teleći medaljoni na žaru\"',
+  '  → description: \"uz povrće i sos\"',
+  "",
+  "Here is the OCR text:",
+  '\"\"\"',
+  ocrText,
+  '\"\"\"',
+].join("\n");
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4.1-mini",
@@ -134,21 +215,32 @@ async function parseWithChatGpt(ocrText: string): Promise<ParsedMenu> {
       if (typeof priceRaw === "number") {
         price = priceRaw;
       } else if (typeof priceRaw === "string") {
-        const num = Number(priceRaw.replace(/[^0-9.,-]/g, "").replace(",", "."));
+        const num = Number(
+          priceRaw.replace(/[^0-9.,-]/g, "").replace(",", ".")
+        );
         price = Number.isFinite(num) ? num : null;
       }
 
-      if (price === null) continue; // bez cene nemamo poentu
+      // bez cene nemamo poentu
+      if (price === null) continue;
 
-      const note =
+      // 1) GPT opis ako postoji
+      const gptDesc =
         typeof it?.description === "string" && it.description.trim()
           ? it.description.trim()
-          : undefined;
+          : "";
+
+      // 2) Lokalni pokušaj da isečemo naziv + opis iz label-a
+      const { name: splitName, description: autoDesc } =
+        splitNameAndDescription(label);
+
+      const finalLabel = splitName || label;
+      const finalNote = gptDesc || autoDesc || undefined;
 
       items.push({
-        label,
+        label: finalLabel,
         price,
-        note,
+        note: finalNote,
         sectionName: name,
       });
     }
@@ -223,7 +315,10 @@ export async function POST(req: Request) {
     try {
       parsed = await parseWithChatGpt(text);
     } catch (err) {
-      console.error("GPT menu parsing failed, falling back to regex parser:", err);
+      console.error(
+        "GPT menu parsing failed, falling back to regex parser:",
+        err
+      );
       const legacyItems = parseOcrMenuText(text);
       parsed = {
         items: legacyItems.map((it: any) => ({

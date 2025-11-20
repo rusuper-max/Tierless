@@ -363,8 +363,6 @@ function EditorTourOverlay({
           ),
         }
       );
-    } else if (editorMode === "tiers") {
-      // rezervisano za kasnije kad dodamo tour hookove u BlocksPanel
     } else if (editorMode === "advanced") {
       modeSteps.push(
         {

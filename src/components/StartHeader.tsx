@@ -3,24 +3,15 @@
 import { useEffect, useState } from "react";
 import CTAButton from "@/components/marketing/CTAButton";
 import { Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 
 function ThemeToggle() {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const html = document.documentElement;
-    const update = () => setIsDark(html.classList.contains("dark"));
-    update();
-    const obs = new MutationObserver(update);
-    obs.observe(html, { attributes: true, attributeFilter: ["class"] });
-    return () => obs.disconnect();
-  }, []);
-
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDark = mounted ? resolvedTheme === "dark" : false;
   const toggle = () => {
-    const html = document.documentElement;
-    html.classList.toggle("dark");
-    try { localStorage.setItem("theme", html.classList.contains("dark") ? "dark" : "light"); } catch {}
-    try { window.dispatchEvent(new Event("TL_THEME_TOGGLED")); } catch {}
+    setTheme(isDark ? "light" : "dark");
   };
 
   return (

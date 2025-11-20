@@ -12,9 +12,6 @@ import EditorNavBar from "./components/EditorNavBar";
 const PublicRenderer = dynamic(() => import("@/components/PublicRenderer"), {
   ssr: false,
 });
-const BlocksPanel = dynamic(() => import("./panels/BlocksPanel"), {
-  ssr: false,
-});
 const SimpleListPanel = dynamic(
   () => import("./panels/SimpleListPanel"),
   { ssr: false }
@@ -26,6 +23,16 @@ const AdvancedPanel = dynamic(
 
 type Props = { slug: string; initialCalc: CalcJson };
 type PreviewMode = "off" | "desktop" | "mobile";
+
+function normalizeMode(input?: string | null): Mode {
+  if (input === "simple" || input === "advanced" || input === "setup") {
+    return input;
+  }
+  if (input === "tiers") {
+    return "advanced";
+  }
+  return "setup";
+}
 
 export default function EditorShell({ slug, initialCalc }: Props) {
   const { calc, init, isDirty, isSaving, setEditorMode } = useEditorStore();
@@ -44,19 +51,16 @@ export default function EditorShell({ slug, initialCalc }: Props) {
     let stored: Mode | null = null;
     try {
       const raw = window.localStorage.getItem(key) as Mode | null;
-      if (
-        raw === "setup" ||
-        raw === "tiers" ||
-        raw === "simple" ||
-        raw === "advanced"
-      ) {
-        stored = raw;
+      if (raw) {
+        stored = normalizeMode(raw);
       }
     } catch {
       // ignore
     }
 
-    const metaMode = (initialCalc?.meta?.editorMode as Mode) || "setup";
+    const metaMode = normalizeMode(
+      initialCalc?.meta?.editorMode as string | null
+    );
     const start: Mode = stored || metaMode || "setup";
 
     setUiMode(start);
@@ -208,21 +212,15 @@ export default function EditorShell({ slug, initialCalc }: Props) {
                   )}
                 </p>
 
-                <div className="grid gap-4 mt-4 md:grid-cols-3">
-                  <ModeTile
-                    active={uiMode === ("tiers" as Mode)}
-                    title={t("Tier-based price page")}
-                    text={t(
-                      "Stacked plans with feature checklist. Great for SaaS, agencies and subscriptions."
-                    )}
-                    cta={t("Start with tiers")}
-                    onClick={() => setModeBoth("tiers")}
-                  />
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <ModeTile
                     active={uiMode === ("simple" as Mode)}
                     title={t("Tierless price page")}
                     text={t(
-                      "Single list of items and prices. Ideal for restaurants, clinics, salons and local businesses."
+                      "Single list of items and prices. Perfect for restaurants, cafés, barber shops, dentists and clinics."
+                    )}
+                    subText={t(
+                      "Scan your menu, get a QR code and share the link in just a few minutes."
                     )}
                     cta={t("Start simple")}
                     badge={t("Most used option")}
@@ -230,11 +228,14 @@ export default function EditorShell({ slug, initialCalc }: Props) {
                   />
                   <ModeTile
                     active={uiMode === ("advanced" as Mode)}
-                    title={t("Advanced editor")}
+                    title={t("Calculator price page")}
                     text={t(
-                      "Full control with tiers, packages, extras and sliders for demanding setups."
+                      "Full control with packages, extras and sliders for demanding setups."
                     )}
-                    cta={t("Go advanced")}
+                    subText={t(
+                      "Great for photographers, agencies and anyone who needs a configurable calculator."
+                    )}
+                    cta={t("Build calculator")}
                     onClick={() => setModeBoth("advanced")}
                   />
                 </div>
@@ -243,10 +244,8 @@ export default function EditorShell({ slug, initialCalc }: Props) {
               <section className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)]">
                 {uiMode === "simple" ? (
                   <SimpleListPanel />
-                ) : uiMode === "advanced" ? (
-                  <AdvancedPanel />
                 ) : (
-                  <BlocksPanel />
+                  <AdvancedPanel />
                 )}
               </section>
             )}
@@ -346,6 +345,7 @@ function ModeTile({
   active,
   title,
   text,
+  subText,
   cta,
   badge,
   onClick,
@@ -353,6 +353,7 @@ function ModeTile({
   active?: boolean;
   title: string;
   text: string;
+  subText?: string;
   cta: string;
   badge?: string;
   onClick: () => void;
@@ -367,6 +368,7 @@ function ModeTile({
         {badge && <span className="tl-badge">{badge}</span>}
         <div className="tl-head">{title}</div>
         <p className="tl-desc">{text}</p>
+        {subText && <p className="tl-subdesc">{subText}</p>}
         <span className="tl-cta">{cta}</span>
       </button>
 
@@ -382,6 +384,10 @@ function ModeTile({
           cursor:pointer;
           transition:transform .18s ease, box-shadow .18s ease;
           outline:none;
+          width:100%;
+          display:flex;
+          flex-direction:column;
+          min-height:100%;
         }
         .tl-tile::before {
           content:"";
@@ -433,19 +439,19 @@ function ModeTile({
           display:inline-flex;
           align-items:center;
           justify-content:center;
-          padding:2px 9px;
-          margin-bottom:6px;
+          padding:1px 8px;
+          margin-bottom:8px;
           border-radius:999px;
-          font-size:10px;
-          font-weight:500;
-          background:rgba(79,70,229,0.08);
-          border:1px solid rgba(129,140,248,0.6);
-          background-image:linear-gradient(
-            90deg,
-            rgba(79,70,229,0.12),
-            rgba(34,211,238,0.10)
-          );
-          color:#4f46e5;
+          font-size:9px;
+          line-height:1;
+          font-weight:600;
+          letter-spacing:0.03em;
+          text-transform:uppercase;
+          background-image:linear-gradient(90deg,rgba(79,70,229,0.4),rgba(34,211,238,0.32));
+          border:1px solid rgba(79,70,229,0.5);
+          color:#1f1c3d;
+          box-shadow:0 6px 14px rgba(79,70,229,0.2);
+          width:max-content;
         }
 
         .tl-head {
@@ -456,6 +462,11 @@ function ModeTile({
         }
         .tl-desc {
           color:var(--muted,#6b7280);
+          margin:0 0 .6rem;
+        }
+        .tl-subdesc {
+          color:var(--muted,#6b7280);
+          font-size:0.85rem;
           margin:0 0 1.25rem;
         }
         .tl-cta {
@@ -465,6 +476,7 @@ function ModeTile({
           -webkit-background-clip:text;
           background-clip:text;
           color:transparent;
+          margin-top:auto;
         }
 
         :global(html.dark) .tl-tile {
@@ -473,13 +485,10 @@ function ModeTile({
           box-shadow:0 10px 24px rgba(0,0,0,.30);
         }
         :global(html.dark) .tl-badge {
-          background-image:linear-gradient(
-            90deg,
-            rgba(129,140,248,0.20),
-            rgba(45,212,191,0.16)
-          );
+          background-image:linear-gradient(90deg,rgba(129,140,248,0.5),rgba(45,212,191,0.32));
           border-color:rgba(165,180,252,0.9);
-          color:#e5e7eb;
+          color:#f3f6ff;
+          box-shadow:0 10px 22px rgba(9,12,30,0.7);
         }
       `}</style>
     </>

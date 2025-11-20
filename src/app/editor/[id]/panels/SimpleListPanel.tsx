@@ -334,16 +334,19 @@ export default function SimpleListPanel() {
       }
 
       const mapped: ParsedOcrItem[] = rawItems.map((it) => ({
-        id: `ocr_${Math.random().toString(36).slice(2, 10)}`,
-        label: (it.label ?? "").trim(),
-        price: typeof it.price === "number" ? it.price : null,
-        note: "",
-        rawLine: it.rawLine,
-        sectionName:
-          typeof it.sectionName === "string"
-            ? it.sectionName.trim()
-            : undefined,
-      }));
+  id: `ocr_${Math.random().toString(36).slice(2, 10)}`,
+  label: (it.label ?? "").trim(),
+  price: typeof it.price === "number" ? it.price : null,
+  note:
+    typeof it.note === "string" && it.note.trim()
+      ? it.note.trim()
+      : undefined,
+  rawLine: it.rawLine,
+  sectionName:
+    typeof it.sectionName === "string"
+      ? it.sectionName.trim()
+      : undefined,
+}));
 
       const finalItems = mapped.filter((it) => it.label.length > 0);
 

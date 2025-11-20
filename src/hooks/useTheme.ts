@@ -30,6 +30,10 @@ export function useTheme() {
     localStorage.setItem(LS_KEY, theme);
   }, [theme]);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // keep in sync with system changes (optional but nice)
   useEffect(() => {
     const mql = window.matchMedia("(prefers-color-scheme: dark)");
@@ -39,7 +43,6 @@ export function useTheme() {
       if (!saved) setTheme(mql.matches ? "dark" : "light");
     };
     mql.addEventListener?.("change", onChange);
-    setMounted(true);
     return () => mql.removeEventListener?.("change", onChange);
   }, []);
 
