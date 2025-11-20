@@ -7,7 +7,8 @@ import * as blobStore from "../blobStore";
 import * as calcsStore from "../calcsStore";
 
 // sve funkcije imaju isti potpis u oba backenda
-const impl = isBlob() ? blobStore : calcsStore;
+// Dodajemo 'as any' da ućutkamo TypeScript proveru
+const impl = (isBlob() ? blobStore : calcsStore) as any;
 
 export const list = impl.list as (uid: string) => Promise<Calc[]>;
 export const get = impl.get as (uid: string, slug: string) => Promise<Calc | undefined>;
