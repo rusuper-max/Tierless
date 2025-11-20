@@ -3,50 +3,53 @@ import { createAuthToken, ensureAuthTables } from "@/lib/db";
 import { Resend } from "resend";
 
 export async function POST(req: Request) {
-  console.log("1. API Ruta pogođena!"); // <--- START
-
   try {
-    // Provera API ključa
+    // 1. Provera API ključa
     const apiKey = process.env.RESEND_API_KEY;
-    console.log("2. Provera API Ključa:", apiKey ? "Postoji (Počinje sa re_...)" : "NE POSTOJI - NULL");
-
     if (!apiKey) {
-        throw new Error("Nema RESEND_API_KEY u .env fajlu!");
+      console.error("❌ MISSING RESEND_API_KEY");
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
     const resend = new Resend(apiKey);
     const body = await req.json();
-    const { email, brandColor, linkColor } = body;
-
-    console.log("3. Primljen email:", email);
+    const { email } = body;
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
-    // Baza
-    console.log("4. Pokušavam pristup bazi...");
+    // 2. Priprema baze i tokena
     await ensureAuthTables();
     const token = await createAuthToken(email);
-    console.log("5. Token generisan:", token);
 
-    // Link
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const magicLink = `${baseUrl}/api/auth/verify?token=${token}`;
-
-    // Slanje
-    console.log("6. Šaljem zahtev ka Resendu...");
+    // 3. PAMETNA DETEKCIJA URL-a (Rešava Localhost vs Vercel)
+    // Redosled prioriteta:
+    // 1. NEXT_PUBLIC_APP_URL (Ako si ga ti ručno setovao na Vercelu)
+    // 2. NEXT_PUBLIC_BASE_URL (Ako koristiš to)
+    // 3. VERCEL_URL (Vercel ovo sam daje za Preview deploymente, ali bez https://)
+    // 4. Localhost (Fallback)
     
-    const safeBrand =
-      typeof brandColor === "string" && /^#([0-9A-F]{3}){1,2}$/i.test(brandColor)
-        ? brandColor
-        : "#111827";
-    const safeLink =
-      typeof linkColor === "string" && /^#([0-9A-F]{3}){1,2}$/i.test(linkColor)
-        ? linkColor
-        : "#4338CA";
+    let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                  process.env.NEXT_PUBLIC_BASE_URL || 
+                  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
- const { data, error } = await resend.emails.send({
+    // Mali fix: Osiguraj da nema duplih kosih crta na kraju (ako si slučajno stavio u env)
+    baseUrl = baseUrl.replace(/\/$/, ""); 
+
+    const magicLink = `${baseUrl}/api/auth/verify?token=${token}`;
+    
+    console.log(`🚀 Sending Magic Link to: ${email}`);
+    console.log(`🔗 Link Base URL: ${baseUrl}`);
+
+    // 4. BRENDIRANJE (Tierless Identity)
+    // Tvoja plava boja (fallback za Outlook)
+    const brandColor = "#2563eb"; 
+    // Tvoj gradient (Cyan -> Blue) za moderne klijente
+    const brandGradient = "linear-gradient(90deg, #06b6d4 0%, #3b82f6 100%)";
+
+    // 5. Slanje Emaila
+    const { data, error } = await resend.emails.send({
       from: "Tierless Login <login@tierless.net>",
       to: email,
       subject: "Log in to Tierless",
@@ -57,52 +60,64 @@ export async function POST(req: Request) {
           <meta charset="utf-8">
           <title>Login to Tierless</title>
         </head>
-        <body style="background-color: #f4f4f5; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <body style="background-color: #f8fafc; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
           
           <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width: 100%; max-width: 100%; margin: 0 auto; padding: 40px 20px;">
             <tbody>
               <tr>
                 <td align="center">
                   
-                  <!-- KONTEJNER (Bela Kartica) -->
-                  <div style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); max-width: 480px; margin: 0 auto; padding: 40px 32px; text-align: left; border: 1px solid #e4e4e7;">
+                  <!-- BELA KARTICA -->
+                  <div style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); max-width: 480px; margin: 0 auto; padding: 48px 40px; text-align: center; border: 1px solid #e2e8f0;">
                     
-                    <!-- LOGO (Opciono - ako imaš URL logoa, otkomentariši ovo ispod i ubaci link) -->
-                    <!-- <img src="https://tierless.net/logo.png" alt="Tierless" width="40" height="40" style="margin-bottom: 24px; border-radius: 8px;"> -->
+                    <!-- LOGO (Tekstualna verzija koja izgleda kao tvoj logo) -->
+                    <div style="margin-bottom: 32px;">
+                        <span style="color: ${brandColor}; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">
+                          Tierless
+                        </span>
+                    </div>
                     
-                    <h1 style="color: #18181b; font-size: 24px; font-weight: 600; margin: 0 0 16px; line-height: 1.3;">
-                      Log in to Tierless
+                    <h1 style="color: #0f172a; font-size: 24px; font-weight: 700; margin: 0 0 16px; line-height: 1.2;">
+                      Log in to your dashboard
                     </h1>
                     
-                    <p style="color: #52525b; font-size: 16px; line-height: 24px; margin: 0 0 24px;">
-                      Welcome back! Click the button below to authenticate your email and sign in to your account.
+                    <p style="color: #64748b; font-size: 16px; line-height: 26px; margin: 0 0 32px;">
+                      Welcome back! Click the button below to verify your email and sign in.
                     </p>
 
-                    <!-- GLAVNO DUGME -->
-                    <a href="${magicLink}" target="_blank" style="display: inline-block; background-color: ${safeBrand}; color: #ffffff; font-size: 16px; font-weight: 500; text-decoration: none; padding: 12px 24px; border-radius: 8px; text-align: center; width: 100%; box-sizing: border-box;">
+                    <!-- DUGME SA GRADIENTOM -->
+                    <a href="${magicLink}" target="_blank" style="
+                      display: inline-block; 
+                      background-color: ${brandColor}; 
+                      background-image: ${brandGradient};
+                      color: #ffffff; 
+                      font-size: 16px; 
+                      font-weight: 600; 
+                      text-decoration: none; 
+                      padding: 14px 32px; 
+                      border-radius: 10px; 
+                      text-align: center; 
+                      min-width: 200px;
+                      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+                    ">
                       Log in to Tierless
                     </a>
 
-                    <p style="color: #71717a; font-size: 14px; line-height: 20px; margin: 24px 0 0;">
-                      Or verify using this link:<br>
-                      <a href="${magicLink}" style="color: ${safeLink}; text-decoration: underline; word-break: break-all;">
+                    <p style="color: #94a3b8; font-size: 14px; line-height: 22px; margin: 32px 0 0;">
+                      Or paste this link into your browser:<br>
+                      <a href="${magicLink}" style="color: ${brandColor}; text-decoration: none; font-weight: 500; word-break: break-all;">
                         ${magicLink}
                       </a>
                     </p>
                     
-                    <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 32px 0;">
+                    <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 40px 0;">
                     
-                    <p style="color: #a1a1aa; font-size: 12px; line-height: 16px; margin: 0;">
-                      If you didn't request this login link, you can safely ignore this email.<br>
-                      Your account is secure.
+                    <p style="color: #cbd5e1; font-size: 12px; line-height: 18px; margin: 0;">
+                      If you didn't request this, you can safely ignore this email.<br>
+                      © ${new Date().getFullYear()} Tierless.
                     </p>
 
                   </div>
-                  
-                  <!-- FOOTER -->
-                  <p style="color: #a1a1aa; font-size: 12px; margin: 24px 0 0; text-align: center;">
-                    © ${new Date().getFullYear()} Tierless. All rights reserved.
-                  </p>
 
                 </td>
               </tr>
@@ -114,18 +129,15 @@ export async function POST(req: Request) {
       `,
     });
 
-    console.log("7. Odgovor od Resenda - DATA:", data);
-    console.log("7. Odgovor od Resenda - ERROR:", error);
-
     if (error) {
+      console.error("Resend Error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    console.error("🚨 VELIKA GREŠKA U API RUTI:", error);
-    // Vraćamo error frontend-u da ne bi pisao "Check email" lažno
-    return NextResponse.json({ error: error.message || "Internal Error" }, { status: 500 });
+    console.error("🚨 Server Error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
