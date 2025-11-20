@@ -980,6 +980,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
           {tierNodes.map((tier) => {
             const isActive = tier.id === selectedTierId;
             return (
+              // ... unutar {tierNodes.map((tier) => { ...
               <TierCard
                 key={tier.id}
                 node={tier}
@@ -989,7 +990,9 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                 billingMode={billingMode}
                 enableYearly={enableYearly}
                 yearlyDiscountPercent={yearlyDiscountPercent}
+                theme={publicTheme} // <--- OVO SI ZABORAVIO, DODAJ OVO
               />
+// ...
             );
           })}
         </div>
