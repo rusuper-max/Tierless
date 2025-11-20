@@ -1,30 +1,27 @@
-import "@/styles/marketing.css";
+import "@/app/globals.css"; 
+import "@/styles/landing.css"; 
+
 import type { ReactNode } from "react";
-import MarketingHeader from "@/components/marketing/MarketingHeader";
-import LenisRoot from "./LenisRoot";
+import LenisRoot from "./LenisRoot"; 
 
 export const metadata = {
-  title: "Tierless — Pricing pages made simple",
-  description: "Create a price page without a website. Share, configure, receive structured inquiries.",
-  // ensure Safari/Chrome top bar matches theme
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b0b0c" }
-  ],
+  title: "Tierless — Your prices. Online. Beautiful.",
+  description: "Create a price page without a website.",
+  themeColor: "#020617",
 };
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
-    <>
-      <div className="relative z-[40] min-h-[100svh] lg:min-h-screen bg-white dark:bg-[#0b0b0c] transition-colors duration-300">
-        <MarketingHeader />
-        <LenisRoot>
-          {/* Ostavi svoj shell/wrapper kako si već imao */}
-          <div className="marketing-shell bg-transparent">
-            <main className="relative">{children}</main>
-          </div>
-        </LenisRoot>
-      </div>
-    </>
+    // UKLONIO SAM "overflow-x-hidden" i "flex" odavde jer mogu da pokvare sticky
+    <div className="relative min-h-screen bg-[#020617] text-white antialiased selection:bg-indigo-500/30 selection:text-white">
+      
+      <LenisRoot>
+        {/* Main mora da bude 'block', ne flex, da bi sticky radio pouzdano */}
+        <main className="relative w-full block">
+          {children}
+        </main>
+      </LenisRoot>
+      
+    </div>
   );
 }

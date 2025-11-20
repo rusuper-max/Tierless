@@ -1,4 +1,3 @@
-// src/components/marketing/CTAButton.tsx
 "use client";
 
 import Link from "next/link";
@@ -22,16 +21,13 @@ type Props = {
   size?: Size;
   pill?: boolean;
   fx?: Fx;
-  /** Ako je true – tekst ima JEDAN kontinualni gradient preko cele reči (za "Sign up"). */
   textGradientUnified?: boolean;
-  /** Ako je true – outline je skoro “hairline” (za “Log in”). */
   hairlineOutline?: boolean;
   className?: string;
-  /** Umesto children koristi eksplicitnu labelu (preporučeno za FX). */
   label?: string;
-  /** Fallback: ako ne koristiš label, može i children (ali mora biti čist string). */
   children?: ReactNode;
   ariaLabel?: string;
+  glow?: boolean; // NOVO: Dodaje onaj cyan glow ispod
 };
 
 export default function CTAButton({
@@ -46,12 +42,19 @@ export default function CTAButton({
   label,
   children,
   ariaLabel,
+  glow = false,
   ...rest
 }: Props) {
-  const WHITE_INK = "#0f172a";
-  const isWhiteFill = variant === "brand" || variant === "outline";
+  
+  // --- BOJE (Prilagođeno za Dark Mode) ---
+  const TEXT_COLOR = "#ffffff"; // Uvek beo tekst na tamnoj pozadini
+  const DARK_BG = "#020617";    // Tvoja glavna pozadina
+  const LIGHTER_BG = "#0f172a"; // Malo svetlija za outline varijante
 
-  // 1) Izaberi tekst koji renderujemo
+  // Da li koristimo gradient border tehniku?
+  const useGradientBorder = variant === "brand" || variant === "outline";
+
+  // --- TEKST LOGIKA (Isto kao pre) ---
   const text = useMemo(() => {
     if (typeof label === "string") return label;
     return typeof children === "string" ? children : "";
@@ -59,12 +62,12 @@ export default function CTAButton({
 
   const chars = useMemo(() => (text ? text.split("") : []), [text]);
 
-  // 2) Merenje širina slova (samo ako radimo unified gradient)
+  // --- MERENJE ZA GRADIENT TEXT (Isto kao pre) ---
   const wrapRef = useRef<HTMLSpanElement | null>(null);
   const charRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const [totalW, setTotalW] = useState<number>(0);
   const [offsets, setOffsets] = useState<number[]>([]);
-  const [measured, setMeasured] = useState(false); // <- NE prikazujemo unified gradient dok ne izmerimo
+  const [measured, setMeasured] = useState(false);
 
   const doMeasure = () => {
     if (!wrapRef.current || chars.length === 0) return;
@@ -81,41 +84,11 @@ export default function CTAButton({
   useLayoutEffect(() => {
     if (!textGradientUnified) return;
     doMeasure();
-    // dodatni raf da sačekamo layout
     const id = requestAnimationFrame(doMeasure);
     return () => cancelAnimationFrame(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textGradientUnified, chars.length]);
 
-  useEffect(() => {
-    if (!textGradientUnified) return;
-
-    // re-measure kad se fontovi učitaju (sprečava 0 širine)
-    let fontReady = true;
-    // @ts-ignore
-    if (document.fonts && typeof document.fonts.ready?.then === "function") {
-      // @ts-ignore
-      document.fonts.ready.then(() => {
-        if (fontReady) doMeasure();
-      });
-    }
-
-    // re-measure na resize wrapa (npr. promene CSS, breakpoint)
-    const ro = new ResizeObserver(() => doMeasure());
-    if (wrapRef.current) ro.observe(wrapRef.current);
-
-    const onResize = () => doMeasure();
-    window.addEventListener("resize", onResize);
-
-    return () => {
-      fontReady = false;
-      ro.disconnect();
-      window.removeEventListener("resize", onResize);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [textGradientUnified, chars.length]);
-
-  // 3) Render slova (swap-up FX, uz unified gradient po izboru)
+  // --- RENDER SLOVA (Swap Up) ---
   function renderChars() {
     if (fx !== "swap-up" || !text) {
       return typeof label === "string" ? label : children;
@@ -124,12 +97,12 @@ export default function CTAButton({
     return chars.map((ch, i) => {
       const content = ch === " " ? "\u00A0" : ch;
 
-      // Unified gradient: pun efekat TEK kad izmerimo širine
-      const allowGradient = textGradientUnified && measured && !isWhiteFill;
+      // Ako je textGradientUnified, koristimo gradient na tekstu
+      const allowGradient = textGradientUnified && measured;
+      
       const gradStyle: CSSProperties | undefined = allowGradient
         ? {
-            backgroundImage:
-              "linear-gradient(90deg, var(--brand-1, #4F46E5), var(--brand-2, #22D3EE))",
+            backgroundImage: "linear-gradient(90deg, #4F46E5, #22D3EE)",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             color: "transparent",
@@ -143,74 +116,75 @@ export default function CTAButton({
         <span
           key={i}
           className="mkt-chwrap"
-          ref={(el: HTMLSpanElement | null) => {
-            charRefs.current[i] = el;
-          }}
+          ref={(el: HTMLSpanElement | null) => { charRefs.current[i] = el; }}
           style={{ ["--i" as any]: i } as CSSProperties}
         >
-          <span className="mkt-ch mkt-ch--A" style={gradStyle}>
-            {content}
-          </span>
-          <span className="mkt-ch mkt-ch--B" style={gradStyle}>
-            {content}
-          </span>
+          <span className="mkt-ch mkt-ch--A" style={gradStyle}>{content}</span>
+          <span className="mkt-ch mkt-ch--B" style={gradStyle}>{content}</span>
         </span>
       );
     });
   }
 
-  // 4) Klase + label node
-  const base =
-    "mkt-btn " +
-    `mkt-btn--${variant} ` +
-    `mkt-btn--${size} ` +
-    (pill ? "mkt-btn--pill " : "") +
-    (fx === "swap-up" ? "mkt-btn--swapup " : "") +
-    (hairlineOutline ? "mkt-btn--hairline " : "") +
-    className;
+  // --- KLASE I STILOVI ---
+  
+  // Osnovne Tailwind klase za pozicioniranje i tranzicije
+  // Dodajemo 'group' da bismo mogli da animiramo glow
+  const baseClasses = `
+    group relative inline-flex items-center justify-center 
+    transition-all duration-200 ease-out 
+    active:scale-[0.98] hover:-translate-y-0.5
+    ${pill ? "rounded-full" : "rounded-xl"}
+    ${size === "sm" ? "px-4 py-2 text-xs" : size === "md" ? "px-6 py-2.5 text-sm" : "px-8 py-3.5 text-base"}
+    font-semibold tracking-wide
+    ${className}
+  `;
 
-  const labelNode =
-    fx === "swap-up" && text ? (
+  // Stil za gradient border (Dark Mode Version)
+  const gradientBorderStyle: CSSProperties = useGradientBorder
+    ? {
+        // Trik: Dva gradienta. Prvi je boja pozadine (padding-box), drugi je border (border-box).
+        background: `
+          linear-gradient(${variant === "brand" ? DARK_BG : LIGHTER_BG}, ${variant === "brand" ? DARK_BG : LIGHTER_BG}) padding-box,
+          linear-gradient(90deg, #4F46E5, #22D3EE) border-box
+        `,
+        border: hairlineOutline ? "1px solid transparent" : "2px solid transparent",
+        color: TEXT_COLOR,
+      }
+    : {};
+
+  const content = (
+    <>
+      {/* GLOW EFEKAT (Samo ako je upaljen) */}
+      {glow && (
+        <div 
+          className="absolute inset-0 -z-10 rounded-full opacity-0 group-hover:opacity-50 transition-opacity duration-500 blur-xl"
+          style={{ background: "linear-gradient(90deg, #4F46E5, #22D3EE)" }}
+        />
+      )}
+
       <span
         ref={wrapRef}
-        className="mkt-btn-label"
-        style={isWhiteFill ? ({ color: WHITE_INK } as CSSProperties) : undefined}
+        className={`mkt-btn-label ${fx === "swap-up" ? "mkt-btn--swapup" : ""}`}
+        style={{ display: 'inline-flex' }}
       >
         {renderChars()}
       </span>
-    ) : (
-      <span
-        className="mkt-btn-label"
-        style={isWhiteFill ? ({ color: WHITE_INK } as CSSProperties) : undefined}
-      >
-        {typeof label === "string" ? label : children}
-      </span>
-    );
+    </>
+  );
 
   const computedAria = ariaLabel ?? (text || undefined);
 
-  // Force white fill always + brand gradient outline (hairline optional) for brand & outline.
-  const inlineStyle: CSSProperties | undefined = isWhiteFill
-    ? {
-        background:
-          "linear-gradient(#fff, #fff) padding-box, var(--brand-gradient) border-box",
-        border: hairlineOutline ? "0.5px solid transparent" : "1px solid transparent",
-        color: WHITE_INK,
-        WebkitTextFillColor: WHITE_INK as any, // ensure Safari doesn't keep transparent fill from children
-      }
-    : undefined;
-
-  // 5) Render Link ili button
   if (href) {
     return (
       <Link
         href={href}
         aria-label={computedAria}
-        className={base}
-        style={inlineStyle}
+        className={baseClasses}
+        style={gradientBorderStyle}
         {...(rest as any)}
       >
-        {labelNode}
+        {content}
       </Link>
     );
   }
@@ -219,11 +193,11 @@ export default function CTAButton({
     <button
       type="button"
       aria-label={computedAria}
-      className={base}
-      style={inlineStyle}
+      className={baseClasses}
+      style={gradientBorderStyle}
       {...rest}
     >
-      {labelNode}
+      {content}
     </button>
   );
 }

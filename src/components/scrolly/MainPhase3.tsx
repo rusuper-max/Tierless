@@ -1,537 +1,253 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import WireGlobe from "@/components/scrolly/WireGlobe";
-import CTAButton from "@/components/marketing/CTAButton";
+import { useRef } from "react";
+import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { t } from "@/i18n";
+import ShinyButton from "@/components/marketing/ShinyButton";
 
-/* ============ ZAPEČENI DEFAULTS (ono što si podesio) ============ */
-const BOTTOM_BAR_H = 202;           // px (desktop)
-const MOBILE_BOTTOM_BAR_H = 260;    // px (mobile — par px "niže" od 240 da ne dira gornji deo)
-
-const CURVE_SIZE_VMIN = 86;         // desktop
-const MOBILE_CURVE_SIZE_VMIN = 52;  // mobilni — manja kugla
-
-const CURVE_RADIUS = 400;
-const CURVE_OFFSET_X = 3;
-const CURVE_OFFSET_Y = -3;
-const CURVE_LEFT_START = 18;        // %
-const CURVE_RIGHT_START = 67;       // %
-
-const BG_TOP_START = "#002e7a";
-const BG_TOP_END   = "#0e2f2c";
-const BG_BOTTOM_START = "#0042aa";
-const BG_BOTTOM_END   = "#00fdff";
-const BG_STOP_START = 37; // % na phase 0
-const BG_STOP_END   = 1;  // % na phase 1
-const TOP_MIX    = 0.33;  // brzina blend-a gore
-const BOTTOM_MIX = 0.36;  // brzina blend-a dole
-
-// Kriva/bend tekst: opaciti “od + do” (da bude sigurno nevidljivo pre otkrivanja)
-const CURVE_REVEAL_START = 0.21; // 0..1
-const CURVE_REVEAL_END   = 1;    // 0..1
-
-// Side hint
-const SIDE_TEXT   = "Tip: you can spin the globe with your mouse or finger — no reason, it's just awesome.";
-const SIDE_X      = -550;
-const SIDE_Y      = 203;
-const SIDE_MAX_W  = 364;
-const SIDE_FONT   = 22;
-const SIDE_OPA    = 0.9;
-
-/* ============ MAIN ============ */
 export default function MainPhase3() {
-  const trackRef = useRef<HTMLDivElement | null>(null);
-  const [phase, setPhase] = useState(0); // 0..1
-  const [href, setHref] = useState("/signup");
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Scroll progresija 0..1
-  useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      const rect = el.getBoundingClientRect();
-      const total = rect.height - window.innerHeight;
-      const y = Math.min(total, Math.max(0, -rect.top));
-      const p = total > 0 ? y / total : 0;
-      setPhase(Number(p.toFixed(4)));
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-    };
-  }, []);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end end"],
+  });
 
-  // Ako je ulogovan, CTA vodi na dashboard
-  useEffect(() => {
-    let dead = false;
-    fetch("/api/me")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (!dead && data?.user) setHref("/dashboard"); })
-      .catch(() => void 0);
-    return () => { dead = true; };
-  }, []);
+  const smooth = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
 
-  // Dinamičan gradijent pozadine
-  const bgTop = mixHex(BG_TOP_START, BG_TOP_END, clamp(phase * TOP_MIX, 0, 1));
-  const bgBottom = mixHex(BG_BOTTOM_START, BG_BOTTOM_END, clamp(phase * BOTTOM_MIX, 0, 1));
-  const stop = Math.round(lerp(BG_STOP_START, BG_STOP_END, phase));
-  const background = `linear-gradient(180deg, ${bgTop} 0%, ${bgTop} ${stop}%, ${bgBottom} 100%)`;
+  // --- ANIMACIJE ---
 
-  // Donja bela traka — gura globus gore (koristimo CSS varijantu zbog mob/desk)
-  const ctaBottom = 16; // mali razmak iznad trake
+  // 1. QR KARTICA
+  const cardScale = useTransform(smooth, [0.3, 0.5], [1, 0.8]);
+  const cardX = useTransform(smooth, [0.3, 0.5], ["0%", "-25%"]);
+  const cardOpacity = useTransform(smooth, [0.6, 0.65], [1, 0]); 
+  const cardBlur = useTransform(smooth, [0.3, 0.5], ["0px", "4px"]);
+  const cardY = useTransform(smooth, [0.1, 0.3], ["20vh", "10vh"]); 
 
-  // Opacity za krivu (da ne bude vidljiva pre otkrivanja)
-  const curveOpacity = smoothstep(CURVE_REVEAL_START, CURVE_REVEAL_END, phase);
+  // 2. PHONE
+  const phoneY = useTransform(smooth, [0.35, 0.55], ["100vh", "12vh"]); 
+  const phoneOpacity = useTransform(smooth, [0.35, 0.45], [0, 1]);
+  const phoneScale = useTransform(smooth, [0.4, 0.6], [0.8, 1]);
+
+  // 3. EKRAN
+  const cameraOpacity = useTransform(smooth, [0.6, 0.65], [1, 0]);
+  const loaderOpacity = useTransform(smooth, [0.6, 0.65, 0.7, 0.75], [0, 1, 1, 0]);
+  
+  const menuY = useTransform(smooth, [0.75, 0.85], ["100%", "0%"]);
+  const menuOpacity = useTransform(smooth, [0.75, 0.8], [0, 1]);
+
+  // 4. TEKSTOVI
+  const step1Op = useTransform(smooth, [0.1, 0.25], [1, 0]);
+  const step2Op = useTransform(smooth, [0.35, 0.45, 0.55], [0, 1, 0]);
+  const step3Op = useTransform(smooth, [0.65, 0.8, 0.9], [0, 1, 1]);
+
+  // --- DATA ---
+  const menuItems = [
+    { name: "Truffle Smash", desc: "Double patty, truffle mayo, swiss", price: "$14" },
+    { name: "Spicy Chicken", desc: "Crispy thigh, slaw, pickles", price: "$12" },
+    { name: "Loaded Fries", desc: "Bacon bits, cheddar sauce", price: "$8" },
+    { name: "Craft Lemonade", desc: "Fresh mint & ginger", price: "$5" },
+  ];
 
   return (
-    <section
-      ref={trackRef}
-      className="p3 relative w-full"
-      style={{ height: "250vh" }}
-      aria-label="MainPhase3 track"
+    <section 
+      ref={containerRef} 
+      className="relative h-[450vh] bg-[#020617] z-20"
     >
-      {/* Sticky viewport */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden" style={{ background }}>
-        {/* --- LAYER 1: GLOBE + CURVED TEXT + LEFT HINT (ispod overlay-a) --- */}
-        <div
-          className="absolute left-0 right-0 top-0"
-          style={{ bottom: "var(--p3-bottom)", zIndex: 1 }}
-        >
-          <WireGlobe phase={phase} />
+      <div className="sticky top-0 h-screen w-full flex flex-col items-center overflow-hidden perspective-1000">
+        
+        {/* --- TEKST ZONA --- */}
+        <div className="absolute top-28 w-full px-4 text-center z-30 h-32 pointer-events-none">
+            
+            <motion.div style={{ opacity: step1Op }} className="absolute inset-0 flex flex-col items-center">
+                <Badge text="Step 1" color="cyan" />
+                <h2 className="text-4xl md:text-6xl font-bold text-white mb-3 drop-shadow-xl">
+                   {t("Scan the QR.")}
+                </h2>
+                <p className="text-lg text-slate-400">
+                   {t("Put it on tables. No app download needed.")}
+                </p>
+            </motion.div>
 
-          <CurvedBand
-            sizeVminVar="--p3-globe-size"
-            radius={CURVE_RADIUS}
-            offsetX={CURVE_OFFSET_X}
-            offsetY={CURVE_OFFSET_Y}
-            leftStart={CURVE_LEFT_START}
-            rightStart={CURVE_RIGHT_START}
-            opacity={curveOpacity}
-          />
+            <motion.div style={{ opacity: step2Op }} className="absolute inset-0 flex flex-col items-center">
+                <Badge text="Step 2" color="indigo" />
+                <h2 className="text-4xl md:text-6xl font-bold text-white mb-3 drop-shadow-xl">
+                   {t("Instant Detect.")}
+                </h2>
+                <p className="text-lg text-slate-400">
+                   {t("Lightning fast loading experience.")}
+                </p>
+            </motion.div>
 
-          <SideHint
-            text={SIDE_TEXT}
-            x={SIDE_X}
-            y={SIDE_Y}
-            maxW={SIDE_MAX_W}
-            font={SIDE_FONT}
-            opacity={SIDE_OPA}
-          />
+            <motion.div style={{ opacity: step3Op }} className="absolute inset-0 flex flex-col items-center">
+                <Badge text="Step 3" color="emerald" />
+                <h2 className="text-4xl md:text-6xl font-bold text-white mb-3 drop-shadow-xl">
+                   {t("Order & Enjoy.")}
+                </h2>
+                <p className="text-lg text-slate-400">
+                   {t("Beautiful menu. Happy customers.")}
+                </p>
+            </motion.div>
+
         </div>
 
-        {/* --- LAYER 2: OVERLAY (indigo on light; deep black + starfield on dark) --- */}
-        <div
-          className="absolute inset-0 flex items-center justify-center text-center overlay"
-          style={{ zIndex: 2, clipPath: `inset(${(phase * 100).toFixed(2)}% 0 0 0)` }}
-        >
-          <div className="starfield pointer-events-none" aria-hidden="true">
-            <Starfield />
-          </div>
+        {/* --- SCENA --- */}
+        <div className="relative w-full max-w-md h-full flex items-center justify-center pointer-events-none">
+            
+            {/* 1. TABLE TENT */}
+            <motion.div
+                style={{ y: cardY, scale: cardScale, x: cardX, opacity: cardOpacity, filter: `blur(${cardBlur})` }}
+                className="absolute z-10"
+            >
+                <div className="w-64 h-80 bg-[#0b101b] rounded-xl border-2 border-slate-800 flex flex-col items-center justify-center p-4 shadow-2xl transform -rotate-3 origin-bottom-left">
+                    <div className="w-3 h-3 bg-slate-900 rounded-full mb-4 shadow-[inset_0_1px_3px_rgba(0,0,0,1)]" />
+                    <div className="w-40 h-40 bg-white p-2 rounded-lg">
+                         <svg viewBox="0 0 100 100" className="w-full h-full text-black fill-current">
+                            <path d="M0,0 h100 v100 h-100 z" fill="none" />
+                            <rect x="10" y="10" width="25" height="25" rx="2" />
+                            <rect x="15" y="15" width="15" height="15" fill="white" />
+                            <rect x="18" y="18" width="9" height="9" />
+                            <rect x="65" y="10" width="25" height="25" rx="2" />
+                            <rect x="70" y="15" width="15" height="15" fill="white" />
+                            <rect x="73" y="18" width="9" height="9" />
+                            <rect x="10" y="65" width="25" height="25" rx="2" />
+                            <rect x="15" y="70" width="15" height="15" fill="white" />
+                            <rect x="18" y="73" width="9" height="9" />
+                            <rect x="45" y="45" width="8" height="8" rx="1" />
+                            <rect x="55" y="15" width="8" height="8" rx="1" />
+                            <rect x="65" y="55" width="8" height="8" rx="1" />
+                            <rect x="25" y="50" width="8" height="8" rx="1" />
+                            <rect x="80" y="80" width="8" height="8" rx="1" />
+                         </svg>
+                    </div>
+                    <p className="mt-5 text-slate-500 text-xs font-bold uppercase tracking-widest">Scan for Menu</p>
+                </div>
+                <div className="w-52 h-8 bg-[#1e293b] mx-auto -mt-2 rounded-b-lg shadow-xl relative z-[-1]" />
+            </motion.div>
 
-          <div
-            className="px-6 relative"
-            style={{
-              opacity: 1 - phase,
-              transform: `translateY(${(-10 * phase).toFixed(2)}px)`,
-              transition: "opacity 0.15s linear, transform 0.15s linear",
-            }}
-          >
-            <h1 className="text-5xl md:text-7xl font-semibold tracking-tight text-white">
-              {t("Create your price page")}.
-            </h1>
-            <p className="mt-4 text-white/80 text-lg md:text-xl">
-              {t("For any business on this planet")}
-            </p>
-          </div>
+            {/* 2. TELEFON (Interactive) */}
+            <motion.div
+                style={{ y: phoneY, opacity: phoneOpacity, scale: phoneScale }}
+                className="absolute z-20 w-[300px] h-[600px] pointer-events-auto" // Enable click
+            >
+                <div className="w-full h-full bg-[#020617] rounded-[44px] border-[6px] border-slate-800 shadow-[0_0_0_2px_#334155,0_20px_60px_-10px_rgba(0,0,0,0.9)] relative overflow-hidden">
+                   
+                   {/* Dynamic Island */}
+                   <div className="absolute top-4 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-full z-50 flex items-center justify-center gap-2 px-3">
+                      <div className="w-2 h-2 bg-[#1e293b] rounded-full" />
+                      <div className="w-1 h-1 bg-[#0f172a] rounded-full" />
+                   </div>
+
+                   {/* SCREEN */}
+                   <div className="w-full h-full bg-black relative overflow-hidden">
+                       
+                       {/* CAMERA */}
+                       <motion.div style={{ opacity: cameraOpacity }} className="absolute inset-0 bg-slate-900 z-30 flex flex-col items-center justify-center">
+                           <div className="absolute inset-0 opacity-20 bg-gradient-to-br from-slate-800 to-black" />
+                           <div className="relative w-56 h-56 border border-white/20 rounded-3xl flex items-center justify-center overflow-hidden">
+                               <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-cyan-400 rounded-tl-lg" />
+                               <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-cyan-400 rounded-tr-lg" />
+                               <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-cyan-400 rounded-bl-lg" />
+                               <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-cyan-400 rounded-br-lg" />
+                               <div className="w-full h-0.5 bg-cyan-400 shadow-[0_0_15px_#22d3ee] animate-scan" />
+                           </div>
+                           <p className="mt-8 text-white/70 text-xs font-medium bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">Scanning code...</p>
+                       </motion.div>
+
+                       {/* LOADING (Cyan) */}
+                       <motion.div style={{ opacity: loaderOpacity }} className="absolute inset-0 bg-[#0f172a] z-40 flex flex-col items-center justify-center">
+                           <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin" />
+                           <p className="mt-4 text-cyan-200 text-sm font-medium">Loading Menu...</p>
+                       </motion.div>
+
+                       {/* MENU + CTA (Integrated) */}
+                       <motion.div 
+                         style={{ opacity: menuOpacity, y: menuY }}
+                         className="absolute inset-0 bg-[#020617] z-50 flex flex-col"
+                       >
+                           <div className="h-44 bg-gradient-to-br from-orange-600 to-red-700 p-4 flex items-end relative">
+                               <div className="absolute inset-0 bg-[linear-gradient(transparent,rgba(0,0,0,0.8))]" />
+                               <div className="relative z-10 w-full">
+                                   <div className="flex justify-between items-end">
+                                        <div>
+                                            <h3 className="text-white font-bold text-2xl tracking-tight">Burger & Co.</h3>
+                                            <div className="flex items-center gap-1 text-amber-400 text-xs mt-1"><span>★★★★★</span><span className="text-slate-300">(124)</span></div>
+                                        </div>
+                                        <div className="bg-white/20 backdrop-blur px-2 py-1 rounded-lg text-white text-xs font-bold">OPEN</div>
+                                   </div>
+                               </div>
+                           </div>
+                           
+                           <div className="px-4 py-3 flex gap-2 border-b border-slate-800/50">
+                               <span className="px-3 py-1 rounded-full bg-white text-black text-[10px] font-bold">Popular</span>
+                               <span className="px-3 py-1 rounded-full bg-slate-800 text-slate-400 text-[10px] font-medium">Mains</span>
+                           </div>
+
+                           <div className="flex-1 px-4 py-2 space-y-3 overflow-hidden">
+                               {menuItems.map((item, i) => (
+                                   <div key={i} className="flex justify-between items-start gap-3 p-2 rounded-xl hover:bg-slate-800/30 transition-colors">
+                                       <div className="flex-1">
+                                           <h4 className="text-white font-bold text-sm">{item.name}</h4>
+                                           <p className="text-slate-500 text-[10px] mt-0.5 leading-snug">{item.desc}</p>
+                                           <p className="text-cyan-400 text-sm font-bold mt-1.5">{item.price}</p>
+                                       </div>
+                                       <div className="w-16 h-16 bg-slate-800 rounded-xl border border-slate-700/50 relative overflow-hidden shrink-0">
+                                            <div className={`absolute inset-0 opacity-50 bg-gradient-to-br ${i%2===0 ? 'from-amber-600 to-orange-800' : 'from-red-600 to-rose-800'}`} />
+                                            <div className="absolute bottom-1 right-1 bg-black/50 rounded-full p-0.5"><svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg></div>
+                                       </div>
+                                   </div>
+                               ))}
+                           </div>
+
+                           {/* INTEGRISANI CTA - Deo telefona */}
+                          {/* INTEGRISANI CTA - Deo telefona */}
+<div className="p-4 pt-2 border-t border-slate-800/50 bg-[#020617]/95 backdrop-blur pb-8">
+    <ShinyButton 
+        href="/start" 
+        className="w-full" 
+        rounded="rounded-xl" // <--- OVO REŠAVA PROBLEM
+    >
+       Create My QR Menu
+    </ShinyButton>
+</div>
+                       </motion.div>
+
+                   </div>
+                </div>
+            </motion.div>
+
         </div>
 
-        {/* --- LAYER 3: CTA (iznad bele trake) --- */}
-        <div
-          className="absolute inset-x-0 flex items-center justify-center pointer-events-none"
-          style={{
-            bottom: `calc(var(--p3-bottom) + ${ctaBottom}px - 6px)`,
-            zIndex: 3,
-            transition: "bottom .2s ease, transform .2s ease",
-          }}
-        >
-          <CTAButton
-            fx="swap-up"
-            variant="brand"
-            size="lg"
-            pill
-            href={href}
-            label={t("Start Right Now")}
-            className="pointer-events-auto"
-          />
-        </div>
-
-        {/* --- LAYER 4: Donja bela traka (gura globus) --- */}
-        <BottomBar />
       </div>
-
-      {/* Lokalne CSS varijable za mob/desk prilagodljivu veličinu/visinu */}
-      <style jsx>{`
-        .p3 {
-          --p3-bottom: ${BOTTOM_BAR_H}px;
-          --p3-globe-size: ${CURVE_SIZE_VMIN}vmin;
+      
+      <style jsx global>{`
+        @keyframes scan {
+          0% { transform: translateY(-60px); opacity: 0; }
+          15% { opacity: 1; }
+          85% { opacity: 1; }
+          100% { transform: translateY(60px); opacity: 0; }
         }
-        @media (max-width: 640px) {
-          .p3 {
-            --p3-bottom: ${MOBILE_BOTTOM_BAR_H}px;
-            --p3-globe-size: ${MOBILE_CURVE_SIZE_VMIN}vmin;
-          }
+        .animate-scan {
+          animation: scan 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
-      `}</style>
-      <style jsx>{`
-        .overlay{ background: #0b1d4d; }
-        :global(html.dark) .overlay{ background: #000; }
-
-        .starfield{ position: absolute; inset: 0; display: none; z-index: 0; }
-        :global(html.dark) .starfield{ display: block; }
-
-        .overlay > .relative{ z-index: 1; }
       `}</style>
     </section>
   );
 }
 
-/* ================= subcomponents ================= */
-
-function CurvedBand({
-  sizeVminVar,
-  radius,
-  offsetX,
-  offsetY,
-  leftStart,
-  rightStart,
-  opacity,
-}: {
-  sizeVminVar: string;
-  radius: number;
-  offsetX: number;
-  offsetY: number;
-  leftStart: number;
-  rightStart: number;
-  opacity: number;
-}) {
-  const pad = "\u00A0\u2009";
-  const L = pad + t("For any business on planet Earth") + pad;
-  const R = pad + t("Share your link in minutes") + pad;
-
-  return (
-    <div className="absolute inset-0 pointer-events-none" aria-hidden="true" style={{ opacity }}>
-      <div
-        className="curved-wrap absolute left-1/2 top-1/2"
-        style={{ transform: "translate(-50%, -50%)" }}
-      >
-        <svg
-          viewBox="0 0 1000 1000"
-          style={{
-            width: `var(${sizeVminVar})`,
-            height: `var(${sizeVminVar})`,
-            transform: `translate(${offsetX}px, ${offsetY}px)`,
-            overflow: "visible",
-            display: "block",
-          }}
-        >
-          <defs>
-            <path
-              id="orbitOuter"
-              d={`M500,${500 - radius} a${radius},${radius} 0 1,1 0,${radius * 2} a${radius},${radius} 0 1,1 0,-${radius * 2}`}
-            />
-            <radialGradient id="curvedGrad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
-              <stop offset="100%" stopColor="rgba(255,255,255,0.70)" />
-            </radialGradient>
-          </defs>
-
-          <text fill="url(#curvedGrad)" fontSize="28" fontWeight={600} letterSpacing="2" style={{ textTransform: "uppercase" }}>
-            <textPath href="#orbitOuter" startOffset={`${leftStart}%`} textAnchor="middle">
-              {L}
-            </textPath>
-          </text>
-
-          <text fill="url(#curvedGrad)" fontSize="28" fontWeight={600} letterSpacing="2" style={{ textTransform: "uppercase" }}>
-            <textPath href="#orbitOuter" startOffset={`${rightStart}%`} textAnchor="middle">
-              {R}
-            </textPath>
-          </text>
-        </svg>
-      </div>
-
-      <style jsx>{`
-        /* Mobile-only: gurni krivi tekst još malo VAN globusa */
-        @media (max-width: 640px) {
-          .curved-wrap{
-            transform: translate(-50%, -54%) scale(1.30);
-            transform-origin: center;
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-function SideHint({
-  text, x, y, maxW, font, opacity,
-}: { text: string; x: number; y: number; maxW: number; font: number; opacity: number }) {
-  return (
-    <div
-      className="absolute left-1/2 top-1/2 pointer-events-none"
-      style={{
-        transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
-        width: maxW,
-        color: `rgba(255,255,255,${opacity})`,
-        fontSize: font,
-        lineHeight: 1.4,
-        textAlign: "left",
-      }}
-    >
-      {text}
-    </div>
-  );
-}
-
-function BottomBar() {
-  return (
-    <div
-      className="absolute inset-x-0 bottom-0 z-[2] footer-bar"
-      style={{ height: "var(--p3-bottom)" }}
-      aria-label="Footer links"
-    >
-      {/* brand hairline separator */}
-      <div className="brand-hairline" aria-hidden="true" />
-
-      <div
-        className="mx-auto w-full h-full max-w-6xl flex items-start fb-grid"
-        style={{ paddingLeft: "16px", paddingRight: "calc(16px + env(safe-area-inset-right))" }}
-      >
-        <div className="grid grid-cols-2 gap-x-8 gap-y-6 md:grid-cols-4 w-full">
-          <div className="space-y-1.5">
-            <div className="text-sm/6 footer-muted">{t("Get Started")}</div>
-            <FooterLink href="/signup">{t("Sign up")}</FooterLink>
-            <FooterLink href="/login">{t("Login")}</FooterLink>
-          </div>
-          <div className="space-y-1.5">
-            <div className="text-sm/6 footer-muted">{t("Discover")}</div>
-            <FooterLink href="/templates">{t("Templates")}</FooterLink>
-            <FooterLink href="/pricing">{t("Pricing")}</FooterLink>
-          </div>
-          <div className="space-y-1.5">
-            <div className="text-sm/6 footer-muted">{t("Company")}</div>
-            <FooterLink href="/about">{t("About")}</FooterLink>
-          </div>
-          <div className="space-y-1.5">
-            <div className="text-sm/6 footer-muted">{t("Legal & Help")}</div>
-            <FooterLink href="/legal/cookies">{t("Cookie Policy")}</FooterLink>
-            <FooterLink href="/legal/privacy">{t("Privacy Policy")}</FooterLink>
-            <FooterLink href="/legal/terms">{t("Terms and Conditions")}</FooterLink>
-            <FooterLink href="/faq">{t("FAQ")}</FooterLink>
-            <FooterLink href="/support">{t("Support")}</FooterLink>
-          </div>
-        </div>
-      </div>
-
-      {/* Legal row at absolute bottom of footer */}
-      <div className="legal-row">
-        <div className="legal-inner">
-          <span className="legal-left">Tierless — All rights reserved.</span>
-          <span className="legal-right">Made with ❤️</span>
-        </div>
-      </div>
-
-      <style jsx>{`
-        /* Theme-aware footer container */
-        .footer-bar{
-          height: var(--p3-bottom);
-          background: #ffffff;
-          color: #0b1020;
-          border-top: 1px solid rgba(0,0,0,0.08);
-          overflow: hidden; /* NIŠTA da ne pređe granicu futera */
-        }
-        :global(html.dark) .footer-bar{
-          background: #0b0b0c;
-          color: #ffffff;
-          border-top: 1px solid rgba(255,255,255,0.08);
-        }
-
-        .brand-hairline{
-          position: absolute;
-          top: 0; left: 0; right: 0;
-          height: 1px;
-          background: var(--brand-gradient);
-          opacity: .9;
-          pointer-events: none;
-        }
-        :global(html.dark) .brand-hairline{ opacity: .85; }
-
-        .footer-muted{ opacity: .7; }
-
-        /* rezerva za legal red + malo gornjeg vazduha */
-        .fb-grid{ padding-top: 12px; padding-bottom: 56px; }
-
-        .footer-bar :global(a.footer-link){
-          position: relative;
-          text-decoration: none;
-          color: inherit;
-          display: block;
-          padding: 2px 0 6px;
-          line-height: 1.2;
-        }
-        .footer-bar :global(a.footer-link .footer-ink){
-          position: relative;
-          display: inline-block;
-        }
-        .footer-bar :global(a.footer-link .footer-ink::after){
-          content: "";
-          position: absolute;
-          left: 0;
-          bottom: 0;
-          width: 100%;
-          height: 2px;
-          background: var(--brand-gradient);
-          transform: scaleX(0);
-          transform-origin: left;
-          transition: transform .70s cubic-bezier(.22,1,.36,1), opacity .3s ease;
-          opacity: .95;
-          pointer-events: none;
-        }
-        .footer-bar :global(a.footer-link:hover .footer-ink::after),
-        .footer-bar :global(a.footer-link:focus-visible .footer-ink::after){
-          transform: scaleX(1);
-          opacity: 1;
-        }
-
-        .legal-row{
-          position: absolute;
-          left: 0; right: 0; bottom: 0;
-          height: 40px;
-          border-top: 1px solid rgba(0,0,0,0.06);
-          display: flex; align-items: center;
-          background: inherit;
-        }
-        :global(html.dark) .legal-row{
-          border-top-color: rgba(255,255,255,0.08);
-        }
-        .legal-inner{
-          width: 100%;
-          max-width: 72rem;
-          margin-inline: auto;
-          padding-inline: 16px;
-          display: flex; align-items: center; justify-content: space-between;
-          font-size: 12px; line-height: 1; opacity: .85;
-        }
-
-        @media (max-width: 640px){
-          .legal-inner{
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            padding-bottom: env(safe-area-inset-bottom, 0px);
-            text-align: center;
-            padding-top: 4px;
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce){
-          .footer-bar :global(a.footer-link .footer-ink::after){
-            transition: none;
-            transform: none;
-            opacity: 1;
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-function FooterLink(props: React.ComponentProps<"a">) {
-  const { children, className, ...rest } = props;
-  return (
-    <a {...rest} className={`footer-link block text-base/6 transition-colors ${className ?? ""}`}>
-      <span className="footer-ink">{children}</span>
-    </a>
-  );
-}
-
-/* ---------- helpers ---------- */
-function clamp(v: number, a: number, b: number) { return Math.min(b, Math.max(a, v)); }
-function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
-function mixHex(a: string, b: string, t: number) {
-  const ca = hexToRgb(a), cb = hexToRgb(b);
-  const m = (x: number, y: number) => Math.round(x + (y - x) * t);
-  return `rgb(${m(ca.r,cb.r)}, ${m(ca.g,cb.g)}, ${m(ca.b,cb.b)})`;
-}
-function hexToRgb(hex: string) {
-  const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)!;
-  return { r: parseInt(r[1], 16), g: parseInt(r[2], 16), b: parseInt(r[3], 16) };
-}
-function smoothstep(edge0: number, edge1: number, x: number) {
-  const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
-  return t * t * (3 - 2 * t);
-}
-
-function Starfield() {
-  const seed = 1337;
-  const area = 2000;
-  const small = generateBoxShadows(420, area, area, seed + 1);
-  const medium = generateBoxShadows(160, area, area, seed + 2);
-  const big = generateBoxShadows(80, area, area, seed + 3);
-
-  return (
-    <>
-      <div className="stars" style={{ ["--shadow" as any]: small } as React.CSSProperties} />
-      <div className="stars2" style={{ ["--shadow" as any]: medium } as React.CSSProperties} />
-      <div className="stars3" style={{ ["--shadow" as any]: big } as React.CSSProperties} />
-      <style jsx>{`
-        .stars, .stars2, .stars3 {
-          position: absolute;
-          top: 0; left: 0;
-          width: 1px; height: 1px;
-          background: transparent;
-          box-shadow: var(--shadow);
-          animation: animStar 60s linear infinite;
-          will-change: transform;
-        }
-        .stars::after, .stars2::after, .stars3::after{
-          content: "";
-          position: absolute;
-          top: 2000px; left: 0;
-          width: inherit; height: inherit;
-          background: transparent;
-          box-shadow: var(--shadow);
-        }
-        .stars2{ width: 2px; height: 2px; animation-duration: 110s; opacity: .9; }
-        .stars3{ width: 3px; height: 3px; animation-duration: 160s; opacity: .75; }
-
-        @keyframes animStar {
-          from { transform: translateY(0); }
-          to   { transform: translateY(-2000px); }
-        }
-      `}</style>
-    </>
-  );
-}
-
-function generateBoxShadows(n: number, w: number, h: number, seed: number) {
-  const rng = lcg(seed);
-  const pts: string[] = [];
-  for (let i = 0; i < n; i++) {
-    const x = Math.floor(rng() * w);
-    const y = Math.floor(rng() * h);
-    pts.push(`${x}px ${y}px #FFF`);
-  }
-  return pts.join(", ");
-}
-
-function lcg(seed: number) {
-  let s = seed >>> 0;
-  return function() {
-    s = (1664525 * s + 1013904223) % 0xffffffff;
-    return s / 0xffffffff;
-  };
+function Badge({ text, color }: { text: string; color: string }) {
+    const colors: any = {
+        cyan: "bg-cyan-500/10 border-cyan-500/20 text-cyan-400",
+        indigo: "bg-indigo-500/10 border-indigo-500/20 text-indigo-400",
+        emerald: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
+    };
+    return (
+        <span className={`inline-block py-1 px-3 rounded-full border text-[10px] font-bold tracking-widest mb-3 uppercase ${colors[color]}`}>
+            {text}
+        </span>
+    );
 }

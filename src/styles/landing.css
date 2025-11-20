@@ -1,0 +1,107 @@
+/* src/styles/landing.css */
+
+/* 1. BASE RESET & FONTS */
+:root {
+  --brand-cyan: #22d3ee;
+  --brand-indigo: #4f46e5;
+  --bg-deep: #020617;
+}
+
+/* Forsiraj smooth scroll svuda */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 2. ANIMATIONS (Koje Tailwind nema) */
+
+/* Background Gradient Animation (za tekst) */
+@keyframes gradient-x {
+  0%, 100% {
+    background-size: 200% 200%;
+    background-position: left center;
+  }
+  50% {
+    background-size: 200% 200%;
+    background-position: right center;
+  }
+}
+.animate-gradient {
+  animation: gradient-x 8s ease infinite;
+}
+
+/* Floating Animation (za bedževe/slike) */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Pulse Glow (za dugmiće) */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px -5px rgba(34, 211, 238, 0.3); }
+  50% { box-shadow: 0 0 30px -5px rgba(79, 70, 229, 0.5); }
+}
+.hover-glow:hover {
+  animation: pulse-glow 2s infinite;
+}
+
+/* 3. UTILITIES */
+
+/* Sakrivanje scrollbara ali dozvoljen scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 3D Perspective Helper */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* Glassmorphism Utilities (ako nećeš da pišeš dugi Tailwind) */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Gradient Text Helper */
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(to right, var(--brand-indigo), var(--brand-cyan), var(--brand-indigo));
+}
+
+/* SWAP UP ANIMATION (Kopirano iz starog marketing.css) */
+.mkt-btn--swapup .mkt-chwrap {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  height: 1.2em;
+  line-height: 1.2em;
+}
+
+.mkt-btn--swapup .mkt-ch {
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1);
+}
+
+/* Početno stanje (A je vidljivo, B je dole) */
+.mkt-btn--swapup .mkt-ch--A { transform: translateY(0); }
+.mkt-btn--swapup .mkt-ch--B { transform: translateY(100%); position: absolute; top: 0; left: 0; }
+
+/* Hover stanje (A ide gore, B dolazi na mesto) */
+.group:hover .mkt-ch--A { transform: translateY(-100%); }
+.group:hover .mkt-ch--B { transform: translateY(0); }
+
+/* Stagger delay (Kašnjenje po slovu) */
+.mkt-chwrap { transition-delay: calc(var(--i) * 30ms); }
