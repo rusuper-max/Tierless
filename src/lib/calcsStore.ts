@@ -1,6 +1,9 @@
 // src/lib/calcsStore.ts
 import { getPool } from "@/lib/db";
 import { syncPublicationState } from "@/lib/publishSync";
+import * as fullStore from "@/lib/fullStore";
+import { calcBlank, calcFromMetaConfig } from "@/lib/calc-init";
+import { randomBytes } from "crypto";
 
 export type Calc = {
   meta: {
@@ -58,26 +61,76 @@ function rowToCalc(r: any): Calc {
   };
 }
 
-async function uniqueSlug(userId: string, baseName: string): Promise<string> {
-  const base = (baseName || "page")
+const SLUG_MAX = 50;
+const COPY_PREFIX = "Copy of ";
+
+function slugBase(input: string) {
+  const raw = (input || "page")
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .replace(/--+/g, "-")
-    .slice(0, 60) || "page";
+    .trim();
+  return raw ? raw.slice(0, SLUG_MAX) : "page";
+}
 
+function sanitizeCopyName(originalName: string) {
+  const stripped = originalName
+    .replace(new RegExp(`^${COPY_PREFIX}+`, "i"), "")
+    .replace(/\(\d+\)$/g, "")
+    .trim();
+  return `${COPY_PREFIX}${stripped || "Untitled Page"}`.trim();
+}
+
+async function uniqueSlug(
+  userId: string,
+  raw: string,
+  opts?: { ignoreSlug?: string }
+): Promise<string> {
+  const base = slugBase(raw || "page");
   let slug = base;
   let i = 1;
   // proveravaj u bazi dok ne nađeš slobodan
   for (;;) {
+    if (opts?.ignoreSlug && slug === opts.ignoreSlug) return slug;
     const { rows } = await pool.query(
       `SELECT 1 FROM calculators WHERE user_id=$1 AND slug=$2 LIMIT 1`,
       [userId, slug]
     );
     if (rows.length === 0) return slug;
-    slug = `${base}-${++i}`;
+    const suffix = `-${++i}`;
+    const trimmed = base.slice(0, Math.max(1, SLUG_MAX - suffix.length));
+    slug = `${trimmed}${suffix}`;
+  }
+}
+
+async function seedBlankFull(userId: string, slug: string, name: string) {
+  try {
+    const blank = calcBlank(slug, name);
+    await fullStore.putFull(userId, slug, blank);
+  } catch (err) {
+    console.error("seedBlankFull failed", { userId, slug, err });
+  }
+}
+
+async function seedFullFromSource(
+  userId: string,
+  slug: string,
+  sourceFull: any,
+  fallback: { meta: any; config: any }
+) {
+  try {
+    const payload =
+      sourceFull ??
+      calcFromMetaConfig({
+        meta: fallback.meta,
+        config: fallback.config,
+      });
+    await fullStore.putFull(userId, slug, payload);
+  } catch (err) {
+    console.error("seedFullFromSource failed", { userId, slug, err });
   }
 }
 
@@ -114,6 +167,7 @@ export async function create(userId: string, name = "Untitled Page"): Promise<Ca
     `SELECT * FROM calculators WHERE user_id=$1 AND slug=$2`,
     [userId, slug]
   );
+  await seedBlankFull(userId, slug, name);
   return rowToCalc(rows[0]);
 }
 
@@ -125,14 +179,17 @@ export async function createWithSlug(
   template?: string
 ): Promise<Calc> {
   await ensureTable();
-  let slug = desiredSlug || (await uniqueSlug(userId, name || "page"));
+  let slug = desiredSlug
+    ? slugBase(desiredSlug)
+    : await uniqueSlug(userId, name || "page");
   // ako zauzet — dodaj -restored-#
   const { rows: exist } = await pool.query(
     `SELECT 1 FROM calculators WHERE user_id=$1 AND slug=$2 LIMIT 1`,
     [userId, slug]
   );
   if (exist.length) {
-    const base = (desiredSlug || "restored").replace(/-restored-\d+$/, "");
+    const baseRaw = slugBase(desiredSlug || "restored");
+    const base = baseRaw.replace(/-restored-\d+$/, "");
     let i = 1;
     for (;;) {
       const candidate = `${base}-restored-${i++}`;
@@ -153,6 +210,10 @@ export async function createWithSlug(
     `SELECT * FROM calculators WHERE user_id=$1 AND slug=$2`,
     [userId, slug]
   );
+  await seedFullFromSource(userId, slug, null, {
+    meta: { name: name || "Restored Page", slug },
+    config: cfg ?? {},
+  });
   return rowToCalc(rows[0]);
 }
 
@@ -170,6 +231,7 @@ export async function createFromTemplate(userId: string, templateSlug: string, n
     `SELECT * FROM calculators WHERE user_id=$1 AND slug=$2`,
     [userId, slug]
   );
+  await seedBlankFull(userId, slug, baseName);
   return rowToCalc(rows[0]);
 }
 
@@ -181,13 +243,34 @@ export async function duplicate(userId: string, fromSlug: string, newName: strin
   );
   if (!srcRows[0]) return undefined;
   const src = srcRows[0];
-  const slug = await uniqueSlug(userId, newName);
+  const friendlyName = sanitizeCopyName(newName || src.name || "Untitled Page");
+  const slug = await uniqueSlug(userId, friendlyName);
   const now = Date.now();
   await pool.query(
     `INSERT INTO calculators (user_id, slug, name, template, config, published, favorite, "order", views7d, created_at, updated_at)
      VALUES ($1,$2,$3,$4,$5,FALSE,FALSE,0,0,$6,$6)`,
-    [userId, slug, newName, src.template ?? null, src.config ?? {}, now]
+    [userId, slug, friendlyName, src.template ?? null, src.config ?? {}, now]
   );
+  try {
+    let sourceFull = await fullStore.getFull(userId, fromSlug);
+    if (sourceFull) {
+      sourceFull = {
+        ...sourceFull,
+        meta: { ...(sourceFull.meta || {}), name: friendlyName },
+      };
+    }
+    await seedFullFromSource(
+      userId,
+      slug,
+      sourceFull,
+      {
+        meta: { name: friendlyName, slug },
+        config: src.config ?? {},
+      }
+    );
+  } catch (err) {
+    console.error("duplicate seed full failed", { userId, fromSlug, slug, err });
+  }
   return slug;
 }
 
@@ -210,9 +293,76 @@ export async function updateName(userId: string, slug: string, newName: string) 
   return (res.rowCount ?? 0) > 0;
 }
 
+export async function renameWithSlug(
+  userId: string,
+  slug: string,
+  newName: string
+): Promise<{ slug: string } | null> {
+  await ensureTable();
+  const existing = await get(userId, slug);
+  if (!existing) return null;
+  const nextSlug = await uniqueSlug(userId, newName || "page", {
+    ignoreSlug: slug,
+  });
+  const now = Date.now();
+  await pool.query(
+    `UPDATE calculators SET name=$1, slug=$2, updated_at=$3 WHERE user_id=$4 AND slug=$5`,
+    [newName, nextSlug, now, userId, slug]
+  );
+
+  let full: any | null = null;
+  try {
+    full = await fullStore.getFull(userId, slug);
+  } catch {}
+
+  if (full) {
+    const patched = {
+      ...full,
+      meta: { ...(full.meta || {}), name: newName, slug: nextSlug },
+    };
+    await fullStore.putFull(userId, nextSlug, patched);
+    if (nextSlug !== slug) {
+      try {
+        await fullStore.deleteFull(userId, slug);
+      } catch {}
+    }
+  } else {
+    await seedFullFromSource(
+      userId,
+      nextSlug,
+      null,
+      {
+        meta: { ...existing.meta, name: newName, slug: nextSlug },
+        config: existing.config ?? {},
+      }
+    );
+  }
+
+  return { slug: nextSlug };
+}
+
 // =============== Meta helpers (publish/favorite/order/etc) ===============
 
-export async function setPublished(userId: string, slug: string, next: boolean): Promise<boolean> {
+function genPublicId(): string {
+  return randomBytes(9).toString("base64url");
+}
+
+function attachMetaIds(full: any, slug: string) {
+  const id =
+    typeof full?.meta?.id === "string" && full.meta.id.length > 0
+      ? full.meta.id
+      : genPublicId();
+  return {
+    ...full,
+    meta: { ...(full?.meta || {}), id, slug },
+  };
+}
+
+export async function setPublished(
+  userId: string,
+  slug: string,
+  next: boolean
+): Promise<boolean> {
   await ensureTable();
   const now = Date.now();
   const res = await pool.query(
@@ -221,7 +371,22 @@ export async function setPublished(userId: string, slug: string, next: boolean):
   );
   const ok = (res.rowCount ?? 0) > 0;
   if (ok) {
-    await syncPublicationState(userId, slug, !!next);
+    let override: any | undefined;
+    if (next) {
+      override = await fullStore.getFull(userId, slug);
+      if (!override) {
+        const row = await get(userId, slug);
+        if (row) {
+          const seeded = calcFromMetaConfig({
+            meta: row.meta,
+            config: row.config,
+          });
+          override = attachMetaIds(seeded, row.meta.slug);
+          await fullStore.putFull(userId, slug, override);
+        }
+      }
+    }
+    await syncPublicationState(userId, slug, !!next, override);
   }
   return ok;
 }

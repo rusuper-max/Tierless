@@ -23,34 +23,34 @@ export async function POST(req: Request) {
     await ensureAuthTables();
     const token = await createAuthToken(email);
 
-    // 3. PAMETNA DETEKCIJA URL-a (Rešava Localhost vs Vercel)
-    // Redosled prioriteta:
-    // 1. NEXT_PUBLIC_APP_URL (Ako si ga ti ručno setovao na Vercelu)
-    // 2. NEXT_PUBLIC_BASE_URL (Ako koristiš to)
-    // 3. VERCEL_URL (Vercel ovo sam daje za Preview deploymente, ali bez https://)
-    // 4. Localhost (Fallback)
-    
+    // 3. URL Logika
     let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
                   process.env.NEXT_PUBLIC_BASE_URL || 
                   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
-    // Mali fix: Osiguraj da nema duplih kosih crta na kraju (ako si slučajno stavio u env)
     baseUrl = baseUrl.replace(/\/$/, ""); 
-
     const magicLink = `${baseUrl}/api/auth/verify?token=${token}`;
     
     console.log(`🚀 Sending Magic Link to: ${email}`);
-    console.log(`🔗 Link Base URL: ${baseUrl}`);
 
-    // 4. BRENDIRANJE (Tierless Identity)
-    // Tvoja plava boja (fallback za Outlook)
-    const brandColor = "#2563eb"; 
-    // Tvoj gradient (Cyan -> Blue) za moderne klijente
-    const brandGradient = "linear-gradient(90deg, #06b6d4 0%, #3b82f6 100%)";
+    // 4. BRAND COLORS (Dark Theme Core)
+    const mainBg = "#020617"; // Tvoja glavna pozadina
+    const cardBg = "#090c1b"; // Malo svetliji surface za karticu
+    const borderColor = "rgba(148,163,184,0.15)"; // Subtle border
+    
+    // Brand Gradient (Indigo -> Cyan)
+    const gradientStart = "#4F46E5";
+    const gradientEnd = "#22D3EE";
+    const buttonGradient = `linear-gradient(90deg, ${gradientStart} 0%, ${gradientEnd} 100%)`;
+    
+    // Text Colors
+    const textPrimary = "#F9FAFB";
+    const textMuted = "#9CA3AF";
+    const textLink = "#22D3EE"; // Secondary accent za linkove
 
     // 5. Slanje Emaila
     const { data, error } = await resend.emails.send({
-      from: "Tierless Login <login@tierless.net>",
+      from: "Tierless <login@tierless.net>",
       to: email,
       subject: "Log in to Tierless",
       html: `
@@ -58,66 +58,77 @@ export async function POST(req: Request) {
         <html lang="en">
         <head>
           <meta charset="utf-8">
+          <meta name="color-scheme" content="dark">
           <title>Login to Tierless</title>
         </head>
-        <body style="background-color: #f8fafc; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <body style="background-color: ${mainBg}; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
           
-          <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width: 100%; max-width: 100%; margin: 0 auto; padding: 40px 20px;">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width: 100%; height: 100%; background-color: ${mainBg};">
             <tbody>
               <tr>
-                <td align="center">
+                <td align="center" style="padding: 40px 20px;">
                   
-                  <!-- BELA KARTICA -->
-                  <div style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); max-width: 480px; margin: 0 auto; padding: 48px 40px; text-align: center; border: 1px solid #e2e8f0;">
-                    
-                    <!-- LOGO (Tekstualna verzija koja izgleda kao tvoj logo) -->
-                    <div style="margin-bottom: 32px;">
-                        <span style="color: ${brandColor}; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">
-                          Tierless
-                        </span>
-                    </div>
-                    
-                    <h1 style="color: #0f172a; font-size: 24px; font-weight: 700; margin: 0 0 16px; line-height: 1.2;">
-                      Log in to your dashboard
-                    </h1>
-                    
-                    <p style="color: #64748b; font-size: 16px; line-height: 26px; margin: 0 0 32px;">
-                      Welcome back! Click the button below to verify your email and sign in.
-                    </p>
+                  <!-- KARTICA -->
+                  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 460px; width: 100%;">
+                    <tbody>
+                      <tr>
+                        <td style="background-color: ${cardBg}; border-radius: 24px; border: 1px solid ${borderColor}; padding: 48px 40px; text-align: center; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);">
+                          
+                          <!-- LOGO -->
+                          <div style="margin-bottom: 32px;">
+                             <!-- Koristimo gradient boju za tekst logotipa ili belu -->
+                             <span style="color: ${textPrimary}; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
+                               Tierless
+                             </span>
+                          </div>
+                          
+                          <h1 style="color: ${textPrimary}; font-size: 22px; font-weight: 600; margin: 0 0 16px; line-height: 1.3;">
+                            Log in to your account
+                          </h1>
+                          
+                          <p style="color: ${textMuted}; font-size: 15px; line-height: 24px; margin: 0 0 32px;">
+                            Welcome back. Click the button below to securely sign in to your dashboard.
+                          </p>
 
-                    <!-- DUGME SA GRADIENTOM -->
-                    <a href="${magicLink}" target="_blank" style="
-                      display: inline-block; 
-                      background-color: ${brandColor}; 
-                      background-image: ${brandGradient};
-                      color: #ffffff; 
-                      font-size: 16px; 
-                      font-weight: 600; 
-                      text-decoration: none; 
-                      padding: 14px 32px; 
-                      border-radius: 10px; 
-                      text-align: center; 
-                      min-width: 200px;
-                      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
-                    ">
-                      Log in to Tierless
-                    </a>
+                          <!-- DUGME (Pill Shape, Gradient Background) -->
+                          <!-- Email klijenti ne vole gradient bordere, pa koristimo Solid Gradient Background koji je po tvojim pravilima za 'Selected/Active' state -->
+                          <a href="${magicLink}" target="_blank" style="
+                            display: inline-block; 
+                            background-color: ${gradientStart}; 
+                            background-image: ${buttonGradient};
+                            color: #ffffff; 
+                            font-size: 15px; 
+                            font-weight: 600; 
+                            text-decoration: none; 
+                            padding: 14px 32px; 
+                            border-radius: 9999px; /* Pill shape */
+                            text-align: center; 
+                            min-width: 180px;
+                            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.35); /* Glow effect */
+                          ">
+                            Log in to Tierless
+                          </a>
 
-                    <p style="color: #94a3b8; font-size: 14px; line-height: 22px; margin: 32px 0 0;">
-                      Or paste this link into your browser:<br>
-                      <a href="${magicLink}" style="color: ${brandColor}; text-decoration: none; font-weight: 500; word-break: break-all;">
-                        ${magicLink}
-                      </a>
-                    </p>
-                    
-                    <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 40px 0;">
-                    
-                    <p style="color: #cbd5e1; font-size: 12px; line-height: 18px; margin: 0;">
-                      If you didn't request this, you can safely ignore this email.<br>
-                      © ${new Date().getFullYear()} Tierless.
-                    </p>
+                          <!-- LINK FALLBACK -->
+                          <p style="color: ${textMuted}; font-size: 13px; line-height: 20px; margin: 32px 0 0;">
+                            Or copy this link:<br>
+                            <a href="${magicLink}" style="color: ${textLink}; text-decoration: none; word-break: break-all;">
+                              ${magicLink}
+                            </a>
+                          </p>
+                          
+                          <hr style="border: none; border-top: 1px solid ${borderColor}; margin: 40px 0;">
+                          
+                          <!-- FOOTER -->
+                          <p style="color: #64748B; font-size: 12px; line-height: 18px; margin: 0;">
+                            If you didn't request this login link, you can safely ignore it.<br>
+                            © ${new Date().getFullYear()} Tierless.
+                          </p>
 
-                  </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
 
                 </td>
               </tr>

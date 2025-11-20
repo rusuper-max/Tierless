@@ -1,5 +1,5 @@
 // src/app/p/[idOrSlug]/page.tsx
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { CalcJson } from "@/hooks/useEditorStore";
 import PublicPageClient from "./PublicPageClient";
 
@@ -9,32 +9,23 @@ export const dynamic = "force-dynamic";
 /* ---------------- helpers ---------------- */
 
 const reB64Url = /^[A-Za-z0-9_-]+$/;
-const MIN_ID = 10;
-const MAX_ID = 24;
+const PUBLIC_ID_LENGTH = 12; // randomBytes(9).toString("base64url")
 
 function parseKey(key: string) {
   if (!key) return { id: "", slug: "" };
-  if (key.length >= MIN_ID && key.length <= MAX_ID && reB64Url.test(key)) {
+  if (
+    key.length > PUBLIC_ID_LENGTH &&
+    key[PUBLIC_ID_LENGTH] === "-" &&
+    reB64Url.test(key.slice(0, PUBLIC_ID_LENGTH))
+  ) {
+    return {
+      id: key.slice(0, PUBLIC_ID_LENGTH),
+      slug: key.slice(PUBLIC_ID_LENGTH + 1),
+    };
+  }
+  if (key.length === PUBLIC_ID_LENGTH && reB64Url.test(key)) {
     return { id: key, slug: "" };
   }
-
-  let cut = -1;
-  for (let i = 0; i < key.length; i++) {
-    if (key[i] !== "-") continue;
-    const prefix = key.slice(0, i);
-    if (
-      prefix.length >= MIN_ID &&
-      prefix.length <= MAX_ID &&
-      reB64Url.test(prefix)
-    ) {
-      cut = i;
-    }
-  }
-
-  if (cut !== -1 && cut + 1 < key.length) {
-    return { id: key.slice(0, cut), slug: key.slice(cut + 1) };
-  }
-
   return { id: "", slug: key };
 }
 
@@ -49,21 +40,15 @@ function apiUrl(segment: string) {
 }
 
 async function loadPublic(id: string, slug: string) {
-  // 1) canonical by id
+  const attempts: string[] = [];
   if (id) {
-    const key = `${id}${slug ? "-" + encodeURIComponent(slug) : ""}`;
-    const r = await fetch(apiUrl(`/api/public/${key}?v=${Date.now()}`), {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-    });
-    if (r.ok) {
-      const j = await r.json();
-      return j?.data ?? j ?? null;
-    }
+    attempts.push(slug ? `${id}-${slug}` : id);
   }
-  // 2) fallback by slug
   if (slug) {
-    const r = await fetch(apiUrl(`/api/public/${encodeURIComponent(slug)}?v=${Date.now()}`), {
+    attempts.push(slug);
+  }
+  for (const key of attempts) {
+    const r = await fetch(apiUrl(`/api/public/${encodeURIComponent(key)}?v=${Date.now()}`), {
       cache: "no-store",
       headers: { Accept: "application/json" },
     });
@@ -96,6 +81,15 @@ export default async function PublicPage(
         ? calc.meta.online
         : false;
   if (!isPublished) notFound();
+
+  const calcId = (calc.meta as any)?.id;
+  const calcSlug = (calc.meta as any)?.slug;
+  if (calcId) {
+    const canonical = calcSlug ? `${calcId}-${calcSlug}` : calcId;
+    if (canonical && canonical !== idOrSlug) {
+      redirect(`/p/${canonical}`);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#f8fafc] text-[#020617] dark:bg-[#05010d] dark:text-white">

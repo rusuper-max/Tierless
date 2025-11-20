@@ -756,6 +756,40 @@ export default function DashboardPageClient() {
     if (m[slug]) { delete m[slug]; saveCreatedLS(m); }
   };
 
+  const replaceSlugInOrderLS = (from: string, to: string) => {
+    if (!from || !to || from === to) return;
+    try {
+      const raw = localStorage.getItem(LS_ORDER_KEY);
+      if (!raw) return;
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return;
+      const idx = arr.indexOf(from);
+      if (idx === -1) return;
+      arr[idx] = to;
+      localStorage.setItem(LS_ORDER_KEY, JSON.stringify(arr));
+    } catch {}
+  };
+
+  const replaceSlugInFavsLS = (from: string, to: string) => {
+    if (!from || !to || from === to) return;
+    const favs = loadFavsLS();
+    if (favs[from]) {
+      favs[to] = true;
+      delete favs[from];
+      saveFavsLS(favs);
+    }
+  };
+
+  const replaceSlugInCreatedLS = (from: string, to: string) => {
+    if (!from || !to || from === to) return;
+    const created = loadCreatedLS();
+    if (created[from]) {
+      created[to] = created[from];
+      delete created[from];
+      saveCreatedLS(created);
+    }
+  };
+
   const reorderBySlug = (fromSlug: string, toSlug: string, pos: "before" | "after" = "before") => {
     if (guardOverLimit()) return;
     setRows((prev) => {
@@ -1182,8 +1216,15 @@ export default function DashboardPageClient() {
 
   // Generate a unique copy name based on existing page names
   const uniqueCopyName = (name: string) => {
-    const existing = new Set(rows.map((r) => (r.meta.name || "").trim().toLowerCase()));
-    const base = `Copy of ${name}`.trim();
+    const existing = new Set(
+      rows.map((r) => (r.meta.name || "").trim().toLowerCase())
+    );
+    const stripped = name
+      .trim()
+      .replace(/^copy of\s+/i, "")
+      .replace(/\(\d+\)$/g, "")
+      .trim();
+    const base = `Copy of ${stripped || "Untitled Page"}`.trim();
     if (!existing.has(base.toLowerCase())) return base;
     for (let i = 2; i < 9999; i++) {
       const cand = `${base} (${i})`;
@@ -1392,21 +1433,40 @@ function publishLimitMsg(planName: string) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name: newName, slug }),
       });
-      const txt = await r.text();
+      const payloadText = await r.text();
+      let payloadJson: any = null;
+      try { payloadJson = JSON.parse(payloadText); } catch {}
       if (!r.ok) {
-        if (r.status === 409 || txt.includes("name_exists")) {
+        const errCode = payloadJson?.error || "";
+        if (r.status === 409 || errCode === "name_exists" || payloadText.includes("name_exists")) {
           setRenError("You already have a page with that name.");
           return;
         }
-        console.error("RENAME /api/calculators ->", txt);
+        console.error("RENAME /api/calculators ->", payloadText);
         setRenError("Rename failed. Please try a different name.");
         return;
       }
+      const nextSlug = payloadJson?.slug || slug;
+      const stamp = Date.now();
       setRows((prev) =>
         prev.map((x) =>
-          x.meta.slug === slug ? { ...x, meta: { ...x.meta, name: newName, updatedAt: Date.now() } } : x
+          x.meta.slug === slug
+            ? { ...x, meta: { ...x.meta, name: newName, slug: nextSlug, updatedAt: stamp } }
+            : x
         )
       );
+      if (nextSlug !== slug) {
+        setSelected((prev) => {
+          if (!prev.has(slug)) return prev;
+          const next = new Set(prev);
+          next.delete(slug);
+          next.add(nextSlug);
+          return next;
+        });
+        replaceSlugInOrderLS(slug, nextSlug);
+        replaceSlugInFavsLS(slug, nextSlug);
+        replaceSlugInCreatedLS(slug, nextSlug);
+      }
       setRenSlug(null);
       setRenName("");
     } finally {

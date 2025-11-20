@@ -1,5 +1,6 @@
 // src/lib/fullStore.ts
 import { getPool } from "@/lib/db";
+import { randomBytes } from "crypto";
 
 const pool = getPool();
 
@@ -32,9 +33,23 @@ export async function getFull(userId: string, slug: string): Promise<any | undef
 /**
  * Snimi / upsert-uj FULL kalkulator.
  */
-export async function putFull(userId: string, slug: string, calc: any): Promise<void> {
+function withMetaIds(calc: any, slug: string) {
+  const meta = { ...(calc?.meta || {}) };
+  meta.slug = slug;
+  if (typeof meta.id !== "string" || meta.id.length === 0) {
+    meta.id = randomBytes(9).toString("base64url");
+  }
+  return { ...(calc || {}), meta };
+}
+
+export async function putFull(
+  userId: string,
+  slug: string,
+  calc: any
+): Promise<void> {
   await ensureTable();
   const now = Date.now();
+  const normalized = withMetaIds(calc, slug);
   await pool.query(
     `
     INSERT INTO calc_full (user_id, slug, calc, updated_at)
@@ -44,7 +59,7 @@ export async function putFull(userId: string, slug: string, calc: any): Promise<
       calc = EXCLUDED.calc,
       updated_at = EXCLUDED.updated_at
     `,
-    [userId, slug, calc, now]
+    [userId, slug, normalized, now]
   );
 }
 

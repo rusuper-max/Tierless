@@ -60,15 +60,15 @@ export async function POST(
     return NextResponse.json({ error: "name_exists" }, { status: 409 });
   }
 
-  // 6) Upis imena preko calcsStore (setuje i updatedAt)
-  const ok = await calcsStore.updateName(userId, slug, name);
-  if (!ok) {
+  // 6) Upis imena + automatski slug
+  const renamed = await calcsStore.renameWithSlug(userId, slug, name);
+  if (!renamed) {
     return NextResponse.json({ error: "update_failed" }, { status: 500 });
   }
 
-  // 7) Sve OK – odgovori formatom koji UI već koristi
+  // 7) Sve OK – vrati novi slug
   return NextResponse.json(
-    { ok: true },
+    { ok: true, slug: renamed.slug },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

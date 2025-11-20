@@ -16,28 +16,22 @@ function jsonNoCache(data: any, status = 200) {
 
 /* ---------------- smarter id/slug parse ---------------- */
 const reB64Url = /^[A-Za-z0-9_-]+$/;
-const MIN_ID = 10;
-const MAX_ID = 24;
+const PUBLIC_ID_LENGTH = 12;
 
 function parseIdOrSlug(key: string): { id: string; slug: string } {
   if (!key) return { id: "", slug: "" };
-  if (key.length >= MIN_ID && key.length <= MAX_ID && reB64Url.test(key)) {
+  if (
+    key.length > PUBLIC_ID_LENGTH &&
+    key[PUBLIC_ID_LENGTH] === "-" &&
+    reB64Url.test(key.slice(0, PUBLIC_ID_LENGTH))
+  ) {
+    return {
+      id: key.slice(0, PUBLIC_ID_LENGTH),
+      slug: key.slice(PUBLIC_ID_LENGTH + 1),
+    };
+  }
+  if (key.length === PUBLIC_ID_LENGTH && reB64Url.test(key)) {
     return { id: key, slug: "" };
-  }
-  let cut = -1;
-  for (let i = 0; i < key.length; i++) {
-    if (key[i] !== "-") continue;
-    const prefix = key.slice(0, i);
-    if (
-      prefix.length >= MIN_ID &&
-      prefix.length <= MAX_ID &&
-      reB64Url.test(prefix)
-    ) {
-      cut = i;
-    }
-  }
-  if (cut !== -1 && cut + 1 < key.length) {
-    return { id: key.slice(0, cut), slug: key.slice(cut + 1) };
   }
   return { id: "", slug: key };
 }
