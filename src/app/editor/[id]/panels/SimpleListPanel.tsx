@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, ChangeEvent, useEffect } from "react";
-import { ArrowUp, ArrowDown, Trash2, Image as ImageIcon } from "lucide-react";
+import { ArrowUp, ArrowDown, Trash2, Image as ImageIcon, Plus, X } from "lucide-react";
 import { t } from "@/i18n";
-import { useEditorStore } from "@/hooks/useEditorStore";
+import { useEditorStore, type SimpleSection } from "@/hooks/useEditorStore";
 import { useAccount } from "@/hooks/useAccount";
 
 type SimpleSpacing = "compact" | "cozy" | "relaxed";
@@ -12,11 +12,6 @@ type ColorPreset = {
   key: string;
   label: string;
   value: string; // "" = default
-};
-
-type SimpleSection = {
-  id: string;
-  label: string;
 };
 
 type ParsedOcrItem = {
@@ -82,6 +77,9 @@ export default function SimpleListPanel() {
   const simpleSections: SimpleSection[] = meta.simpleSections ?? [];
   const sectionStates: Record<string, boolean> =
     (meta.simpleSectionStates as Record<string, boolean>) ?? {};
+  
+  // NOVO: Cover image
+  const simpleCoverImage: string = meta.simpleCoverImage ?? "";
 
   const canUseImages =
     plan === "growth" || plan === "pro" || plan === "tierless";
@@ -89,6 +87,7 @@ export default function SimpleListPanel() {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // pendingFor može biti "item_ID" ili JSON string za "cover" / "section"
   const [pendingFor, setPendingFor] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
@@ -226,12 +225,9 @@ export default function SimpleListPanel() {
     }
   };
 
-  /* ---------------- upload slike ---------------- */
+  /* ---------------- upload (generic) ---------------- */
 
-  const handleFileChange = async (
-    e: ChangeEvent<HTMLInputElement>,
-    itemId: string
-  ) => {
+  const handleGenericUpload = async (e: ChangeEvent<HTMLInputElement>, targetId: string, type: 'item' | 'section' | 'cover') => {
     const file = e.target.files?.[0] ?? null;
     e.target.value = "";
     if (!file) return;
@@ -248,7 +244,7 @@ export default function SimpleListPanel() {
     }
 
     try {
-      setUploadingId(itemId);
+      setUploadingId(targetId);
       const form = new FormData();
       form.append("file", file);
 
@@ -269,7 +265,22 @@ export default function SimpleListPanel() {
         return;
       }
 
-      updateItem(itemId, { imageUrl: data.url });
+      const url = data.url;
+
+      if (type === "item") {
+        updateItem(targetId, { imageUrl: url });
+      } else if (type === "cover") {
+        setMeta({ simpleCoverImage: url });
+      } else if (type === "section") {
+        // moramo apdejtovati meta.simpleSections
+        updateCalc((draft) => {
+           const m = draft.meta as any;
+           const secs: SimpleSection[] = m.simpleSections || [];
+           const next = secs.map(s => s.id === targetId ? { ...s, imageUrl: url } : s);
+           m.simpleSections = next;
+        });
+      }
+
     } catch (err: any) {
       console.error("upload-image error:", err);
       setError(t("Upload failed. Please try again."));
@@ -278,9 +289,14 @@ export default function SimpleListPanel() {
     }
   };
 
-  const triggerUpload = (itemId: string) => {
-    setPendingFor(itemId);
+  const triggerGenericUpload = (id: string, type: 'item' | 'section' | 'cover') => {
+    setPendingFor(JSON.stringify({ id, type }));
     fileInputRef.current?.click();
+  };
+
+  // Legacy wrapper for items
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, itemId: string) => {
+     handleGenericUpload(e, itemId, "item");
   };
 
   /* ---------------- OCR upload ---------------- */
@@ -445,6 +461,20 @@ export default function SimpleListPanel() {
   const handleRenameSection = (id: string, label: string) => {
     const next = simpleSections.map((s) =>
       s.id === id ? { ...s, label } : s
+    );
+    setMeta({ simpleSections: next });
+  };
+
+  const handleUpdateSectionDesc = (id: string, description: string) => {
+     const next = simpleSections.map((s) =>
+      s.id === id ? { ...s, description } : s
+    );
+    setMeta({ simpleSections: next });
+  };
+
+  const handleRemoveSectionImage = (id: string) => {
+     const next = simpleSections.map((s) =>
+      s.id === id ? { ...s, imageUrl: undefined } : s
     );
     setMeta({ simpleSections: next });
   };
@@ -691,7 +721,7 @@ export default function SimpleListPanel() {
             </div>
             <button
               type="button"
-              onClick={() => triggerUpload(it.id)}
+              onClick={() => triggerGenericUpload(it.id, "item")}
               className="cursor-pointer mt-1 text-[10px] text-[var(--muted)] underline decoration-dotted hover:text-[var(--text)] disabled:opacity-60 disabled:cursor-default"
               disabled={uploadingId === it.id}
             >
@@ -835,6 +865,40 @@ export default function SimpleListPanel() {
                 : t("Hide style options")}
             </span>
           </button>
+        </div>
+
+        {/* Cover image - NOVO */}
+        <div className="mt-4 mb-4">
+            <label className="text-[11px] uppercase tracking-wide text-[var(--muted)] mb-2 block">
+              {t("Cover Image (Header)")}
+            </label>
+            
+            {simpleCoverImage ? (
+                <div className="relative w-full h-32 rounded-lg overflow-hidden group border border-[var(--border)]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={simpleCoverImage} alt="Cover" className="w-full h-full object-cover" />
+                    <button 
+                        onClick={() => setMeta({ simpleCoverImage: "" })}
+                        className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-red-500/80 transition"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                    <button 
+                        onClick={() => triggerGenericUpload("cover", "cover")}
+                        className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition text-transparent group-hover:text-white font-medium"
+                    >
+                        {t("Change Cover")}
+                    </button>
+                </div>
+            ) : (
+                <button 
+                    onClick={() => triggerGenericUpload("cover", "cover")}
+                    className="w-full h-20 border-2 border-dashed border-[var(--border)] rounded-lg flex flex-col items-center justify-center text-[var(--muted)] hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition gap-1"
+                >
+                    <ImageIcon className="w-5 h-5" />
+                    <span className="text-xs">{t("Upload cover image")}</span>
+                </button>
+            )}
         </div>
 
         {!isCollapsed && (
@@ -1472,7 +1536,7 @@ export default function SimpleListPanel() {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-2.5">
                   <input
                     type="text"
-                    className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1.5 text-xs sm:text-sm text-[var(--text)] outline-none focus:border-[var(--brand-1,#4F46E5)]"
+                    className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1.5 text-xs sm:text-sm text-[var(--text)] outline-none focus:border-[var(--brand-1,#4F46E5)] font-bold"
                     value={section.label}
                     onChange={(e) =>
                       handleRenameSection(section.id, e.target.value)
@@ -1521,6 +1585,44 @@ export default function SimpleListPanel() {
                     </button>
                   </div>
                 </div>
+
+                {/* Sekcija: description & image upload */}
+                {!collapsed && (
+                   <div className="mb-3 flex gap-3 items-start border-b border-[var(--border)] pb-3 border-dashed">
+                        {/* Section Image */}
+                        <div className="shrink-0">
+                            {section.imageUrl ? (
+                                <div className="relative w-16 h-16 rounded-lg overflow-hidden group border border-[var(--border)]">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={section.imageUrl} alt={section.label} className="w-full h-full object-cover" />
+                                    <button 
+                                        onClick={() => handleRemoveSectionImage(section.id)}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <button 
+                                    onClick={() => triggerGenericUpload(section.id, "section")}
+                                    className="w-16 h-16 rounded-lg border border-dashed border-[var(--border)] flex items-center justify-center text-[var(--muted)] hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition bg-[var(--bg)]"
+                                    title={t("Add section image")}
+                                >
+                                    <ImageIcon className="w-5 h-5" />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Section Description */}
+                        <textarea
+                            rows={2}
+                            className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1.5 text-xs text-[var(--text)] outline-none focus:border-[var(--brand-1)] resize-none"
+                            placeholder={t("Optional description (e.g. 'Served 8am - 11am')")}
+                            value={section.description || ""}
+                            onChange={(e) => handleUpdateSectionDesc(section.id, e.target.value)}
+                        />
+                   </div>
+                )}
 
                 {/* Items unutar sekcije */}
                 {!collapsed ? (
@@ -1805,7 +1907,7 @@ export default function SimpleListPanel() {
         </div>
       )}
 
-      {/* Hidden input za upload slika, delimo ga za sve iteme */}
+      {/* Hidden input za generic upload (koriste ga itemi, cover i section image) */}
       {canUseImages && (
         <input
           ref={fileInputRef}
@@ -1814,7 +1916,13 @@ export default function SimpleListPanel() {
           className="hidden"
           onChange={(e) => {
             if (!pendingFor) return;
-            handleFileChange(e, pendingFor);
+            try {
+                const payload = JSON.parse(pendingFor);
+                handleGenericUpload(e, payload.id, payload.type);
+            } catch {
+                // Fallback
+                handleGenericUpload(e, pendingFor, "item");
+            }
             setPendingFor(null);
           }}
         />

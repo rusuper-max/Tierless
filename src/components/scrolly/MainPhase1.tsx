@@ -25,7 +25,7 @@ export default function MainPhase1() {
     >
       <div ref={wrapRef} style={{ height: `${PIN_HEIGHT_SVH}svh` }}>
         <div className="sticky top-0 h-[100svh] w-full overflow-hidden">
-          
+
           {/* LAYER 0: BACKGROUND (Particles) */}
           <div className="absolute inset-0 z-0">
             <ParticlesBackground />
@@ -36,7 +36,7 @@ export default function MainPhase1() {
 
           {/* LAYER 2: CONTENT */}
           <div className="relative z-20 flex h-full flex-col items-center justify-center px-4 text-center sm:px-6 pt-12">
-            
+
             {/* 1. Badge: Jasno stavljamo do znanja da sajt nije potreban */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -58,7 +58,7 @@ export default function MainPhase1() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-              className="max-w-5xl text-5xl font-bold tracking-tight text-white sm:text-7xl md:text-8xl leading-[1.1]"
+              className="max-w-5xl text-4xl font-bold tracking-tight text-white sm:text-7xl md:text-8xl leading-[1.1]"
             >
               <span className="block text-white drop-shadow-2xl">
                 {t("Your prices.")}
@@ -76,7 +76,7 @@ export default function MainPhase1() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-              className="mt-8 max-w-2xl text-lg text-slate-300 sm:text-xl leading-relaxed font-medium"
+              className="mt-8 max-w-2xl text-base text-slate-300 sm:text-xl leading-relaxed font-medium"
             >
               {t("Create menus, rate cards, and price calculators in minutes. Share via Link or QR code. Update anytime, instantly.")}
             </motion.p>
@@ -104,26 +104,26 @@ export default function MainPhase1() {
 
             {/* 5. Use Cases (Social Proof) */}
             <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.8, duration: 1 }}
-                className="mt-16 text-xs text-slate-500 uppercase tracking-widest font-semibold"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8, duration: 1 }}
+              className="mt-16 text-xs text-slate-500 uppercase tracking-widest font-semibold"
             >
-                {t("Perfect for")}
+              {t("Perfect for")}
             </motion.p>
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1, duration: 1 }}
-                className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-3 text-slate-400 text-sm font-medium"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1, duration: 1 }}
+              className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-3 text-slate-400 text-sm font-medium"
             >
-                <span className="flex items-center gap-2">☕️ {t("Cafes & Menus")}</span>
-                <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
-                <span className="flex items-center gap-2">📸 {t("Freelancers")}</span>
-                <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
-                <span className="flex items-center gap-2">💇‍♀️ {t("Salons")}</span>
-                <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
-                <span className="flex items-center gap-2">🚀 {t("Startups")}</span>
+              <span className="flex items-center gap-2">☕️ {t("Cafes & Menus")}</span>
+              <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
+              <span className="flex items-center gap-2">📸 {t("Freelancers")}</span>
+              <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
+              <span className="flex items-center gap-2">💇‍♀️ {t("Salons")}</span>
+              <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
+              <span className="flex items-center gap-2">🚀 {t("Startups")}</span>
             </motion.div>
 
           </div>

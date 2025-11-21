@@ -41,7 +41,17 @@ export type ItemRow = {
   label: string;
   price: number | null;
   note?: string;
-  imageUrl?: string; // URL slike za simple list
+  imageUrl?: string; // za list-based
+  simpleSectionId?: string;
+};
+
+// NOVO: Definicija sekcije sa slikom i opisom
+export type SimpleSection = {
+  id: string;
+  label: string;
+  description?: string; // Opis sekcije (npr. "Served until 11am")
+  imageUrl?: string;    // Slika sekcije (Category Card)
+  collapsed?: boolean;
 };
 
 export type CalcMeta = {
@@ -49,6 +59,12 @@ export type CalcMeta = {
   name?: string;
   slug?: string;
   editorMode?: Mode;
+  
+  // NOVO: Cover slika za ceo meni
+  simpleCoverImage?: string;
+  // Ažuriran tip za sekcije
+  simpleSections?: SimpleSection[];
+  
   [k: string]: unknown;
 };
 

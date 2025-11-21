@@ -5,11 +5,11 @@ import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { t } from "@/i18n";
 
 const CARD_WIDTH = 300;
-const GAP = 40; 
+const GAP = 40;
 
 export default function MainPhase2() {
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"],
@@ -22,42 +22,42 @@ export default function MainPhase2() {
   });
 
   // --- ANIMACIJE ---
-  
+
   // 1. Dolazak Špila (Spušten niže da ne gazi naslov)
-  const deckY = useTransform(smoothProgress, [0, 0.2], ["50vh", "0vh"]); 
+  const deckY = useTransform(smoothProgress, [0, 0.2], ["50vh", "0vh"]);
   const deckScale = useTransform(smoothProgress, [0, 0.2], [0.8, 1]);
   const deckOpacity = useTransform(smoothProgress, [0, 0.1], [0, 1]);
   const deckRotateX = useTransform(smoothProgress, [0, 0.2], [30, 0]);
 
   // 2. Širenje Karata
   const spreadProgress = useTransform(smoothProgress, [0.15, 0.45], [0, 1]);
-  
+
   const xLeft = useTransform(spreadProgress, [0, 1], [0, -(CARD_WIDTH + GAP)]);
   const rLeft = useTransform(spreadProgress, [0, 1], [-5, -2]);
-  
+
   const zCenter = useTransform(spreadProgress, [0, 1], [0, 30]);
   const sCenter = useTransform(spreadProgress, [0, 1], [1, 1.05]);
-  
+
   const xRight = useTransform(spreadProgress, [0, 1], [0, CARD_WIDTH + GAP]);
   const rRight = useTransform(spreadProgress, [0, 1], [5, 2]);
 
   // 3. Headline (Samo fade in, NEMA fade out)
   const headOp = useTransform(smoothProgress, [0, 0.1], [0, 1]);
-  
+
   return (
-    <section 
-      ref={containerRef} 
-      className="relative h-[350vh] bg-[#020617]"
+    <section
+      ref={containerRef}
+      className="relative h-[250vh] bg-[#020617]"
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col items-center justify-center perspective-1000">
-        
+
         {/* HEADLINE - Fiksiran visoko, stabilan */}
-        <motion.div 
+        <motion.div
           style={{ opacity: headOp }}
           className="absolute top-28 z-20 text-center px-4 w-full pointer-events-none"
         >
-          <h2 className="text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight drop-shadow-2xl">
-            {t("Pick a template.")} <br/>
+          <h2 className="text-3xl md:text-6xl font-bold text-white mb-4 tracking-tight drop-shadow-2xl">
+            {t("Pick a template.")} <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 animate-gradient">
               {t("Customize visually.")}
             </span>
@@ -76,7 +76,7 @@ export default function MainPhase2() {
             rotateX: deckRotateX,
             transformStyle: "preserve-3d",
           }}
-          className="relative z-10 flex items-center justify-center mt-48"
+          className="relative z-10 flex items-center justify-center mt-20 md:mt-48 scale-60 md:scale-100 origin-top"
         >
           {/* KARTICE (Iste kao pre) */}
           <motion.div style={{ x: xLeft, rotateZ: rLeft }} className="absolute">
@@ -94,7 +94,7 @@ export default function MainPhase2() {
 
         {/* Bottom Overlay */}
         <div className="absolute bottom-0 w-full h-40 bg-gradient-to-t from-[#020617] to-transparent pointer-events-none z-40" />
-        
+
       </div>
     </section>
   );
@@ -105,7 +105,7 @@ export default function MainPhase2() {
 // --- KARTICA (CYAN DOMINANCE) ---
 function PricingCard({ title, price, features, accent, featured }: any) {
   const isBrand = accent === "brand";
-  
+
   // Boje
   let iconColor = "bg-slate-700";
   let checkColor = "bg-slate-600";
@@ -122,13 +122,13 @@ function PricingCard({ title, price, features, accent, featured }: any) {
   }
 
   return (
-    <div 
+    <div
       className={`
         w-[300px] h-[460px] rounded-3xl p-6 flex flex-col relative overflow-hidden
         backdrop-blur-xl transition-all duration-300 select-none
-        ${isBrand 
+        ${isBrand
           // PROMENA: Shadow je sada Cyan/Sky, a ne Purple
-          ? "bg-[#0f172a]/95 shadow-[0_0_60px_-15px_rgba(34,211,238,0.25)]" 
+          ? "bg-[#0f172a]/95 shadow-[0_0_60px_-15px_rgba(34,211,238,0.25)]"
           : "bg-[#0b0f19]/90 shadow-2xl border " + borderColorClass
         }
       `}
@@ -147,12 +147,12 @@ function PricingCard({ title, price, features, accent, featured }: any) {
           {/* Ikonica kružić */}
           <div className={`w-4 h-4 rounded-full ${isBrand ? "bg-cyan-400 shadow-[0_0_10px_#22d3ee]" : iconColor}`} />
         </div>
-        
+
         {/* POPULAR BADGE (Cyan Style) */}
         {featured && (
-           <span className="px-3 py-1 rounded-full bg-cyan-950/50 border border-cyan-500/30 text-[10px] font-bold uppercase tracking-widest text-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.1)]">
-             Popular
-           </span>
+          <span className="px-3 py-1 rounded-full bg-cyan-950/50 border border-cyan-500/30 text-[10px] font-bold uppercase tracking-widest text-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.1)]">
+            Popular
+          </span>
         )}
       </div>
 
@@ -163,9 +163,9 @@ function PricingCard({ title, price, features, accent, featured }: any) {
       <div className="space-y-4 flex-1">
         {features.map((f: string, i: number) => (
           <div key={i} className="flex items-center gap-3 text-sm text-slate-400 font-medium">
-             {/* Tačkice su sada uvek Cyan na Brand kartici */}
-             <div className={`w-1.5 h-1.5 rounded-full ${isBrand ? "bg-cyan-400 shadow-[0_0_6px_#22d3ee]" : checkColor}`} />
-             {f}
+            {/* Tačkice su sada uvek Cyan na Brand kartici */}
+            <div className={`w-1.5 h-1.5 rounded-full ${isBrand ? "bg-cyan-400 shadow-[0_0_6px_#22d3ee]" : checkColor}`} />
+            {f}
           </div>
         ))}
       </div>
