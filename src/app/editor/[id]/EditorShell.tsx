@@ -2,7 +2,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ChevronLeft, Monitor, Smartphone, X } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type CalcJson, type Mode } from "@/hooks/useEditorStore";
@@ -36,6 +36,9 @@ function normalizeMode(input?: string | null): Mode {
 
 export default function EditorShell({ slug, initialCalc }: Props) {
   const { calc, init, isDirty, isSaving, setEditorMode } = useEditorStore();
+
+  // NOVO: Ref za preview kontejner
+  const previewScrollRef = useRef<HTMLDivElement>(null);
 
   /* ---------------- Init calc ---------------- */
   useEffect(() => {
@@ -111,7 +114,7 @@ export default function EditorShell({ slug, initialCalc }: Props) {
       let json: any = null;
       try {
         json = JSON.parse(txt);
-      } catch {}
+      } catch { }
       if (!r.ok) {
         console.error("SAVE /api/calculators ->", txt);
         setToast(t("Save failed"));
@@ -263,11 +266,10 @@ export default function EditorShell({ slug, initialCalc }: Props) {
                 <button
                   type="button"
                   onClick={() => setPreviewMode("desktop")}
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full ${
-                    previewMode === "desktop"
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full ${previewMode === "desktop"
                       ? "bg-[var(--surface)] text-[var(--text)]"
                       : "text-[var(--muted)]"
-                  }`}
+                    }`}
                 >
                   <Monitor className="h-3.5 w-3.5" />
                   {t("Desktop")}
@@ -275,11 +277,10 @@ export default function EditorShell({ slug, initialCalc }: Props) {
                 <button
                   type="button"
                   onClick={() => setPreviewMode("mobile")}
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full ${
-                    previewMode === "mobile"
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full ${previewMode === "mobile"
                       ? "bg-[var(--surface)] text-[var(--text)]"
                       : "text-[var(--muted)]"
-                  }`}
+                    }`}
                 >
                   <Smartphone className="h-3.5 w-3.5" />
                   {t("Mobile")}
@@ -299,15 +300,18 @@ export default function EditorShell({ slug, initialCalc }: Props) {
 
             {/* Preview body */}
             <div
-              className={`mx-auto rounded-2xl border border-[var(--border)] bg-[var(--bg)] max-h-[90vh] overflow-auto ${
-                previewMode === "mobile" ? "max-w-xs" : "max-w-5xl"
-              }`}
+              ref={previewScrollRef}
+              className={`mx-auto rounded-2xl border border-[var(--border)] bg-[var(--bg)] max-h-[90vh] overflow-auto ${previewMode === "mobile" ? "max-w-xs" : "max-w-5xl"
+                }`}
             >
-              <div className="p-4 sm:p-6">
+              <div className="w-full">
                 {calc ? (
-                  <PublicRenderer calc={calc as any} />
+                  <PublicRenderer
+                    calc={calc as any}
+                    scrollContainer={previewScrollRef}
+                  />
                 ) : (
-                  <div className="text-sm text-[var(--muted)]">
+                  <div className="text-sm text-[var(--muted)] p-6">
                     {t("Nothing to preview.")}
                   </div>
                 )}

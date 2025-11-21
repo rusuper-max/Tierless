@@ -96,7 +96,7 @@ export default function MainPhase3() {
                 </div>
 
                 {/* --- SCENA --- */}
-                <div className="relative w-full max-w-md h-full flex items-center justify-center pointer-events-none">
+                <div className="relative w-full max-w-md h-full flex items-center justify-center pointer-events-none scale-75 md:scale-100 origin-center">
 
                     {/* 1. TABLE TENT */}
                     <motion.div
@@ -132,7 +132,7 @@ export default function MainPhase3() {
                     {/* 2. TELEFON (Interactive) */}
                     <motion.div
                         style={{ y: phoneY, opacity: phoneOpacity, scale: phoneScale }}
-                        className="absolute z-20 w-[300px] h-[600px] pointer-events-auto scale-90 md:scale-100 origin-center" // Enable click
+                        className="absolute z-20 w-[300px] h-[600px] pointer-events-auto origin-center" // Enable click
                     >
                         <div className="w-full h-full bg-[#020617] rounded-[44px] border-[6px] border-slate-800 shadow-[0_0_0_2px_#334155,0_20px_60px_-10px_rgba(0,0,0,0.9)] relative overflow-hidden">
 
