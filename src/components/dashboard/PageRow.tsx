@@ -1,0 +1,250 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { MoreHorizontal, Share2, Edit, Copy, Trash, ExternalLink, GripVertical } from "lucide-react";
+import { ActionButton, IconButton, FavoriteStar, outlineStyle } from "./DashboardUI";
+
+const fmtDateTime = (ts?: number) =>
+    ts ? new Date(ts).toLocaleString([], { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
+
+type MiniCalc = {
+    meta: {
+        name: string;
+        slug: string;
+        published?: boolean;
+        online?: boolean;
+        favorite?: boolean;
+        order?: number;
+        createdAt?: number;
+    };
+};
+
+type PageRowProps = {
+    row: MiniCalc;
+    index: number;
+    isSelected: boolean;
+    onSelectToggle: (slug: string) => void;
+    onShare: (slug: string) => void;
+    onOpenPublic: (row: MiniCalc) => void;
+    onEdit: (slug: string) => void;
+    onRenameStart: (slug: string, name: string) => void;
+    onDuplicate: (slug: string, name: string) => void;
+    onDelete: (slug: string, name: string) => void;
+    onToggleOnline: (slug: string, next: boolean) => void;
+    onToggleFavorite: (slug: string, next: boolean) => void;
+    busySlug: string | null;
+    isDragging: boolean;
+    onPointerDragStart: (slug: string, e: React.MouseEvent<HTMLButtonElement>) => void;
+    publishedCount: number;
+    publishedLimit: number;
+};
+
+export default function PageRow({
+    row,
+    isSelected,
+    onSelectToggle,
+    onShare,
+    onOpenPublic,
+    onEdit,
+    onRenameStart,
+    onDuplicate,
+    onDelete,
+    onToggleOnline,
+    onToggleFavorite,
+    busySlug,
+    isDragging,
+    onPointerDragStart,
+    publishedCount,
+    publishedLimit,
+}: PageRowProps) {
+    const { slug, name, favorite, createdAt } = row.meta;
+    const published = !!(row.meta.published ?? row.meta.online);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+
+    useEffect(() => {
+        if (!menuOpen) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") setMenuOpen(false);
+        };
+        const onScroll = () => setMenuOpen(false);
+        window.addEventListener("keydown", onKey);
+        window.addEventListener("scroll", onScroll, true);
+        window.addEventListener("resize", onScroll);
+        return () => {
+            window.removeEventListener("keydown", onKey);
+            window.removeEventListener("scroll", onScroll, true);
+            window.removeEventListener("resize", onScroll);
+        };
+    }, [menuOpen]);
+
+    const toggleDisabled = busySlug === slug || (!published && Number.isFinite(publishedLimit) && publishedCount >= publishedLimit);
+
+    return (
+        <tr className={`align-middle border-b border-slate-100 dark:border-slate-800/50 last:border-0 ${isDragging ? "tl-row--dragging" : ""}`} data-slug={slug}>
+            <td className="text-center py-3">
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onSelectToggle(slug)}
+                    aria-label="Select row"
+                    className="accent-[var(--brand-1,#4F46E5)] h-4 w-4 cursor-pointer"
+                />
+            </td>
+
+            <td className="font-medium py-3">
+                <div className="flex items-center gap-3">
+                    <button
+                        className="p-1 rounded-md hover:bg-[var(--surface)] cursor-pointer transition-colors text-[var(--muted)] hover:text-[var(--text)]"
+                        title={favorite ? "Unpin" : "Pin"}
+                        onClick={() => onToggleFavorite(slug, !favorite)}
+                    >
+                        <FavoriteStar active={!!favorite} />
+                    </button>
+                    <span
+                        className="cursor-text text-[var(--text)] truncate max-w-[200px] sm:max-w-[300px] block font-semibold"
+                        onDoubleClick={() => onRenameStart(slug, name)}
+                        title="Double-click to rename"
+                    >
+                        {name}
+                    </span>
+                </div>
+            </td>
+
+            <td className="text-[var(--muted)] text-center hidden sm:table-cell py-3">
+                <IconButton onClick={() => onShare(slug)} title="Share">
+                    <Share2 className="size-4" />
+                </IconButton>
+            </td>
+
+            <td className="text-[var(--muted)] text-center hidden md:table-cell text-xs py-3">
+                {fmtDateTime(createdAt)}
+            </td>
+
+            <td className="text-center py-3">
+                {/* FIX ZA SKAKANJE: Kontejner fiksne širine (povećan da stane "Unpublish") */}
+                <div className="w-[140px] flex justify-center mx-auto">
+                    <button
+                        className={`relative group inline-flex items-center justify-center rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-200 cursor-pointer min-w-[80px] outline-none ring-0 
+                        ${published
+                                // TVOJE STARE BOJE (Zeleno -> Crveno na hover)
+                                ? "bg-emerald-100 border-emerald-300 text-emerald-800 hover:bg-rose-100 hover:border-rose-300 hover:text-rose-800 dark:bg-emerald-900/30 dark:border-emerald-500/50 dark:text-emerald-300 dark:hover:bg-rose-900/30 dark:hover:border-rose-500/50 dark:hover:text-rose-300"
+                                // TVOJE STARE BOJE (Crveno -> Zeleno na hover)
+                                : "bg-rose-50 border-rose-200 text-rose-600 hover:bg-emerald-100 hover:border-emerald-300 hover:text-emerald-800 dark:bg-rose-900/20 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-emerald-900/30 dark:hover:border-emerald-500/50 dark:hover:text-emerald-300"
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        onClick={() => onToggleOnline(slug, !published)}
+                        disabled={toggleDisabled}
+                    >
+                        <span className="block group-hover:hidden">{published ? "Online" : "Offline"}</span>
+                        <span className="hidden group-hover:block font-medium">{published ? "Stop" : "Publish"}</span>
+                    </button>
+                </div>
+            </td>
+
+            {/* ACTIONS COLUMN */}
+            <td className="align-middle py-3">
+                <div className="w-full flex justify-center">
+                    <div className="flex items-center justify-center gap-3 relative">
+
+                        <ActionButton
+                            label="Edit"
+                            onClick={() => onEdit(slug)}
+                            variant="brand"
+                        />
+
+                        {/* Public Link Button */}
+                        {published ? (
+                            // ONLINE: Normalno dugme
+                            <IconButton
+                                title="Open Public Page"
+                                onClick={() => onOpenPublic(row)}
+                            >
+                                <ExternalLink className="size-4" />
+                            </IconButton>
+                        ) : (
+                            // OFFLINE: Crveno dugme (Danger Style)
+                            <button
+                                type="button"
+                                className="relative inline-flex items-center justify-center rounded-xl w-8 h-8 transition cursor-not-allowed opacity-80"
+                                title="Page is offline"
+                                disabled
+                            >
+                                {/* Koristimo outlineStyle("danger") iz DashboardUI */}
+                                <span
+                                    aria-hidden
+                                    className="pointer-events-none absolute inset-0 rounded-xl"
+                                    style={outlineStyle("danger")}
+                                />
+                                <span className="relative z-[1] text-rose-600 dark:text-rose-400">
+                                    <ExternalLink className="size-4" />
+                                </span>
+                            </button>
+                        )}
+
+                        {/* Meatball Menu with Portal */}
+                        <div className="relative">
+                            <IconButton
+                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                    e.stopPropagation();
+                                    if (menuOpen) { setMenuOpen(false); return; }
+
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const scrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+
+                                    let top = rect.bottom + scrollY + 8;
+                                    let left = rect.right - 192; // 192px = w-48
+
+                                    if (typeof window !== 'undefined' && rect.bottom + 200 > window.innerHeight) {
+                                        top = rect.top + scrollY - 8 - 160; // Flip up
+                                    }
+
+                                    setMenuPos({ top, left });
+                                    setMenuOpen(true);
+                                }}
+                                title="More actions"
+                            >
+                                <MoreHorizontal className="size-4" />
+                            </IconButton>
+
+                            {menuOpen && typeof document !== 'undefined' && createPortal(
+                                <>
+                                    <div className="fixed inset-0 z-[9998]" onClick={() => setMenuOpen(false)} />
+                                    <div
+                                        className="fixed w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-[9999] p-1 flex flex-col animate-in fade-in zoom-in-95 duration-100"
+                                        style={{ top: menuPos.top, left: menuPos.left, position: 'absolute' }}
+                                    >
+                                        <button onClick={() => { onShare(slug); setMenuOpen(false); }} disabled={!published} className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-left disabled:opacity-50 cursor-pointer transition-colors">
+                                            <Share2 className="size-4" /> Share / QR
+                                        </button>
+                                        <button onClick={() => { onRenameStart(slug, name); setMenuOpen(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-left cursor-pointer transition-colors">
+                                            <Edit className="size-4" /> Rename
+                                        </button>
+                                        <button onClick={() => { onDuplicate(slug, name); setMenuOpen(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-left cursor-pointer transition-colors">
+                                            <Copy className="size-4" /> Duplicate
+                                        </button>
+                                        <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
+                                        <button onClick={() => { onDelete(slug, name); setMenuOpen(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-left cursor-pointer transition-colors">
+                                            <Trash className="size-4" /> Delete
+                                        </button>
+                                    </div>
+                                </>,
+                                document.body
+                            )}
+                        </div>
+
+                    </div>
+                </div>
+            </td>
+
+            <td className="text-center hidden lg:table-cell py-3">
+                <button
+                    className="tl-reorder-handle inline-flex items-center justify-center w-8 h-8 rounded-lg text-[var(--muted)] cursor-grab active:cursor-grabbing hover:bg-[var(--surface)] transition-colors"
+                    onMouseDown={(e) => onPointerDragStart(slug, e)}
+                >
+                    <GripVertical className="size-4" />
+                </button>
+            </td>
+        </tr>
+    );
+}

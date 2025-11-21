@@ -42,7 +42,7 @@ export default function ParticlesBackground() {
     resize();
 
     // ==========================================
-    // 0. GENERISANJE CENA (ATLAS TEKSTURA)
+    // 0. GENERISANJE CENA (SMART ATLAS)
     // ==========================================
     const makePriceAtlas = () => {
       const size = 1024;
@@ -57,28 +57,24 @@ export default function ParticlesBackground() {
       const cellW = size / cols;
       const cellH = size / rows;
 
-      // LISTA CENA I SIMBOLA
+      // GLOBAL MIX LISTA
       const prices = [
-        "$9.99", "Free", "€15", "$49",
-        "£20", "99 RSD", "$0", "€9.50",
-        "$19/mo", "PRO", "€120", "$5",
-        "1200", "€4.90", "$299", "Sale",
-        "$14", "€0", "2500", "$8.50",
-        "£99", "Best", "$1", "€25",
-        "100%", "$79", "€60", "500",
-        "$12.99", "VIP", "€35", "$99",
-        "$9", "€9", "£5", "RSD",
-        "$20", "€20", "£10", "FREE",
-        "$50", "€50", "1k", "$4.99",
-        "$99/yr", "€19", "$25", "Hot",
-        "$200", "€75", "£15", "$6.50",
-        "$39", "€2.5", "10k", "$0.99",
-        "$150", "€80", "£45", "New",
-        "$300", "€10", "50%", "$11"
+        "$9.99", "€15", "£20", "¥1500",
+        "CHF 10", "$49", "€9.50", "£5/mo",
+        "1200 RSD", "R$ 50", "kr 99", "zł 25",
+        "₹499", "AED 100", "HK$ 50", "₽500",
+        "Free", "PRO", "Team", "Basic",
+        "/mo", "/yr", "+VAT", "Trial",
+        "99¢", "10k", "1M+", "0.00",
+        "$1", "€0", "100%", "50% OFF",
+        "₿ 0.1", "Ξ 2.5", "API", "SaaS",
+        "$19", "$29", "$99", "$299",
+        "€25", "€12", "€60", "€5",
+        "DIN 500", "KM 10", "Kn 50", "Lek 100",
+        "Sale", "Hot", "New", "Best"
       ];
 
       ctx.clearRect(0, 0, size, size);
-      ctx.font = `bold ${cellH * 0.35}px Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "white";
@@ -88,8 +84,23 @@ export default function ParticlesBackground() {
         const row = Math.floor(i / cols);
         const x = col * cellW + cellW / 2;
         const y = row * cellH + cellH / 2;
-
         const text = prices[i % prices.length];
+
+        // --- SMART SCALING (FIX ZA CUT-OFF) ---
+        let fontSize = cellH * 0.35; // Startuj sa velikim fontom
+        ctx.font = `bold ${fontSize}px Inter, system-ui, sans-serif`;
+
+        // Meri širinu teksta
+        let textWidth = ctx.measureText(text).width;
+
+        // Ako je šire od ćelije (minus padding), smanjuj dok ne stane
+        const maxWidth = cellW * 0.9;
+        while (textWidth > maxWidth && fontSize > 10) {
+          fontSize -= 2;
+          ctx.font = `bold ${fontSize}px Inter, system-ui, sans-serif`;
+          textWidth = ctx.measureText(text).width;
+        }
+
         ctx.fillText(text, x, y);
       }
 
@@ -103,7 +114,6 @@ export default function ParticlesBackground() {
     };
 
     const textureAtlas = makePriceAtlas();
-
 
     // ==========================================
     // SHADERS
@@ -131,10 +141,12 @@ export default function ParticlesBackground() {
         distVec.x *= uAspect; 
         float dist = length(distVec);
 
+        // Mouse reaction radius
         vHover = 1.0 - smoothstep(0.0, 0.45, dist);
 
-        float baseSize = mix(40.0, 70.0, vRandom.x);
-        float hoverSize = baseSize * (1.0 + vHover * 0.5);
+        // Veličina
+        float baseSize = mix(40.0, 90.0, vRandom.x);
+        float hoverSize = baseSize * (1.0 + vHover * 0.3);
         
         gl_PointSize = hoverSize;
       }
@@ -171,45 +183,43 @@ export default function ParticlesBackground() {
         vec3 finalColor = mix(colorDeep, colorLight, vRandom.w);
         finalColor = mix(finalColor, colorWhite, vHover);
 
-        float baseAlpha = 0.25 + 0.2 * sin(vRandom.y * 10.0 + 1.0);
+        float baseAlpha = 0.3 + 0.2 * sin(vRandom.y * 10.0 + 1.0);
         float finalAlpha = mix(baseAlpha, 1.0, vHover);
 
         gl_FragColor = vec4(finalColor, finalAlpha * texColor.a);
       }
     `;
 
-    // --- PHYSICS ---
-
-    const velocityFragment = /* glsl */ `
-      precision highp float;
-      uniform sampler2D tMap;
-      varying vec2 vUv;
-      void main() {
-        gl_FragColor = texture2D(tMap, vUv); 
-      }
-    `;
+    // --- PHYSICS (SIMPLIFIED ROBUST LOOP) ---
+    // Nema više velocity shadera koji može da zabaguje. 
+    // Brzina se računa direktno ovde.
 
     const positionFragment = /* glsl */ `
       precision highp float;
       uniform float uTime;
-      uniform sampler2D tVelocity;
-      uniform sampler2D tMap;
+      uniform sampler2D tMap; // Stara pozicija
       varying vec2 vUv;
       
+      // Random generator na osnovu koordinata
       float rand(vec2 co){
           return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
       }
 
       void main() {
         vec4 position = texture2D(tMap, vUv);
-        vec4 velocity = texture2D(tVelocity, vUv);
         
-        position.xy += velocity.xy;
+        // Generišemo unikatnu brzinu za svaku česticu na osnovu njene UV adrese
+        // Ovo garantuje da je brzina konstantna i nikad nula.
+        float speed = 0.0005 + rand(vUv) * 0.0015; 
         
+        // Pomeraj na gore
+        position.y += speed;
+        
+        // Reset kad ode gore (Infinite loop)
         if (position.y > 1.15) {
             position.y = -1.15;
-            float newX = rand(vec2(position.x, uTime)) * 2.0 - 1.0;
-            position.x = newX;
+            // Random X kad se respawn-uje
+            position.x = rand(vec2(position.x, uTime)) * 2.0 - 1.0;
         }
 
         gl_FragColor = position;
@@ -221,7 +231,6 @@ export default function ParticlesBackground() {
     const numParticles = 512;
 
     const initialPositionData = new Float32Array(numParticles * 4);
-    const initialVelocityData = new Float32Array(numParticles * 4);
     const randomData = new Float32Array(numParticles * 4);
 
     for (let i = 0; i < numParticles; i++) {
@@ -232,25 +241,15 @@ export default function ParticlesBackground() {
         1
       ], i * 4);
 
-      initialVelocityData.set([0, 0.0003 + Math.random() * 0.0005, 0, 1], i * 4);
       randomData.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
     }
 
     const position = new GPGPU(gl, { data: initialPositionData });
-    const velocity = new GPGPU(gl, { data: initialVelocityData });
 
+    // Samo jedan pass (pozicija), velocity je integrisan
     position.addPass({
       fragment: positionFragment,
-      uniforms: { uTime: { value: 0 }, tVelocity: velocity.uniform }
-    });
-
-    // FIX: Dodato 'uTime' u uniformse ovde da se ne bi crashovalo u update loopu
-    velocity.addPass({
-      fragment: velocityFragment,
-      uniforms: {
-        uTime: { value: 0 }, // <--- OVO JE FALILO
-        tPosition: position.uniform
-      }
+      uniforms: { uTime: { value: 0 } }
     });
 
     const geometry = new Geometry(gl, {
@@ -264,7 +263,6 @@ export default function ParticlesBackground() {
       uniforms: {
         uTime: { value: 0 },
         tPosition: position.uniform,
-        tVelocity: velocity.uniform,
         uMouse: { value: new Vec2(9999, 9999) },
         uAspect: { value: 1 },
         uAtlas: { value: textureAtlas },
@@ -305,11 +303,8 @@ export default function ParticlesBackground() {
       program.uniforms.uAspect.value = gl.canvas.width / gl.canvas.height;
       program.uniforms.uMouse.value = mouse;
 
-      // Ovde je pucalo jer uTime nije postojao u velocity pass-u. Sad postoji.
-      velocity.passes[0].uniforms.uTime.value = time;
       position.passes[0].uniforms.uTime.value = time;
 
-      velocity.render();
       position.render();
       renderer.render({ scene: points, camera });
     }
