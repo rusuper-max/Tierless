@@ -1,0 +1,102 @@
+export type Mode = "setup" | "simple" | "advanced";
+export type BrandTheme = "classic" | "midnight" | "cafe" | "ocean" | "tierless" | "custom";
+
+export type FeatureOption = { id: string; label: string; highlighted?: boolean };
+export type Extra = { id: string; text: string; price?: number; selected?: boolean };
+export type RangePricing =
+    | { mode: "linear"; deltaPerUnit: number }
+    | { mode: "per-step"; perStep: number[] };
+
+export type OptionGroup = {
+    id: string;
+    title: string;
+    type: "features" | "range" | "options";
+    pkgId?: string;
+    options?: FeatureOption[];
+    min?: number;
+    max?: number;
+    step?: number;
+    unit?: string;
+    base?: number;
+    pricing?: RangePricing;
+    color?: string;
+};
+
+export type Pkg = {
+    id: string;
+    label: string;
+    basePrice: number | null;
+    description?: string;
+    featured?: boolean;
+    color?: string;
+};
+
+export type BusinessInfo = {
+    name?: string;
+    description?: string;
+    phone?: string;
+    email?: string;
+    location?: string;
+    wifiSsid?: string;
+    wifiPass?: string;
+    hours?: string;
+    logoUrl?: string;
+    coverUrl?: string;
+};
+
+export type FloatingCta = {
+    enabled: boolean;
+    label: string;
+    link: string;
+};
+
+export type SimpleSection = {
+    id: string;
+    label: string;
+    description?: string;
+    imageUrl?: string;
+    collapsed?: boolean;
+};
+
+export type ItemRow = {
+    id: string;
+    label: string;
+    price: number | null;
+    note?: string;
+    imageUrl?: string;
+    simpleSectionId?: string;
+    hidden?: boolean;
+    soldOut?: boolean;
+    tags?: string[];
+    badge?: string; // Dodato iz prethodnog zahteva
+};
+
+export type CalcMeta = {
+    id?: string;
+    name?: string;
+    slug?: string;
+    editorMode?: Mode;
+    theme?: BrandTheme;
+    business?: BusinessInfo;
+    cta?: FloatingCta;
+    simpleCoverImage?: string;
+    simpleSections?: SimpleSection[];
+    simpleSectionStates?: Record<string, boolean>;
+    simpleBg?: string;
+    simpleBgGrad1?: string;
+    simpleBgGrad2?: string;
+    simpleTextColor?: string;
+    simpleBorderColor?: string;
+    simpleFont?: string;
+    [k: string]: unknown;
+};
+
+export type CalcJson = {
+    meta: CalcMeta;
+    packages: Pkg[];
+    fields: OptionGroup[];
+    addons: Extra[];
+    items?: ItemRow[];
+    i18n?: { currency?: string; decimals?: number };
+    [k: string]: unknown;
+};

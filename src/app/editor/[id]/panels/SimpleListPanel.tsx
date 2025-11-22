@@ -3,19 +3,12 @@
 import { useState, useRef, ChangeEvent, useEffect } from "react";
 import {
   ArrowUp, ArrowDown, Trash2, Image as ImageIcon, Plus, X, ScanLine,
-  Palette, Settings, List, MapPin, Phone, Wifi, Clock, Info, Store, Check, Mail
+  Palette, Settings, List, MapPin, Phone, Wifi, Clock, Store, Check, Mail, Tag,
+  Eye, EyeOff, Ban // <--- OVO JE FALILO
 } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type SimpleSection, type BrandTheme } from "@/hooks/useEditorStore";
 import { useAccount } from "@/hooks/useAccount";
-
-type SimpleSpacing = "compact" | "cozy" | "relaxed";
-
-type ColorPreset = {
-  key: string;
-  label: string;
-  value: string;
-};
 
 type ParsedOcrItem = {
   id: string;
@@ -28,24 +21,31 @@ type ParsedOcrItem = {
 
 type Tab = "content" | "business" | "design" | "settings";
 
-/* ---------------- Preseti ---------------- */
+/* ---------------- Konfiguracija ---------------- */
 
-const BG_PRESETS: ColorPreset[] = [
-  { key: "default", label: "Default", value: "" },
-  { key: "soft", label: "Soft", value: "#f9fafb" },
-  { key: "warm", label: "Warm", value: "#fef3c7" },
-  { key: "cool", label: "Cool", value: "#eff6ff" },
-  { key: "mint", label: "Mint", value: "#ecfdf5" },
-  { key: "dark", label: "Dark", value: "#020617" },
+// Bedževi (Novi feature)
+const BADGE_OPTIONS = [
+  { value: "", label: t("No Badge") },
+  { value: "popular", label: "⭐ Popular" },
+  { value: "spicy", label: "🌶️ Spicy" },
+  { value: "vegan", label: "🌱 Vegan" },
+  { value: "new", label: "🔥 New" },
+  { value: "sale", label: "💰 Sale" },
+  { value: "chef", label: "👨‍🍳 Chef's" },
+  { value: "gf", label: "Gluten Free" },
 ];
 
-const TEXT_PRESETS: ColorPreset[] = [
-  { key: "default", label: "Default", value: "" },
-  { key: "ink", label: "Ink", value: "#111827" },
-  { key: "soft", label: "Soft", value: "#4b5563" },
-  { key: "emerald", label: "Emerald", value: "#10b981" },
-  { key: "sky", label: "Sky", value: "#0284c7" },
-  { key: "rose", label: "Rose", value: "#e11d48" },
+// Teme
+const THEME_OPTIONS: { key: BrandTheme; label: string; color: string }[] = [
+  { key: "tierless", label: "Tierless", color: "bg-gradient-to-br from-[#4F46E5] to-[#22D3EE]" },
+  { key: "minimal", label: "Minimal", color: "bg-white border border-gray-200" },
+  { key: "luxury", label: "Luxury", color: "bg-[#0f0f0f] border border-[#d4af37]" },
+  { key: "elegant", label: "Elegant", color: "bg-[#fdfbf7] border border-[#d4af37]" },
+  { key: "midnight", label: "Midnight", color: "bg-slate-950" },
+  { key: "cafe", label: "Cafe", color: "bg-[#4a3b32]" },
+  { key: "ocean", label: "Ocean", color: "bg-blue-900" },
+  { key: "forest", label: "Forest", color: "bg-[#064e3b]" },
+  { key: "sunset", label: "Sunset", color: "bg-[#be123c]" },
 ];
 
 const BRAND_GRADIENT = "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))";
@@ -68,6 +68,7 @@ export default function SimpleListPanel() {
   const sectionStates: Record<string, boolean> = (meta.simpleSectionStates as Record<string, boolean>) ?? {};
 
   const simpleCoverImage: string = business.coverUrl || meta.simpleCoverImage || "";
+  const simpleLogo: string = business.logoUrl || "";
 
   const canUseImages = plan === "growth" || plan === "pro" || plan === "tierless" || plan === "starter";
 
@@ -89,25 +90,13 @@ export default function SimpleListPanel() {
 
   // --- Config Getters ---
   const simpleTitle: string = meta.simpleTitle ?? "";
-  const simpleBg: string = meta.simpleBg ?? "";
-  const simpleBgGrad1: string = meta.simpleBgGrad1 ?? "#f9fafb";
-  const simpleBgGrad2: string = meta.simpleBgGrad2 ?? "#e5e7eb";
-  const simpleTextColor: string = meta.simpleTextColor ?? "";
-  const simpleFont: string = meta.simpleFont ?? "system";
-  const simpleFontSize: "sm" | "md" | "lg" = meta.simpleFontSize ?? "md";
-  const simpleSpacing: SimpleSpacing = meta.simpleSpacing ?? "cozy";
 
   const showTierlessBadge: boolean = meta.simpleShowBadge ?? true;
-
-  const simpleDots: boolean = meta.simpleDots ?? false;
   const simpleAllowSelection: boolean = meta.simpleAllowSelection ?? false;
-  const simpleShowInquiry: boolean = meta.simpleShowInquiry ?? false;
+
   const currency: string = typeof i18n.currency === "string" ? (i18n.currency as string) : "";
   const decimals: number = Number.isFinite(i18n.decimals) ? (i18n.decimals as number) : 0;
   const activeTheme: BrandTheme = meta.theme || "tierless";
-
-  const isBgGradient = typeof simpleBg === "string" && simpleBg.startsWith("linear-gradient");
-  const currencyPresetValue = !currency || !CURRENCY_PRESETS.includes(currency) ? "__custom" : currency;
 
   useEffect(() => {
     setSelectedItems((prev) => {
@@ -118,48 +107,6 @@ export default function SimpleListPanel() {
   }, [items]);
 
   /* ---------------- Helpers ---------------- */
-
-  const renderColorSwatches = (
-    presets: ColorPreset[],
-    selected: string,
-    onSelect: (v: string) => void
-  ) => {
-    return (
-      <div className="flex flex-wrap gap-1.5">
-        {presets.map((c) => {
-          const selectedVal = selected || "";
-          const valueVal = c.value || "";
-          const isSelected = selectedVal === valueVal;
-
-          return (
-            <button
-              key={c.key}
-              type="button"
-              onClick={() => onSelect(c.value)}
-              className={`relative inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] sm:text-[11px] transition hover:-translate-y-0.5 cursor-pointer
-                ${isSelected
-                  ? "border-[var(--text)] bg-[var(--surface)]"
-                  : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--text)]"
-                }`}
-            >
-              {isSelected && (
-                <div className="absolute inset-0 rounded-full border-2 border-[#22D3EE] opacity-50 pointer-events-none" />
-              )}
-              <span className="relative z-[1] inline-flex items-center gap-1.5">
-                <span
-                  className="inline-block h-2.5 w-2.5 rounded-full border border-black/10"
-                  style={{
-                    background: c.value === "" ? "linear-gradient(135deg,#e5e7eb,#f9fafb)" : c.value,
-                  }}
-                />
-                <span className="whitespace-nowrap font-medium text-[var(--text)]">{t(c.label)}</span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    );
-  };
 
   const setMeta = (patch: Record<string, any>) => {
     updateCalc((draft) => {
@@ -181,24 +128,6 @@ export default function SimpleListPanel() {
       if (!draft.i18n) draft.i18n = {};
       Object.assign(draft.i18n as any, patch);
     });
-  };
-
-  const setBgSolid = (val: string) => setMeta({ simpleBg: val, simpleBgGrad1: undefined, simpleBgGrad2: undefined });
-  const toggleBgMode = (mode: "solid" | "gradient") => {
-    if (mode === "solid") setMeta({ simpleBg: "", simpleBgGrad1: undefined, simpleBgGrad2: undefined });
-    else {
-      const c1 = simpleBgGrad1 || "#f9fafb";
-      const c2 = simpleBgGrad2 || "#e5e7eb";
-      setMeta({ simpleBgGrad1: c1, simpleBgGrad2: c2, simpleBg: `linear-gradient(90deg,${c1},${c2})` });
-    }
-  };
-
-  const handleCurrencyPresetChange = (value: string) => {
-    if (value === "__custom") {
-      setI18n({ currency: "" });
-    } else {
-      setI18n({ currency: value });
-    }
   };
 
   const handleGenericUpload = async (e: ChangeEvent<HTMLInputElement>, targetId: string, type: 'item' | 'section' | 'cover' | 'logo') => {
@@ -284,11 +213,6 @@ export default function SimpleListPanel() {
   };
   const selectAllOcrItems = () => setOcrSelectedIds(ocrItems.map((it) => it.id));
   const clearOcrSelection = () => setOcrSelectedIds([]);
-  const deleteSelectedOcrItems = () => {
-    if (!ocrSelectedIds.length) return;
-    setOcrItems(prev => prev.filter(it => !ocrSelectedIds.includes(it.id)));
-    setOcrSelectedIds([]);
-  }
 
   const handleApplyOcrToList = () => {
     if (!ocrItems.length) return;
@@ -370,13 +294,45 @@ export default function SimpleListPanel() {
               <span className="absolute -right-3 top-0 text-xs text-[var(--muted)] opacity-50">{currency}</span>
             </div>
           </div>
-          <input
-            type="text"
-            className="w-full bg-transparent text-xs text-[var(--muted)] outline-none border-b border-transparent focus:border-[#22D3EE]"
-            placeholder={t("Description (ingredients, portion size...)")}
-            value={it.note ?? ""}
-            onChange={e => updateItem(it.id, { note: e.target.value })}
-          />
+
+          <div className="flex items-center gap-2">
+            {/* BADGE SELECTOR */}
+            <div className="relative group/badge">
+              <select
+                value={it.badge || ""}
+                onChange={(e) => updateItem(it.id, { badge: e.target.value })}
+                className="appearance-none bg-[var(--bg)] border border-[var(--border)] text-[10px] h-6 pl-2 pr-6 rounded-full outline-none focus:border-[#22D3EE] cursor-pointer text-[var(--text)] hover:bg-[var(--surface)] font-medium"
+              >
+                {BADGE_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <Tag className="w-3 h-3 absolute right-2 top-1.5 pointer-events-none text-[var(--muted)]" />
+            </div>
+
+            <input
+              type="text"
+              className="flex-1 bg-transparent text-xs text-[var(--muted)] outline-none border-b border-transparent focus:border-[#22D3EE]"
+              placeholder={t("Description...")}
+              value={it.note ?? ""}
+              onChange={e => updateItem(it.id, { note: e.target.value })}
+            />
+          </div>
+
+          {/* Quick Actions Row */}
+          <div className="flex items-center gap-3 mt-1">
+            <button onClick={() => updateItem(it.id, { hidden: !it.hidden })} className={`text-[10px] font-medium flex items-center gap-1 ${it.hidden ? "text-yellow-600" : "text-[var(--muted)] hover:text-[var(--text)]"}`} title={t("Hide from menu")}>
+              {it.hidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+              {it.hidden ? t("Hidden") : t("Visible")}
+            </button>
+            <button onClick={() => updateItem(it.id, { soldOut: !it.soldOut })} className={`text-[10px] font-medium flex items-center gap-1 ${it.soldOut ? "text-red-500" : "text-[var(--muted)] hover:text-[var(--text)]"}`} title={t("Mark as Sold Out")}>
+              <Ban className="w-3 h-3" />
+              {it.soldOut ? t("Sold Out") : t("Available")}
+            </button>
+            {it.imageUrl && (
+              <button onClick={() => updateItem(it.id, { imageUrl: undefined })} className="text-[10px] text-red-400 hover:text-red-600 hover:underline">{t("Remove Image")}</button>
+            )}
+          </div>
         </div>
 
         {/* Sort & Delete */}
@@ -389,7 +345,7 @@ export default function SimpleListPanel() {
     );
   };
 
-  // --- Render Tabs ---
+  /* ---------------- TABS ---------------- */
 
   const renderContentTab = () => {
     const unsectionedItems = items.filter((it) => !it.simpleSectionId);
@@ -424,15 +380,21 @@ export default function SimpleListPanel() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={simpleCoverImage} alt="Cover" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
-              <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
+              <div className="absolute bottom-4 left-4 right-4 pointer-events-none flex items-center gap-3">
+                {simpleLogo && (
+                  <div className="w-12 h-12 rounded-full bg-white p-0.5 overflow-hidden shadow-md">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={simpleLogo} alt="" className="w-full h-full object-cover rounded-full" />
+                  </div>
+                )}
                 <h2 className="text-white text-2xl font-bold drop-shadow-md">{simpleTitle || t("Page Title")}</h2>
               </div>
-              <button onClick={() => setMeta({ simpleCoverImage: "" })} className="absolute top-3 right-3 bg-black/50 text-white p-1.5 rounded-full hover:bg-red-600/90 transition opacity-0 group-hover:opacity-100"><X className="w-4 h-4" /></button>
+              <button onClick={() => setMeta({ simpleCoverImage: "", business: { ...business, coverUrl: "" } })} className="absolute top-3 right-3 bg-black/50 text-white p-1.5 rounded-full hover:bg-red-600/90 transition opacity-0 group-hover:opacity-100"><X className="w-4 h-4" /></button>
             </>
           ) : (
             <div className="text-center space-y-2">
               <ImageIcon className="w-8 h-8 text-[var(--muted)] mx-auto" />
-              <p className="text-sm text-[var(--muted)]">{t("No cover image")}</p>
+              <p className="text-sm text-[var(--muted)]">{t("Add a cover image to make your menu pop")}</p>
             </div>
           )}
 
@@ -444,76 +406,28 @@ export default function SimpleListPanel() {
           </button>
         </div>
 
-        {/* Quick Actions (BRAND BUTTONS) */}
+        {/* Quick Actions */}
         <div className="flex flex-wrap gap-3 pb-4 border-b border-[var(--border)]">
-
-          {/* Add Item */}
-          <button
-            onClick={() => addItem(t("New item"), 0)}
-            className="relative inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-4 py-2 text-sm font-medium group hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(2,6,23,.10)] transition cursor-pointer"
-          >
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-full"
-              style={{
-                padding: 1.5,
-                background: BRAND_GRADIENT,
-                WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                WebkitMaskComposite: "xor",
-                maskComposite: "exclude",
-              }}
-            />
-            <span className="relative z-[1] flex items-center gap-2 text-[var(--text)]">
-              <Plus className="w-4 h-4" /> {t("Add Item")}
-            </span>
+          <button onClick={() => addItem(t("New item"), 0)} className="relative inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-4 py-2 text-sm font-medium group hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(2,6,23,.10)] transition cursor-pointer border border-[var(--border)]">
+            <Plus className="w-4 h-4 text-[#22D3EE]" /> {t("Add Item")}
           </button>
 
-          {/* Add Section */}
-          <button
-            onClick={handleAddSection}
-            className="relative inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-4 py-2 text-sm font-medium group hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(2,6,23,.10)] transition cursor-pointer"
-          >
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-full"
-              style={{
-                padding: 1.5,
-                background: BRAND_GRADIENT,
-                WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                WebkitMaskComposite: "xor",
-                maskComposite: "exclude",
-              }}
-            />
-            <span className="relative z-[1] flex items-center gap-2 text-[var(--text)]"><List className="w-4 h-4" /> {t("Add Section")}</span>
+          <button onClick={handleAddSection} className="relative inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-4 py-2 text-sm font-medium group hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(2,6,23,.10)] transition cursor-pointer border border-[var(--border)]">
+            <List className="w-4 h-4 text-[#4F46E5]" /> {t("Add Section")}
           </button>
 
-          {/* Scan Menu */}
-          <button
-            onClick={() => setOcrOpen(true)}
-            className="relative inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-4 py-2 text-sm font-medium group hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(2,6,23,.10)] transition ml-auto cursor-pointer"
-          >
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-full"
-              style={{
-                padding: 1.5,
-                background: BRAND_GRADIENT,
-                WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                WebkitMaskComposite: "xor",
-                maskComposite: "exclude",
-              }}
-            />
-            <span className="relative z-[1] flex items-center gap-2 text-[var(--text)]"><ScanLine className="w-4 h-4 text-[#22D3EE]" /> {t("Scan Menu (OCR)")}</span>
+          <button onClick={() => setOcrOpen(true)} className="relative inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-4 py-2 text-sm font-medium group hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(2,6,23,.10)] transition ml-auto cursor-pointer border border-[var(--border)]">
+            <ScanLine className="w-4 h-4 text-[#22D3EE]" /> {t("Scan Menu (OCR)")}
           </button>
         </div>
 
         {/* Lists */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Unsectioned */}
           {unsectionedItems.length > 0 && (
             <div className="space-y-3">
               <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] pl-1">{t("Uncategorized Items")}</div>
-              {unsectionedItems.map(renderItemRow)}
+              <div className="grid gap-3">{unsectionedItems.map(renderItemRow)}</div>
             </div>
           )}
 
@@ -529,7 +443,7 @@ export default function SimpleListPanel() {
 
             return (
               <div key={section.id} className="rounded-2xl border border-[var(--border)] bg-[var(--card)] overflow-hidden shadow-sm">
-                {/* Header */}
+                {/* Section Header */}
                 <div className="p-4 bg-[var(--surface)]/50 border-b border-[var(--border)] flex flex-col gap-3">
                   <div className="flex items-center gap-3">
                     <button onClick={toggleCollapse} className="p-1 hover:bg-[var(--bg)] rounded text-[var(--muted)]">
@@ -607,77 +521,57 @@ export default function SimpleListPanel() {
 
   const renderBusinessTab = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 p-1">
-      <div className="space-y-4">
-        <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide border-b border-[var(--border)] pb-2">{t("Contact & Info")}</h3>
 
-        {/* Logo Upload */}
-        <div className="flex gap-4 items-center mb-4 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]">
-          <div className="w-16 h-16 rounded-lg bg-[var(--bg)] border border-[var(--border)] overflow-hidden relative group">
-            {business.logoUrl ? (
-              <>
-                <img src={business.logoUrl} alt="Logo" className="w-full h-full object-contain" />
-                <button onClick={() => setBusiness({ logoUrl: "" })} className="absolute top-0.5 right-0.5 bg-black/50 text-white p-0.5 rounded hover:bg-red-500"><X className="w-3 h-3" /></button>
-              </>
-            ) : (
-              <ImageIcon className="w-6 h-6 text-[var(--muted)] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-            )}
+      {/* Logo & Description */}
+      <div className="flex gap-4 items-start">
+        <div className="shrink-0">
+          <div className="w-20 h-20 rounded-full border border-[var(--border)] bg-[var(--card)] flex items-center justify-center relative group overflow-hidden">
+            {simpleLogo ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={simpleLogo} alt="" className="w-full h-full object-cover" />
+            ) : <Store className="w-8 h-8 text-[var(--muted)]" />}
+            <button onClick={() => triggerGenericUpload("logo", "logo")} className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-xs opacity-0 group-hover:opacity-100 transition">Change</button>
           </div>
-          <div className="flex-1">
-            <div className="text-sm font-medium text-[var(--text)]">{t("Business Logo")}</div>
-            <div className="text-xs text-[var(--muted)] mb-2">{t("Displayed in header on public page")}</div>
-            <button onClick={() => triggerGenericUpload("logo", "logo")} className="text-xs px-3 py-1.5 rounded border border-[var(--border)] hover:bg-[var(--surface)]">{business.logoUrl ? t("Change") : t("Upload")}</button>
-          </div>
+          <div className="text-center text-[10px] text-[var(--muted)] mt-1">Logo</div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="space-y-1.5">
-            <div className="flex items-center gap-2 text-xs text-[var(--muted)] font-medium"><Phone className="w-3.5 h-3.5" /> {t("Phone Number")}</div>
-            <input type="text" value={business.phone || ""} onChange={e => setBusiness({ phone: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" placeholder="+1 234 567 890" />
-          </label>
-
-          {/* NOVO: Email Polje */}
-          <label className="space-y-1.5">
-            <div className="flex items-center gap-2 text-xs text-[var(--muted)] font-medium"><Mail className="w-3.5 h-3.5" /> {t("Contact Email")}</div>
-            <input type="text" value={business.email || ""} onChange={e => setBusiness({ email: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" placeholder="contact@example.com" />
-          </label>
-        </div>
-
-        <label className="block space-y-1.5">
-          <span className="text-xs text-[var(--muted)] font-medium">{t("Business Description (Optional)")}</span>
-          <textarea
-            rows={3}
-            value={business.description || ""}
-            onChange={e => setBusiness({ description: e.target.value })}
-            className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] resize-none"
-            placeholder={t("Short description about your business, cuisine, etc.")}
-          />
+        <label className="flex-1 space-y-1.5">
+          <span className="text-xs text-[var(--muted)] font-medium">{t("Business Description")}</span>
+          <textarea rows={3} value={business.description || ""} onChange={e => setBusiness({ description: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" placeholder="Best coffee in town..." />
         </label>
+      </div>
+
+      <div className="space-y-4 border-t border-[var(--border)] pt-4">
+        <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide">{t("Contact Info")}</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="space-y-1.5">
-            <div className="flex items-center gap-2 text-xs text-[var(--muted)] font-medium"><Phone className="w-3.5 h-3.5" /> {t("Phone Number")}</div>
+            <span className="text-xs text-[var(--muted)] font-medium flex items-center gap-1"><Phone className="w-3 h-3" /> {t("Phone")}</span>
             <input type="text" value={business.phone || ""} onChange={e => setBusiness({ phone: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" placeholder="+1 234 567 890" />
           </label>
           <label className="space-y-1.5">
-            <div className="flex items-center gap-2 text-xs text-[var(--muted)] font-medium"><MapPin className="w-3.5 h-3.5" /> {t("Location (Google Maps Link)")}</div>
-            <input type="text" value={business.location || ""} onChange={e => setBusiness({ location: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" placeholder="https://maps.google.com..." />
+            <span className="text-xs text-[var(--muted)] font-medium flex items-center gap-1"><Mail className="w-3 h-3" /> {t("Email")}</span>
+            <input type="text" value={business.email || ""} onChange={e => setBusiness({ email: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" placeholder="hello@example.com" />
+          </label>
+          <label className="space-y-1.5 md:col-span-2">
+            <span className="text-xs text-[var(--muted)] font-medium flex items-center gap-1"><MapPin className="w-3 h-3" /> {t("Location (Google Maps Link)")}</span>
+            <input type="text" value={business.location || ""} onChange={e => setBusiness({ location: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" placeholder="http://maps.google.com/..." />
           </label>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[var(--surface)] p-3 rounded-xl border border-[var(--border)]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="space-y-1.5">
-            <div className="flex items-center gap-2 text-xs text-[var(--muted)] font-medium"><Wifi className="w-3.5 h-3.5" /> {t("WiFi Name (SSID)")}</div>
+            <span className="text-xs text-[var(--muted)] font-medium flex items-center gap-1"><Wifi className="w-3 h-3" /> {t("WiFi Name")}</span>
             <input type="text" value={business.wifiSsid || ""} onChange={e => setBusiness({ wifiSsid: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" placeholder="Guest WiFi" />
           </label>
           <label className="space-y-1.5">
-            <div className="flex items-center gap-2 text-xs text-[var(--muted)] font-medium"><Info className="w-3.5 h-3.5" /> {t("WiFi Password")}</div>
+            <span className="text-xs text-[var(--muted)] font-medium">{t("WiFi Password")}</span>
             <input type="text" value={business.wifiPass || ""} onChange={e => setBusiness({ wifiPass: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" placeholder="SecretPass123" />
           </label>
         </div>
 
         <label className="block space-y-1.5">
-          <div className="flex items-center gap-2 text-xs text-[var(--muted)] font-medium"><Clock className="w-3.5 h-3.5" /> {t("Opening Hours")}</div>
-          <input type="text" value={business.hours || ""} onChange={e => setBusiness({ hours: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" placeholder="Mon-Fri: 9am - 10pm, Sat-Sun: 10am - 11pm" />
+          <span className="text-xs text-[var(--muted)] font-medium flex items-center gap-1"><Clock className="w-3 h-3" /> {t("Opening Hours")}</span>
+          <input type="text" value={business.hours || ""} onChange={e => setBusiness({ hours: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" placeholder="Mon-Fri: 9am - 10pm" />
         </label>
       </div>
     </div>
@@ -687,38 +581,20 @@ export default function SimpleListPanel() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 p-1">
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide border-b border-[var(--border)] pb-2">{t("Themes")}</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {(["tierless", "classic", "midnight", "cafe", "ocean", "forest", "sunset", "minimal"] as const).map(th => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {THEME_OPTIONS.map(th => (
             <button
-              key={th}
-              onClick={() => setMeta({
-                theme: th,
-                simpleBg: undefined,
-                simpleBgGrad1: undefined,
-                simpleBgGrad2: undefined,
-                simpleTextColor: undefined,
-                simpleBorderColor: undefined,
-                simpleOutlineGrad1: undefined,
-                simpleOutlineGrad2: undefined
-              })}
-              className={`relative p-3 rounded-xl border text-left transition-all hover:-translate-y-1 ${activeTheme === th ? "border-[#22D3EE] shadow-md ring-1 ring-[#22D3EE]" : "border-[var(--border)] hover:border-[var(--text)]"}`}
+              key={th.key}
+              onClick={() => setMeta({ theme: th.key })}
+              className={`relative p-3 rounded-xl border text-left transition-all hover:-translate-y-1 ${activeTheme === th.key ? "border-[#22D3EE] shadow-md ring-1 ring-[#22D3EE]" : "border-[var(--border)] hover:border-[var(--text)]"}`}
             >
-              <div className={`h-12 w-full rounded-lg mb-2 border border-black/10 ${th === "midnight" ? "bg-slate-900" :
-                th === "cafe" ? "bg-[#4a3b32]" :
-                  th === "ocean" ? "bg-blue-900" :
-                    th === "forest" ? "bg-[#064e3b]" :
-                      th === "sunset" ? "bg-[#be123c]" :
-                        th === "minimal" ? "bg-[#f3f4f6]" :
-                          th === "classic" ? "bg-white" : "bg-gradient-to-br from-[#4F46E5] to-[#22D3EE]"
-                }`} />
-              <div className="text-xs font-bold capitalize text-[var(--text)]">{th}</div>
-              {activeTheme === th && <div className="absolute top-2 right-2 bg-[#22D3EE] text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
+              <div className={`h-12 w-full rounded-lg mb-2 border border-black/10 ${th.color}`} />
+              <div className="text-xs font-bold capitalize text-[var(--text)]">{th.label}</div>
+              {activeTheme === th.key && <div className="absolute top-2 right-2 bg-[#22D3EE] text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
             </button>
           ))}
         </div>
       </div>
-
-
     </div>
   );
 
@@ -727,17 +603,17 @@ export default function SimpleListPanel() {
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide border-b border-[var(--border)] pb-2">{t("Page Info")}</h3>
         <label className="block space-y-1.5">
-          <span className="text-xs text-[var(--muted)] font-medium">{t("Page Title (Visible on page)")}</span>
+          <span className="text-xs text-[var(--muted)] font-medium">{t("Page Title")}</span>
           <input type="text" value={simpleTitle} onChange={e => setMeta({ simpleTitle: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" />
         </label>
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide border-b border-[var(--border)] pb-2">{t("Localization")}</h3>
+        <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide border-b border-[var(--border)] pb-2">{t("Settings")}</h3>
         <div className="grid grid-cols-2 gap-4">
           <label className="space-y-1.5">
             <span className="text-xs text-[var(--muted)] font-medium">{t("Currency")}</span>
-            <select value={currencyPresetValue} onChange={e => handleCurrencyPresetChange(e.target.value)} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]">
+            <select value={currency || "€"} onChange={e => setI18n({ currency: e.target.value })} className="w-full p-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]">
               {CURRENCY_PRESETS.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
@@ -749,26 +625,15 @@ export default function SimpleListPanel() {
             </select>
           </label>
         </div>
-      </div>
 
-      <div className="space-y-4">
-        <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide border-b border-[var(--border)] pb-2">{t("Behavior & Features")}</h3>
-        <div className="space-y-3">
+        <div className="space-y-3 pt-2">
           <label className="flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-[var(--card)] cursor-pointer hover:border-[#22D3EE] transition">
-            <span className="text-sm text-[var(--text)]">{t("Show 'Powered by Tierless' Badge")}</span>
-            <input type="checkbox" checked={showTierlessBadge} onChange={e => setMeta({ simpleShowBadge: e.target.checked })} className="accent-[#22D3EE] h-4 w-4" />
+            <span className="text-sm text-[var(--text)]">{t("Show 'Powered by Tierless'")}</span>
+            <input type="checkbox" checked={meta.simpleShowBadge !== false} onChange={e => setMeta({ simpleShowBadge: e.target.checked })} className="accent-[#4F46E5] h-4 w-4" />
           </label>
           <label className="flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-[var(--card)] cursor-pointer hover:border-[#22D3EE] transition">
-            <span className="text-sm text-[var(--text)]">{t("Allow item selection (Calculator Mode)")}</span>
-            <input type="checkbox" checked={simpleAllowSelection} onChange={e => setMeta({ simpleAllowSelection: e.target.checked })} className="accent-[#22D3EE] h-4 w-4" />
-          </label>
-          <label className="flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-[var(--card)] cursor-pointer hover:border-[#22D3EE] transition">
-            <span className="text-sm text-[var(--text)]">{t("Show Inquiry Button")}</span>
-            <input type="checkbox" checked={simpleShowInquiry} onChange={e => setMeta({ simpleShowInquiry: e.target.checked })} className="accent-[#22D3EE] h-4 w-4" />
-          </label>
-          <label className="flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-[var(--card)] cursor-pointer hover:border-[#22D3EE] transition">
-            <span className="text-sm text-[var(--text)]">{t("Show dotted lines")}</span>
-            <input type="checkbox" checked={simpleDots} onChange={e => setMeta({ simpleDots: e.target.checked })} className="accent-[#22D3EE] h-4 w-4" />
+            <span className="text-sm text-[var(--text)]">{t("Allow Selection (Calculator)")}</span>
+            <input type="checkbox" checked={meta.simpleAllowSelection || false} onChange={e => setMeta({ simpleAllowSelection: e.target.checked })} className="accent-[#4F46E5] h-4 w-4" />
           </label>
         </div>
       </div>
@@ -789,17 +654,7 @@ export default function SimpleListPanel() {
                 className="relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all group"
               >
                 {isActive && (
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 rounded-lg"
-                    style={{
-                      padding: 1.5,
-                      background: BRAND_GRADIENT,
-                      WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                      WebkitMaskComposite: "xor",
-                      maskComposite: "exclude",
-                    }}
-                  />
+                  <span aria-hidden className="pointer-events-none absolute inset-0 rounded-lg" style={{ padding: 1.5, background: BRAND_GRADIENT, WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)", WebkitMaskComposite: "xor", maskComposite: "exclude" }} />
                 )}
                 <span className={`relative z-10 flex items-center gap-2 ${isActive ? "text-[var(--text)] font-bold" : "text-[var(--muted)] group-hover:text-[var(--text)]"}`}>
                   {tKey === "content" && <List className="w-4 h-4" />}
@@ -855,8 +710,8 @@ export default function SimpleListPanel() {
             </div>
 
             <div className="space-y-4">
-              <button onClick={() => ocrFileRef.current?.click()} disabled={ocrUploading} className="w-full py-8 border-2 border-dashed border-[var(--border)] rounded-xl flex flex-col items-center justify-center text-[var(--muted)] hover:border-[#22D3EE] hover:text-[#22D3EE] transition bg-[var(--bg)] disabled:opacity-50">
-                {ocrUploading ? <div className="animate-spin h-8 w-8 border-4 border-[#22D3EE] border-t-transparent rounded-full mb-2" /> : <ScanLine className="w-8 h-8 mb-2" />}
+              <button onClick={() => ocrFileRef.current?.click()} disabled={ocrUploading} className="w-full py-8 border-2 border-dashed border-[var(--border)] rounded-xl flex flex-col items-center justify-center text-[var(--muted)] hover:border-[#4F46E5] hover:text-[#4F46E5] transition bg-[var(--bg)] disabled:opacity-50">
+                {ocrUploading ? <div className="animate-spin h-8 w-8 border-4 border-[#4F46E5] border-t-transparent rounded-full mb-2" /> : <ScanLine className="w-8 h-8 mb-2" />}
                 <span className="text-sm font-medium">{ocrUploading ? t("Scanning...") : t("Click to upload menu")}</span>
               </button>
 
@@ -867,14 +722,14 @@ export default function SimpleListPanel() {
                   <div className="p-2 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center">
                     <span className="text-xs font-bold text-[var(--muted)]">{ocrItems.length} {t("items found")}</span>
                     <div className="flex gap-2">
-                      <button onClick={selectAllOcrItems} className="text-xs text-[#22D3EE] hover:underline font-medium">{t("Select All")}</button>
+                      <button onClick={selectAllOcrItems} className="text-xs text-[#4F46E5] hover:underline font-medium">{t("Select All")}</button>
                       <button onClick={clearOcrSelection} className="text-xs text-[var(--muted)] hover:underline">{t("Clear")}</button>
                     </div>
                   </div>
                   <div className="max-h-60 overflow-y-auto p-2 space-y-1">
                     {ocrItems.map(it => (
                       <label key={it.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[var(--card)] cursor-pointer border border-transparent hover:border-[var(--border)] transition">
-                        <input type="checkbox" checked={ocrSelectedIds.includes(it.id)} onChange={() => toggleOcrSelection(it.id)} className="accent-[#22D3EE] h-4 w-4" />
+                        <input type="checkbox" checked={ocrSelectedIds.includes(it.id)} onChange={() => toggleOcrSelection(it.id)} className="accent-[#4F46E5] h-4 w-4" />
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium text-[var(--text)] truncate">{it.label}</div>
                           {it.sectionName && <div className="text-[10px] text-[var(--muted)] uppercase tracking-wide">{it.sectionName}</div>}
@@ -890,21 +745,8 @@ export default function SimpleListPanel() {
             <div className="mt-6 flex justify-end gap-2">
               <button onClick={() => setOcrOpen(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-[var(--muted)] hover:text-[var(--text)]">{t("Cancel")}</button>
               <button onClick={handleApplyOcrToList} disabled={ocrSelectedIds.length === 0} className="relative inline-flex items-center justify-center rounded-full border border-transparent px-4 py-2 text-sm font-medium shadow-sm transition-all duration-200 cursor-pointer group">
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 rounded-full"
-                  style={{
-                    padding: 1.5,
-                    background: BRAND_GRADIENT,
-                    WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                    WebkitMaskComposite: "xor",
-                    maskComposite: "exclude",
-                    opacity: 0.9,
-                  }}
-                />
-                <span className="relative z-[1] text-[var(--text)] font-semibold group-hover:text-[#22D3EE] transition-colors">
-                  {t("Add Selected")} ({ocrSelectedIds.length})
-                </span>
+                <span aria-hidden className="pointer-events-none absolute inset-0 rounded-full" style={{ padding: 1.5, background: BRAND_GRADIENT, WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)", WebkitMaskComposite: "xor", maskComposite: "exclude", opacity: 0.9 }} />
+                <span className="relative z-[1] text-[var(--text)] font-semibold group-hover:text-[#4F46E5] transition-colors">{t("Add Selected")} ({ocrSelectedIds.length})</span>
               </button>
             </div>
             <input ref={ocrFileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleOcrFileChange} />

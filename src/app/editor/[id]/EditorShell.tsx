@@ -322,8 +322,8 @@ function ModeTile({
         )}
 
         <h3 className={`text-xl sm:text-2xl font-bold mb-3 transition-all ${active
-            ? "text-white"
-            : "text-[var(--text)] group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-400 group-hover:to-cyan-400"
+          ? "text-white"
+          : "text-[var(--text)] group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-400 group-hover:to-cyan-400"
           }`}>
           {title}
         </h3>
@@ -338,7 +338,16 @@ function ModeTile({
           </p>
         )}
 
-        <span className="mt-auto inline-flex items-center gap-2 text-sm font-bold text-[var(--brand-1)] group-hover:translate-x-1 transition-transform">
+        <span
+          className="mt-auto inline-flex items-center gap-2 text-sm font-bold group-hover:translate-x-1 transition-transform"
+          style={{
+            background: BRAND_GRADIENT,
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            color: "transparent",
+          }}
+        >
           {cta} →
         </span>
       </div>

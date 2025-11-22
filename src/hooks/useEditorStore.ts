@@ -1,185 +1,14 @@
+// src/hooks/useEditorStore.ts
 import { create } from "zustand";
+import type {
+  CalcJson, Mode, Pkg, FeatureOption, Extra, OptionGroup, ItemRow,
+  BrandTheme, SimpleSection
+} from "@/types/editor";
+import { genId, clone, ensureShape } from "@/lib/editor-utils";
 
-/* --------------------------------------------------------- */
-/* Types                                                     */
-/* --------------------------------------------------------- */
-export type Mode = "setup" | "simple" | "advanced";
+// Re-export types za komponente koje ih koriste direktno iz ovog fajla
+export type { CalcJson, Mode, BrandTheme, SimpleSection, ItemRow, Pkg, OptionGroup, Extra, FeatureOption };
 
-// Teme (Presets)
-export type BrandTheme = "classic" | "midnight" | "cafe" | "ocean" | "tierless" | "custom";
-
-export type FeatureOption = { id: string; label: string; highlighted?: boolean };
-export type Extra = { id: string; text: string; price?: number; selected?: boolean };
-export type RangePricing =
-  | { mode: "linear"; deltaPerUnit: number }
-  | { mode: "per-step"; perStep: number[] };
-
-export type OptionGroup = {
-  id: string;
-  title: string;
-  type: "features" | "range" | "options";
-  pkgId?: string;
-  options?: FeatureOption[];
-  min?: number;
-  max?: number;
-  step?: number;
-  unit?: string;
-  base?: number;
-  pricing?: RangePricing;
-  color?: string;
-};
-
-export type Pkg = {
-  id: string;
-  label: string;
-  basePrice: number | null;
-  description?: string;
-  featured?: boolean;
-  color?: string;
-};
-
-// --- NOVO: Business Info za Header ---
-export type BusinessInfo = {
-  name?: string;
-  description?: string;
-  phone?: string;
-  email?: string;
-  location?: string;     // Tekst ili Google Maps link
-  wifiSsid?: string;
-  wifiPass?: string;
-  hours?: string;        // Npr. "Mon-Fri: 9-5"
-  logoUrl?: string;
-  coverUrl?: string;
-};
-
-// --- NOVO: Floating CTA ---
-export type FloatingCta = {
-  enabled: boolean;
-  label: string;
-  link: string; // tel: ili https:
-};
-
-export type SimpleSection = {
-  id: string;
-  label: string;
-  description?: string;
-  imageUrl?: string;
-  collapsed?: boolean;
-};
-
-export type ItemRow = {
-  id: string;
-  label: string;
-  price: number | null;
-  note?: string;
-  imageUrl?: string;
-  simpleSectionId?: string;
-
-  // NOVI POLJA
-  hidden?: boolean;
-  soldOut?: boolean;
-  tags?: string[]; // "spicy", "vegan", "popular", "new"
-};
-
-export type CalcMeta = {
-  id?: string;
-  name?: string;
-  slug?: string;
-  editorMode?: Mode;
-
-  // NOVO: Konfiguracija
-  theme?: BrandTheme;
-  business?: BusinessInfo;
-  cta?: FloatingCta;
-
-  // Legacy / Kompatibilnost
-  simpleCoverImage?: string; // Koristicemo business.coverUrl ubuduce, ali cuvamo zbog starog koda
-  simpleSections?: SimpleSection[];
-  simpleSectionStates?: Record<string, boolean>;
-
-  // Style overrides (ako je theme="custom")
-  simpleBg?: string;
-  simpleBgGrad1?: string;
-  simpleBgGrad2?: string;
-  simpleTextColor?: string;
-  simpleBorderColor?: string;
-  simpleFont?: string;
-
-  [k: string]: unknown;
-};
-
-export type CalcJson = {
-  meta: CalcMeta;
-  packages: Pkg[];
-  fields: OptionGroup[];
-  addons: Extra[];
-  items?: ItemRow[];
-  i18n?: { currency?: string; decimals?: number };
-  [k: string]: unknown;
-};
-
-/* --------------------------------------------------------- */
-/* Helpers                                                   */
-/* --------------------------------------------------------- */
-function genId(prefix = "id"): string {
-  return `${prefix}_${Math.random().toString(36).slice(2, 8)}${Date.now()
-    .toString(36)
-    .slice(-4)}`;
-}
-function clone<T>(v: T): T {
-  return (globalThis as any).structuredClone
-    ? (structuredClone as any)(v)
-    : JSON.parse(JSON.stringify(v));
-}
-function ensureShape(calc: CalcJson): CalcJson {
-  if (!Array.isArray(calc.packages)) calc.packages = [];
-  if (!Array.isArray(calc.fields)) calc.fields = [];
-  if (!Array.isArray(calc.addons)) calc.addons = [];
-  if (!Array.isArray(calc.items)) calc.items = [];
-
-  if (!calc.meta) calc.meta = {};
-  if (!calc.meta.business) calc.meta.business = {}; // Osiguraj business objekat
-
-  calc.fields = calc.fields.map((g: any) => {
-    const type: OptionGroup["type"] =
-      g?.type === "range" || g?.type === "options" || g?.type === "features"
-        ? g.type
-        : "options";
-    const base: OptionGroup = {
-      id: g.id ?? genId("grp"),
-      title: g.title ?? (type === "range" ? "Range" : "Group"),
-      type,
-    };
-    // ... (ostatak mapiranja polja je isti)
-    if (type === "features") {
-      base.pkgId = g.pkgId;
-      base.options = Array.isArray(g.options) ? g.options : [];
-    } else if (type === "range") {
-      base.min = Number.isFinite(g.min) ? g.min : 0;
-      base.max = Number.isFinite(g.max) ? g.max : 10;
-      base.step = Number.isFinite(g.step) ? g.step : 1;
-      base.unit = g.unit ?? "";
-      base.base = Number.isFinite(g.base) ? g.base : 0;
-      base.pricing =
-        g.pricing && g.pricing.mode === "per-step"
-          ? {
-            mode: "per-step",
-            perStep: Array.isArray(g.pricing.perStep) ? g.pricing.perStep : [],
-          }
-          : { mode: "linear", deltaPerUnit: Number(g?.pricing?.deltaPerUnit ?? 0) };
-    } else {
-      base.options = Array.isArray(g.options) ? g.options : [];
-    }
-    if (g.color) base.color = g.color;
-    return base;
-  });
-
-  return calc;
-}
-
-/* --------------------------------------------------------- */
-/* Store                                                     */
-/* --------------------------------------------------------- */
 type EditorState = {
   slug: string;
   calc: CalcJson | null;
@@ -251,12 +80,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   lastWarn: undefined,
   lastError: undefined,
 
+  /* --------------------------------------------------------- */
+  /* Core Actions                                              */
+  /* --------------------------------------------------------- */
+
   init: (slug, initialCalc) => {
     const safe = ensureShape(clone(initialCalc));
-    if (!safe.meta) safe.meta = {};
     if (!safe.meta.editorMode) safe.meta.editorMode = "setup";
     if (!safe.i18n) safe.i18n = { currency: "€", decimals: 0 };
-    // Default theme
     if (!safe.meta.theme) safe.meta.theme = "tierless";
 
     set({
@@ -290,25 +121,25 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
     const next = clone(calc);
 
+    // 1. Set mode
     if (!mode || mode === "setup") {
       next.meta = { ...(next.meta || {}), editorMode: "setup" };
       set({ calc: ensureShape(next), isDirty: true });
       return;
     }
-
     next.meta = { ...(next.meta || {}), editorMode: mode };
 
+    // 2. Seed initial data if empty
     if (mode === "simple") {
-      next.items =
-        next.items && next.items.length
-          ? next.items
-          : [
-            { id: genId("it"), label: "Espresso", price: 2 },
-            { id: genId("it"), label: "Cappuccino", price: 3 },
-            { id: genId("it"), label: "Latte", price: 3.5 },
-          ];
+      if (!next.items || !next.items.length) {
+        next.items = [
+          { id: genId("it"), label: "Espresso", price: 2 },
+          { id: genId("it"), label: "Cappuccino", price: 3 },
+          { id: genId("it"), label: "Latte", price: 3.5 },
+        ];
+      }
     } else {
-      // advanced default
+      // Advanced default
       if (!next.packages.length && (!next.items || !next.items.length)) {
         const p = {
           id: genId("pkg"),
@@ -331,9 +162,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ calc: ensureShape(next), isDirty: true });
   },
 
-  // ... (Sve ostale funkcije addPackage, updatePackage itd. ostaju iste kao pre)
-  // Zbog limita karaktera, kopiraj ih iz prethodnog fajla ili ih ostavi kako jesu
-  // Samo se uveri da bulkAddItems koristi ItemRow tip.
+  /* --------------------------------------------------------- */
+  /* Packages                                                  */
+  /* --------------------------------------------------------- */
 
   addPackage: (partial) => {
     const st = get();
@@ -391,6 +222,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       label: `${src.label || "Package"} (copy)`,
     };
     next.packages.splice(idx + 1, 0, dup);
+
+    // Duplicate features linked to this package
     const oldGrp = next.fields.find(
       (g) => g.type === "features" && g.pkgId === src.id
     );
@@ -418,7 +251,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ calc: next, isDirty: true });
   },
 
-  /* ---------------- Features ---------------- */
+  /* --------------------------------------------------------- */
+  /* Features                                                  */
+  /* --------------------------------------------------------- */
+
   ensureFeatureGroup: (pkgId) => {
     const calc = get().calc!;
     const existing = calc.fields.find(
@@ -476,7 +312,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ calc: next, isDirty: true });
   },
 
-  /* ---------------- Extras ---------------- */
+  /* --------------------------------------------------------- */
+  /* Extras                                                    */
+  /* --------------------------------------------------------- */
+
   addExtra: (text) => {
     const calc = get().calc!;
     const next = clone(calc);
@@ -505,7 +344,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ calc: next, isDirty: true });
   },
 
-  /* ---------------- Ranges ---------------- */
+  /* --------------------------------------------------------- */
+  /* Ranges                                                    */
+  /* --------------------------------------------------------- */
+
   addRangeGroup: (title) => {
     const calc = get().calc!;
     const next = clone(calc);
@@ -539,7 +381,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ calc: next, isDirty: true });
   },
 
-  /* ---------------- Items (simple) ---------------- */
+  /* --------------------------------------------------------- */
+  /* Items (Simple Mode)                                       */
+  /* --------------------------------------------------------- */
+
   addItem: (label, price) => {
     const calc = get().calc!;
     const next = clone(calc);
@@ -616,12 +461,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     if (mode === "replace") {
       next.items = prepared;
     } else {
-      // append na kraj liste
       next.items = [...(next.items || []), ...prepared];
     }
 
     set({ calc: next, isDirty: true });
   },
+
+  /* --------------------------------------------------------- */
+  /* Settings & Caps                                           */
+  /* --------------------------------------------------------- */
 
   setMaxPackages: (n) => set({ maxPackages: Math.max(0, n) }),
   setPlanCaps: (plan) => {
