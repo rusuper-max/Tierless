@@ -1,5 +1,5 @@
 export type Mode = "setup" | "simple" | "advanced";
-export type BrandTheme = "tierless" | "minimal" | "luxury" | "elegant" | "midnight" | "cafe" | "ocean" | "forest" | "sunset" | "classic" | "custom";
+export type BrandTheme = "tierless" | "minimal" | "luxury" | "elegant" | "midnight" | "cafe" | "ocean" | "forest" | "sunset" | "classic" | "custom" | "light" | "dark";
 
 export type FeatureOption = { id: string; label: string; highlighted?: boolean };
 export type Extra = { id: string; text: string; price?: number; selected?: boolean };

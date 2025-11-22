@@ -150,6 +150,8 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
   const themeName = (meta.theme || "tierless").toLowerCase();
   let activeKey = themeName;
   if (activeKey === 'classic') activeKey = 'minimal';
+  if (activeKey === 'light') activeKey = 'minimal';
+  if (activeKey === 'dark') activeKey = 'midnight';
 
   const activeTheme = THEMES[activeKey] || THEMES["tierless"];
   const isTierlessTheme = activeKey === "tierless";
