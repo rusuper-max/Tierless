@@ -1,9 +1,8 @@
-// src/app/editor/[id]/EditorShell.tsx
 "use client";
 
 import dynamic from "next/dynamic";
 import { useEffect, useState, useRef } from "react";
-import { ChevronLeft, Monitor, Smartphone, X } from "lucide-react";
+import { ChevronLeft, Eye, X } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type CalcJson, type Mode } from "@/hooks/useEditorStore";
 import EditorNavBar from "./components/EditorNavBar";
@@ -22,7 +21,8 @@ const AdvancedPanel = dynamic(
 );
 
 type Props = { slug: string; initialCalc: CalcJson };
-type PreviewMode = "off" | "desktop" | "mobile";
+
+const BRAND_GRADIENT = "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))";
 
 function normalizeMode(input?: string | null): Mode {
   if (input === "simple" || input === "advanced" || input === "setup") {
@@ -37,9 +37,6 @@ function normalizeMode(input?: string | null): Mode {
 export default function EditorShell({ slug, initialCalc }: Props) {
   const { calc, init, isDirty, isSaving, setEditorMode } = useEditorStore();
 
-  // NOVO: Ref za preview kontejner
-  const previewScrollRef = useRef<HTMLDivElement>(null);
-
   /* ---------------- Init calc ---------------- */
   useEffect(() => {
     init(slug, initialCalc);
@@ -48,7 +45,6 @@ export default function EditorShell({ slug, initialCalc }: Props) {
   /* ---------------- UI mode (persist across refresh) ---------------- */
   const [uiMode, setUiMode] = useState<Mode>("setup");
 
-  // učitavanje iz localStorage + meta.editorMode
   useEffect(() => {
     const key = `tl_editor_mode_${slug}`;
     let stored: Mode | null = null;
@@ -84,16 +80,9 @@ export default function EditorShell({ slug, initialCalc }: Props) {
 
   const inSetup = uiMode === "setup";
 
-  /* ---------------- Quick preview overlay ---------------- */
-  const [previewMode, setPreviewMode] = useState<PreviewMode>("off");
-
-  const openPreview = (variant: PreviewMode = "desktop") => {
-    if (!calc) return;
-    if (variant === "off") variant = "desktop";
-    setPreviewMode(variant);
-  };
-
-  const closePreview = () => setPreviewMode("off");
+  /* ---------------- Preview overlay ---------------- */
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const previewScrollRef = useRef<HTMLDivElement>(null);
 
   /* ---------------- Save (manual) ---------------- */
   const [toast, setToast] = useState<string | null>(null);
@@ -166,35 +155,27 @@ export default function EditorShell({ slug, initialCalc }: Props) {
       />
 
       <div className="px-4 lg:px-8 py-5">
-        {/* Quick preview toolbar – samo kad smo u editor modu */}
+        {/* Quick preview toolbar */}
         {!inSetup && (
           <div className="mb-3 flex items-center justify-end">
             <button
-              data-tour-id="tour-quick-preview"
               type="button"
-              onClick={() => openPreview("desktop")}
+              onClick={() => setPreviewOpen(true)}
               className="relative inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-3.5 py-2 text-xs sm:text-sm group hover:shadow-[0_10px_24px_rgba(2,6,23,.10)] hover:-translate-y-0.5 transition"
             >
-              {/* Brand outline */}
               <span
                 aria-hidden
                 className="pointer-events-none absolute inset-0 rounded-full"
                 style={{
                   padding: 1.5,
-                  background:
-                    "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
-                  WebkitMask:
-                    "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                  WebkitMaskComposite: "xor" as any,
+                  background: BRAND_GRADIENT,
+                  WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                  WebkitMaskComposite: "xor",
                   maskComposite: "exclude",
                 }}
               />
-
-              {/* Sadržaj dugmeta */}
-              <span className="relative z-[1] inline-flex items-center gap-2">
-                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--surface)] mr-1">
-                  <Monitor className="h-3.5 w-3.5" />
-                </span>
+              <span className="relative z-[1] inline-flex items-center gap-2 text-[var(--text)]">
+                <Eye className="h-3.5 w-3.5" />
                 {t("Quick preview")}
               </span>
             </button>
@@ -202,42 +183,32 @@ export default function EditorShell({ slug, initialCalc }: Props) {
         )}
 
         <div className="tl-body relative">
-          {/* EDITOR COLUMN – sada full width */}
           <section className="flex-1 min-w-0">
             {inSetup ? (
-              <div className="card p-5">
-                <h2 className="text-xl font-semibold text-[var(--text)]">
+              <div className="card p-6 sm:p-8 max-w-4xl mx-auto">
+                <h2 className="text-2xl font-bold text-[var(--text)] mb-2">
                   {t("Choose editor mode")}
                 </h2>
-                <p className="text-sm text-[var(--muted)] mt-1">
-                  {t(
-                    "Pick a starting point. You can switch to Advanced later."
-                  )}
+                <p className="text-base text-[var(--muted)] mb-8">
+                  {t("Pick a starting point. You can switch to Advanced later.")}
                 </p>
 
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-2">
                   <ModeTile
                     active={uiMode === ("simple" as Mode)}
                     title={t("Tierless price page")}
-                    text={t(
-                      "Single list of items and prices. Perfect for restaurants, cafés, barber shops, dentists and clinics."
-                    )}
-                    subText={t(
-                      "Scan your menu, get a QR code and share the link in just a few minutes."
-                    )}
+                    text={t("Single list of items and prices. Perfect for restaurants, cafés, barber shops, dentists and clinics.")}
+                    subText={t("Scan your menu, get a QR code and share the link in just a few minutes.")}
                     cta={t("Start simple")}
                     badge={t("Most used option")}
                     onClick={() => setModeBoth("simple")}
                   />
+
                   <ModeTile
                     active={uiMode === ("advanced" as Mode)}
                     title={t("Calculator price page")}
-                    text={t(
-                      "Full control with packages, extras and sliders for demanding setups."
-                    )}
-                    subText={t(
-                      "Great for photographers, agencies and anyone who needs a configurable calculator."
-                    )}
+                    text={t("Full control with packages, extras and sliders for demanding setups.")}
+                    subText={t("Great for photographers, agencies and anyone who needs a configurable calculator.")}
                     cta={t("Build calculator")}
                     onClick={() => setModeBoth("advanced")}
                   />
@@ -257,71 +228,35 @@ export default function EditorShell({ slug, initialCalc }: Props) {
       </div>
 
       {/* QUICK PREVIEW OVERLAY */}
-      {previewMode !== "off" && (
-        <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="relative w-full max-w-6xl mx-4">
-            {/* Top bar */}
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="inline-flex items-center rounded-full bg-[var(--card)] border border-[var(--border)] p-1 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setPreviewMode("desktop")}
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full ${previewMode === "desktop"
-                      ? "bg-[var(--surface)] text-[var(--text)]"
-                      : "text-[var(--muted)]"
-                    }`}
-                >
-                  <Monitor className="h-3.5 w-3.5" />
-                  {t("Desktop")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewMode("mobile")}
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full ${previewMode === "mobile"
-                      ? "bg-[var(--surface)] text-[var(--text)]"
-                      : "text-[var(--muted)]"
-                    }`}
-                >
-                  <Smartphone className="h-3.5 w-3.5" />
-                  {t("Mobile")}
-                </button>
-              </div>
+      {previewOpen && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+          <div className="relative w-full max-w-4xl h-[85vh] flex flex-col bg-[var(--bg)] rounded-3xl overflow-hidden shadow-2xl border border-[var(--border)]">
 
-              <button
-                type="button"
-                onClick={closePreview}
-                className="inline-flex items-center gap-1 rounded-full bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 text-xs sm:text-sm"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                {t("Back to editor")}
-                <X className="h-3.5 w-3.5 ml-1" />
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-[var(--border)] bg-[var(--card)] z-50 relative shrink-0">
+              <div className="text-sm font-bold text-[var(--text)]">{t("Preview")}</div>
+              <button onClick={() => setPreviewOpen(false)} className="p-2 rounded-full hover:bg-[var(--surface)] text-[var(--text)] transition">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Preview body */}
+            {/* Preview Body */}
             <div
               ref={previewScrollRef}
-              className={`mx-auto rounded-2xl border border-[var(--border)] bg-[var(--bg)] max-h-[90vh] overflow-auto ${previewMode === "mobile" ? "max-w-xs" : "max-w-5xl"
-                }`}
+              className="flex-1 overflow-y-auto relative"
             >
-              <div className="w-full">
-                {calc ? (
-                  <PublicRenderer
-                    calc={calc as any}
-                    scrollContainer={previewScrollRef}
-                  />
-                ) : (
-                  <div className="text-sm text-[var(--muted)] p-6">
-                    {t("Nothing to preview.")}
-                  </div>
-                )}
-              </div>
+              {calc ? (
+                <PublicRenderer calc={calc as any} scrollContainer={previewScrollRef} />
+              ) : (
+                <div className="text-sm text-[var(--muted)] p-8 text-center">
+                  {t("Nothing to preview.")}
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Scoped theme */}
       <style jsx global>{`
         .tl-editor {
           --bg:#ffffff; --card:#ffffff; --border:#e5e7eb; --text:#111827; --muted:#6b7280;
@@ -336,7 +271,7 @@ export default function EditorShell({ slug, initialCalc }: Props) {
           border:1px solid var(--border);
           border-radius:var(--radius);
         }
-        .tl-editor .tl-body {
+        .tl-body {
           min-height: calc(100vh - 140px);
         }
       `}</style>
@@ -344,7 +279,6 @@ export default function EditorShell({ slug, initialCalc }: Props) {
   );
 }
 
-/* ---------------- Mode tile (brand gradient hover) ---------------- */
 function ModeTile({
   active,
   title,
@@ -363,138 +297,51 @@ function ModeTile({
   onClick: () => void;
 }) {
   return (
-    <>
-      <button
-        type="button"
-        className={`tl-tile ${active ? "is-active" : ""}`}
-        onClick={onClick}
-      >
-        {badge && <span className="tl-badge">{badge}</span>}
-        <div className="tl-head">{title}</div>
-        <p className="tl-desc">{text}</p>
-        {subText && <p className="tl-subdesc">{subText}</p>}
-        <span className="tl-cta">{cta}</span>
-      </button>
+    <button
+      type="button"
+      className={`group relative flex flex-col text-left p-6 sm:p-8 rounded-2xl transition-all duration-300 outline-none
+        ${active ? "bg-slate-900" : "bg-[var(--bg)] hover:bg-[var(--surface)]"}
+      `}
+      onClick={onClick}
+    >
+      <span
+        className="pointer-events-none absolute inset-0 rounded-2xl opacity-30 group-hover:opacity-100 transition-opacity duration-300"
+        style={{
+          padding: 2,
+          background: BRAND_GRADIENT,
+          WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+          WebkitMaskComposite: "xor",
+          maskComposite: "exclude",
+        }}
+      />
+      <div className="relative z-10 flex flex-col h-full">
+        {badge && (
+          <span className="self-start mb-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-gradient-to-r from-indigo-500 to-cyan-500 shadow-lg shadow-indigo-500/30">
+            {badge}
+          </span>
+        )}
 
-      <style jsx>{`
-        .tl-tile {
-          position:relative;
-          text-align:left;
-          background:var(--card,#fff);
-          color:var(--text,#111827);
-          border:1px solid var(--border,#e5e7eb);
-          border-radius:16px;
-          padding:22px 24px;
-          cursor:pointer;
-          transition:transform .18s ease, box-shadow .18s ease;
-          outline:none;
-          width:100%;
-          display:flex;
-          flex-direction:column;
-          min-height:100%;
-        }
-        .tl-tile::before {
-          content:"";
-          position:absolute;
-          inset:0;
-          border-radius:inherit;
-          padding:2.1px;
-          background:linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE));
-          -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-          -webkit-mask-composite:xor;
-          mask-composite:exclude;
-          opacity:0;
-          transition:opacity .18s ease;
-          pointer-events:none;
-        }
-        .tl-tile::after {
-          content:"";
-          position:absolute;
-          inset:-10px;
-          border-radius:22px;
-          background:radial-gradient(
-            70% 60% at 50% 0%,
-            rgba(79,70,229,.26),
-            rgba(34,211,238,.20) 45%,
-            transparent 75%
-          );
-          filter:blur(18px);
-          opacity:0;
-          transition:opacity .18s ease;
-          pointer-events:none;
-        }
-        .tl-tile:hover,
-        .tl-tile:focus-visible {
-          transform:translateY(-3px);
-          box-shadow:0 16px 36px rgba(2,6,23,.18);
-        }
-        .tl-tile:hover::before,
-        .tl-tile:focus-visible::before,
-        .tl-tile.is-active::before {
-          opacity:1;
-        }
-        .tl-tile:hover::after,
-        .tl-tile:focus-visible::after,
-        .tl-tile.is-active::after {
-          opacity:.95;
-        }
+        <h3 className={`text-xl sm:text-2xl font-bold mb-3 transition-all ${active
+            ? "text-white"
+            : "text-[var(--text)] group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-400 group-hover:to-cyan-400"
+          }`}>
+          {title}
+        </h3>
 
-        .tl-badge {
-          display:inline-flex;
-          align-items:center;
-          justify-content:center;
-          padding:1px 8px;
-          margin-bottom:8px;
-          border-radius:999px;
-          font-size:9px;
-          line-height:1;
-          font-weight:600;
-          letter-spacing:0.03em;
-          text-transform:uppercase;
-          background-image:linear-gradient(90deg,rgba(79,70,229,0.4),rgba(34,211,238,0.32));
-          border:1px solid rgba(79,70,229,0.5);
-          color:#1f1c3d;
-          box-shadow:0 6px 14px rgba(79,70,229,0.2);
-          width:max-content;
-        }
+        <p className={`text-sm sm:text-base mb-2 leading-relaxed ${active ? "text-slate-300" : "text-[var(--muted)]"}`}>
+          {text}
+        </p>
 
-        .tl-head {
-          font-size:1.25rem;
-          line-height:1.75rem;
-          font-weight:700;
-          margin-bottom:.5rem;
-        }
-        .tl-desc {
-          color:var(--muted,#6b7280);
-          margin:0 0 .6rem;
-        }
-        .tl-subdesc {
-          color:var(--muted,#6b7280);
-          font-size:0.85rem;
-          margin:0 0 1.25rem;
-        }
-        .tl-cta {
-          display:inline-block;
-          font-weight:500;
-          background:linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE));
-          -webkit-background-clip:text;
-          background-clip:text;
-          color:transparent;
-          margin-top:auto;
-        }
+        {subText && (
+          <p className={`text-xs sm:text-sm opacity-80 mb-6 flex-1 ${active ? "text-slate-400" : "text-[var(--muted)]"}`}>
+            {subText}
+          </p>
+        )}
 
-        :global(html.dark) .tl-tile {
-          background:var(--card,#111214);
-          border-color:rgba(255,255,255,.12);
-          box-shadow:0 10px 24px rgba(0,0,0,.30);
-        }
-        :global(html.dark) .tl-badge {
-          background-image:linear-gradient(90deg,rgba(129,140,248,0.5),rgba(45,212,191,0.32));
-          border-color:rgba(165,180,252,0.9);
-          color:#f3f6ff;
-          box-shadow:0 10px 22px rgba(9,12,30,0.7);
-        }
-      `}</style>
-    </>
+        <span className="mt-auto inline-flex items-center gap-2 text-sm font-bold text-[var(--brand-1)] group-hover:translate-x-1 transition-transform">
+          {cta} →
+        </span>
+      </div>
+    </button>
   );
 }

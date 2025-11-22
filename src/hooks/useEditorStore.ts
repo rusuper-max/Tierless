@@ -1,10 +1,12 @@
-// src/hooks/useEditorStore.ts
 import { create } from "zustand";
 
 /* --------------------------------------------------------- */
 /* Types                                                     */
 /* --------------------------------------------------------- */
 export type Mode = "setup" | "simple" | "advanced";
+
+// Teme (Presets)
+export type BrandTheme = "classic" | "midnight" | "cafe" | "ocean" | "tierless" | "custom";
 
 export type FeatureOption = { id: string; label: string; highlighted?: boolean };
 export type Extra = { id: string; text: string; price?: number; selected?: boolean };
@@ -36,22 +38,47 @@ export type Pkg = {
   color?: string;
 };
 
+// --- NOVO: Business Info za Header ---
+export type BusinessInfo = {
+  name?: string;
+  description?: string;
+  phone?: string;
+  email?: string;
+  location?: string;     // Tekst ili Google Maps link
+  wifiSsid?: string;
+  wifiPass?: string;
+  hours?: string;        // Npr. "Mon-Fri: 9-5"
+  logoUrl?: string;
+  coverUrl?: string;
+};
+
+// --- NOVO: Floating CTA ---
+export type FloatingCta = {
+  enabled: boolean;
+  label: string;
+  link: string; // tel: ili https:
+};
+
+export type SimpleSection = {
+  id: string;
+  label: string;
+  description?: string;
+  imageUrl?: string;
+  collapsed?: boolean;
+};
+
 export type ItemRow = {
   id: string;
   label: string;
   price: number | null;
   note?: string;
-  imageUrl?: string; // za list-based
+  imageUrl?: string;
   simpleSectionId?: string;
-};
 
-// NOVO: Definicija sekcije sa slikom i opisom
-export type SimpleSection = {
-  id: string;
-  label: string;
-  description?: string; // Opis sekcije (npr. "Served until 11am")
-  imageUrl?: string;    // Slika sekcije (Category Card)
-  collapsed?: boolean;
+  // NOVI POLJA
+  hidden?: boolean;
+  soldOut?: boolean;
+  tags?: string[]; // "spicy", "vegan", "popular", "new"
 };
 
 export type CalcMeta = {
@@ -59,12 +86,25 @@ export type CalcMeta = {
   name?: string;
   slug?: string;
   editorMode?: Mode;
-  
-  // NOVO: Cover slika za ceo meni
-  simpleCoverImage?: string;
-  // Ažuriran tip za sekcije
+
+  // NOVO: Konfiguracija
+  theme?: BrandTheme;
+  business?: BusinessInfo;
+  cta?: FloatingCta;
+
+  // Legacy / Kompatibilnost
+  simpleCoverImage?: string; // Koristicemo business.coverUrl ubuduce, ali cuvamo zbog starog koda
   simpleSections?: SimpleSection[];
-  
+  simpleSectionStates?: Record<string, boolean>;
+
+  // Style overrides (ako je theme="custom")
+  simpleBg?: string;
+  simpleBgGrad1?: string;
+  simpleBgGrad2?: string;
+  simpleTextColor?: string;
+  simpleBorderColor?: string;
+  simpleFont?: string;
+
   [k: string]: unknown;
 };
 
@@ -73,7 +113,7 @@ export type CalcJson = {
   packages: Pkg[];
   fields: OptionGroup[];
   addons: Extra[];
-  items?: ItemRow[]; // za list-based
+  items?: ItemRow[];
   i18n?: { currency?: string; decimals?: number };
   [k: string]: unknown;
 };
@@ -97,6 +137,9 @@ function ensureShape(calc: CalcJson): CalcJson {
   if (!Array.isArray(calc.addons)) calc.addons = [];
   if (!Array.isArray(calc.items)) calc.items = [];
 
+  if (!calc.meta) calc.meta = {};
+  if (!calc.meta.business) calc.meta.business = {}; // Osiguraj business objekat
+
   calc.fields = calc.fields.map((g: any) => {
     const type: OptionGroup["type"] =
       g?.type === "range" || g?.type === "options" || g?.type === "features"
@@ -107,6 +150,7 @@ function ensureShape(calc: CalcJson): CalcJson {
       title: g.title ?? (type === "range" ? "Range" : "Group"),
       type,
     };
+    // ... (ostatak mapiranja polja je isti)
     if (type === "features") {
       base.pkgId = g.pkgId;
       base.options = Array.isArray(g.options) ? g.options : [];
@@ -119,9 +163,9 @@ function ensureShape(calc: CalcJson): CalcJson {
       base.pricing =
         g.pricing && g.pricing.mode === "per-step"
           ? {
-              mode: "per-step",
-              perStep: Array.isArray(g.pricing.perStep) ? g.pricing.perStep : [],
-            }
+            mode: "per-step",
+            perStep: Array.isArray(g.pricing.perStep) ? g.pricing.perStep : [],
+          }
           : { mode: "linear", deltaPerUnit: Number(g?.pricing?.deltaPerUnit ?? 0) };
     } else {
       base.options = Array.isArray(g.options) ? g.options : [];
@@ -152,8 +196,7 @@ type EditorState = {
   setCalc: (next: CalcJson) => void;
   updateCalc: (fn: (draft: CalcJson) => void) => void;
 
-  // Modes
-  setEditorMode: (mode?: Mode | null) => void; // undefined/null -> "setup"
+  setEditorMode: (mode?: Mode | null) => void;
 
   // Packages
   addPackage: (partial?: Partial<Pkg>) => string | void;
@@ -184,13 +227,11 @@ type EditorState = {
   removeItem: (id: string) => void;
   reorderItem: (id: string, dir: -1 | 1) => void;
 
-  // Bulk items (OCR, import, sl.)
   bulkAddItems: (
     items: { label: string; price: number | null; note?: string }[],
     mode?: "append" | "replace"
   ) => void;
 
-  // Limits / misc
   setMaxPackages: (n: number) => void;
   setPlanCaps: (plan: string) => void;
 
@@ -212,10 +253,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   init: (slug, initialCalc) => {
     const safe = ensureShape(clone(initialCalc));
-    // Ako nema moda – pokaži setup
     if (!safe.meta) safe.meta = {};
     if (!safe.meta.editorMode) safe.meta.editorMode = "setup";
     if (!safe.i18n) safe.i18n = { currency: "€", decimals: 0 };
+    // Default theme
+    if (!safe.meta.theme) safe.meta.theme = "tierless";
+
     set({
       slug,
       calc: safe,
@@ -240,7 +283,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ calc: ensureShape(draft), isDirty: true });
   },
 
-  /* ---------------- Modes + seeders ---------------- */
   setEditorMode: (mode) => {
     const st = get();
     const calc = st.calc;
@@ -261,12 +303,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         next.items && next.items.length
           ? next.items
           : [
-              { id: genId("it"), label: "Espresso", price: 2 },
-              { id: genId("it"), label: "Cappuccino", price: 3 },
-              { id: genId("it"), label: "Latte", price: 3.5 },
-            ];
+            { id: genId("it"), label: "Espresso", price: 2 },
+            { id: genId("it"), label: "Cappuccino", price: 3 },
+            { id: genId("it"), label: "Latte", price: 3.5 },
+          ];
     } else {
-      // advanced
+      // advanced default
       if (!next.packages.length && (!next.items || !next.items.length)) {
         const p = {
           id: genId("pkg"),
@@ -289,7 +331,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ calc: ensureShape(next), isDirty: true });
   },
 
-  /* ---------------- Packages ---------------- */
+  // ... (Sve ostale funkcije addPackage, updatePackage itd. ostaju iste kao pre)
+  // Zbog limita karaktera, kopiraj ih iz prethodnog fajla ili ih ostavi kako jesu
+  // Samo se uveri da bulkAddItems koristi ItemRow tip.
+
   addPackage: (partial) => {
     const st = get();
     const calc = st.calc;
