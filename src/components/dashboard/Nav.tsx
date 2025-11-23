@@ -5,137 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ThemeToggle from "@/components/nav/ThemeToggle";
 
-/* ------------------------------------------------------------------ */
-/* ActionButton (consistent with Dashboard buttons)                    */
-/* ------------------------------------------------------------------ */
-type BtnVariant = "brand" | "neutral" | "danger";
-type BtnSize = "xs" | "sm";
-
-function outlineStyle(variant: BtnVariant) {
-  const grad =
-    variant === "brand"
-      ? "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))"
-      : variant === "danger"
-      ? "linear-gradient(90deg,#f97316,#ef4444)"
-      : "linear-gradient(90deg,#e5e7eb,#d1d5db)";
-  return {
-    padding: 1.5,
-    background: grad,
-    WebkitMask:
-      "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-    WebkitMaskComposite: "xor" as any,
-    maskComposite: "exclude",
-    borderRadius: "9999px",
-    transition: "opacity .15s ease",
-  } as React.CSSProperties;
-}
-
-function ActionButton({
-  label,
-  title,
-  href,
-  onClick,
-  disabled,
-  variant = "brand",
-  size = "xs",
-  external = false,
-}: {
-  label: string;
-  title?: string;
-  href?: string;
-  onClick?: () => void;
-  disabled?: boolean;
-  variant?: BtnVariant;
-  size?: BtnSize;
-  external?: boolean;
-}) {
-  const base =
-    "relative inline-flex items-center justify-center whitespace-nowrap rounded-full bg-[var(--card,white)] text-sm font-medium transition will-change-transform select-none";
-  const pad = size === "xs" ? "px-3 py-1.5" : "px-3.5 py-2";
-
-  // Inherit text color from parent; danger je jedini koji forsira crveno
-  const text =
-    variant === "danger"
-      ? "text-rose-700 dark:text-rose-300"
-      : "text-current";
-
-  const state = disabled
-    ? "opacity-50 cursor-not-allowed"
-    : "hover:shadow-[0_10px_24px_rgba(2,6,23,.08)] hover:-translate-y-0.5 active:translate-y-0";
-
-  const inner =
-    "relative z-[1] inline-flex items-center gap-1 " +
-    (size === "xs" ? "text-xs" : "text-sm");
-
-  const Glow = (
-    <span
-      aria-hidden
-      className="pointer-events-none absolute inset-0 rounded-full opacity-0 group-hover:opacity-100"
-      style={{
-        boxShadow:
-          variant === "danger"
-            ? "0 0 10px 3px rgba(244,63,94,.22)"
-            : "0 0 12px 3px rgba(34,211,238,.20)",
-        transition: "opacity .2s ease",
-      }}
-    />
-  );
-
-  const Outline = (
-    <span
-      aria-hidden
-      className="pointer-events-none absolute inset-0 rounded-full"
-      style={outlineStyle(variant)}
-    />
-  );
-
-  const content = (
-    <span className={`${base} ${pad} ${text} ${state}`} title={title}>
-      {Outline}
-      {Glow}
-      <span className={inner}>{label}</span>
-    </span>
-  );
-
-  if (href && !disabled) {
-    return external ? (
-      <a
-        href={href}
-        target="_blank"
-        rel="noreferrer"
-        aria-disabled={disabled}
-        className={`inline-flex group ${
-          disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-        }`}
-      >
-        {content}
-      </a>
-    ) : (
-      <Link
-        href={href}
-        aria-disabled={disabled}
-        className={`inline-flex group ${
-          disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-        }`}
-      >
-        {content}
-      </Link>
-    );
-  }
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      aria-disabled={disabled}
-      className={`inline-flex group ${
-        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-      }`}
-      type="button"
-    >
-      {content}
-    </button>
-  );
-}
+import { Button } from "@/components/ui/Button";
 
 /* ------------------------------------------------------------------ */
 /* Nav                                                                 */
@@ -155,7 +25,7 @@ export default function Nav() {
       await fetch("/api/logout", {
         method: "POST",
         credentials: "same-origin",
-      }).catch(() => {});
+      }).catch(() => { });
     } finally {
       // hard redirect da 100% pokupimo novi cookie state
       window.location.assign(LOGOUT_REDIRECT);
@@ -195,16 +65,17 @@ export default function Nav() {
         {/* Right actions */}
         <nav className="flex items-center gap-3 flex-wrap justify-end text-[color:var(--text)]">
           <ThemeToggle />
-          <ActionButton label="FAQ" title="Open docs / FAQ" href="/help" variant="brand" size="xs" />
-          <ActionButton label="View Plans" title="Manage your plan" href="/start" variant="brand" size="xs" />
-          <ActionButton
-            label={loggingOut ? "Signing out…" : "Logout"}
-            title="Sign out"
+          <Button size="xs" variant="brand" href="/help" title="Open docs / FAQ">FAQ</Button>
+          <Button size="xs" variant="brand" href="/start" title="Manage your plan">View Plans</Button>
+          <Button
+            size="xs"
+            variant="danger"
             onClick={onLogout}
             disabled={loggingOut}
-            variant="danger"
-            size="xs"
-          />
+            title="Sign out"
+          >
+            {loggingOut ? "Signing out…" : "Logout"}
+          </Button>
         </nav>
       </div>
 

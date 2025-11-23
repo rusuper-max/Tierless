@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { MoreHorizontal, Share2, Edit, Copy, Trash, ExternalLink, GripVertical } from "lucide-react";
-import { ActionButton, IconButton, FavoriteStar, outlineStyle } from "./DashboardUI";
+import { Button } from "@/components/ui/Button";
+import { FavoriteStar } from "./DashboardUI";
 
 const fmtDateTime = (ts?: number) =>
     ts ? new Date(ts).toLocaleString([], { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
@@ -113,9 +114,9 @@ export default function PageRow({
             </td>
 
             <td className="text-[var(--muted)] text-center hidden sm:table-cell py-3">
-                <IconButton onClick={() => onShare(slug)} title="Share">
+                <Button variant="neutral" size="xs" onClick={() => onShare(slug)} title="Share">
                     <Share2 className="size-4" />
-                </IconButton>
+                </Button>
             </td>
 
             <td className="text-[var(--muted)] text-center hidden md:table-cell text-xs py-3">
@@ -125,20 +126,16 @@ export default function PageRow({
             <td className="text-center py-3">
                 {/* FIX ZA SKAKANJE: Kontejner fiksne širine (povećan da stane "Unpublish") */}
                 <div className="w-[140px] flex justify-center mx-auto">
-                    <button
-                        className={`relative group inline-flex items-center justify-center rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-200 cursor-pointer min-w-[80px] outline-none ring-0 
-                        ${published
-                                // TVOJE STARE BOJE (Zeleno -> Crveno na hover)
-                                ? "bg-emerald-100 border-emerald-300 text-emerald-800 hover:bg-rose-100 hover:border-rose-300 hover:text-rose-800 dark:bg-emerald-900/30 dark:border-emerald-500/50 dark:text-emerald-300 dark:hover:bg-rose-900/30 dark:hover:border-rose-500/50 dark:hover:text-rose-300"
-                                // TVOJE STARE BOJE (Crveno -> Zeleno na hover)
-                                : "bg-rose-50 border-rose-200 text-rose-600 hover:bg-emerald-100 hover:border-emerald-300 hover:text-emerald-800 dark:bg-rose-900/20 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-emerald-900/30 dark:hover:border-emerald-500/50 dark:hover:text-emerald-300"
-                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    <Button
+                        variant={published ? "success" : "neutral"}
+                        size="xs"
                         onClick={() => onToggleOnline(slug, !published)}
                         disabled={toggleDisabled}
+                        className="min-w-[80px]"
                     >
                         <span className="block group-hover:hidden">{published ? "Online" : "Offline"}</span>
                         <span className="hidden group-hover:block font-medium">{published ? "Stop" : "Publish"}</span>
-                    </button>
+                    </Button>
                 </div>
             </td>
 
@@ -147,44 +144,42 @@ export default function PageRow({
                 <div className="w-full flex justify-center">
                     <div className="flex items-center justify-center gap-3 relative">
 
-                        <ActionButton
-                            label="Edit"
-                            onClick={() => onEdit(slug)}
+                        <Button
                             variant="brand"
-                        />
+                            size="xs"
+                            onClick={() => onEdit(slug)}
+                        >
+                            Edit
+                        </Button>
 
                         {/* Public Link Button */}
                         {published ? (
                             // ONLINE: Normalno dugme
-                            <IconButton
+                            <Button
+                                variant="neutral"
+                                size="xs"
                                 title="Open Public Page"
                                 onClick={() => onOpenPublic(row)}
                             >
                                 <ExternalLink className="size-4" />
-                            </IconButton>
+                            </Button>
                         ) : (
                             // OFFLINE: Crveno dugme (Danger Style)
-                            <button
-                                type="button"
-                                className="relative inline-flex items-center justify-center rounded-xl w-8 h-8 transition cursor-not-allowed opacity-80"
-                                title="Page is offline"
+                            <Button
+                                variant="danger"
+                                size="xs"
                                 disabled
+                                title="Page is offline"
                             >
-                                {/* Koristimo outlineStyle("danger") iz DashboardUI */}
-                                <span
-                                    aria-hidden
-                                    className="pointer-events-none absolute inset-0 rounded-xl"
-                                    style={outlineStyle("danger")}
-                                />
-                                <span className="relative z-[1] text-rose-600 dark:text-rose-400">
-                                    <ExternalLink className="size-4" />
-                                </span>
-                            </button>
+                                <ExternalLink className="size-4" />
+                            </Button>
                         )}
 
                         {/* Meatball Menu with Portal */}
                         <div className="relative">
-                            <IconButton
+                            <Button
+                                variant="neutral"
+                                size="xs"
                                 onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                     e.stopPropagation();
                                     if (menuOpen) { setMenuOpen(false); return; }
@@ -205,7 +200,7 @@ export default function PageRow({
                                 title="More actions"
                             >
                                 <MoreHorizontal className="size-4" />
-                            </IconButton>
+                            </Button>
 
                             {menuOpen && typeof document !== 'undefined' && createPortal(
                                 <>
@@ -238,12 +233,14 @@ export default function PageRow({
             </td>
 
             <td className="text-center hidden lg:table-cell py-3">
-                <button
-                    className="tl-reorder-handle inline-flex items-center justify-center w-8 h-8 rounded-lg text-[var(--muted)] cursor-grab active:cursor-grabbing hover:bg-[var(--surface)] transition-colors"
-                    onMouseDown={(e) => onPointerDragStart(slug, e)}
+                <Button
+                    variant="neutral"
+                    size="xs"
+                    className="w-8 h-8 p-0 rounded-lg cursor-grab active:cursor-grabbing hover:bg-[var(--surface)]"
+                    onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => onPointerDragStart(slug, e)}
                 >
                     <GripVertical className="size-4" />
-                </button>
+                </Button>
             </td>
         </tr>
     );

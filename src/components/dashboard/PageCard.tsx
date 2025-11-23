@@ -1,7 +1,8 @@
 "use client";
 
 import { Share2 } from "lucide-react";
-import { ActionButton, IconButton, FavoriteStar } from "./DashboardUI";
+import { Button } from "@/components/ui/Button";
+import { FavoriteStar } from "./DashboardUI";
 
 type MiniCalc = {
     meta: {
@@ -75,34 +76,33 @@ export default function PageCard({
                         <p className="text-xs text-[var(--muted)]">{dateStr}</p>
                     </div>
                 </div>
-                <IconButton onClick={() => onShare(slug)} disabled={!published}>
+                <Button variant="neutral" size="xs" onClick={() => onShare(slug)} disabled={!published}>
                     <Share2 className="size-4" />
-                </IconButton>
+                </Button>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-                <button
-                    className={`${statusBase} ${published ? onlineClasses : offlineClasses} disabled:cursor-not-allowed disabled:opacity-60`}
+                <Button
+                    variant={published ? "success" : "neutral"}
+                    size="xs"
                     onClick={() => onToggleOnline(slug, !published)}
                     disabled={toggleDisabled}
+                    className="min-w-[96px]"
                 >
-                    {published ? "Online" : "Offline"}
-                </button>
+                    <span className="block group-hover:hidden">{published ? "Online" : "Offline"}</span>
+                    <span className="hidden group-hover:block font-medium">{published ? "Stop" : "Publish"}</span>
+                </Button>
 
-                <ActionButton label="Edit" onClick={() => onEdit(slug)} variant="brand" size="xs" />
+                <Button title="Edit" onClick={() => onEdit(slug)} variant="brand" size="xs">Edit</Button>
 
                 {/* Simplified mobile actions - others can be added if needed */}
-                {published && <ActionButton label="Public" onClick={() => onOpenPublic(row)} variant="neutral" size="xs" />}
-                <ActionButton label="Delete" onClick={() => onDelete(slug, name)} disabled={busySlug === slug} variant="danger" size="xs" />
+                {published && <Button title="Public" onClick={() => onOpenPublic(row)} variant="neutral" size="xs">Public</Button>}
+                <Button title="Delete" onClick={() => onDelete(slug, name)} disabled={busySlug === slug} variant="danger" size="xs">Delete</Button>
             </div>
 
             <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
-                <button type="button" className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-[var(--border)]" onClick={() => moveBy(slug, -1)}>
-                    ‹
-                </button>
-                <button type="button" className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-[var(--border)]" onClick={() => moveBy(slug, 1)}>
-                    ›
-                </button>
+                <Button variant="neutral" size="xs" onClick={() => moveBy(slug, -1)} className="w-9 h-9 p-0 rounded-full">‹</Button>
+                <Button variant="neutral" size="xs" onClick={() => moveBy(slug, 1)} className="w-9 h-9 p-0 rounded-full">›</Button>
                 <span>Reorder</span>
             </div>
         </div>
