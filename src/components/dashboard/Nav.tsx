@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ThemeToggle from "@/components/nav/ThemeToggle";
+import TierlessLogo from "@/components/marketing/TierlessLogo";
 import { MoreVertical, HelpCircle, CreditCard, LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
@@ -39,14 +40,21 @@ export default function Nav() {
       className="sticky top-0 z-40 w-full border-b border-[var(--border)] bg-[var(--card)]/90 backdrop-blur supports-[backdrop-filter]:bg-[var(--card)]/80 overflow-visible tl-nav text-[var(--text)]"
       aria-label="Top navigation"
     >
-      <div className="mx-auto max-w-[1536px] px-4 sm:px-5 lg:px-10 min-h-[56px] py-2 flex flex-row items-center justify-between gap-2">
+      <div className="mx-auto max-w-[1536px] px-4 sm:px-5 lg:px-10 min-h-[56px] py-2 flex flex-row items-center justify-between gap-3">
         {/* Logo → marketing site */}
-        <div className="flex items-center gap-2 select-none">
+        <div className="flex items-center gap-2 sm:gap-3 select-none">
           <Link
             href="/"
             aria-label="Go to marketing site"
-            className="cursor-pointer"
+            className="cursor-pointer flex items-center gap-2 group"
           >
+            {/* Logo icon */}
+            <div className="relative transition-transform duration-300 ease-out group-hover:rotate-12 group-hover:scale-105">
+              <TierlessLogo className="w-6 h-6 sm:w-7 sm:h-7" />
+              <div className="absolute inset-0 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))" }} />
+            </div>
+
+            {/* Logo text */}
             <span
               className="text-base sm:text-lg font-bold tracking-[-0.01em] leading-none"
               style={{

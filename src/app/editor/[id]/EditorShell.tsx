@@ -5,7 +5,10 @@ import { useEffect, useState, useRef } from "react";
 import { ChevronLeft, Eye, X } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type CalcJson, type Mode } from "@/hooks/useEditorStore";
+import { HelpModeProvider, useHelpMode } from "@/hooks/useHelpMode";
 import EditorNavBar from "./components/EditorNavBar";
+import HelpModeIntro from "@/components/editor/HelpModeIntro";
+import HelpTooltip from "@/components/editor/HelpTooltip";
 
 // Shared renderer
 const PublicRenderer = dynamic(() => import("@/components/PublicRenderer"), {
@@ -34,8 +37,13 @@ function normalizeMode(input?: string | null): Mode {
   return "setup";
 }
 
-export default function EditorShell({ slug, initialCalc }: Props) {
+function EditorContent({ slug, initialCalc }: Props) {
   const { calc, init, isDirty, isSaving, setEditorMode } = useEditorStore();
+  const { isActive: isHelpMode, hasSeenIntro, markIntroAsSeen, enableHelpMode, disableHelpMode, toggleHelpMode } = useHelpMode();
+
+  // Help Mode state
+  const [showIntro, setShowIntro] = useState(false);
+  const [helpTooltip, setHelpTooltip] = useState<{ content: string; element: HTMLElement } | null>(null);
 
   /* ---------------- Init calc ---------------- */
   useEffect(() => {
@@ -134,12 +142,76 @@ export default function EditorShell({ slug, initialCalc }: Props) {
     (calc as any)?.meta?.published ?? (calc as any)?.meta?.online
   );
 
+  /* ---------------- Help Mode Click Handler ---------------- */
+  useEffect(() => {
+    if (!isHelpMode) {
+      setHelpTooltip(null);
+      return;
+    }
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const helpElement = target.closest("[data-help]") as HTMLElement;
+
+      if (helpElement) {
+        e.preventDefault();
+        e.stopPropagation();
+        const helpText = helpElement.getAttribute("data-help");
+        if (helpText) {
+          setHelpTooltip({ content: helpText, element: helpElement });
+        }
+      }
+    };
+
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, [isHelpMode]);
+
+  /* ---------------- ESC to exit Help Mode ---------------- */
+  useEffect(() => {
+    if (!isHelpMode) return;
+
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        disableHelpMode();
+        setHelpTooltip(null);
+      }
+    };
+
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [isHelpMode, disableHelpMode]);
+
   return (
-    <main className="tl-editor min-h-screen">
+    <main className={`tl-editor min-h-screen ${isHelpMode ? "help-mode-active" : ""}`}>
       {toast && (
         <div className="fixed bottom-4 right-4 z-[120] card px-3 py-2 text-sm shadow-ambient">
           {toast}
         </div>
+      )}
+
+      {/* Help Mode Intro Modal */}
+      {showIntro && !hasSeenIntro && (
+        <HelpModeIntro
+          onClose={() => {
+            setShowIntro(false);
+            enableHelpMode(); // Activate Help Mode after closing intro
+          }}
+          onDontShowAgain={() => {
+            markIntroAsSeen();
+            setShowIntro(false);
+            enableHelpMode(); // Activate Help Mode after closing intro
+          }}
+        />
+      )}
+
+      {/* Help Mode Tooltip */}
+      {isHelpMode && helpTooltip && (
+        <HelpTooltip
+          content={helpTooltip.content}
+          targetElement={helpTooltip.element}
+          onClose={() => setHelpTooltip(null)}
+        />
       )}
 
       <EditorNavBar
@@ -152,6 +224,15 @@ export default function EditorShell({ slug, initialCalc }: Props) {
         publicHref={publicHref}
         isPublished={isPublished}
         editorMode={uiMode}
+        onGuideClick={() => {
+          // If seen intro before, toggle Help Mode directly
+          // Otherwise show intro first
+          if (hasSeenIntro) {
+            toggleHelpMode();
+          } else {
+            setShowIntro(true);
+          }
+        }}
       />
 
       <div className="px-4 lg:px-8 py-5">
@@ -352,5 +433,14 @@ function ModeTile({
         </span>
       </div>
     </button>
+  );
+}
+
+// Wrap EditorContent with HelpModeProvider
+export default function EditorShell(props: Props) {
+  return (
+    <HelpModeProvider>
+      <EditorContent {...props} />
+    </HelpModeProvider>
   );
 }

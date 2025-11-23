@@ -6,6 +6,7 @@ import Link from "next/link";
 import { t } from "@/i18n";
 import { GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import AnimatedCheckbox from "@/components/ui/AnimatedCheckbox";
 
 /* ------------------------------------------------------------------ */
 /* Action Button Wrapper (maps to global Button)                      */
@@ -53,7 +54,7 @@ type TrashRow = {
 type ApiList = { rows?: TrashRow[]; ttlDays?: number };
 
 const TRASH_MAX = 50;
-const rowKey = (r: TrashRow) => `${r.meta.slug}#${r.deletedAt}`;
+const rowKey = (r: TrashRow) => `${r.meta.slug} #${r.deletedAt} `;
 
 function daysLeft(deletedAt: string, ttlDays: number) {
   const del = new Date(deletedAt).getTime();
@@ -432,8 +433,7 @@ export default function TrashPageClient() {
               <thead className="relative z-0">
                 <tr className="text-left">
                   <th className="w-10">
-                    <input
-                      type="checkbox"
+                    <AnimatedCheckbox
                       checked={allSelected}
                       onChange={(e) => toggleAll(e.target.checked)}
                       aria-label="Select all"
@@ -457,10 +457,9 @@ export default function TrashPageClient() {
                   const disableRestore = freeSlots === 0;
 
                   return (
-                    <tr key={key} className="relative z-0 hover:z-30">
+                    <tr key={key} className={`relative z-0 hover:z-30`} data-id={key}>
                       <td>
-                        <input
-                          type="checkbox"
+                        <AnimatedCheckbox
                           checked={isSel}
                           onChange={() => toggleOne(key)}
                           aria-label={`Select ${r.meta.name}`}

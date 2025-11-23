@@ -1,65 +1,56 @@
+// src/components/ThemeToggle.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
-const BRAND_GRADIENT =
-  "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))";
+type Props = {
+  className?: string;
+  ariaLabel?: string;
+};
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ className = "", ariaLabel = "Toggle theme" }: Props) {
   const [isDark, setIsDark] = useState(false);
 
-  // Drži lokalni state uvek usklađen sa <html class="dark">
+  // inicijalno stanje iz <html> ili localStorage
   useEffect(() => {
-    if (typeof document === "undefined") return;
     const html = document.documentElement;
-
-    const update = () => {
-      setIsDark(html.classList.contains("dark"));
-    };
-
-    update();
-
-    const obs = new MutationObserver(update);
-    obs.observe(html, { attributes: true, attributeFilter: ["class"] });
-
-    return () => obs.disconnect();
+    const stored = (() => {
+      try { return localStorage.getItem("theme"); } catch { return null; }
+    })();
+    const dark = stored ? stored === "dark" : html.classList.contains("dark");
+    html.classList.toggle("dark", dark);
+    setIsDark(dark);
   }, []);
 
   const toggle = () => {
-    if (typeof document === "undefined") return;
-    const html = document.documentElement;
-    const next = !html.classList.contains("dark");
-
-    html.classList.toggle("dark", next);
+    const next = !isDark;
     setIsDark(next);
-
-    try {
-      localStorage.setItem("theme", next ? "dark" : "light");
-    } catch { }
-
-    try {
-      window.dispatchEvent(new Event("TL_THEME_TOGGLED"));
-    } catch { }
+    const html = document.documentElement;
+    html.classList.toggle("dark", next);
+    try { localStorage.setItem("theme", next ? "dark" : "light"); } catch { }
+    // obavesti ostatak app-a (ako sluša)
+    window.dispatchEvent(new CustomEvent("TL_THEME_TOGGLED", { detail: { dark: next } }));
   };
-
-  const label = isDark ? "Dark" : "Light";
-  const icon = isDark ? (
-    <Moon className="size-4" />
-  ) : (
-    <Sun className="size-4" />
-  );
 
   return (
     <Button
-      variant="neutral"
-      size="xs"
+      aria-label={ariaLabel}
+      title={isDark ? "Light mode" : "Dark mode"}
       onClick={toggle}
-      title="Toggle theme"
-      icon={icon}
-    >
-      {label}
-    </Button>
+      variant="brand"
+      size="icon"
+      pill
+      className={[
+        // nežna pozadina da se ne “lepi” na tamnu traku
+        "backdrop-blur-[2px]",
+        "bg-transparent",
+        // ukloni bilo kakav puni fill koji bi delovao kao “beli track”
+        "!text-inherit",
+        className,
+      ].join(" ")}
+      icon={isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+    />
   );
 }

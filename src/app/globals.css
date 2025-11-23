@@ -482,3 +482,26 @@ html.lenis body {
     transform: translateZ(0);
   }
 }
+
+/* =========================================
+   HELP MODE CURSOR
+========================================= */
+.help-mode-active,
+.help-mode-active * {
+  cursor: help !important;
+}
+
+.help-mode-active [data-help] {
+  cursor: help !important;
+  position: relative;
+}
+
+.help-mode-active [data-help]:hover::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(34, 211, 238, 0.1) 100%);
+  pointer-events: none;
+  z-index: -1;
+}

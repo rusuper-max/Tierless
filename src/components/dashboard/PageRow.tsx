@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { MoreHorizontal, Share2, Edit, Copy, Trash, ExternalLink, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import AnimatedCheckbox from "@/components/ui/AnimatedCheckbox";
 import { FavoriteStar } from "./DashboardUI";
 
 const fmtDateTime = (ts?: number) =>
@@ -84,13 +85,11 @@ export default function PageRow({
 
     return (
         <tr className={`align-middle border-b border-slate-100 dark:border-slate-800/50 last:border-0 ${isDragging ? "tl-row--dragging" : ""}`} data-slug={slug}>
-            <td className="text-center py-3">
-                <input
-                    type="checkbox"
-                    checked={isSelected}
+            <td className="py-2">
+                <AnimatedCheckbox
+                    checked={isSelected ?? false}
                     onChange={() => onSelectToggle(slug)}
-                    aria-label="Select row"
-                    className="accent-[var(--brand-1,#4F46E5)] h-4 w-4 cursor-pointer"
+                    aria-label="Select"
                 />
             </td>
 

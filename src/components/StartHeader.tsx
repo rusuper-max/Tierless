@@ -2,28 +2,7 @@
 
 import { useEffect, useState } from "react";
 import CTAButton from "@/components/marketing/CTAButton";
-import { Sun, Moon } from "lucide-react";
-import { useTheme } from "next-themes";
-
-function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const isDark = mounted ? resolvedTheme === "dark" : false;
-  const toggle = () => {
-    setTheme(isDark ? "light" : "dark");
-  };
-
-  return (
-    <button
-      onClick={toggle}
-      aria-label="Toggle theme"
-      className="rounded-full p-2 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
-    >
-      {isDark ? <Sun className="size-5 text-slate-200" /> : <Moon className="size-5 text-slate-700" />}
-    </button>
-  );
-}
+import ThemeToggle from "@/components/nav/ThemeToggle";
 
 export default function StartHeader() {
   const [authed, setAuthed] = useState(false);
@@ -34,7 +13,7 @@ export default function StartHeader() {
       try {
         const st = await fetch("/api/auth/status?ts=" + Date.now(), { credentials: "include", cache: "no-store" }).then(r => r.json());
         if (!cancelled) setAuthed(!!st?.authenticated);
-      } catch {}
+      } catch { }
     };
     fetchAuth();
 
