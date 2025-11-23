@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { t } from "@/i18n";
 import { useEntitlement } from "@/hooks/useEntitlement";
 import type { UsageNeeds, PlanId } from "@/lib/entitlements";
 import { PLAN_ORDER } from "@/lib/entitlements";
 import { useToast } from "@/hooks/useToast";
 import { track } from "@/lib/track";
+import { Button } from "@/components/ui/Button";
 
 type Props = {
   needs: UsageNeeds;
@@ -68,26 +68,15 @@ export default function PublishGuardButton({
 
   return (
     <>
-      <button
-        type="button"
+      <Button
         onClick={handleClick}
         disabled={disabled || loading}
-        className={[
-          "rounded-lg border px-4 py-2.5 text-sm font-medium transition hover:-translate-y-[1px]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400",
-          disabled || loading ? "opacity-60 cursor-not-allowed" : "",
-          className ?? "",
-        ].join(" ")}
-        style={{
-          background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box",
-          border: "2px solid transparent",
-          color: "#0f172a",
-        }}
-        aria-busy={loading}
-        aria-label={t("Publish")}
+        variant="brand"
+        size="sm"
+        className={className}
       >
         {label}
-      </button>
+      </Button>
 
       {open && (
         <div className="fixed inset-0 z-[85] flex items-center justify-center p-4" role="dialog" aria-modal="true">
@@ -99,46 +88,39 @@ export default function PublishGuardButton({
             </p>
 
             <pre className="mt-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 p-3 text-[11px] text-slate-700 dark:text-slate-200 overflow-auto">
-{JSON.stringify(needs, null, 2)}
+              {JSON.stringify(needs, null, 2)}
             </pre>
 
             <div className="mt-4 flex items-center justify-between gap-2">
-              <button
+              <Button
                 onClick={() => setOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400"
+                variant="neutral"
+                size="xs"
               >
                 {t("Close")}
-              </button>
+              </Button>
 
               <div className="flex items-center gap-2">
-                <Link
+                <Button
                   href={`/start?highlight=${target}&interval=${deeplinkInterval}`}
                   onClick={() => track("see_plans_clicked", { target, interval: deeplinkInterval })}
-                  className="rounded-lg border px-3 py-2 text-sm font-medium transition hover:-translate-y-[1px] dark:text-slate-100"
-                  style={{
-                    background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box",
-                    border: "2px solid transparent",
-                    color: "#0f172a",
-                  }}
+                  variant="brand"
+                  size="xs"
                 >
                   {t("See plans")}
-                </Link>
-                <button
+                </Button>
+                <Button
                   onClick={() => {
                     openUpsell({ requiredPlan: target, needs, entrypoint: "limits" } as any);
                     setOpen(false);
                     info(t("Opening upgrade…"));
                     track("upsell_opened", { requiredPlan: target, entrypoint: "limits", interval: deeplinkInterval });
                   }}
-                  className="rounded-lg border px-3 py-2 text-sm font-medium transition hover:-translate-y-[1px] dark:text-slate-100"
-                  style={{
-                    background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box",
-                    border: "2px solid transparent",
-                    color: "#0f172a",
-                  }}
+                  variant="brand"
+                  size="xs"
                 >
                   {isUpgrade ? t("Upgrade") : t("View plans")}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

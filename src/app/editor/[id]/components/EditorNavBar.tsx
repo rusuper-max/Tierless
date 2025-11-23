@@ -12,115 +12,15 @@ import {
   Share2,
 } from "lucide-react";
 import { t } from "@/i18n";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAccount } from "@/hooks/useAccount";
 import type { PlanId } from "@/lib/entitlements";
 import type { Mode } from "@/hooks/useEditorStore";
 import ShareQrModal from "@/components/share/ShareQrModal";
-
-type BtnVariant = "brand" | "neutral" | "danger";
-type BtnSize = "xs" | "sm";
+import { Button } from "@/components/ui/Button";
 
 const BRAND_GRADIENT =
   "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))";
-
-function outlineStyle(variant: BtnVariant) {
-  const grad =
-    variant === "brand"
-      ? BRAND_GRADIENT
-      : variant === "danger"
-      ? "linear-gradient(90deg,#f97316,#ef4444)"
-      : "linear-gradient(90deg,#e5e7eb,#d1d5db)";
-  return {
-    padding: 1.5,
-    background: grad,
-    WebkitMask:
-      "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-    WebkitMaskComposite: "xor" as any,
-    maskComposite: "exclude" as any,
-    borderRadius: "9999px",
-    transition: "opacity .15s ease",
-  } as CSSProperties;
-}
-
-function ActionButton({
-  label,
-  icon,
-  href,
-  onClick,
-  disabled,
-  variant = "neutral",
-  size = "sm",
-  title,
-  target,
-}: {
-  label: string;
-  icon?: React.ReactNode;
-  href?: string;
-  onClick?: () => void;
-  disabled?: boolean;
-  variant?: BtnVariant;
-  size?: BtnSize;
-  title?: string;
-  target?: "_blank" | "_self";
-}) {
-  const base =
-    "relative inline-flex items-center justify-center whitespace-nowrap rounded-full bg-[var(--card,white)] text-sm font-medium transition will-change-transform select-none";
-  const pad = size === "xs" ? "px-3 py-1.5" : "px-3.5 py-2";
-  const text =
-    variant === "danger"
-      ? "text-rose-700 dark:text-rose-300"
-      : "text-[var(--text,#111827)]";
-  const state = disabled
-    ? "opacity-50 cursor-not-allowed"
-    : "cursor-pointer hover:shadow-[0_10px_24px_rgba(2,6,23,.10)] hover:-translate-y-0.5 active:translate-y-0";
-  const inner =
-    "relative z-[1] inline-flex items-center gap-2 whitespace-nowrap " +
-    (size === "xs" ? "text-xs" : "text-sm");
-
-  const content = (
-    <span className={`${base} ${pad} ${text} ${state}`} title={title}>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-full"
-        style={outlineStyle(variant)}
-      />
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-full opacity-0 group-hover:opacity-100"
-        style={{
-          boxShadow:
-            variant === "danger"
-              ? "0 0 10px 3px rgba(244,63,94,.22)"
-              : "0 0 14px 4px rgba(34,211,238,.22)",
-          transition: "opacity .18s ease",
-        }}
-      />
-      <span className={inner}>
-        {icon}
-        {label}
-      </span>
-    </span>
-  );
-
-  if (href && !disabled) {
-    return (
-      <Link
-        href={href}
-        target={target}
-        rel={target === "_blank" ? "noopener noreferrer" : undefined}
-        className="inline-flex group"
-      >
-        {content}
-      </Link>
-    );
-  }
-  return (
-    <button onClick={onClick} disabled={disabled} className="inline-flex group">
-      {content}
-    </button>
-  );
-}
 
 function ThemeToggle() {
   const [isDark, setIsDark] = useState(false);
@@ -141,27 +41,28 @@ function ThemeToggle() {
       root.classList.add("dark");
       try {
         localStorage.setItem("theme", "dark");
-      } catch {}
+      } catch { }
     } else {
       root.classList.remove("dark");
       try {
         localStorage.setItem("theme", "light");
-      } catch {}
+      } catch { }
     }
   };
 
   return (
     <div data-tour-id="tour-theme-toggle">
-      <ActionButton
-        label={isDark ? t("Dark") : t("Light")}
-        icon={isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
+      <Button
         onClick={toggle}
         variant="brand"
         size="xs"
+        icon={isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
         title={t(
           "Switch the editor theme. This only affects your view, not the public page."
         )}
-      />
+      >
+        {isDark ? t("Dark") : t("Light")}
+      </Button>
     </div>
   );
 }
@@ -587,30 +488,25 @@ export default function EditorNavBar({
               Tierless
             </Link>
 
-            <ActionButton
-              label={t("Dashboard")}
+            <Button
               icon={<LayoutDashboard className="size-4" />}
               href="/dashboard"
               variant="brand"
               size="xs"
               title={t("Back to dashboard")}
-            />
+            >
+              {t("Dashboard")}
+            </Button>
             {showBack && (
-              <button
-                className="group inline-flex cursor-pointer"
+              <Button
                 onClick={onBack}
+                variant="brand"
+                size="xs"
+                icon={<Undo2 className="size-4" />}
                 title={t("Back")}
               >
-                <span className="relative inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-3 py-1.5 text-[var(--text)]">
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 rounded-full"
-                    style={outlineStyle("brand")}
-                  />
-                  <Undo2 className="size-4" />
-                  {t("Back")}
-                </span>
-              </button>
+                {t("Back")}
+              </Button>
             )}
             <span className="hidden xs:inline text-sm text-[var(--muted)]">
               /
@@ -625,33 +521,32 @@ export default function EditorNavBar({
 
           <div className="flex items-center gap-2">
             <PlanBadge />
-            <ActionButton
-              label={t("Guide")}
+            <Button
               onClick={() => setTourStep(0)}
               variant="brand"
               size="xs"
               title={t("Show quick tour")}
-            />
+            >
+              {t("Guide")}
+            </Button>
             <ThemeToggle />
             <div data-tour-id="tour-save">
-              <ActionButton
-                label={
-                  isSaving ? t("Saving…") : isDirty ? t("Save") : t("Saved")
-                }
+              <Button
                 icon={<SaveIcon className="size-4" />}
                 onClick={onSave}
                 disabled={!!isSaving}
                 variant="brand"
                 size="sm"
-              />
+              >
+                {isSaving ? t("Saving…") : isDirty ? t("Save") : t("Saved")}
+              </Button>
             </div>
             <div className="flex items-center gap-1">
               <div data-tour-id="tour-public">
-                <ActionButton
-                  label={t("Public")}
+                <Button
                   icon={<ExternalLink className="size-4" />}
                   href={publicHref}
-                  target="_blank"
+                  external
                   variant="brand"
                   size="sm"
                   title={
@@ -660,11 +555,12 @@ export default function EditorNavBar({
                       : t('Publish this page from the dashboard ("Offline" button) to enable public link')
                   }
                   disabled={!canOpenPublic}
-                />
+                >
+                  {t("Public")}
+                </Button>
               </div>
               <div data-tour-id="tour-share">
-                <ActionButton
-                  label={t("Share")}
+                <Button
                   icon={<Share2 className="size-4" />}
                   onClick={() => setShareOpen(true)}
                   variant="brand"
@@ -675,7 +571,9 @@ export default function EditorNavBar({
                       : t('Publish this page from the dashboard ("Offline" button) to enable sharing')
                   }
                   disabled={!canShare}
-                />
+                >
+                  {t("Share")}
+                </Button>
               </div>
             </div>
           </div>

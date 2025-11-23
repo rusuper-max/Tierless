@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -12,20 +12,28 @@ import {
   User,
   LayoutGrid,
   Trash2,
-  Sun,
-  Moon,
+  type LucideIcon,
 } from "lucide-react";
 import { useAccount } from "@/hooks/useAccount";
 import { t } from "@/i18n";
 
-type Item = { href: string; label: string; icon: any; exact?: boolean; badge?: number; navKey?: string };
+type Item = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  exact?: boolean;
+  badge?: number;
+  navKey?: string;
+};
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { plan } = useAccount(); // free | starter | growth | pro | tierless
+  const { plan } = useAccount();
 
-  // Trash badge count (load on route change + event-based refresh)
+  // --- Trash Logic ---
   const [trashCount, setTrashCount] = useState<number>(0);
+  const [isTrashFlashing, setTrashFlashing] = useState(false);
+
   useEffect(() => {
     let alive = true;
     const load = async () => {
@@ -40,262 +48,201 @@ export default function Sidebar() {
     load();
 
     const onDirty = () => load();
+    const onFlash = () => {
+      setTrashFlashing(true);
+      setTimeout(() => setTrashFlashing(false), 500);
+    };
+
     window.addEventListener("TL_COUNTERS_DIRTY", onDirty);
-    return () => { alive = false; window.removeEventListener("TL_COUNTERS_DIRTY", onDirty); };
+    window.addEventListener("TL_TRASH_FLASH", onFlash);
+
+    return () => {
+      alive = false;
+      window.removeEventListener("TL_COUNTERS_DIRTY", onDirty);
+      window.removeEventListener("TL_TRASH_FLASH", onFlash);
+    };
   }, [pathname]);
 
-  // Precizna animacija samo za Trash dugme (bez ikakvog router push-a)
-  useEffect(() => {
-    const trashEl = document.getElementById("nav-trash");
-    if (!trashEl) return;
-    const onFlash = () => {
-      trashEl.classList.remove("tl-trash-flash");
-      // force reflow
-      void trashEl.offsetWidth;
-      trashEl.classList.add("tl-trash-flash");
-      // auto cleanup
-      setTimeout(() => trashEl.classList.remove("tl-trash-flash"), 500);
-    };
-    window.addEventListener("TL_TRASH_FLASH", onFlash);
-    return () => window.removeEventListener("TL_TRASH_FLASH", onFlash);
-  }, []);
+  // --- Navigation Config ---
+  const NAV: Item[] = useMemo(() => [
+    { href: "/dashboard", label: t("Pages"), icon: LayoutDashboard, exact: true, navKey: "pages" },
+    { href: "/dashboard/stats", label: t("Stats"), icon: BarChart3, navKey: "stats" },
+    { href: "/templates", label: t("Templates"), icon: LayoutGrid, navKey: "templates" },
+    { href: "/dashboard/integrations", label: t("Integrations"), icon: Puzzle, navKey: "integrations" },
+    { href: "/dashboard/settings", label: t("Settings"), icon: Settings, navKey: "settings" },
+    { href: "/dashboard/trash", label: t("Trash"), icon: Trash2, badge: trashCount, navKey: "trash" },
+  ], [trashCount]);
 
-  // Theme toggle state (sidebar-only control)
-  const [isDark, setIsDark] = useState<boolean>(false);
-  useEffect(() => {
-    // read from html class on mount
-    const html = document.documentElement;
-    const dark = html.classList.contains("dark");
-    setIsDark(dark);
-  }, []);
-  const toggleTheme = () => {
-    const html = document.documentElement;
-    const next = !isDark;
-    html.classList.toggle("dark", next);
-    try { localStorage.setItem("theme", next ? "dark" : "light"); } catch {}
-    setIsDark(next);
-    // notify rest of app, if anyone listens
-    window.dispatchEvent(new CustomEvent("TL_THEME_TOGGLED", { detail: { dark: next } }));
-  };
-
-  const NAV: Item[] = [
-    { href: "/dashboard",              label: t("Pages"),        icon: LayoutDashboard, exact: true, navKey: "pages" },
-    { href: "/dashboard/stats",        label: t("Stats"),        icon: BarChart3,                          navKey: "stats" },
-    { href: "/templates",              label: t("Templates"),    icon: LayoutGrid,                         navKey: "templates" },
-    { href: "/dashboard/integrations", label: t("Integrations"), icon: Puzzle,                             navKey: "integrations" },
-    { href: "/dashboard/settings",     label: t("Settings"),     icon: Settings,                           navKey: "settings" },
-    { href: "/dashboard/trash",        label: t("Trash"),        icon: Trash2, badge: trashCount,          navKey: "trash" },
-    { href: "/dashboard/account",      label: t("Account"),      icon: User,                               navKey: "account" },
+  const ACCOUNT_NAV: Item[] = [
+    { href: "/dashboard/account", label: t("Account"), icon: User, navKey: "account" },
   ];
 
   const isActive = (it: Item) =>
-    it.exact ? pathname === it.href : pathname.startsWith(it.href);
+    it.exact ? pathname === it.href : pathname?.startsWith(it.href);
 
   return (
     <aside
-            className="hidden md:flex md:flex-col md:w-64 lg:w-72 bg-[var(--card)] text-[var(--text)]"
+      className="hidden md:flex md:flex-col md:w-64 lg:w-72 h-screen bg-[var(--card)] border-r border-[var(--border)] text-[var(--text)] transition-colors duration-300"
       aria-label={t("Dashboard sidebar")}
     >
-      {/* Shared brand gradient for icons */}
-      <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
+      {/* Defined Brand Gradient for SVG Strokes - Referenced by ID */}
+      <svg width="0" height="0" className="absolute pointer-events-none" aria-hidden="true">
         <defs>
           <linearGradient id="tlSidebarGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="var(--brand-1,#4F46E5)" />
-            <stop offset="100%" stopColor="var(--brand-2,#22D3EE)" />
+            <stop offset="0%" stopColor="#4F46E5" />
+            <stop offset="100%" stopColor="#22D3EE" />
           </linearGradient>
         </defs>
       </svg>
-      {/* Header — levo: gradient “Dashboard”, desno: plan pill */}
-      <div className="px-4 py-4 border-b border-[var(--border)] flex items-center justify-between gap-3">
-        <h2
-          title="Dashboard"
-          style={{
-            fontSize: "1.25rem",
-            fontWeight: 700,
-            lineHeight: 1,
-            backgroundImage: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-            WebkitTextFillColor: "transparent",
-            letterSpacing: "-0.01em",
-          }}
-        >
+
+      {/* --- Header --- */}
+      <div className="px-5 py-6 flex items-center justify-between border-b border-[var(--border)]">
+        <h2 className="text-lg font-bold tracking-tight" style={{
+          backgroundImage: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
+          WebkitBackgroundClip: "text",
+          backgroundClip: "text",
+          color: "transparent",
+          WebkitTextFillColor: "transparent",
+        }}>
           Dashboard
         </h2>
         <PlanPill plan={String(plan)} />
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-2 py-3">
+      {/* --- Main Navigation --- */}
+      <nav className="flex-1 px-3 space-y-6 overflow-y-auto">
+        {/* Primary Items */}
         <ul className="space-y-1">
-          {NAV.map((it) => {
-            const active = isActive(it);
-            const isTrash = it.navKey === "trash";
-            return (
-              <li key={it.href}>
-                <Link
-                  id={isTrash ? "nav-trash" : undefined}
-                  data-nav={it.navKey}
-                  href={it.href}
-                  className={[
-                    "group relative flex items-center gap-3 rounded-[var(--radius,0.75rem)] px-3 py-2.5 text-sm transition bg-[var(--card,white)]",
-                    "text-[var(--text)]",
-                    active
-                      ? "border border-transparent"
-                      : "border border-transparent hover:border-[var(--border)] hover:bg-[color:var(--card,white)]/70",
-                    // flash animacija samo vizuelna, bez blokiranja klikova
-                    isTrash ? "tl-trash-ring" : "",
-                  ].join(" ")}
-                  aria-current={active ? "page" : undefined}
-                >
-                  {/* levo marker (active) */}
-                  <span
-                    aria-hidden
-                    className={[
-                      "absolute top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-full",
-                      active ? "bg-[color:var(--brand-2,#22D3EE)] opacity-100" : "opacity-0",
-                    ].join(" ")}
-                    style={{ left: 6 }}
-                  />
-
-                  {/* hover/active brand outline */}
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 rounded-[var(--radius,0.75rem)] opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-                    style={{
-                      padding: 1.5,
-                      background: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
-                      WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                      WebkitMaskComposite: "xor" as any,
-                      maskComposite: "exclude",
-                    }}
-                  />
-                  {active && (
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute inset-0 rounded-[var(--radius,0.75rem)]"
-                      style={{
-                        padding: 1.5,
-                        background: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
-                        WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                        WebkitMaskComposite: "xor" as any,
-                        maskComposite: "exclude",
-                      }}
-                    />
-                  )}
-
-                  <it.icon
-                    className="size-[18px]"
-                    style={{ stroke: "url(#tlSidebarGrad)" }}
-                    aria-hidden
-                  />
-                  <span className="leading-none">{it.label}</span>
-
-                  {/* badge */}
-                  {typeof it.badge === "number" && it.badge > 0 && (
-                    <span className="ml-auto inline-flex items-center justify-center rounded-full min-w-5 h-5 px-1 text-[11px] bg-neutral-100 text-neutral-700 ring-1 ring-inset ring-neutral-200">
-                      {it.badge}
-                    </span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-          {/* Theme toggle — placed directly under Account item */}
-          <li key="theme-toggle">
-            <button
-              onClick={toggleTheme}
-              aria-pressed={isDark}
-              className={[
-                "group relative flex w-full items-center gap-3 rounded-[var(--radius,0.75rem)] px-3 py-2.5 text-sm transition bg-[var(--card,white)] cursor-pointer",
-                "border border-transparent hover:border-[var(--border)] hover:bg-[color:var(--card,white)]/70",
-                "text-left",
-                "text-[var(--text)]"
-              ].join(" ")}
-              title={isDark ? t("Switch to Light mode") : t("Switch to Dark mode")}
-            >
-              {/* hover brand outline (same as nav items) */}
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-0 rounded-[var(--radius,0.75rem)] opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-                style={{
-                  padding: 1.5,
-                  background: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
-                  WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                  WebkitMaskComposite: "xor" as any,
-                  maskComposite: "exclude",
-                }}
-              />
-              {/* icon */}
-              {isDark ? (
-                <Sun className="size-[18px]" style={{ stroke: "url(#tlSidebarGrad)" }} aria-hidden />
-              ) : (
-                <Moon className="size-[18px]" style={{ stroke: "url(#tlSidebarGrad)" }} aria-hidden />
-              )}
-              {/* label */}
-              <span className="leading-none">
-                {isDark ? t("Light mode") : t("Dark mode")}
-              </span>
-            </button>
-          </li>
+          {NAV.map((it) => (
+            <NavItem
+              key={it.href}
+              item={it}
+              active={isActive(it)}
+              isTrashFlashing={it.navKey === 'trash' && isTrashFlashing}
+            />
+          ))}
         </ul>
+
+        {/* Secondary Group (Separator) */}
+        <div className="pt-4 border-t border-[var(--border)]">
+          <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] opacity-60">
+            {t("User")}
+          </div>
+          <ul className="space-y-1">
+            {ACCOUNT_NAV.map((it) => (
+              <NavItem key={it.href} item={it} active={isActive(it)} />
+            ))}
+          </ul>
+        </div>
       </nav>
 
-
-      {/* Footer mini help */}
-      <div className="px-3 py-3 text-[11px] text-neutral-500 border-t border-[var(--border)]">
-        {t("Need help?")} <Link href="/help" className="underline">{t("Docs")}</Link>
+      {/* --- Footer --- */}
+      <div className="p-5 text-xs border-t border-[var(--border)]">
+        <div className="flex items-center gap-1 text-[var(--muted)]">
+          <span>{t("Need help?")}</span>
+          <Link href="/help" className="hover:underline" style={{ color: "var(--brand-1)" }}>
+            {t("Docs")}
+          </Link>
+        </div>
       </div>
-
-      {/* lokalni stil samo za suptilan blink Trash dugmeta */}
-      <style jsx>{`
-        .tl-trash-ring::after {
-          content: "";
-          position: absolute;
-          inset: -2px;
-          border-radius: var(--radius, 0.75rem);
-          pointer-events: none;
-          opacity: 0;
-          transition: opacity 300ms ease;
-          background: linear-gradient(90deg, var(--brand-1,#4F46E5), var(--brand-2,#22D3EE));
-          -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-          -webkit-mask-composite: xor;
-                  mask-composite: exclude;
-          padding: 2px;
-        }
-        #nav-trash.tl-trash-flash::after {
-          opacity: 1;
-          animation: tlTrashBlink 500ms ease-out;
-        }
-        @keyframes tlTrashBlink {
-          0%   { opacity: 0; transform: scale(0.98); }
-          25%  { opacity: 1; transform: scale(1.01); }
-          100% { opacity: 0; transform: scale(1); }
-        }
-      `}</style>
     </aside>
   );
 }
 
-/* ---------- Plan pill ---------- */
-function planColors(p: string) {
-  const key = (p || "free").toLowerCase();
-  switch (key) {
-    case "starter":  return { hex: "#14b8a6" }; // teal
-    case "growth":   return { hex: "#3b82f6" }; // blue
-    case "pro":      return { hex: "#ef4444" }; // red
-    case "free":     return { hex: "#6b7280" }; // gray
-    default:         return { hex: "#6b7280" };
-  }
-}
+// --- Sub-components ---
+
+const NavItem = ({
+  item,
+  active,
+  isTrashFlashing
+}: {
+  item: Item;
+  active: boolean;
+  isTrashFlashing?: boolean
+}) => {
+  return (
+    <li>
+      <Link
+        href={item.href}
+        data-nav={item.navKey}
+        aria-current={active ? "page" : undefined}
+        className={[
+          "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-150",
+          "text-[var(--text)]",
+          active
+            ? "bg-[var(--surface)] border border-transparent"
+            : "border border-transparent hover:border-[var(--border)] hover:bg-[var(--surface)]",
+          isTrashFlashing ? "animate-pulse ring-2 ring-red-500/50" : "",
+        ].join(" ")}
+      >
+        {/* Active gradient border */}
+        {active && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-lg"
+            style={{
+              padding: 1.5,
+              background: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
+              WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+              WebkitMaskComposite: "xor" as any,
+              maskComposite: "exclude",
+            }}
+          />
+        )}
+
+        {/* Hover gradient border */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+          style={{
+            padding: 1.5,
+            background: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
+            WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+            WebkitMaskComposite: "xor" as any,
+            maskComposite: "exclude",
+          }}
+        />
+
+        <item.icon
+          className={`size-[18px] ${active ? 'sidebar-icon-active' : 'sidebar-icon-default'} ${isTrashFlashing ? 'text-red-500' : ''}`}
+          strokeWidth={2}
+          aria-hidden
+        />
+        <span className="leading-none">{item.label}</span>
+
+        {/* Badge */}
+        {typeof item.badge === "number" && item.badge > 0 && (
+          <span className="ml-auto inline-flex items-center justify-center rounded-full min-w-5 h-5 px-1 text-[11px] text-[var(--text)] opacity-60 bg-[var(--surface)] ring-1 ring-inset ring-[var(--border)]">
+            {item.badge}
+          </span>
+        )}
+
+        {/* Icon gradient on hover/active only */}
+        <style jsx>{`
+          .sidebar-icon-default {
+            stroke: currentColor;
+          }
+          .sidebar-icon-active {
+            stroke: url(#tlSidebarGrad);
+          }
+          :global(.group:hover) .sidebar-icon-default {
+            stroke: url(#tlSidebarGrad);
+          }
+        `}</style>
+      </Link>
+    </li>
+  );
+};
+
+// --- Plan Pill Component ---
+
 function PlanPill({ plan }: { plan: string }) {
   const key = (plan || "free").toLowerCase();
-  const pretty = key.charAt(0).toUpperCase() + key.slice(1);
 
-  if (key === "tierless") {
+  // Special treatment for Pro plan (gradient like old Tierless)
+  if (key === "pro") {
     return (
-      <div className="relative inline-flex items-center gap-2 rounded-full px-2 py-1 text-[11px] bg-[var(--card,white)]">
+      <div className="relative inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] bg-[var(--card)]">
         <span
           aria-hidden
           className="pointer-events-none absolute inset-0 rounded-full"
@@ -307,10 +254,9 @@ function PlanPill({ plan }: { plan: string }) {
             maskComposite: "exclude",
           }}
         />
-        <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "var(--brand-2,#22D3EE)" }} aria-hidden />
-        <span className="text-[var(--muted)]">{t("Plan")}:</span>{" "}
+        <span className="inline-block h-2 w-2 rounded-full" style={{ background: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))" }} aria-hidden />
         <b
-          className="uppercase"
+          className="uppercase font-medium tracking-wider"
           style={{
             backgroundImage: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
             WebkitBackgroundClip: "text",
@@ -319,21 +265,40 @@ function PlanPill({ plan }: { plan: string }) {
             WebkitTextFillColor: "transparent",
           }}
         >
-          {pretty}
+          Pro
         </b>
       </div>
     );
   }
 
-  const { hex } = planColors(key);
+  // Regular plans configuration
+  const configs: Record<string, { label: string, classes: string, dot: string }> = {
+    growth: {
+      label: "Growth",
+      classes: "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 ring-rose-500/30",
+      dot: "bg-rose-500"
+    },
+    starter: {
+      label: "Starter",
+      classes: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 ring-emerald-500/30",
+      dot: "bg-emerald-500"
+    },
+    free: {
+      label: "Free",
+      classes: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-slate-500/20",
+      dot: "bg-slate-400"
+    }
+  };
+
+  const config = configs[key] || configs.free;
+
   return (
-    <div
-      className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-[11px] bg-[var(--card,white)]"
-      style={{ border: `1.5px solid ${hex}` }}
-    >
-      <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: hex }} aria-hidden />
-      <span className="text-[var(--muted)]">{t("Plan")}:</span>{" "}
-      <b className="uppercase" style={{ color: hex }}>{pretty}</b>
+    <div className={`
+      inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ring-1 ring-inset
+      ${config.classes}
+    `}>
+      <span className={`size-1.5 rounded-full ${config.dot}`} />
+      {config.label}
     </div>
   );
 }

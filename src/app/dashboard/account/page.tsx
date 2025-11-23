@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { t } from "@/i18n";
+import { Button } from "@/components/ui/Button";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,9 +33,9 @@ export default async function AccountPage() {
           <span id="tl-plan-status" className="text-xs text-neutral-500" />
         </div>
         <div id="tl-plan-controls" className="flex flex-wrap gap-2">
-          <button data-plan="starter" className="btn btn-sm">Starter</button>
-          <button data-plan="growth"  className="btn btn-sm">Growth</button>
-          <button data-plan="pro"     className="btn btn-sm">Pro</button>
+          <Button variant="neutral" size="xs" data-plan="starter">Starter</Button>
+          <Button variant="neutral" size="xs" data-plan="growth">Growth</Button>
+          <Button variant="neutral" size="xs" data-plan="pro">Pro</Button>
         </div>
       </div>
 

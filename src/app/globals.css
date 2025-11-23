@@ -7,292 +7,272 @@
 /* =========================================
    Design tokens / brand
 ========================================= */
-:root{
-  --radius:14px;
+:root {
+  --radius: 14px;
 
   /* Brand: indigo → sky → teal (Tierless) */
-  --brand-1:#6366f1;           /* indigo-500 */
-  --brand-2:#38bdf8;           /* sky-400  */
-  --brand-3:#14b8a6;           /* teal-500 */
+  --brand-1: #6366f1;
+  /* indigo-500 */
+  --brand-2: #38bdf8;
+  /* sky-400  */
+  --brand-3: #14b8a6;
+  /* teal-500 */
   --brand-gradient: linear-gradient(90deg,
-    var(--brand-1) 0%,
-    var(--brand-2) 50%,
-    var(--brand-3) 100%
-  );
+      var(--brand-1) 0%,
+      var(--brand-2) 50%,
+      var(--brand-3) 100%);
 
   /* RGB pomoćne (za shadowe i efekte) */
-  --brand-1-rgb:99,102,241;
-  --brand-2-rgb:56,189,248;
-  --brand-3-rgb:20,184,166;
+  --brand-1-rgb: 99, 102, 241;
+  --brand-2-rgb: 56, 189, 248;
+  --brand-3-rgb: 20, 184, 166;
 
   /* Danger (crveno) */
-  --danger-1:#ef4444;                    /* red-500 */
-  --danger-2:#b91c1c;                    /* red-700 */
-  --danger-1-rgb:239,68,68;
+  --danger-1: #ef4444;
+  /* red-500 */
+  --danger-2: #b91c1c;
+  /* red-700 */
+  --danger-1-rgb: 239, 68, 68;
 
   /* Površine */
-  --border-light:#e5e7eb;
-  --border-dark:#26262b;
-  --card-light:#fafafa;
-  --card-dark:#111113;
+  --border-light: #e5e7eb;
+  --border-dark: #26262b;
+  --card-light: #fafafa;
+  --card-dark: #111113;
 
   /* Dugmad */
   --btn-outline-w: 2px;
 
   /* Aura/Neon intenzitet (možeš fino da podesiš) */
-  --aura-opacity: .32;        /* koliko “svetli” panel */
-  --aura-blur: 24px;          /* mekoća glowa */
+  --aura-opacity: .32;
+  /* koliko “svetli” panel */
+  --aura-blur: 24px;
+  /* mekoća glowa */
 }
 
 /* Global surface (next-themes dodaje .dark na <html>) */
-html{ background:#ffffff; color:#111827; color-scheme: light; }
+html {
+  background: #ffffff;
+  color: #111827;
+  color-scheme: light;
+}
+
 /* Theme tokens used across the dashboard/components */
-html:not(.dark){
-  --text:#111827;
-  --muted:#6b7280;
-  --surface: rgba(0,0,0,.04);
-  --track:#f3f4f6;
+html:not(.dark) {
+  --text: #111827;
+  --muted: #6b7280;
+  --surface: rgba(0, 0, 0, .04);
+  --track: #f3f4f6;
   /* NOTE: do NOT reassign --brand-* to themselves; it creates a self-reference cycle and clears the value */
 }
-html.dark{ background:#0b0b0c; color:#f5f5f6; color-scheme: dark; }
-html.dark{
-  --text:#e5e7eb;
-  --muted:#9ca3af;
-  --surface: rgba(255,255,255,.06);
-  --track: rgba(255,255,255,.08);
+
+html.dark {
+  background: #0b0b0c;
+  color: #f5f5f6;
+  color-scheme: dark;
+}
+
+html.dark {
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --surface: rgba(255, 255, 255, .06);
+  --track: rgba(255, 255, 255, .08);
 }
 
 /* Mapiranje po temi + neutral outline za "plain" varijante */
-html:not(.dark){ --border: var(--border-light); --card: var(--card-light); --btn-outline:#cbd5e1; }
-html.dark{       --border: var(--border-dark);  --card: var(--card-dark);  --btn-outline:#3b3f46; }
+html:not(.dark) {
+  --border: var(--border-light);
+  --card: var(--card-light);
+  --btn-outline: #cbd5e1;
+}
+
+html.dark {
+  --border: var(--border-dark);
+  --card: var(--card-dark);
+  --btn-outline: #3b3f46;
+}
 
 /* =========================================
    Layout helpers
 ========================================= */
-.container-page{ margin:0 auto; max-width:80rem; padding:1.5rem; }
-.card{
+.container-page {
+  margin: 0 auto;
+  max-width: 80rem;
+  padding: 1.5rem;
+}
+
+.card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
-.field{
-  width:100%;
-  border:1px solid var(--border);
+
+.field {
+  width: 100%;
+  border: 1px solid var(--border);
   border-radius: calc(var(--radius) - 8px);
   background: transparent;
   color: inherit;
-  padding:.45rem .6rem;
-  font-size:.875rem;
+  padding: .45rem .6rem;
+  font-size: .875rem;
 }
-.field:focus{
-  outline:none;
+
+.field:focus {
+  outline: none;
   box-shadow: 0 0 0 3px rgba(var(--brand-1-rgb), .35);
 }
 
-/* =========================================
-   BUTTONS — gradient outline prsten preko ::after
-========================================= */
-.btn{
-  position:relative; z-index:0; isolation:isolate;
-  -webkit-tap-highlight-color:transparent;
-  display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
-  padding:.48rem .78rem; font-size:.875rem; line-height:1;
-  border: var(--btn-outline-w) solid transparent;   /* realni border je transparentan */
-  border-radius: calc(var(--radius) - 6px);
-  --btn-bg: transparent;
-  background: var(--btn-bg);
-  background-clip: padding-box;                      /* fill ostaje unutar prstena */
-  color: inherit;
-  --btn-outline-gradient: var(--brand-gradient);
-  transition:
-    transform .18s ease,
-    box-shadow .22s ease,
-    filter .22s ease,
-    background .18s ease,
-    color .18s ease;
-}
 
-/* Prsten (uvek prisutan) */
-.btn::after{
-  content:"";
-  position:absolute; inset:0;
-  border-radius: inherit;
-  padding: var(--btn-outline-w);
-  background: var(--btn-outline-gradient);
-  -webkit-mask:
-     linear-gradient(#000 0 0) content-box,
-     linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
-  pointer-events:none;
-}
-
-/* Suptilan hover lift (bez ljubičastog fill-a) */
-.btn:not(.btn-brand):not(.btn-danger--solid):not([disabled]):hover{
-  transform: translateY(-1px);
-  filter: saturate(1.04);
-  box-shadow:
-    0 1px 0 rgba(0,0,0,.06) inset,
-    0 10px 26px rgba(var(--brand-1-rgb), .18),
-    0 8px 20px rgba(var(--brand-2-rgb), .14);
-}
-.btn:active{ transform: translateY(0); filter: saturate(1.02); }
-.btn:focus-visible{
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(var(--brand-1-rgb), .35), 0 10px 30px rgba(var(--brand-1-rgb), .18);
-}
-.btn, .btn-nav, .btn-brand, .btn-plain, .btn-danger{ cursor: pointer; }
-
-/* Brand (solid gradijent) */
-.btn-brand{
-  color:#111; border-color: transparent;
-  background: var(--brand-gradient);
-  background-clip: padding-box;
-  box-shadow: 0 2px 10px rgba(0,0,0,.18);
-}
-.btn-brand::after{ display:none; }
-.btn-brand:hover{
-  filter: brightness(1.02) saturate(1.06);
-  transform: translateY(-1px);
-  box-shadow: 0 12px 30px rgba(var(--brand-1-rgb), .24), 0 10px 24px rgba(var(--brand-2-rgb), .20);
-}
-
-/* Neutral — bez našeg prstena (npr. navbar) */
-.btn-plain{ border-color: var(--btn-outline); }
-.btn-plain::after{ display:none; }
-html:not(.dark) .btn-plain:hover{ background: rgba(0,0,0,.04) !important; }
-html.dark .btn-plain:hover{ background: rgba(255,255,255,.06) !important; }
-
-/* Nav (kompaktnije) */
-.btn-nav{ padding:.35rem .6rem; border-radius:999px; border-width:1px; }
-.btn-nav::after{ display:none; }
-html:not(.dark) .btn-nav:hover{ background: rgba(0,0,0,.04) !important; }
-html.dark .btn-nav:hover{ background: rgba(255,255,255,.06) !important; }
-
-/* Danger (outline) + solid */
-.btn-danger{
-  --btn-outline-gradient: linear-gradient(90deg, var(--danger-1), var(--danger-2));
-  color: var(--danger-1);
-}
-.btn-danger--solid{ --btn-bg: var(--danger-1); color:#fff; }
-.btn-danger--solid::after{ background: linear-gradient(90deg, var(--danger-1), var(--danger-2)); }
-.btn-danger--solid:hover{ filter: brightness(1.04); }
-
-/* Veličine/oblici */
-.btn-lg{ padding:.7rem 1.1rem; font-size:1rem; border-radius:calc(var(--radius) - 4px); }
-.btn-sm{ padding:.35rem .55rem; font-size:.8125rem; border-radius:calc(var(--radius) - 8px); }
-.btn-pill{ border-radius:999px; }
-
-/* Fill na hover (za outline dugmad) */
-.btn-fill{
-  transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease;
-}
-.btn-fill:hover{
-  background: var(--brand-gradient);
-  color: #111;
-  transform: translateY(-1px);
-  box-shadow:
-    0 10px 28px rgba(var(--brand-1-rgb), .22),
-    0 8px 22px rgba(var(--brand-2-rgb), .18);
-}
-
-/* Chip (accent dugmići u editoru; bez dodatnih ring/shadow klasa) */
-.btn-chip{
-  --chip: var(--brand-1);
-  --btn-outline-gradient: linear-gradient(90deg, var(--chip), color-mix(in srgb, var(--chip), white 30%));
-}
-
-/* =========================================
-   CSS-only TEXT SWAP (radi uz data-label)
-========================================= */
-.btn-swap{ position: relative; overflow: hidden; }
-.btn-swap .btn-text{
-  display:inline-block;
-  transition: transform .24s cubic-bezier(.23,.86,.24,1);
-}
-.btn-swap::after{
-  content: attr(data-label);     /* <<< usklađeno sa Button.tsx */
-  position:absolute; left:50%; top:100%;
-  transform: translate(-50%,0);
-  transition: transform .24s cubic-bezier(.23,.86,.24,1);
-}
-.btn-swap:hover .btn-text{ transform: translateY(-120%); }
-.btn-swap:hover::after{ transform: translate(-50%,-100%); }
 
 /* =========================================
    Tables / list panels
 ========================================= */
-.table{
-  width:100%;
-  border:1px solid var(--border);
+.table {
+  width: 100%;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow:hidden;
+  overflow: hidden;
   background: var(--card);
 }
-.table thead th{
-  padding:.6rem .75rem; text-align:left; font-weight:600;
-  border-bottom:1px solid var(--border);
+
+.table thead th {
+  padding: .6rem .75rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
 }
-.table tbody td{ padding:.6rem .75rem; border-top:1px solid var(--border); }
-.table tfoot td{ padding:.6rem .75rem; border-top:1px solid var(--border); }
-html.dark .table{ background:#0f1012; border-color:#2b2f36; }
-html.dark .table thead th{ background:#16181c; color:#e7e7ea; }
-html.dark .table tbody td{ color:#e2e2e6; }
-html.dark .table tbody tr:hover td{ background:#16181c; }
-html:not(.dark) .table{ background:#ffffff; border-color:#e5e7eb; }
-html:not(.dark) .table thead th{ background:#fafafa; color:#111827; }
+
+.table tbody td {
+  padding: .6rem .75rem;
+  border-top: 1px solid var(--border);
+}
+
+.table tfoot td {
+  padding: .6rem .75rem;
+  border-top: 1px solid var(--border);
+}
+
+html.dark .table {
+  background: #0f1012;
+  border-color: #2b2f36;
+}
+
+html.dark .table thead th {
+  background: #16181c;
+  color: #e7e7ea;
+}
+
+html.dark .table tbody td {
+  color: #e2e2e6;
+}
+
+html.dark .table tbody tr:hover td {
+  background: #16181c;
+}
+
+html:not(.dark) .table {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+html:not(.dark) .table thead th {
+  background: #fafafa;
+  color: #111827;
+}
 
 /* =========================================
    Badges
 ========================================= */
-.badge{
-  display:inline-flex; align-items:center; gap:.35rem;
-  border:1px solid var(--border); border-radius:999px;
-  padding:.22rem .55rem; font-size:.75rem; opacity:.9;
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .22rem .55rem;
+  font-size: .75rem;
+  opacity: .9;
 }
-.badge:hover{ opacity:1; }
+
+.badge:hover {
+  opacity: 1;
+}
 
 /* =========================================
    Brand text + logo reveal
 ========================================= */
-.brand-text{
+.brand-text {
   background: var(--brand-gradient);
-  -webkit-background-clip:text; background-clip:text;
-  -webkit-text-fill-color:transparent; color:transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
-.brand-link{ display:inline-flex; align-items:center; gap:.35rem; }
-.brand-logo{
-  width:34px; height:34px; border-radius:8px;
-  box-shadow:0 2px 10px rgba(var(--brand-1-rgb), .30);
+
+.brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
 }
-.brand-label{
-  display:inline-block; font-weight:600; letter-spacing:-.01em; line-height:1;
+
+.brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(var(--brand-1-rgb), .30);
+}
+
+.brand-label {
+  display: inline-block;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  line-height: 1;
   background: var(--brand-gradient);
-  -webkit-background-clip:text; background-clip:text;
-  -webkit-text-fill-color: transparent; color: transparent;
-  max-width:0; opacity:0; transform: translateX(-18px);
-  overflow:hidden; white-space:nowrap;
-  transition: max-width .90s cubic-bezier(.2,0,0,1), opacity .65s ease-out, transform .90s cubic-bezier(.2,0,0,1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-18px);
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width .90s cubic-bezier(.2, 0, 0, 1), opacity .65s ease-out, transform .90s cubic-bezier(.2, 0, 0, 1);
   transition-delay: 60ms;
 }
+
 .brand-link:hover .brand-label,
-.brand-link:focus-visible .brand-label{ max-width:160px; opacity:1; transform:none; }
-@media (prefers-reduced-motion: reduce){
-  .brand-label{ transition:none; transform:none; }
+.brand-link:focus-visible .brand-label {
+  max-width: 160px;
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-label {
+    transition: none;
+    transform: none;
+  }
 }
 
 /* =========================================
    Choice grid / cards (Plans)
 ========================================= */
-.choice-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
-.choice-card{
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.choice-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem;
   transition: background-color .15s, border-color .15s, box-shadow .15s, transform .15s;
 }
-.choice-card:hover{
+
+.choice-card:hover {
   border-color: rgba(var(--brand-1-rgb), .35);
   background:
     linear-gradient(0deg, rgba(var(--brand-1-rgb), .08), transparent),
@@ -302,22 +282,30 @@ html:not(.dark) .table thead th{ background:#fafafa; color:#111827; }
 /* =========================================
    Ambient shadow helper + NEON/AURA PANEL
 ========================================= */
-.shadow-ambient{ box-shadow: 0 12px 48px rgba(0,0,0,.28); }
+.shadow-ambient {
+  box-shadow: 0 12px 48px rgba(0, 0, 0, .28);
+}
 
 /* Dodaj ovu klasu pored .table (npr. <div class="table neon-surface">) */
-.neon-surface{ position: relative; }
-.neon-surface::before{
-  content:"";
-  position:absolute; inset:-10px -14px;
+.neon-surface {
+  position: relative;
+}
+
+.neon-surface::before {
+  content: "";
+  position: absolute;
+  inset: -10px -14px;
   border-radius: calc(var(--radius) + 10px);
-  z-index:-1; pointer-events:none;
+  z-index: -1;
+  pointer-events: none;
   background:
     radial-gradient(42% 62% at 12% 22%, rgba(var(--brand-1-rgb), .28), transparent 70%),
     radial-gradient(52% 62% at 88% 64%, rgba(var(--brand-2-rgb), .26), transparent 72%);
   filter: blur(var(--aura-blur)) saturate(1.05);
   opacity: var(--aura-opacity);
 }
-html.dark .neon-surface::before{
+
+html.dark .neon-surface::before {
   opacity: calc(var(--aura-opacity) + .06);
 }
 
@@ -335,6 +323,7 @@ html.dark .neon-surface::before{
   cursor: pointer;
   user-select: none;
 }
+
 .status-badge .ring {
   position: absolute;
   inset: 0;
@@ -345,30 +334,61 @@ html.dark .neon-surface::before{
   mask-composite: exclude;
   pointer-events: none;
 }
-.status-badge.online { color: #065f46; }   /* emerald-800 */
-.status-badge.offline { color: #7f1d1d; }  /* red-900 */
+
+.status-badge.online {
+  color: #065f46;
+}
+
+/* emerald-800 */
+.status-badge.offline {
+  color: #7f1d1d;
+}
+
+/* red-900 */
 .status-badge.online .ring {
-  background: linear-gradient(90deg, #10b981, #34d399); /* emerald 500 → 400 */
+  background: linear-gradient(90deg, #10b981, #34d399);
+  /* emerald 500 → 400 */
 }
+
 .status-badge.offline .ring {
-  background: linear-gradient(90deg, #f97316, #ef4444); /* orange→red */
+  background: linear-gradient(90deg, #f97316, #ef4444);
+  /* orange→red */
 }
+
 /* Rotirajuća tačka (svega par piksela) */
 .status-badge.online .dot {
   position: absolute;
-  inset: -4px;               /* malo veći od bež-a da bi dot bio tik izvan teksta */
+  inset: -4px;
+  /* malo veći od bež-a da bi dot bio tik izvan teksta */
   border-radius: 9999px;
   background:
-    radial-gradient(circle at 50% 0, rgba(16,185,129,.95) 0 3px, transparent 4px);
+    radial-gradient(circle at 50% 0, rgba(16, 185, 129, .95) 0 3px, transparent 4px);
   animation: tl-rotate 1.6s linear infinite;
   pointer-events: none;
 }
-.status-badge.offline .dot { display: none; }
 
-@keyframes tl-rotate { to { transform: rotate(360deg); } }
+.status-badge.offline .dot {
+  display: none;
+}
 
-.tl-nav { color: var(--text); }               /* ovo postaje currentColor za svu decu */
-.tl-nav a, .tl-nav button, .tl-nav span { color: inherit; }  /* osiguraj nasleđivanje */
+@keyframes tl-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tl-nav {
+  color: var(--text);
+}
+
+/* ovo postaje currentColor za svu decu */
+.tl-nav a,
+.tl-nav button,
+.tl-nav span {
+  color: inherit;
+}
+
+/* osiguraj nasleđivanje */
 
 /* ... (tvoj postojeći kod iznad) ... */
 
@@ -378,18 +398,23 @@ html.dark .neon-surface::before{
 ========================================= */
 
 /* Lenis Smooth Scroll */
-html.lenis, html.lenis body {
+html.lenis,
+html.lenis body {
   height: auto;
 }
+
 .lenis.lenis-smooth {
   scroll-behavior: auto !important;
 }
+
 .lenis.lenis-smooth [data-lenis-prevent] {
   overscroll-behavior: contain;
 }
+
 .lenis.lenis-stopped {
   overflow: hidden;
 }
+
 .lenis.lenis-scrolling iframe {
   pointer-events: none;
 }
@@ -398,6 +423,7 @@ html.lenis, html.lenis body {
 .perspective-1000 {
   perspective: 1000px;
 }
+
 .preserve-3d {
   transform-style: preserve-3d;
 }
@@ -406,6 +432,7 @@ html.lenis, html.lenis body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -413,15 +440,45 @@ html.lenis, html.lenis body {
 
 /* Animate Gradient Text */
 @keyframes gradient-x {
-  0%, 100% {
+
+  0%,
+  100% {
     background-size: 200% 200%;
     background-position: left center;
   }
+
   50% {
     background-size: 200% 200%;
     background-position: right center;
   }
 }
+
 .animate-gradient {
   animation: gradient-x 6s ease infinite;
+}
+
+/* ... tvoj postojeći kod ... */
+
+/* =========================================
+   TABLE OVERFLOW FIX (Prebačeno iz overrides)
+========================================= */
+.table,
+.table thead,
+.table tbody,
+.table tr,
+.table td,
+.table th {
+  overflow: visible;
+}
+
+.table tbody {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}
+
+@supports (-webkit-hyphens: none) {
+  .table tr {
+    transform: translateZ(0);
+  }
 }

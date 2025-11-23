@@ -1,5 +1,4 @@
 // src/app/dashboard/layout.tsx
-import "@/app/overrides.css";
 import type { ReactNode } from "react";
 import Nav from "@/components/dashboard/Nav";
 import Sidebar from "@/components/dashboard/Sidebar";

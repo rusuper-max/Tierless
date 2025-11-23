@@ -134,10 +134,10 @@ const PLANS: Plan[] = [
     theme: {
       text: "text-indigo-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-300",
       // Pro nema obican borderHover jer koristi gradient stil
-      borderHover: "", 
+      borderHover: "",
       bgHover: "group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/20",
       // Button koristi gradient stil, pa su ove klase fallback
-      button: "text-white", 
+      button: "text-white",
       buttonHover: "opacity-90 hover:opacity-100",
       shadow: "group-hover:shadow-indigo-500/10",
     },
@@ -200,7 +200,7 @@ export default function StartPage() {
       try {
         const st = await fetch("/api/auth/status?ts=" + Date.now()).then((r) => r.json());
         setAuthed(!!st?.authenticated);
-      } catch {}
+      } catch { }
       try {
         const mp = await fetch("/api/me/plan").then((r) => (r.ok ? r.json() : null));
         const p = mp?.plan;
@@ -244,7 +244,7 @@ export default function StartPage() {
   const bgCol = isDark ? "#000000" : "#ffffff"; // Mora se poklapati sa pozadinom strane
   const activeToggleStyle = {
     background: `linear-gradient(${bgCol},${bgCol}) padding-box, ${BRAND_GRADIENT} border-box`,
-    border: "1px solid transparent", 
+    border: "1px solid transparent",
   };
 
   return (
@@ -252,48 +252,48 @@ export default function StartPage() {
       <StartHeader />
 
       <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-slate-100">
-        <main className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-16 sm:py-24">
-          
+        <main className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-12 sm:py-16 lg:py-24">
+
           {/* Header */}
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
+          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
               {t("Simple pricing")}
             </h1>
-            <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
+            <p className="mt-3 sm:mt-4 text-base sm:text-lg text-slate-600 dark:text-slate-400">
               {t("Choose a plan. Switch anytime.")}
             </p>
 
             {/* Gradient Toggle Switch */}
-            <div className="mt-8 flex justify-center">
+            <div className="mt-6 sm:mt-8 flex justify-center">
               <div className="relative flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-full border border-slate-200 dark:border-slate-800">
                 <button
                   onClick={() => setInterval("monthly")}
                   // Ako je aktivan, primeni gradient border stil. Ako nije, transparent border.
                   style={interval === "monthly" ? activeToggleStyle : { border: "1px solid transparent" }}
                   className={`
-                    relative z-10 px-6 py-2 text-sm font-medium rounded-full transition-all duration-200
-                    ${interval === "monthly" 
-                        ? "text-slate-900 dark:text-white shadow-sm" 
-                        : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    relative z-10 px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-200
+                    ${interval === "monthly"
+                      ? "text-slate-900 dark:text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                     }
                   `}
                 >
                   {t("Monthly")}
                 </button>
-                
+
                 <button
                   onClick={() => setInterval("yearly")}
                   style={interval === "yearly" ? activeToggleStyle : { border: "1px solid transparent" }}
                   className={`
-                    relative z-10 px-6 py-2 text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-2
-                    ${interval === "yearly" 
-                        ? "text-slate-900 dark:text-white shadow-sm" 
-                        : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    relative z-10 px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1.5 sm:gap-2
+                    ${interval === "yearly"
+                      ? "text-slate-900 dark:text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                     }
                   `}
                 >
                   {t("Yearly")}
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-1 sm:px-1.5 py-0.5 rounded">
                     -20%
                   </span>
                 </button>
@@ -301,8 +301,8 @@ export default function StartPage() {
             </div>
           </div>
 
-          {/* Grid - Equal Heights forced via 'h-full' inside cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+          {/* Grid - Responsive: 1 col mobile, 2 col tablet, 4 col desktop */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 items-stretch">
             {PLANS.map((plan) => (
               <PlanCard
                 key={plan.id}
@@ -344,7 +344,7 @@ function PlanCard({
   const [busy, setBusy] = useState(false);
   const isCurrent = authed && currentPlan === plan.id;
   const { effMonthlyLabel, perYearLabel } = getYearlyPricing(plan.monthly);
-  
+
   // Gradient stilovi za Pro tier
   const bgCol = isDark ? "#0f172a" : "#ffffff"; // bg-slate-900 or white
   const proGradientBorder = {
@@ -384,7 +384,7 @@ function PlanCard({
   // Ovde je najčistije osloniti se na 'group-hover' Tailwind klase za ne-Pro, 
   // a za Pro ćemo uvek imati gradient border (ili ga dodati na mouse enter, ali estetski je bolje da je tu ili suptilan).
   // Tvoj zahtev: "na hover bar da ima tanak outline".
-  
+
   // Da bi Pro imao outline SAMO na hover koji je gradient, koristimo mali trik sa pseudo elementom ili onMouseEnter/Leave u Reactu
   // Radi jednostavnosti i performansi, ovde ću koristiti React state za hover samo za Pro karticu ako želimo style prop manipulaciju,
   // ALI "cleaner" način je da Pro uvek ima taj border ali transparentan, pa na hover postane vidljiv.
@@ -419,26 +419,26 @@ function PlanCard({
       {/* Background Glow effect on hover */}
       <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${plan.theme.bgHover}`} />
 
-      <div className="relative p-6 flex-1 flex flex-col z-10">
+      <div className="relative p-4 sm:p-6 flex-1 flex flex-col z-10">
         {/* Header */}
         <div className="mb-4">
           <h3 className={`text-lg font-semibold transition-colors ${plan.theme.text}`}>
             {plan.name}
           </h3>
-          
+
           <div className="mt-2 flex items-baseline gap-1 text-slate-900 dark:text-white">
             <span className="text-3xl font-bold tracking-tight">
               {interval === "monthly" ? `$${plan.monthly}` : effMonthlyLabel.replace("/mo", "")}
             </span>
             <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">/mo</span>
           </div>
-          
+
           {interval === "yearly" && plan.monthly > 0 && (
             <p className="text-xs text-slate-500 mt-1">
               {t("Billed {price} yearly", { price: perYearLabel })}
             </p>
           )}
-          
+
           <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 min-h-[40px]">
             {plan.description}
           </p>
@@ -467,8 +467,8 @@ function PlanCard({
         <ul className="space-y-3 mt-4 mb-8 flex-1">
           {plan.caps.map((cap, i) => (
             <li key={i} className="text-sm flex items-start gap-3 text-slate-600 dark:text-slate-400">
-               <span className={`mt-1.5 size-1.5 rounded-full shrink-0 bg-slate-400 ${plan.isPro ? "bg-indigo-400" : ""}`} />
-               <span>{cap}</span>
+              <span className={`mt-1.5 size-1.5 rounded-full shrink-0 bg-slate-400 ${plan.isPro ? "bg-indigo-400" : ""}`} />
+              <span>{cap}</span>
             </li>
           ))}
           {plan.perks.map((perk, i) => (
@@ -481,25 +481,25 @@ function PlanCard({
 
         {/* CTA Button - mt-auto osigurava da je uvek na dnu */}
         <div className="mt-auto pt-4">
-            <Link
+          <Link
             href={ctaHref}
             onClick={handleCta}
             style={plan.isPro && !isCurrent ? proButtonStyle : {}}
             className={`
                 block w-full py-2.5 px-4 rounded-xl text-center text-sm font-semibold transition-all shadow-sm
                 focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black
-                ${isCurrent 
-                ? "bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed" 
+                ${isCurrent
+                ? "bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
                 : `${plan.theme.button} ${plan.theme.buttonHover}`
-                }
+              }
             `}
-            >
+          >
             {busy ? t("Updating...") : ctaText}
-            </Link>
-            
-            <p className="mt-3 text-[11px] text-center text-slate-400 dark:text-slate-500">
-                {plan.id === "free" ? t("No credit card required") : t("Cancel anytime")}
-            </p>
+          </Link>
+
+          <p className="mt-3 text-[11px] text-center text-slate-400 dark:text-slate-500">
+            {plan.id === "free" ? t("No credit card required") : t("Cancel anytime")}
+          </p>
         </div>
       </div>
     </div>
@@ -540,9 +540,9 @@ function CheckIcon({ className }: { className?: string }) {
 }
 
 function InfoIcon({ className }: { className?: string }) {
-    return (
-      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    );
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
 }

@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 type Variant = "brand" | "danger" | "neutral" | "success" | "ghost";
 type Size = "xs" | "sm" | "md" | "icon";
@@ -17,14 +18,15 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     pill?: boolean;
     title?: string;
     className?: string;
+    isLoading?: boolean;
+    hoverText?: string;
 }
 
-// --- DIMENZIJE ---
 const SIZES = {
-    xs: "px-3 py-1 text-xs h-7",
-    sm: "px-4 py-1.5 text-sm h-9",
-    md: "px-6 py-2.5 text-base h-11",
-    icon: "w-8 h-8 p-0 flex items-center justify-center", // Kvadratno za ikonice
+    xs: "h-7 px-3 text-xs",
+    sm: "h-9 px-4 text-sm",
+    md: "h-11 px-6 text-base",
+    icon: "h-9 w-9 p-0 flex items-center justify-center",
 };
 
 export function Button({
@@ -36,88 +38,143 @@ export function Button({
     external,
     className,
     disabled,
-    pill = true, // Default na pill (zaokruženo)
+    pill = true,
     title,
+    isLoading,
+    hoverText,
     onClick,
     ...props
 }: ButtonProps) {
 
-    /* --- STILOVI --- */
+    const isDisabled = disabled || isLoading;
+    const radiusClass = pill ? "rounded-full" : "rounded-xl";
+
     let variantClasses = "";
+    let gradientBorderLayer = null;
 
     switch (variant) {
         case "brand":
-            // EDIT DUGME: Cyan Border, Cyan Text, Transparent BG
-            // Na hover: Cyan Glow
+            // --- HOLOGRAPHIC TECH BUTTON (Neutral Text + Gradient Border) ---
             variantClasses = `
-        bg-transparent border border-[#22D3EE] text-[#22D3EE]
-        hover:bg-[#22D3EE]/10 
-        hover:shadow-[0_0_20px_-5px_rgba(34,211,238,0.6)]
-        active:scale-95
+        bg-transparent font-medium tracking-wide
+        /* Neutral tekst (crn/bel) */
+        text-slate-900 dark:text-white
+        
+        /* Hover: Ostaje neutralno */
+        hover:text-slate-950 dark:hover:text-slate-50
+        hover:-translate-y-[1px]
+        /* Jači glow sa brand bojama */
+        hover:shadow-[0_0_20px_-4px_rgba(79,70,229,0.4)] dark:hover:shadow-[0_0_25px_-5px_rgba(34,211,238,0.5)]
+        active:translate-y-0 active:scale-95
       `;
+
+            // Gradient border - Full Opacity
+            gradientBorderLayer = (
+                <div
+                    className={cn(
+                        "absolute inset-0 transition-opacity duration-300",
+                        "opacity-100",
+                        radiusClass
+                    )}
+                    style={{
+                        border: '1.5px solid transparent',
+                        background: 'linear-gradient(135deg, #4F46E5, #22D3EE) border-box',
+                        WebkitMask: 'linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)',
+                        WebkitMaskComposite: 'xor',
+                        maskComposite: 'exclude',
+                        pointerEvents: 'none'
+                    }}
+                />
+            );
             break;
 
         case "neutral":
-            // SHARE / MENU: Sivi border, Sivi tekst
-            // Na hover: Beli border, Beli tekst
+            // --- NEUTRAL (Boosted Contrast) ---
             variantClasses = `
-        bg-transparent border border-slate-700 text-slate-400
-        hover:border-slate-300 hover:text-slate-100 hover:bg-white/5
+        bg-transparent
+        /* Light: Standardno sivo */
+        border border-slate-300 text-slate-700
+        /* Dark: Svetlije sivo (Slate-600 border, Slate-300 text) da ne bude "mrtvo" */
+        dark:border-slate-600 dark:text-slate-300
+        
+        /* Hover: Brand boje */
+        hover:border-[#22D3EE] hover:text-[#22D3EE] hover:bg-[#22D3EE]/5
+        dark:hover:border-[#22D3EE] dark:hover:text-[#22D3EE] dark:hover:bg-[#22D3EE]/10
+        
         active:scale-95
       `;
             break;
 
         case "danger":
-            // LOGOUT / DELETE: Crveni border, Crveni tekst
-            // Na hover: Crveni Glow
+            // --- DANGER (Clear Red) ---
             variantClasses = `
-        bg-transparent border border-rose-600 text-rose-500
-        hover:bg-rose-500/10 hover:border-rose-500 hover:text-rose-400
-        hover:shadow-[0_0_20px_-5px_rgba(244,63,94,0.5)]
+        bg-transparent 
+        border border-rose-300 text-rose-600
+        dark:border-rose-500/60 dark:text-rose-400
+        
+        hover:bg-rose-50 dark:hover:bg-rose-500/10 
+        hover:border-rose-500 dark:hover:border-rose-400
+        dark:hover:shadow-[0_0_15px_-3px_rgba(244,63,94,0.4)]
+        
         active:scale-95
       `;
             break;
 
         case "success":
-            // ONLINE: Zeleni border, Zeleni tekst
-            // Bez jakog glow-a, samo clean status
+            // --- SUCCESS (Clear Green) ---
             variantClasses = `
-        bg-transparent border border-emerald-500/50 text-emerald-500
-        hover:border-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400
+        bg-transparent 
+        border border-emerald-300 text-emerald-700
+        dark:border-emerald-500/60 dark:text-emerald-400
+        
+        hover:bg-emerald-50 dark:hover:bg-emerald-500/10
+        hover:border-emerald-500 dark:hover:border-emerald-400
       `;
             break;
 
         case "ghost":
-            // LINKOVI: Nema bordera
             variantClasses = `
-        border border-transparent text-slate-400 
-        hover:text-white hover:bg-white/5
+        border border-transparent 
+        text-slate-500 hover:text-slate-900 hover:bg-slate-100
+        dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5
       `;
             break;
     }
 
     const baseClasses = cn(
-        // Base layout
-        "relative inline-flex items-center justify-center font-semibold transition-all duration-200 select-none",
-        // Cursor & State
-        disabled ? "opacity-50 cursor-not-allowed grayscale" : "cursor-pointer",
-        // Shape
-        pill ? "rounded-full" : "rounded-xl",
-        // Size
+        "group relative isolate inline-flex items-center justify-center transition-all duration-300 ease-out select-none",
+        radiusClass,
         SIZES[size],
-        // Colors
+        isDisabled ? "opacity-50 cursor-not-allowed grayscale pointer-events-none" : "cursor-pointer",
         variantClasses,
         className
     );
 
     const content = (
         <>
-            {icon && <span className={children ? "mr-2 shrink-0 flex items-center" : "flex items-center justify-center"}>{icon}</span>}
-            {children}
+            {gradientBorderLayer}
+
+            <span className="relative z-10 flex items-center justify-center gap-2 w-full">
+                {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+
+                <span className={cn(
+                    "flex items-center gap-2 transition-all duration-200",
+                    hoverText && !isLoading ? "group-hover:opacity-0 group-hover:-translate-y-2 absolute" : ""
+                )}>
+                    {!isLoading && icon && <span className="shrink-0 flex items-center">{icon}</span>}
+                    {children}
+                </span>
+
+                {hoverText && !isLoading && (
+                    <span className="flex items-center justify-center gap-2 opacity-0 translate-y-2 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 font-bold">
+                        {hoverText}
+                    </span>
+                )}
+            </span>
         </>
     );
 
-    if (href && !disabled) {
+    if (href && !isDisabled) {
         return (
             <Link
                 href={href}
@@ -133,7 +190,7 @@ export function Button({
 
     return (
         <button
-            disabled={disabled}
+            disabled={isDisabled}
             onClick={onClick}
             className={baseClasses}
             title={title}
