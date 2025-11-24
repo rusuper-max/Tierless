@@ -294,9 +294,15 @@ export default function SimpleListPanel() {
                 <ImageIcon className="w-6 h-6" />
               </div>
             )}
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition text-white">
-              <Plus className="w-5 h-5" />
-            </div>
+            {uploadingId === it.id ? (
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full border-2 border-transparent animate-spin" style={{ borderTopColor: '#22D3EE', borderRightColor: '#6366f1' }} />
+              </div>
+            ) : (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition text-white">
+                <Plus className="w-5 h-5" />
+              </div>
+            )}
           </div>
         )}
 
@@ -420,9 +426,15 @@ export default function SimpleListPanel() {
 
             {/* Hover Overlay */}
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-              <button onClick={() => triggerGenericUpload("cover", "cover")} className="px-4 py-2 bg-white text-black text-xs font-bold rounded-full hover:scale-105 transition cursor-default" data-help="Upload a cover image for your menu. This appears at the top and grabs attention! Recommended size: 1200x400px.">{t("Upload Cover")}</button>
-              {simpleCoverImage && (
-                <button onClick={() => setMeta({ simpleCoverImage: "" })} className="p-2 bg-white/20 text-white rounded-full hover:bg-red-500 hover:text-white transition cursor-default"><X className="w-4 h-4" /></button>
+              {uploadingId === "cover" ? (
+                <div className="w-8 h-8 rounded-full border-3 border-transparent animate-spin" style={{ borderTopColor: '#22D3EE', borderRightColor: '#6366f1', borderWidth: '3px' }} />
+              ) : (
+                <>
+                  <button onClick={() => triggerGenericUpload("cover", "cover")} className="px-4 py-2 bg-white text-black text-xs font-bold rounded-full hover:scale-105 transition cursor-default" data-help="Upload a cover image for your menu. This appears at the top and grabs attention! Recommended size: 1200x400px.">{t("Upload Cover")}</button>
+                  {simpleCoverImage && (
+                    <button onClick={() => setMeta({ simpleCoverImage: "" })} className="p-2 bg-white/20 text-white rounded-full hover:bg-red-500 hover:text-white transition cursor-default"><X className="w-4 h-4" /></button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -440,7 +452,11 @@ export default function SimpleListPanel() {
                       <Store className="w-8 h-8 text-[var(--muted)] opacity-40" />
                     )}
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/logo:opacity-100 transition flex items-center justify-center">
-                      <button onClick={() => triggerGenericUpload("logo", "logo")} className="text-[10px] font-bold text-white uppercase tracking-wide cursor-default" data-help="Upload your business logo. This appears prominently on your menu page. Square images work best!">{t("Edit")}</button>
+                      {uploadingId === "logo" ? (
+                        <div className="w-6 h-6 rounded-full border-2 border-transparent animate-spin" style={{ borderTopColor: '#22D3EE', borderRightColor: '#6366f1' }} />
+                      ) : (
+                        <button onClick={() => triggerGenericUpload("logo", "logo")} className="text-[10px] font-bold text-white uppercase tracking-wide cursor-default" data-help="Upload your business logo. This appears prominently on your menu page. Square images work best!">{t("Edit")}</button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -511,7 +527,11 @@ export default function SimpleListPanel() {
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img src={section.imageUrl} alt="" className="w-full h-full object-cover" />
                     ) : <ImageIcon className="w-5 h-5 m-auto text-[var(--muted)] opacity-50 relative top-2.5" />}
-                    {section.imageUrl && (
+                    {uploadingId === section.id ? (
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full border-2 border-transparent animate-spin" style={{ borderTopColor: '#22D3EE', borderRightColor: '#6366f1' }} />
+                      </div>
+                    ) : section.imageUrl && (
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/secimg:opacity-100 flex items-center justify-center text-white">
                         <X className="w-3 h-3 cursor-default" onClick={(e) => {
                           e.stopPropagation();
