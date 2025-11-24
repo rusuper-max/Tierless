@@ -135,7 +135,12 @@ export default function SimpleListPanel() {
     setError(null);
 
     if (!file.type.startsWith("image/")) { setError(t("Only image files are allowed.")); return; }
-    if (file.size > 3 * 1024 * 1024) { setError(t("Image is too large (max 3 MB).")); return; }
+
+    // --- PROMENA: Limit povećan na 10 MB ---
+    if (file.size > 10 * 1024 * 1024) {
+      setError(t("Image is too large (max 10 MB)."));
+      return;
+    }
 
     try {
       setUploadingId(targetId);
@@ -496,7 +501,7 @@ export default function SimpleListPanel() {
               <div key={section.id} className="group/section rounded-xl border border-[var(--border)] bg-[var(--bg)] overflow-hidden">
                 {/* Section Header */}
                 <div className="flex items-center gap-3 p-3 bg-[var(--card)]">
-                  <button onClick={toggleCollapse} className="cursor-default p-1.5 hover:bg-[var(--surface)] rounded-md text-[var(--muted)] transition-colors">
+                  <button onClick={toggleCollapse} className="cursor-default p-1.5 hover:bg-[var(--surface)] rounded-md text-[var(--muted)] transition-colors" data-help="Collapse or expand this section to organize your view. Items inside won't be affected.">
                     {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </button>
 
@@ -543,13 +548,13 @@ export default function SimpleListPanel() {
                   <button onClick={() => {
                     const next = simpleSections.filter(s => s.id !== section.id);
                     setMeta({ simpleSections: next });
-                  }} className="cursor-default p-2 text-[var(--muted)] hover:text-red-500 opacity-0 group-hover/section:opacity-100 transition-opacity"><Trash2 className="w-4 h-4" /></button>
+                  }} className="cursor-default p-2 text-[var(--muted)] hover:text-red-500 opacity-0 group-hover/section:opacity-100 transition-opacity" data-help="Delete this entire section. All items inside will become 'Loose Items' - they won't be deleted!"><Trash2 className="w-4 h-4" /></button>
                 </div>
 
                 {!collapsed && (
                   <div className="p-3 border-t border-[var(--border)] bg-[var(--bg)]/50 space-y-3">
                     {sectionItems.map(renderItemRow)}
-                    <button onClick={() => handleAddItemToSection(section.id)} className="cursor-default w-full py-2 border border-dashed border-[var(--border)] rounded-lg text-xs font-semibold text-[var(--muted)] hover:text-[var(--text)] hover:border-[#22D3EE] hover:bg-[#22D3EE]/5 transition flex items-center justify-center gap-2 group/add">
+                    <button onClick={() => handleAddItemToSection(section.id)} className="cursor-default w-full py-2 border border-dashed border-[var(--border)] rounded-lg text-xs font-semibold text-[var(--muted)] hover:text-[var(--text)] hover:border-[#22D3EE] hover:bg-[#22D3EE]/5 transition flex items-center justify-center gap-2 group/add" data-help="Add a new item directly to this section. It will only appear under this category.">
                       <Plus className="w-3.5 h-3.5 group-hover/add:rotate-90 transition-transform" /> {t("Add item to")} {section.label}
                     </button>
                   </div>
@@ -639,7 +644,8 @@ export default function SimpleListPanel() {
         <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4">
           <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2"><Clock className="w-4 h-4 text-green-500" /> {t("Hours")}</h3>
           <div className="space-y-3">
-            <textarea rows={3} value={business.hours || ""} onChange={e => setBusiness({ hours: e.target.value })} className="w-full p-2 bg-[var(--bg)] border border-none text-sm outline-none resize-none" placeholder="Mon-Fri: 9am - 10pm&#10;Sat-Sun: 10am - 11pm" />
+            <textarea rows={3} value={business.hours || ""} onChange={e => setBusiness({ hours: e.target.value })} className="w-full p-2 bg-[var(--bg)] border border-none text-sm outline-none resize-none" placeholder="Mon-Fri: 9am - 10pm
+Sat-Sun: 10am - 11pm" />
           </div>
         </div>
       </div>
@@ -664,6 +670,7 @@ export default function SimpleListPanel() {
                 ? "border-[#22D3EE] shadow-lg scale-[1.02] ring-1 ring-[#22D3EE]"
                 : "border-[var(--border)] hover:border-[var(--text)] hover:shadow-md"
                 }`}
+              data-help={`Select the ${th.label} theme. ${th.desc} Your menu will adapt to this color scheme.`}
             >
               <div className={`absolute inset-0 opacity-[0.03] ${th.color}`} />
               <div className="flex items-center gap-4 relative z-10">
@@ -694,13 +701,13 @@ export default function SimpleListPanel() {
         <div className="grid grid-cols-2 gap-6">
           <label className="space-y-2 group cursor-default">
             <span className="text-xs text-[var(--muted)] font-medium group-hover:text-[var(--text)] transition-colors">{t("Currency Symbol")}</span>
-            <select value={currency || "€"} onChange={e => setI18n({ currency: e.target.value })} className="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] cursor-default">
+            <select value={currency || "€"} onChange={e => setI18n({ currency: e.target.value })} className="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] cursor-default" data-help="Choose which currency symbol appears before prices on your menu (e.g., €, $, £).">
               {CURRENCY_PRESETS.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
           <label className="space-y-2 group cursor-default">
             <span className="text-xs text-[var(--muted)] font-medium group-hover:text-[var(--text)] transition-colors">{t("Price Decimals")}</span>
-            <select value={decimals} onChange={e => setI18n({ decimals: Number(e.target.value) })} className="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] cursor-default">
+            <select value={decimals} onChange={e => setI18n({ decimals: Number(e.target.value) })} className="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] cursor-default" data-help="Choose how prices display: 0 decimals (€10) or 2 decimals (€10.00).">
               <option value={0}>0 (100)</option>
               <option value={2}>2 (100.00)</option>
             </select>
@@ -711,7 +718,7 @@ export default function SimpleListPanel() {
       <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4">
         <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide">{t("Advanced Options")}</h3>
 
-        <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors">
+        <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors" data-help="Show a small 'Powered by Tierless' badge at the bottom of your menu. Helps us grow!">
           <span className="text-sm text-[var(--text)] font-medium">{t("Show 'Powered by Tierless' Badge")}</span>
           <div className="relative inline-flex items-center cursor-default">
             <input type="checkbox" checked={meta.simpleShowBadge !== false} onChange={e => setMeta({ simpleShowBadge: e.target.checked })} className="sr-only peer" />
@@ -719,7 +726,7 @@ export default function SimpleListPanel() {
           </div>
         </label>
 
-        <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors">
+        <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors" data-help="Let customers tap items on the menu to calculate a running total. Perfect for restaurants and cafes!">
           <div className="space-y-0.5">
             <span className="text-sm text-[var(--text)] font-medium block">{t("Allow User Selection")}</span>
             <span className="text-[10px] text-[var(--muted)] block">{t("Lets customers tap items to calculate total.")}</span>
@@ -748,16 +755,6 @@ export default function SimpleListPanel() {
               <p className="text-[10px] text-[var(--muted)]">{t("Customize your menu presence")}</p>
             </div>
           </div>
-
-          {/* Setup Score Widget (HIDDEN per user request, can be re-enabled by removing hidden class) */}
-          {/* <div className="flex flex-col items-end w-32">
-               <div className="flex items-center justify-between w-full mb-1">
-                  <span className="text-[10px] font-bold text-[var(--muted)] uppercase">{t("Setup Score")}</span>
-                  <span className="text-[10px] font-bold text-[#4F46E5]">{brandScore}%</span>
-               </div>
-               <ProgressBar value={brandScore} />
-            </div>
-            */}
         </div>
 
         {/* Navigation */}
@@ -779,6 +776,23 @@ export default function SimpleListPanel() {
 
       {/* Main Content Area */}
       <div className="px-4 pb-20">
+
+        {/* --- OVO JE DODATI ERROR BLOK --- */}
+        {error && (
+          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 rounded-full text-red-600">
+                <Ban className="w-4 h-4" />
+              </div>
+              <span className="text-sm font-medium text-red-800">{error}</span>
+            </div>
+            <button onClick={() => setError(null)} className="p-1.5 hover:bg-red-100 rounded-lg text-red-600 transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        {/* --- KRAJ ERROR BLOKA --- */}
+
         {activeTab === "content" && renderContentTab()}
         {activeTab === "business" && renderBusinessTab()}
         {activeTab === "design" && renderDesignTab()}

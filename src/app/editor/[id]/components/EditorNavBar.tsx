@@ -212,7 +212,7 @@ export default function EditorNavBar({
 
             <nav className="flex items-center text-sm text-[var(--muted)] overflow-hidden whitespace-nowrap">
               <Link
-                href="/dashboard"
+                href="/"
                 className="hidden sm:inline font-semibold bg-clip-text text-transparent hover:opacity-80 transition-opacity"
                 style={{ backgroundImage: BRAND_GRADIENT }}
                 title="Tierless"

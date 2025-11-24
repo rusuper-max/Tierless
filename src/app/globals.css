@@ -457,6 +457,17 @@ html.lenis body {
   animation: gradient-x 6s ease infinite;
 }
 
+/* Shimmer Animation (for progress bars) */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 /* ... tvoj postojeći kod ... */
 
 /* =========================================

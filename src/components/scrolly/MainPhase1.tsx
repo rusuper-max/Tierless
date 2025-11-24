@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { Coffee, Camera, Scissors, Rocket } from "lucide-react";
 import { t } from "@/i18n";
 import ParticlesBackground from "@/components/landing/ParticlesBackground";
 import ShinyButton from "@/components/marketing/ShinyButton";
@@ -117,13 +118,13 @@ export default function MainPhase1() {
               transition={{ delay: 1, duration: 1 }}
               className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-3 text-slate-400 text-sm font-medium"
             >
-              <span className="flex items-center gap-2">☕️ {t("Cafes & Menus")}</span>
+              <span className="flex items-center gap-2"><Coffee size={16} className="text-cyan-400" /> {t("Cafes & Menus")}</span>
               <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
-              <span className="flex items-center gap-2">📸 {t("Freelancers")}</span>
+              <span className="flex items-center gap-2"><Camera size={16} className="text-indigo-400" /> {t("Freelancers")}</span>
               <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
-              <span className="flex items-center gap-2">💇‍♀️ {t("Salons")}</span>
+              <span className="flex items-center gap-2"><Scissors size={16} className="text-pink-400" /> {t("Salons")}</span>
               <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
-              <span className="flex items-center gap-2">🚀 {t("Startups")}</span>
+              <span className="flex items-center gap-2"><Rocket size={16} className="text-emerald-400" /> {t("Startups")}</span>
             </motion.div>
 
           </div>
