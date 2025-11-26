@@ -7,7 +7,8 @@ import { getUserIdFromRequest } from "@/lib/auth";
 import { safeUserId } from "@/lib/safeUserId"; // Koristimo tvoj postojeći helper
 import crypto from "crypto";
 
-const MAX_SIZE = 10 * 2048 * 2048; // 10 MB
+import { getUserPlan } from "@/lib/auth";
+import { getUploadSizeLimit, type PlanId } from "@/lib/entitlements";
 
 function jsonNoCache(data: any, status = 200) {
   const res = NextResponse.json(data, { status });
@@ -33,8 +34,13 @@ export async function POST(req: Request) {
   if (!file.type.startsWith("image/")) {
     return jsonNoCache({ error: "invalid_type" }, 400);
   }
-  if (file.size > MAX_SIZE) {
-    return jsonNoCache({ error: "too_large", maxBytes: MAX_SIZE }, 400);
+
+  // Dynamic size limit based on plan
+  const plan = (await getUserPlan(userId)) as PlanId;
+  const maxBytes = getUploadSizeLimit(plan);
+
+  if (file.size > maxBytes) {
+    return jsonNoCache({ error: "too_large", maxBytes }, 400);
   }
 
   // 3. Učitaj env varijable

@@ -130,6 +130,52 @@ function EditorContent({ slug, initialCalc }: Props) {
     }
   };
 
+  /* ---------------- Toggle Publish/Unpublish ---------------- */
+  const handleTogglePublish = async () => {
+    if (!calc) return;
+    const nextState = !isPublished;
+
+    try {
+      const r = await fetch(`/api/calculators/${encodeURIComponent(slug)}/publish`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ publish: nextState }),
+      });
+
+      if (!r.ok) {
+        const json = await r.json().catch(() => ({}));
+        if (r.status === 409 && json.error === "PLAN_LIMIT") {
+          // PLAN LIMIT - Show user notification
+          setToast(
+            t("You've reached your plan limit for published pages. Please unpublish another page first.")
+          );
+          setTimeout(() => setToast(null), 3000);
+        } else {
+          setToast(t("Failed to update status"));
+          setTimeout(() => setToast(null), 2000);
+        }
+        return;
+      }
+
+      // Success - update local state
+      (useEditorStore as any).setState((state: any) => {
+        const updated = { ...state.calc };
+        if (!updated.meta) updated.meta = {};
+        updated.meta.published = nextState;
+        // legacy fallback
+        (updated.meta as any).online = nextState;
+        return { calc: updated };
+      });
+
+      setToast(nextState ? t("Page is now Online") : t("Page is now Offline"));
+      setTimeout(() => setToast(null), 2000);
+    } catch (e) {
+      console.error("Publish error:", e);
+      setToast(t("Network error"));
+      setTimeout(() => setToast(null), 2000);
+    }
+  };
+
   /* ---------------- Public URL (no popup) ---------------- */
   const publicHref = (() => {
     const id = (calc as any)?.meta?.id;
@@ -224,6 +270,7 @@ function EditorContent({ slug, initialCalc }: Props) {
         publicHref={publicHref}
         isPublished={isPublished}
         editorMode={uiMode}
+        onTogglePublish={handleTogglePublish}
         onGuideClick={() => {
           // If seen intro before, toggle Help Mode directly
           // Otherwise show intro first

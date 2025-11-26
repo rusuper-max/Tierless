@@ -46,7 +46,7 @@ const PLANS: Plan[] = [
     id: "free",
     name: "Free",
     monthly: 0,
-    description: t("Try Tierless with a single live page."),
+    description: t("Perfect for testing the editor."),
     theme: {
       text: "text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300",
       borderHover: "hover:border-gray-400 dark:hover:border-gray-500",
@@ -55,22 +55,19 @@ const PLANS: Plan[] = [
       buttonHover: "hover:bg-gray-700 dark:hover:bg-gray-200",
       shadow: "group-hover:shadow-gray-500/10",
     },
-    chips: [
-      {
-        id: "basic-colors",
-        label: t("Basic colors"),
-        description: t("Preset neutral palette with one accent."),
-        href: "/docs/special-items/basic-colors",
-      },
+    chips: [],
+    perks: [
+      t("1 Published Page"),
+      t("15 Items limit"),
+      t("Tierless badge (Required)")
     ],
-    perks: [t("Tierless badge"), t("Basic layout and colors")],
-    caps: [t("1 published page"), t("2 tiers/page"), t("20 items/page")],
+    caps: [t("Standard themes only"), t("2MB image limit"), t("No analytics")],
   },
   {
     id: "starter",
     name: "Starter",
     monthly: 6.99,
-    description: t("For solo makers with one or two menus."),
+    description: t("For cafes, bars, and small menus."),
     theme: {
       text: "text-teal-500 group-hover:text-teal-600 dark:group-hover:text-teal-400",
       borderHover: "hover:border-teal-400 dark:hover:border-teal-500",
@@ -82,25 +79,24 @@ const PLANS: Plan[] = [
     chips: [
       {
         id: "ocr-import",
-        label: t("OCR Import"),
-        description: t("Scan a photo or PDF of your menu."),
-        href: "/docs/special-items/ocr-menu-import",
+        label: t("AI Scan"),
+        description: t("Scan your existing menu photo instantly."),
+        href: "#",
       },
     ],
     perks: [
-      t("OCR menu import"),
-      t("Basic formulas"),
-      t("Item images per item"),
-      t("No hard limits on edits"),
+      t("AI Menu Scan (OCR)"),
+      t("Premium Fonts & Colors"),
+      t("50 Items limit"),
     ],
-    caps: [t("2 published pages"), t("3 tiers/page"), t("40 items/page")],
+    caps: [t("3 Published Pages"), t("5MB image limit"), t("Badge visible")],
   },
   {
     id: "growth",
     name: "Growth",
     monthly: 14.99,
-    badge: t("Most popular"),
-    description: t("Unlock branding and visuals for growing businesses."),
+    badge: t("Best Value"),
+    description: t("For serious restaurants & integration."),
     theme: {
       text: "text-red-500 group-hover:text-red-600 dark:group-hover:text-red-400",
       borderHover: "hover:border-red-400 dark:hover:border-red-500",
@@ -111,50 +107,48 @@ const PLANS: Plan[] = [
     },
     chips: [
       {
-        id: "remove-badge",
-        label: t("No Badge"),
-        description: t("Hide the Tierless badge."),
-        href: "/docs/special-items/remove-badge",
+        id: "embed",
+        label: t("Website Embed"),
+        description: t("Display your menu directly on your restaurant website."),
+        href: "#",
       },
     ],
     perks: [
+      t("Website Integration (Embed)"),
       t("Remove Tierless badge"),
-      t("Advanced editor"),
-      t("Custom brand colors"),
-      t("OCR menu import"),
+      t("All Premium Themes"),
+      t("100 Items limit"),
     ],
-    caps: [t("3 published pages"), t("5 tiers/page"), t("80 items/page")],
+    caps: [t("5 Published Pages"), t("8MB image limit"), t("Priority Support")],
   },
   {
     id: "pro",
     name: "Pro",
     monthly: 29.99,
-    isPro: true, // Ovde aktiviramo gradient logiku
-    description: t("For agencies and serious operators."),
+    isPro: true,
+    description: t("For franchises & power users."),
     theme: {
       text: "text-indigo-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-300",
-      // Pro nema obican borderHover jer koristi gradient stil
       borderHover: "",
       bgHover: "group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/20",
-      // Button koristi gradient stil, pa su ove klase fallback
       button: "text-white",
       buttonHover: "opacity-90 hover:opacity-100",
       shadow: "group-hover:shadow-indigo-500/10",
     },
     chips: [
       {
-        id: "everything",
-        label: t("Everything unlocked"),
-        description: t("Full access to editor, sliders, and visuals."),
-        href: "/docs/special-items/everything-unlocked",
+        id: "domain",
+        label: t("Custom Domain"),
+        description: t("Use menu.your-restaurant.com"),
+        href: "#",
       },
     ],
     perks: [
-      t("Everything in Growth"),
-      t("Advanced editor & sliders"),
-      t("Priority Support"),
+      t("3 Custom Domains (SSL)"),
+      t("Unlimited Items"),
+      t("10 Published Pages"),
     ],
-    caps: [t("5 published pages"), t("Unlim. tiers"), t("130 items/page")],
+    caps: [t("No reselling allowed"), t("15MB image limit"), t("Dedicated Support")],
   },
 ];
 

@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import type {
   CalcJson, Mode, Pkg, FeatureOption, Extra, OptionGroup, ItemRow,
-  BrandTheme, SimpleSection
+  BrandTheme, SimpleSection, CalcMeta
 } from "@/types/editor";
 import { genId, clone, ensureShape } from "@/lib/editor-utils";
 
@@ -22,8 +22,9 @@ type EditorState = {
   lastError?: string;
 
   init: (slug: string, initialCalc: CalcJson) => void;
-  setCalc: (next: CalcJson) => void;
+  setCalc: (calc: CalcJson) => void;
   updateCalc: (fn: (draft: CalcJson) => void) => void;
+  setMeta: (patch: Partial<CalcMeta>) => void;
 
   setEditorMode: (mode?: Mode | null) => void;
 
@@ -55,6 +56,7 @@ type EditorState = {
   updateItem: (id: string, patch: Partial<ItemRow>) => void;
   removeItem: (id: string) => void;
   reorderItem: (id: string, dir: -1 | 1) => void;
+  moveItem: (fromIndex: number, toIndex: number) => void;
 
   bulkAddItems: (
     items: { label: string; price: number | null; note?: string }[],
@@ -106,13 +108,22 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ calc: safe, isDirty: false, lastError: undefined, lastWarn: undefined });
   },
 
-  updateCalc: (fn) => {
-    const current = get().calc;
-    if (!current) return;
-    const draft = ensureShape(clone(current));
-    fn(draft);
-    set({ calc: ensureShape(draft), isDirty: true });
-  },
+  updateCalc: (fn) =>
+    set((state) => {
+      if (!state.calc) return {};
+      const next = clone(state.calc);
+      fn(next);
+      return { calc: next, isDirty: true };
+    }),
+
+  setMeta: (patch) =>
+    set((state) => {
+      if (!state.calc) return {};
+      const next = clone(state.calc);
+      if (!next.meta) next.meta = {};
+      Object.assign(next.meta, patch);
+      return { calc: next, isDirty: true };
+    }),
 
   setEditorMode: (mode) => {
     const st = get();
@@ -425,6 +436,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     if (to === idx) return;
     const [row] = next.items!.splice(idx, 1);
     next.items!.splice(to, 0, row);
+    set({ calc: next, isDirty: true });
+  },
+
+  moveItem: (fromIndex, toIndex) => {
+    const calc = get().calc!;
+    if (!Array.isArray(calc.items)) return;
+    const next = clone(calc);
+    const [item] = next.items!.splice(fromIndex, 1);
+    next.items!.splice(toIndex, 0, item);
     set({ calc: next, isDirty: true });
   },
 

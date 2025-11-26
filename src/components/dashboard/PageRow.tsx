@@ -102,13 +102,19 @@ export default function PageRow({
                     >
                         <FavoriteStar active={!!favorite} />
                     </button>
-                    <span
-                        className="cursor-text text-[var(--text)] truncate max-w-[200px] sm:max-w-[300px] block font-semibold"
-                        onDoubleClick={() => onRenameStart(slug, name)}
-                        title="Double-click to rename"
-                    >
-                        {name}
-                    </span>
+                    <div className="flex flex-col">
+                        <span
+                            className={`cursor-text truncate max-w-[200px] sm:max-w-[300px] block font-semibold ${published ? "text-[var(--text)]" : "text-[var(--muted)]"
+                                }`}
+                            onDoubleClick={() => onRenameStart(slug, name)}
+                            title="Double-click to rename"
+                        >
+                            {name}
+                        </span>
+                        <span className="text-[10px] text-[var(--muted)] opacity-70">
+                            {published ? "Live on web" : "Draft (Private)"}
+                        </span>
+                    </div>
                 </div>
             </td>
 

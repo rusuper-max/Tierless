@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { t } from "@/i18n";
 import type { PlanId, UsageNeeds } from "@/lib/entitlements";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 type UpsellOpenDetail = {
   requiredPlan: PlanId;
@@ -56,20 +58,22 @@ export default function UpgradeSheetDev() {
   async function handleUpgrade() {
     try {
       setLoading(true);
-      const res = await fetch("/api/upgrade", {
-        method: "POST",
+      const res = await fetch("/api/me/plan", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan: requiredPlan }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) throw new Error(data?.error || "upgrade_failed");
+
+      if (!res.ok) {
+        throw new Error("upgrade_failed");
+      }
 
       window.dispatchEvent(new Event("TL_AUTH_CHANGED"));
-      // Success toast optional (Toaster not required here)
-      console.log("Plan upgraded:", requiredPlan);
       setOpen(false);
     } catch (e) {
-      console.error("Upgrade failed. Please try again or pick a plan on the pricing page.");
+      console.error("Upgrade failed:", e);
+      // Fallback: redirect to pricing page
+      window.location.href = `/start?highlight=${requiredPlan}&interval=${interval}`;
     } finally {
       setLoading(false);
     }
@@ -79,7 +83,7 @@ export default function UpgradeSheetDev() {
     <>
       {open && (
         <div
-          className="fixed inset-0 z-[80] bg-slate-900/40"
+          className="fixed inset-0 z-[80] bg-slate-900/60 backdrop-blur-sm transition-opacity"
           onClick={() => (loading ? null : setOpen(false))}
           aria-hidden
         />
@@ -87,101 +91,142 @@ export default function UpgradeSheetDev() {
 
       <aside
         className={[
-          "fixed right-0 top-0 z-[81] h-full w-full max-w-md bg-white",
-          "shadow-xl border-l border-slate-200",
-          "transition-transform duration-300",
+          "fixed right-0 top-0 z-[81] h-full w-full max-w-md bg-[var(--bg)]",
+          "shadow-2xl border-l border-[var(--border)]",
+          "transition-transform duration-300 ease-out",
           open ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
         role="dialog"
         aria-modal="true"
         aria-label={t("Upgrade")}
       >
-        <div className="flex items-start justify-between p-5">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-900">DEV Upgrade Sheet</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              {entrypoint === "limits"
-                ? t("You’ve hit your plan limits. Pick a higher tier to continue.")
-                : t("This feature isn’t available on your current plan.")}
-            </p>
+        <div className="flex flex-col h-full">
+          <div className="flex items-center justify-between p-6 border-b border-[var(--border)]">
+            <div>
+              <h2 className="text-xl font-bold text-[var(--text)]">{t("Unlock Full Power")} 🚀</h2>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                {entrypoint === "limits"
+                  ? t("You've reached the limits of your current plan.")
+                  : t("This feature is available on higher plans.")}
+              </p>
+            </div>
+            <button
+              onClick={() => (loading ? null : setOpen(false))}
+              className="rounded-full p-2 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition"
+              aria-label={t("Close")}
+              disabled={loading}
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={() => (loading ? null : setOpen(false))}
-            className="rounded-md p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition disabled:opacity-50"
-            aria-label={t("Close")}
-            disabled={loading}
-          >
-            ×
-          </button>
-        </div>
 
-        <div className="px-5">
-          {needPairs.length > 0 && (
-            <div className="mb-4 rounded-xl border bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-800">{t("What you’re trying to publish")}</p>
-              <ul className="mt-2 grid grid-cols-2 gap-y-1 text-sm text-slate-700">
-                {needPairs.map(([k, v]) => (
-                  <li key={k} className="flex items-center justify-between">
-                    <span className="text-slate-600">{k}</span>
-                    <span className="font-medium">{String(v)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* Feature/Limit Context */}
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#4F46E5]/10 to-[#22D3EE]/10 border border-[#4F46E5]/20 relative overflow-hidden">
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-[#4F46E5] to-[#22D3EE] opacity-10 blur-2xl rounded-full"></div>
 
-          <div className="rounded-xl border p-4">
-            <p className="text-sm text-slate-700">
-              {t("Recommended plan")}:
-              <span className="ml-1 font-semibold capitalize">{requiredPlan}</span>
-            </p>
+              <h3 className="text-base font-bold text-[var(--text)] mb-2">
+                {entrypoint === "limits" ? t("Limit Reached") : t("Premium Feature")}
+              </h3>
 
-            <div className="mt-3 flex items-center gap-2">
-              <Link
-                href={`/start?highlight=${requiredPlan}&interval=${interval}`}
-                className="rounded-lg border px-3 py-2 text-sm font-medium transition hover:-translate-y-[1px]"
-                style={{
-                  background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box",
-                  border: "2px solid transparent",
-                  color: "#0f172a",
-                }}
-                aria-label={t("See plans")}
-                onClick={() => setOpen(false)}
-              >
-                {t("See plans")}
-              </Link>
-
-              <button
-                type="button"
-                onClick={handleUpgrade}
-                className={[
-                  "rounded-lg px-3 py-2 text-sm font-medium transition hover:-translate-y-[1px]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400",
-                  "disabled:opacity-60",
-                ].join(" ")}
-                style={{
-                  background: "linear-gradient(#fff,#fff) padding-box, var(--brand-gradient) border-box",
-                  border: "2px solid transparent",
-                  color: "#0f172a",
-                }}
-                aria-busy={loading}
-                disabled={loading}
-              >
-                {loading ? t("Upgrading…") : t("Upgrade now")}
-              </button>
-
-              <button
-                onClick={() => (loading ? null : setOpen(false))}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 disabled:opacity-50"
-                disabled={loading}
-              >
-                {t("Close")}
-              </button>
+              {needPairs.length > 0 ? (
+                <ul className="space-y-2">
+                  {needPairs.map(([k, v]) => (
+                    <li key={k} className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--muted)] capitalize">{k.replace(/([A-Z])/g, " $1").trim()}</span>
+                      <span className="font-bold text-[var(--text)]">{String(v)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-[var(--muted)]">
+                  {t("Upgrade to")}{" "}
+                  <span className="font-bold text-[#22D3EE] capitalize">{requiredPlan}</span>
+                  {" "}{t("to use this feature without restrictions.")}
+                </p>
+              )}
             </div>
 
-            <p className="mt-3 text-xs text-slate-500">
-              {t("You’ll be taken to pricing with this plan pre-highlighted if you choose See plans.")}
-            </p>
+            {/* Plan Recommendation */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-[var(--text)] uppercase tracking-wider">{t("Recommended Upgrade")}</h4>
+
+              <div
+                className={`p-5 rounded-2xl border-2 bg-[var(--card)] relative shadow-lg ${requiredPlan === "starter"
+                  ? "border-teal-500 shadow-teal-500/10"
+                  : requiredPlan === "growth"
+                    ? "border-red-500 shadow-red-500/10"
+                    : "border-transparent shadow-indigo-500/10"
+                  }`}
+                style={requiredPlan === "pro" ? {
+                  background: "linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(90deg, #6366f1 0%, #38bdf8 50%, #14b8a6 100%) border-box",
+                  border: "2px solid transparent"
+                } : {}}
+              >
+                <div
+                  className={`absolute -top-3 left-4 px-3 py-1 text-white text-[10px] font-bold uppercase tracking-wide rounded-full ${requiredPlan === "starter"
+                    ? "bg-teal-600"
+                    : requiredPlan === "growth"
+                      ? "bg-red-600"
+                      : ""
+                    }`}
+                  style={requiredPlan === "pro" ? {
+                    background: "linear-gradient(90deg, #6366f1 0%, #38bdf8 50%, #14b8a6 100%)"
+                  } : {}}
+                >
+                  {t("Best Choice")}
+                </div>
+
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3
+                      className={`text-lg font-bold capitalize ${requiredPlan === "starter"
+                          ? "text-teal-500"
+                          : requiredPlan === "growth"
+                            ? "text-red-500"
+                            : ""
+                        }`}
+                      style={requiredPlan === "pro" ? {
+                        background: "linear-gradient(90deg, #6366f1 0%, #38bdf8 50%, #14b8a6 100%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text"
+                      } : {}}
+                    >{requiredPlan} Plan</h3>
+                    <p className="text-xs text-[var(--muted)]">{t("Everything you need to grow.")}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xl font-bold text-[var(--text)]">
+                      {requiredPlan === "starter" ? "$6.99" : requiredPlan === "growth" ? "$14.99" : "$29.99"}
+                    </div>
+                    <div className="text-[10px] text-[var(--muted)]">/{interval === "yearly" ? t("mo") : t("month")}</div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-4 border-t border-[var(--border)]">
+                  <Button
+                    onClick={handleUpgrade}
+                    isLoading={loading}
+                    variant={requiredPlan === "pro" ? "brand" : "neutral"}
+                    size="md"
+                    className={`w-full shadow-lg ${requiredPlan === "starter"
+                      ? "!bg-teal-600 hover:!bg-teal-700 !text-white shadow-teal-500/20"
+                      : requiredPlan === "growth"
+                        ? "!bg-red-600 hover:!bg-red-700 !text-white shadow-red-500/20"
+                        : "shadow-indigo-500/20"
+                      }`}
+                  >
+                    {t("Upgrade Now")}
+                  </Button>
+
+                  <Link href={`/start?highlight=${requiredPlan}&interval=${interval}`} onClick={() => setOpen(false)} className="block">
+                    <Button variant="ghost" size="sm" className="w-full">
+                      {t("Compare All Plans")}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </aside>

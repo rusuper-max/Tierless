@@ -112,6 +112,51 @@ const THEMES: Record<string, any> = {
     "--border": "#fecdd3",
     "--brand-1": "#e11d48",
     "--brand-2": "#f43f5e",
+  },
+  rosegold: {
+    "--bg": "#fef3f2",
+    "--card": "#ffffff",
+    "--text": "#9f1239",
+    "--muted": "#be123c",
+    "--border": "#fecdd3",
+    "--brand-1": "#e0a899",
+    "--brand-2": "#d4af37",
+  },
+  emerald: {
+    "--bg": "#0a1f1a",
+    "--card": "#0f2922",
+    "--text": "#d4af37",
+    "--muted": "#a89968",
+    "--border": "#2d5a45",
+    "--brand-1": "#d4af37",
+    "--brand-2": "#10b981",
+  },
+  sapphire: {
+    "--bg": "#0f1729",
+    "--card": "#1e293b",
+    "--text": "#cbd5e1",
+    "--muted": "#94a3b8",
+    "--border": "#475569",
+    "--brand-1": "#60a5fa",
+    "--brand-2": "#cbd5e1",
+  },
+  obsidian: {
+    "--bg": "#000000",
+    "--card": "#0a0a0a",
+    "--text": "#ffffff",
+    "--muted": "#a3a3a3",
+    "--border": "#1a1a1a",
+    "--brand-1": "#ffffff",
+    "--brand-2": "#d4d4d4",
+  },
+  goldluxury: {
+    "--bg": "#0a0a0a",
+    "--card": "#141414",
+    "--text": "#d4af37",
+    "--muted": "#8b7355",
+    "--border": "#2a2520",
+    "--brand-1": "#f4d03f",
+    "--brand-2": "#d4af37",
   }
 };
 
@@ -134,6 +179,72 @@ const BADGE_STYLES: Record<string, string> = {
   chef: "bg-slate-100 text-slate-800 border-slate-200",
   gf: "bg-emerald-50 text-emerald-700 border-emerald-100",
 };
+
+// WiFi Display Component with blur/unblur
+function WifiDisplay({ ssid, password }: { ssid: string; password?: string }) {
+  const [showPassword, setShowPassword] = useState(false);
+
+  // If no password, just show SSID without button
+  if (!password) {
+    return (
+      <span className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+        <Wifi className="w-3.5 h-3.5" />
+        <span>{ssid}</span>
+      </span>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setShowPassword(!showPassword)}
+      className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 hover:bg-white/30 transition cursor-pointer group"
+    >
+      <Wifi className="w-3.5 h-3.5" />
+      <span className="flex items-center gap-1.5">
+        <span>{ssid}</span>
+        <span className="opacity-50">•</span>
+        {showPassword ? (
+          <span>{password}</span>
+        ) : (
+          <span className="text-xs opacity-70 group-hover:opacity-100 transition">Click to show password</span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+// WiFi Display for themed (no-cover) mode
+function WifiDisplayThemed({ ssid, password }: { ssid: string; password?: string }) {
+  const [showPassword, setShowPassword] = useState(false);
+
+  // If no password, just show SSID without button
+  if (!password) {
+    return (
+      <span className="flex items-center gap-1.5 bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 rounded-full">
+        <Wifi className="w-4 h-4 text-[var(--brand-1)]" />
+        <span>{ssid}</span>
+      </span>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setShowPassword(!showPassword)}
+      className="flex items-center gap-1.5 bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition cursor-pointer group"
+    >
+      <Wifi className="w-4 h-4 text-[var(--brand-1)]" />
+      <span className="flex items-center gap-1.5">
+        <span>{ssid}</span>
+        <span className="opacity-50">•</span>
+        {showPassword ? (
+          <span>{password}</span>
+        ) : (
+          <span className="text-xs opacity-70 group-hover:opacity-100 transition">Click to show password</span>
+        )}
+      </span>
+    </button>
+  );
+}
 
 export default function PublicRenderer({ calc, scrollContainer }: PublicRendererProps) {
   const meta = calc?.meta || {};
@@ -286,7 +397,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
       <div className="relative w-full bg-black/5 group">
         {showBadge && (
           <div className="absolute top-6 left-0 right-0 flex justify-center z-30 pointer-events-none">
-            <a href="https://tierless.com" target="_blank" rel="noreferrer" className="pointer-events-auto group/badge relative inline-flex items-center justify-center p-[1px] overflow-hidden rounded-full shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer">
+            <a href="/" className="pointer-events-auto group/badge relative inline-flex items-center justify-center p-[1px] overflow-hidden rounded-full shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer">
               <span className="absolute inset-[-1000%] animate-[spin_4s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#00000000_50%,#4F46E5_100%)] opacity-80" />
               <span className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-[#0B0C15]/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white backdrop-blur-xl">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
@@ -306,9 +417,9 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
             <div className="absolute bottom-0 left-0 w-full p-5 md:p-8 text-white">
               {simpleLogo && (
-                <div className="w-16 h-16 mb-4 rounded-full bg-white p-1 shadow-lg overflow-hidden border border-white/10">
+                <div className="w-28 h-28 mb-6 rounded-2xl bg-white p-1.5 shadow-xl overflow-hidden border border-white/20">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={simpleLogo} alt="Logo" className="w-full h-full object-cover rounded-full" />
+                  <img src={simpleLogo} alt="Logo" className="w-full h-full object-cover rounded-xl" />
                 </div>
               )}
               <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-3 shadow-black drop-shadow-lg leading-tight">
@@ -324,7 +435,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                 {business.location && <a href={business.location} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 hover:bg-white/30 transition cursor-pointer"><MapPin className="w-3.5 h-3.5" /> <span>Location</span></a>}
                 {business.phone && <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 hover:bg-white/30 transition cursor-pointer"><Phone className="w-3.5 h-3.5" /> <span>Call</span></a>}
                 {business.email && <a href={`mailto:${business.email}`} className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 hover:bg-white/30 transition cursor-pointer"><Mail className="w-3.5 h-3.5" /> <span>Email</span></a>}
-                {business.wifiSsid && <span className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10" title={`Pass: ${business.wifiPass || 'None'}`}><Wifi className="w-3.5 h-3.5" /> <span>WiFi: {business.wifiSsid}</span></span>}
+                {business.wifiSsid && <WifiDisplay ssid={business.wifiSsid} password={business.wifiPass} />}
               </div>
             </div>
           </div>
@@ -332,9 +443,9 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
           // --- NO COVER IMAGE MODE (CLEAN) ---
           <div className="px-5 pt-24 pb-10 text-center bg-gradient-to-b from-transparent to-black/5">
             {simpleLogo && (
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--card)] p-1 shadow-md overflow-hidden border border-[var(--border)]">
+              <div className="w-28 h-28 mx-auto mb-6 rounded-2xl bg-[var(--card)] p-1.5 shadow-md overflow-hidden border border-[var(--border)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={simpleLogo} alt="Logo" className="w-full h-full object-cover rounded-full" />
+                <img src={simpleLogo} alt="Logo" className="w-full h-full object-cover rounded-xl" />
               </div>
             )}
             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">{simpleTitle}</h1>
@@ -348,7 +459,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
               {business.location && <a href={business.location} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition cursor-pointer"><MapPin className="w-4 h-4" /> Location</a>}
               {business.phone && <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition cursor-pointer"><Phone className="w-4 h-4" /> Call</a>}
               {business.email && <a href={`mailto:${business.email}`} className="flex items-center gap-1.5 bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition cursor-pointer"><Mail className="w-4 h-4" /> Email</a>}
-              {business.wifiSsid && <span className="flex items-center gap-1.5 bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 rounded-full" title={`Pass: ${business.wifiPass || 'None'}`}><Wifi className="w-4 h-4 text-[var(--brand-1)]" /> <span>WiFi: {business.wifiSsid}</span></span>}
+              {business.wifiSsid && <WifiDisplayThemed ssid={business.wifiSsid} password={business.wifiPass} />}
             </div>
           </div>
         )}

@@ -168,6 +168,7 @@ export default function EditorNavBar({
   isPublished = false,
   editorMode,
   onGuideClick,
+  onTogglePublish,
 }: {
   calcName?: string;
   showBack?: boolean;
@@ -179,6 +180,7 @@ export default function EditorNavBar({
   isPublished?: boolean;
   editorMode: Mode;
   onGuideClick?: () => void;
+  onTogglePublish?: () => void;
 }) {
   const [qrOpen, setQrOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -296,23 +298,38 @@ export default function EditorNavBar({
 
             {/* Public/Share Split (compact pill style) */}
             <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800/50 p-0.5 rounded-full border border-slate-200 dark:border-slate-700">
-              {/* Main Public/Draft button */}
-              {isPublished ? (
-                <a
-                  href={fullPublicUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-slate-700 text-[var(--text)] hover:text-indigo-600 dark:hover:text-cyan-400 shadow-sm transition-all"
-                  data-help="Your calculator is live! Click to open the public link in a new tab."
-                >
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>{t("Public")}</span>
-                </a>
-              ) : (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-400 dark:text-slate-500">
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>{t("Draft")}</span>
-                </div>
+              {/* Main Publish/Draft button */}
+              <button
+                onClick={onTogglePublish}
+                className={`
+                  flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all
+                  ${isPublished
+                    ? "bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  }
+                `}
+                title={isPublished ? t("Page is Online") : t("Page is Offline (Draft)")}
+                data-help={isPublished ? "Your page is live! Click to unpublish." : "Click to publish your page and make it publicly accessible."}
+              >
+                <div className={`w-2 h-2 rounded-full ${isPublished ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+                <span>{isPublished ? t("Online") : t("Draft")}</span>
+              </button>
+
+              {/* Separator + External Link (only if published) */}
+              {isPublished && (
+                <>
+                  <div className="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-1" />
+                  <a
+                    href={fullPublicUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-1.5 rounded-full hover:bg-white dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-all"
+                    title={t("Open Public Page")}
+                    data-help="Open your live page in a new tab."
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </>
               )}
 
               {/* Separator */}
