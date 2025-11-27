@@ -1,0 +1,59 @@
+{
+    "account": {
+        "title": "Podešavanja naloga",
+        "description": "Upravljajte vašim poslovnim profilom i pretplatom.",
+        "tabs": {
+            "general": "Opšta podešavanja",
+            "billing": "Fakturisanje i korišćenje",
+            "preferences": "Podešavanja"
+        },
+        "general": {
+            "title": "Poslovne informacije",
+            "description": "Ove informacije se koriste za javne upite.",
+            "businessName": "Ime / Naziv preduzeća",
+            "businessNamePlaceholder": "npr. Moja agencija",
+            "inquiryEmail": "E-pošta za upite",
+            "inquiryEmailPlaceholder": "npr. kontakt@mojaagencija.com",
+            "phone": "Telefon (opciono)",
+            "website": "Veb sajt (opciono)",
+            "saveChanges": "Sačuvaj promene"
+        },
+        "defaults": {
+            "title": "Podrazumevano",
+            "language": "Jezik interfejsa",
+            "currency": "Podrazumevana valuta",
+            "currencyDescription": "Podrazumevana valuta za nove projekte."
+        },
+        "orders": {
+            "title": "Prijem porudžbina",
+            "description": "Odaberite kako želite da primate porudžbine i upite.",
+            "destination": "Primaj porudžbine putem",
+            "whatsappNumber": "WhatsApp Broj",
+            "whatsappPlaceholder": "npr. +381601234567"
+        },
+        "billing": {
+            "usage": "Korišćenje",
+            "currentPlan": "Trenutni plan",
+            "renewsOn": "Obnavlja se",
+            "manageSubscription": "Upravljaj pretplatom"
+        },
+        "preferences": {
+            "notifications": "Obaveštenja",
+            "productUpdates": "Ažuriranja proizvoda",
+            "weeklyReports": "Nedeljni izveštaji",
+            "dangerZone": "Opasna zona",
+            "dangerZoneDescription": "Neopozive radnje. Molimo budite pažljivi.",
+            "deleteAccount": "Obriši nalog",
+            "deleteAccountDescription": "Trajno obriši sve stranice i poslovne podatke. Bićete odjavljeni."
+        }
+    },
+    "deleteModal": {
+        "title": "Trajno brisanje naloga",
+        "description": "Ova radnja je nepovratna. Ovo će trajno obrisati sve vaše stranice i podatke. Bićete odjavljeni.",
+        "instruction": "Upišite DELETE FOREVER za potvrdu.",
+        "placeholder": "DELETE FOREVER",
+        "cancel": "Otkaži",
+        "confirm": "Obriši trajno",
+        "deleting": "Brisanje..."
+    }
+}

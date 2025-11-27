@@ -15,6 +15,8 @@ type ItemRow = {
   hidden?: boolean;
   soldOut?: boolean;
   badge?: string;
+  unit?: string;
+  customUnit?: string;
 };
 
 type SimpleSection = {
@@ -38,8 +40,8 @@ const THEMES: Record<string, any> = {
     "--text": "#f8fafc",
     "--muted": "#94a3b8",
     "--border": "#1e293b",
-    "--brand-1": "#4F46E5", // Indigo
-    "--brand-2": "#22D3EE", // Cyan
+    "--brand-1": "#4F46E5",
+    "--brand-2": "#22D3EE",
   },
   minimal: {
     "--bg": "#ffffff",
@@ -180,11 +182,8 @@ const BADGE_STYLES: Record<string, string> = {
   gf: "bg-emerald-50 text-emerald-700 border-emerald-100",
 };
 
-// WiFi Display Component with blur/unblur
 function WifiDisplay({ ssid, password }: { ssid: string; password?: string }) {
   const [showPassword, setShowPassword] = useState(false);
-
-  // If no password, just show SSID without button
   if (!password) {
     return (
       <span className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
@@ -193,7 +192,6 @@ function WifiDisplay({ ssid, password }: { ssid: string; password?: string }) {
       </span>
     );
   }
-
   return (
     <button
       onClick={() => setShowPassword(!showPassword)}
@@ -203,21 +201,14 @@ function WifiDisplay({ ssid, password }: { ssid: string; password?: string }) {
       <span className="flex items-center gap-1.5">
         <span>{ssid}</span>
         <span className="opacity-50">•</span>
-        {showPassword ? (
-          <span>{password}</span>
-        ) : (
-          <span className="text-xs opacity-70 group-hover:opacity-100 transition">Click to show password</span>
-        )}
+        {showPassword ? <span>{password}</span> : <span className="text-xs opacity-70 group-hover:opacity-100 transition">Click to show password</span>}
       </span>
     </button>
   );
 }
 
-// WiFi Display for themed (no-cover) mode
 function WifiDisplayThemed({ ssid, password }: { ssid: string; password?: string }) {
   const [showPassword, setShowPassword] = useState(false);
-
-  // If no password, just show SSID without button
   if (!password) {
     return (
       <span className="flex items-center gap-1.5 bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 rounded-full">
@@ -226,7 +217,6 @@ function WifiDisplayThemed({ ssid, password }: { ssid: string; password?: string
       </span>
     );
   }
-
   return (
     <button
       onClick={() => setShowPassword(!showPassword)}
@@ -236,11 +226,7 @@ function WifiDisplayThemed({ ssid, password }: { ssid: string; password?: string
       <span className="flex items-center gap-1.5">
         <span>{ssid}</span>
         <span className="opacity-50">•</span>
-        {showPassword ? (
-          <span>{password}</span>
-        ) : (
-          <span className="text-xs opacity-70 group-hover:opacity-100 transition">Click to show password</span>
-        )}
+        {showPassword ? <span>{password}</span> : <span className="text-xs opacity-70 group-hover:opacity-100 transition">Click to show password</span>}
       </span>
     </button>
   );
@@ -251,8 +237,6 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
   const i18n = calc?.i18n || {};
   const items: ItemRow[] = calc?.items || [];
 
-  // --- FIX: ČITAMO PODATKE SA PRAVOG MESTA ---
-  // Ako postoji meta.business objekat, koristi ga. Ako ne, probaj stare ključeve.
   const business = meta.business || {};
   const simpleCoverImage = business.coverUrl || meta.simpleCoverImage || "";
   const simpleLogo = business.logoUrl || "";
@@ -285,8 +269,10 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
   const spacingMode = meta.simpleSpacing || "cozy";
   const showBadge = meta.simpleShowBadge ?? true;
-  const simpleSectionOutlinePublic = meta.simpleSectionOutlinePublic ?? false;
   const allowSelection = meta.simpleAllowSelection ?? false;
+  const enableCalculations = meta.simpleEnableCalculations ?? false;
+  const addCheckout = meta.simpleAddCheckout ?? false;
+  const showUnits = meta.simpleShowUnits ?? false;
 
   const currency = i18n.currency || "";
   const decimals = typeof i18n.decimals === "number" ? i18n.decimals : 0;
@@ -310,6 +296,8 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
   const [search, setSearch] = useState("");
   const [activeSection, setActiveSection] = useState<string | null>(null);
+
+  // Quantities: id -> amount. 0 is valid. undefined means "not in cart".
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
 
@@ -324,6 +312,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
   const totalCount = Object.values(quantities).reduce((a, b) => a + b, 0);
 
+  // Standard +/- buttons (Used when allowSelection is true). Deletes on 0.
   const updateQty = (id: string, delta: number) => {
     setQuantities(prev => {
       const current = prev[id] || 0;
@@ -333,6 +322,19 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
         return rest;
       }
       return { ...prev, [id]: next };
+    });
+  };
+
+  // Explicit set from Input (Calculations mode). Does NOT delete on 0.
+  const setQuantity = (id: string, value: number) => {
+    setQuantities(prev => ({ ...prev, [id]: value }));
+  };
+
+  // Explicit remove (X button)
+  const removeQuantity = (id: string) => {
+    setQuantities(prev => {
+      const { [id]: _, ...rest } = prev;
+      return rest;
     });
   };
 
@@ -384,6 +386,9 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
     }) + (currency ? ` ${currency}` : "");
   };
 
+  // Global Check: Should we show ANY interaction (buttons, inputs, cart)?
+  const isInteractive = enableCalculations || allowSelection;
+
   return (
     <div
       className={cn("min-h-screen w-full pb-32 transition-colors duration-300", fontClass)}
@@ -397,7 +402,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
       <div className="relative w-full bg-black/5 group">
         {showBadge && (
           <div className="absolute top-6 left-0 right-0 flex justify-center z-30 pointer-events-none">
-            <a href="/" className="pointer-events-auto group/badge relative inline-flex items-center justify-center p-[1px] overflow-hidden rounded-full shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer">
+            <a href="https://tierless.com" target="_blank" rel="noreferrer" className="pointer-events-auto group/badge relative inline-flex items-center justify-center p-[1px] overflow-hidden rounded-full shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer">
               <span className="absolute inset-[-1000%] animate-[spin_4s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#00000000_50%,#4F46E5_100%)] opacity-80" />
               <span className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-[#0B0C15]/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white backdrop-blur-xl">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
@@ -409,16 +414,12 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
         )}
 
         {simpleCoverImage ? (
-          // --- COVER IMAGE MODE ---
           <div className="relative w-full h-64 sm:h-80 md:h-[400px] overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={simpleCoverImage} alt="Cover" className="w-full h-full object-cover animate-in fade-in duration-700" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-
             <div className="absolute bottom-0 left-0 w-full p-5 md:p-8 text-white">
               {simpleLogo && (
                 <div className="w-28 h-28 mb-6 rounded-2xl bg-white p-1.5 shadow-xl overflow-hidden border border-white/20">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={simpleLogo} alt="Logo" className="w-full h-full object-cover rounded-xl" />
                 </div>
               )}
@@ -440,11 +441,9 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
             </div>
           </div>
         ) : (
-          // --- NO COVER IMAGE MODE (CLEAN) ---
           <div className="px-5 pt-24 pb-10 text-center bg-gradient-to-b from-transparent to-black/5">
             {simpleLogo && (
               <div className="w-28 h-28 mx-auto mb-6 rounded-2xl bg-[var(--card)] p-1.5 shadow-md overflow-hidden border border-[var(--border)]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={simpleLogo} alt="Logo" className="w-full h-full object-cover rounded-xl" />
               </div>
             )}
@@ -526,7 +525,21 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
               {unsectioned
                 .filter(it => !search || it.label.toLowerCase().includes(search.toLowerCase()) || it.note?.toLowerCase().includes(search.toLowerCase()))
                 .map(item => (
-                  <ItemCard key={item.id} item={item} formatPrice={formatPrice} borderColor={simpleBorderColor} allowSelection={allowSelection} quantity={quantities[item.id] || 0} onUpdateQty={updateQty} isTierlessTheme={isTierlessTheme} />
+                  <ItemCard
+                    key={item.id}
+                    item={item}
+                    formatPrice={formatPrice}
+                    borderColor={simpleBorderColor}
+                    allowSelection={allowSelection}
+                    quantity={quantities[item.id]}
+                    onUpdateQty={updateQty}
+                    isTierlessTheme={isTierlessTheme}
+                    enableCalculations={enableCalculations}
+                    showUnits={showUnits}
+                    setQuantity={setQuantity}
+                    removeQuantity={removeQuantity}
+                    isInteractive={isInteractive} // Pass interactions state
+                  />
                 ))}
             </div>
           </div>
@@ -542,7 +555,6 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
               <div className="mb-6">
                 {section.imageUrl && (
                   <div className="w-full h-36 sm:h-48 rounded-3xl overflow-hidden mb-4 shadow-sm relative group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={section.imageUrl} alt={section.label} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
                     <div className="absolute bottom-0 left-0 w-full p-4">
@@ -557,7 +569,21 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
               </div>
               <div className={`grid grid-cols-1 md:grid-cols-2 ${gapClass}`}>
                 {visibleItems.map(item => (
-                  <ItemCard key={item.id} item={item} formatPrice={formatPrice} borderColor={simpleBorderColor} allowSelection={allowSelection} quantity={quantities[item.id] || 0} onUpdateQty={updateQty} isTierlessTheme={isTierlessTheme} />
+                  <ItemCard
+                    key={item.id}
+                    item={item}
+                    formatPrice={formatPrice}
+                    borderColor={simpleBorderColor}
+                    allowSelection={allowSelection}
+                    quantity={quantities[item.id]}
+                    onUpdateQty={updateQty}
+                    isTierlessTheme={isTierlessTheme}
+                    enableCalculations={enableCalculations}
+                    showUnits={showUnits}
+                    setQuantity={setQuantity}
+                    removeQuantity={removeQuantity}
+                    isInteractive={isInteractive} // Pass interactions state
+                  />
                 ))}
               </div>
             </div>
@@ -565,14 +591,13 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
         })}
       </div>
 
-      {/* 4. TOTAL BAR / CART DRAWER */}
-      {allowSelection && totalCount > 0 && (
+      {/* 4. TOTAL BAR / CART DRAWER - RENDER ONLY IF INTERACTIVE */}
+      {isInteractive && totalCount > 0 && (
         <div className="fixed bottom-0 left-0 w-full z-50 flex flex-col items-center pointer-events-none">
 
-          {/* EXPANDED CART LIST (Popup) */}
+          {/* EXPANDED CART LIST */}
           {cartOpen && (
             <div className="w-full max-w-md bg-[var(--card)] text-[var(--text)] rounded-t-3xl shadow-[0_-10px_60px_-5px_rgba(0,0,0,0.7)] border-x border-t border-[var(--border)] pointer-events-auto animate-in slide-in-from-bottom-20 duration-300 overflow-hidden flex flex-col max-h-[65vh] mb-[-20px] pb-[20px]">
-              {/* Header of Expanded List */}
               <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg)]/50 backdrop-blur-md sticky top-0 z-10">
                 <div className="flex items-center gap-2">
                   <ShoppingBag className="w-5 h-5 text-[var(--brand-1)]" />
@@ -583,7 +608,6 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                 </button>
               </div>
 
-              {/* List Items */}
               <div className="overflow-y-auto p-4 space-y-4 flex-1 pb-24">
                 {items.filter(it => (quantities[it.id] || 0) > 0).map(it => (
                   <div key={it.id} className="flex justify-between items-start gap-3 pb-3 border-b border-[var(--border)] last:border-0">
@@ -607,7 +631,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
             </div>
           )}
 
-          {/* TOTAL BAR BUTTON */}
+          {/* TOTAL BAR */}
           <div className="w-full max-w-md pointer-events-auto p-4 pb-6">
             <div
               className="bg-[var(--card)] text-[var(--text)] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.35)] p-3 flex items-center justify-between border border-[var(--brand-1)]/50 cursor-pointer hover:scale-[1.02] transition-all active:scale-95 relative z-50"
@@ -627,13 +651,17 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                 <div className="text-[var(--brand-1)]">
                   {cartOpen ? <ChevronDown className="w-6 h-6" /> : <ChevronUp className="w-6 h-6" />}
                 </div>
-                <button
-                  className="px-6 py-3 rounded-xl text-white font-bold text-sm shadow-lg hover:opacity-90 active:scale-95 transition-transform cursor-pointer"
-                  style={{ background: "linear-gradient(90deg,var(--brand-1),var(--brand-2))" }}
-                  onClick={(e) => { e.stopPropagation(); /* Checkout logic here */ }}
-                >
-                  Checkout
-                </button>
+
+                {/* CHECKOUT BUTTON - VISIBLE ONLY IF ENABLED IN SETTINGS */}
+                {addCheckout && (
+                  <button
+                    className="px-6 py-3 rounded-xl text-white font-bold text-sm shadow-lg hover:opacity-90 active:scale-95 transition-transform cursor-pointer"
+                    style={{ background: "linear-gradient(90deg,var(--brand-1),var(--brand-2))" }}
+                    onClick={(e) => { e.stopPropagation(); /* Checkout logic here */ }}
+                  >
+                    Checkout
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -644,27 +672,31 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 }
 
 /* --------------------------------------------------------- */
-/* Component: Item Card (Title Top / Price Bottom Layout)    */
+/* Component: Item Card (Smart Layout)                       */
 /* --------------------------------------------------------- */
-function ItemCard({ item, formatPrice, borderColor, allowSelection, quantity, onUpdateQty, isTierlessTheme }: any) {
-  const isSelected = quantity > 0;
+function ItemCard({ item, formatPrice, borderColor, allowSelection, quantity, onUpdateQty, isTierlessTheme, enableCalculations, showUnits, setQuantity, removeQuantity, isInteractive }: any) {
+  const isSelected = quantity !== undefined; // True if key exists, even if 0
+  const displayQty = quantity || 0;
+
+  // Show interactions only if Global Setting is ON and item is NOT sold out
+  const showInteractions = isInteractive && !item.soldOut;
 
   return (
     <div
       className="group relative flex w-full overflow-hidden rounded-3xl bg-[var(--card)] transition-all duration-200 shadow-sm"
       style={{
-        minHeight: "130px", // Dovoljno visine za sliku i raspored elemenata
+        // FIX: Min height only if image exists. Otherwise shrink to fit content (Paper mode).
+        minHeight: item.imageUrl ? "120px" : "auto",
         border: isTierlessTheme ? "2px solid transparent" : `1px solid ${borderColor}`,
         background: isTierlessTheme
-          ? `linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(135deg, ${isSelected ? '#4F46E5' : 'rgba(79,70,229,0.3)'}, ${isSelected ? '#22D3EE' : 'rgba(34,211,238,0.1)'}) border-box`
+          ? `linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(135deg, ${isSelected && displayQty > 0 ? '#4F46E5' : 'rgba(79,70,229,0.3)'}, ${isSelected && displayQty > 0 ? '#22D3EE' : 'rgba(34,211,238,0.1)'}) border-box`
           : undefined,
-        boxShadow: isSelected && !isTierlessTheme ? "0 0 0 2px var(--brand-1)" : "none"
+        boxShadow: isSelected && displayQty > 0 && !isTierlessTheme ? "0 0 0 2px var(--brand-1)" : "none"
       }}
     >
-      {/* 1. SLIKA (Leva strana) */}
+      {/* Image (Left) */}
       {item.imageUrl && (
         <div className="w-32 sm:w-36 shrink-0 relative bg-gray-100 border-r border-[var(--border)] self-stretch">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={item.imageUrl}
             alt={item.label}
@@ -673,54 +705,115 @@ function ItemCard({ item, formatPrice, borderColor, allowSelection, quantity, on
         </div>
       )}
 
-      {/* 2. SADRŽAJ (Desna strana - Flex Column) */}
+      {/* Content (Right) */}
       <div className="flex-1 flex flex-col p-3 sm:p-4 min-w-0 relative">
 
-        {/* --- VRH: Naslov --- */}
+        {/* Title */}
         <div className="mb-1">
-          {/* Badge iznad naslova (opciono, ako ga ima) */}
           {item.badge && BADGE_LABELS[item.badge] && (
             <span className={`inline-block px-1.5 py-0.5 mb-1 rounded text-[9px] font-bold uppercase tracking-wide border ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
               {BADGE_LABELS[item.badge]}
             </span>
           )}
-
-          {/* Naslov sada ima 100% širine */}
           <h3 className="font-bold text-lg leading-tight text-[var(--text)] break-words pr-1">
             {item.label}
           </h3>
         </div>
 
-        {/* --- SREDINA: Opis --- */}
+        {/* Description */}
         {item.note && (
-          <p className="text-xs sm:text-sm opacity-70 leading-relaxed text-[var(--muted)] line-clamp-2 mb-2">
+          <p className="text-xs sm:text-sm opacity-70 leading-relaxed text-[var(--muted)] mb-2">
             {item.note}
           </p>
         )}
 
-        {/* Spacer koji gura footer na dno */}
-        <div className="mt-auto"></div>
+        {/* Spacer to push bottom row down (only if interactive, otherwise keep tight) */}
+        {showInteractions && <div className="mt-auto"></div>}
 
-        {/* --- DNO: Cena (Levo) + Dugmići (Desno) --- */}
-        <div className="flex items-end justify-between gap-2 pt-2">
+        {/* Footer Row: Price + Interactions */}
+        <div className={`flex ${showInteractions ? "flex-col gap-2 pt-2" : "flex-row justify-between items-end pt-1"}`}>
 
-          {/* Cena - uvek dole levo */}
-          {item.price !== null ? (
-            <div className="font-bold text-[var(--brand-1)] text-base sm:text-lg bg-[var(--brand-1)]/5 px-2 py-0.5 rounded-lg whitespace-nowrap">
+          {/* Price */}
+          {item.price !== null && (
+            <div className="font-bold text-[var(--brand-1)] text-base sm:text-lg bg-[var(--brand-1)]/5 px-2 py-0.5 rounded-lg w-fit whitespace-nowrap">
               {formatPrice(item.price)}
-            </div>
-          ) : <div />} {/* Prazan div da očuva raspored ako nema cene */}
-
-          {/* Dugmići - uvek dole desno */}
-          {allowSelection && !item.soldOut && (
-            <div className="flex items-center gap-2">
-              {quantity > 0 && (
-                <>
-                  <button onClick={() => onUpdateQty(item.id, -1)} className="w-7 h-7 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-colors text-[var(--text)] cursor-pointer"><Minus className="w-3.5 h-3.5" /></button>
-                  <span className="font-bold min-w-[16px] text-center text-[var(--text)] text-sm">{quantity}</span>
-                </>
+              {showUnits && item.unit && item.unit !== "pcs" && (
+                <span className="text-xs opacity-70 ml-1">
+                  / {item.unit === "custom" ? item.customUnit || "unit" : item.unit}
+                </span>
               )}
-              <button onClick={() => onUpdateQty(item.id, 1)} className={cn("w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border cursor-pointer", quantity > 0 ? "bg-[var(--brand-1)] text-white border-[var(--brand-1)]" : "bg-[var(--bg)] text-[var(--brand-1)] border-[var(--border)] hover:border-[var(--brand-1)] hover:bg-[var(--brand-1)] hover:text-white")}><Plus className="w-4 h-4" /></button>
+            </div>
+          )}
+
+          {/* Interactions (Calculations/Selection) */}
+          {showInteractions && (
+            <div className="flex justify-end items-center mt-1">
+
+              {/* Mode A: Calculations (Input field) */}
+              {enableCalculations ? (
+                <div className="flex items-center gap-1.5">
+                  {isSelected ? (
+                    <>
+                      {/* X Button (Removes key completely) */}
+                      <button
+                        onClick={() => removeQuantity(item.id)}
+                        className="w-8 h-8 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-colors text-[var(--text)] cursor-pointer shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+
+                      {/* Input (Allows 0 or empty) */}
+                      <div className="flex items-center gap-1 bg-[var(--bg)] border border-[var(--border)] rounded-lg px-2 h-9 shrink-0 shadow-sm">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          // Display Logic: If undefined -> "", if 0 -> "0", else value
+                          value={quantity === undefined ? "" : quantity}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "") {
+                              // User cleared input -> Set 0, keep key
+                              setQuantity(item.id, 0);
+                            } else {
+                              const num = parseFloat(val);
+                              setQuantity(item.id, isNaN(num) ? 0 : num);
+                            }
+                          }}
+                          className="w-16 bg-transparent text-center text-base font-bold text-[var(--text)] outline-none"
+                        />
+                        <span className="text-xs text-[var(--muted)] whitespace-nowrap pr-1">
+                          {item.unit === "custom" ? item.customUnit || "unit" : item.unit || "pcs"}
+                        </span>
+                      </div>
+                    </>
+                  ) : null}
+
+                  {/* Add Button (Shows when nothing selected) */}
+                  {!isSelected && (
+                    <button
+                      onClick={() => setQuantity(item.id, 1)}
+                      className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border cursor-pointer shrink-0",
+                        "bg-[var(--bg)] text-[var(--brand-1)] border-[var(--border)] hover:border-[var(--brand-1)] hover:bg-[var(--brand-1)] hover:text-white"
+                      )}
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                // Mode B: Simple Selection (+/-)
+                <div className="flex items-center gap-2">
+                  {displayQty > 0 && (
+                    <>
+                      <button onClick={() => onUpdateQty(item.id, -1)} className="w-8 h-8 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-colors text-[var(--text)] cursor-pointer"><Minus className="w-4 h-4" /></button>
+                      <span className="font-bold min-w-[20px] text-center text-[var(--text)] text-base">{displayQty}</span>
+                    </>
+                  )}
+                  <button onClick={() => onUpdateQty(item.id, 1)} className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border cursor-pointer", displayQty > 0 ? "bg-[var(--brand-1)] text-white border-[var(--brand-1)]" : "bg-[var(--bg)] text-[var(--brand-1)] border-[var(--border)] hover:border-[var(--brand-1)] hover:bg-[var(--brand-1)] hover:text-white")}><Plus className="w-5 h-5" /></button>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useRef, ChangeEvent, useEffect, useMemo } from "react";
-import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings } from "lucide-react";
+import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type SimpleSection, type BrandTheme } from "@/hooks/useEditorStore";
 import { useAccount } from "@/hooks/useAccount";
 import { ENTITLEMENTS, canFeature, getLimit } from "@/lib/entitlements";
 import { useEntitlement } from "@/hooks/useEntitlement";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+// --- FIX 1: Import pointerWithin for smoother drag ---
+import { DndContext, pointerWithin, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/Button";
@@ -63,10 +64,13 @@ const createId = () => `sec_${Math.random().toString(36).slice(2, 10)}`;
 export default function SimpleListPanel() {
   const { calc, updateCalc, addItem, updateItem, removeItem, moveItem, setMeta } = useEditorStore();
   const { plan } = useAccount();
-  const { openUpsell } = useEntitlement({ feature: "ocrImport" }); // For triggering upsell
+  const { openUpsell } = useEntitlement({ feature: "ocrImport" });
 
+  // --- Feature Gates & Limits ---
   const { allowed: ocrAllowed } = canFeature("ocrImport", plan);
   const { allowed: removeBadgeAllowed } = canFeature("removeBadge", plan);
+  const { allowed: premiumThemesAllowed } = canFeature("premiumThemes", plan);
+
   const itemLimit = getLimit(plan, "items");
   const maxItems = itemLimit === "unlimited" ? Infinity : itemLimit;
 
@@ -86,24 +90,8 @@ export default function SimpleListPanel() {
   const simpleSections: SimpleSection[] = meta.simpleSections ?? [];
   const sectionStates: Record<string, boolean> = (meta.simpleSectionStates as Record<string, boolean>) ?? {};
 
-
-  // Count only visible (non-hidden) items for the counter
+  // Count visible items
   const visibleItemsCount = items.filter((item: any) => !item.hidden).length;
-
-  // DEBUG: Comprehensive logging
-  console.group('🔍 Item Counter Debug');
-  console.log('Total items in array:', items.length);
-  console.log('Visible items (not hidden):', visibleItemsCount);
-  console.log('Hidden items:', items.filter((item: any) => item.hidden).length);
-  console.log('Items without hidden property:', items.filter((item: any) => item.hidden === undefined).length);
-  console.log('Items in sections:', items.filter((item: any) => item.simpleSectionId).length);
-  console.log('Unsectioned items:', items.filter((item: any) => !item.simpleSectionId).length);
-  console.log('First 5 items:', items.slice(0, 5).map(i => ({
-    label: i.label,
-    hidden: i.hidden,
-    section: i.simpleSectionId
-  })));
-  console.groupEnd();
 
   const simpleCoverImage: string = business.coverUrl || meta.simpleCoverImage || "";
   const simpleLogo: string = business.logoUrl || "";
@@ -116,8 +104,9 @@ export default function SimpleListPanel() {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [pendingFor, setPendingFor] = useState<string | null>(null);
+  const [sectionToDelete, setSectionToDelete] = useState<SimpleSection | null>(null);
 
-  // OCR
+  // OCR State
   const [ocrOpen, setOcrOpen] = useState(false);
   const [ocrUploading, setOcrUploading] = useState(false);
   const [ocrItems, setOcrItems] = useState<ParsedOcrItem[]>([]);
@@ -133,19 +122,6 @@ export default function SimpleListPanel() {
   const currency: string = typeof i18n.currency === "string" ? (i18n.currency as string) : "";
   const decimals: number = Number.isFinite(i18n.decimals) ? (i18n.decimals as number) : 0;
   const activeTheme: BrandTheme = meta.theme || "tierless";
-
-  // --- Brand Score Calculation (Hidden from UI but kept for logic) ---
-  const brandScore = useMemo(() => {
-    let score = 0;
-    if (simpleTitle) score += 10;
-    if (simpleLogo) score += 20;
-    if (simpleCoverImage) score += 20;
-    if (business.description) score += 10;
-    if (business.phone || business.email) score += 10;
-    if (items.length > 0) score += 20;
-    if (simpleSections.length > 0) score += 10;
-    return Math.min(score, 100);
-  }, [simpleTitle, simpleLogo, simpleCoverImage, business, items.length, simpleSections.length]);
 
   /* ---------------- Helpers ---------------- */
 
@@ -164,6 +140,18 @@ export default function SimpleListPanel() {
     });
   };
 
+  const handleConfirmDeleteSection = () => {
+    if (!sectionToDelete) return;
+    updateCalc((draft) => {
+      const m = draft.meta as any;
+      m.simpleSections = (m.simpleSections || []).filter((s: any) => s.id !== sectionToDelete.id);
+      if (Array.isArray(draft.items)) {
+        draft.items = draft.items.filter((it: any) => it.simpleSectionId !== sectionToDelete.id);
+      }
+    });
+    setSectionToDelete(null);
+  };
+
   const handleGenericUpload = async (e: ChangeEvent<HTMLInputElement>, targetId: string, type: 'item' | 'section' | 'cover' | 'logo') => {
     const file = e.target.files?.[0] ?? null;
     e.target.value = "";
@@ -172,10 +160,10 @@ export default function SimpleListPanel() {
 
     if (!file.type.startsWith("image/")) { setError(t("Only image files are allowed.")); return; }
 
-    // Dynamic size limit based on plan
-    const maxBytes = ENTITLEMENTS[plan]?.limits.uploadSize || 2 * 1024 * 1024;
+    const maxBytes = (ENTITLEMENTS[plan]?.limits as any)?.uploadSize || 2 * 1024 * 1024;
     if (file.size > maxBytes) {
-      setError(t(`Image is too large (max ${Math.round(maxBytes / 1024 / 1024)}MB for your plan).`));
+      const limitMB = Math.round(maxBytes / 1024 / 1024);
+      setError(t(`Image is too large (max ${limitMB}MB for your plan). Upgrade for more.`));
       return;
     }
 
@@ -269,7 +257,8 @@ export default function SimpleListPanel() {
       const sectionNameToId = new Map<string, string>();
       existingSections.forEach(s => sectionNameToId.set(s.label.toLowerCase(), s.id));
       const newSections: SimpleSection[] = [];
-      selected.forEach(it => {
+      const selectedItems = ocrItems.filter(it => ocrSelectedIds.includes(it.id));
+      selectedItems.forEach(it => {
         const rawName = it.sectionName?.trim() || "";
         if (!rawName) return;
         const key = rawName.toLowerCase();
@@ -281,7 +270,7 @@ export default function SimpleListPanel() {
       });
       m.simpleSections = [...existingSections, ...newSections];
       if (!Array.isArray(draft.items)) draft.items = [];
-      selected.forEach(it => {
+      selectedItems.forEach(it => {
         const rawName = it.sectionName?.trim() || "";
         const sectionId = rawName ? sectionNameToId.get(rawName.toLowerCase()) : undefined;
         draft.items!.push({
@@ -296,8 +285,13 @@ export default function SimpleListPanel() {
     setOcrOpen(false); setOcrItems([]); setOcrSelectedIds([]);
   };
 
+  // --- FIX 2: Better Drag Sensors & Collision ---
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // Must move 5px to start drag (prevents accidental clicks)
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -312,8 +306,6 @@ export default function SimpleListPanel() {
 
     if (oldIndex !== -1 && newIndex !== -1) {
       moveItem(oldIndex, newIndex);
-
-      // Update section ID if moved to a different section
       const activeItem = items[oldIndex];
       const overItem = items[newIndex];
       if (activeItem.simpleSectionId !== overItem.simpleSectionId) {
@@ -353,65 +345,76 @@ export default function SimpleListPanel() {
     };
 
     const isOverLimit = index >= maxItems;
+    const isHidden = item.hidden;
+    const isSoldOut = item.soldOut;
 
     return (
       <div
         ref={setNodeRef}
         style={style}
-        className={`group relative flex items-start gap-3 p-3 bg-[var(--card)] border border-[var(--border)] rounded-xl transition-all hover:border-[#22D3EE]/50 ${isOverLimit ? "opacity-50 grayscale" : ""}`}
+        className={`group relative flex items-stretch gap-0 rounded-xl border bg-[var(--card)] transition-all overflow-hidden ${isHidden ? "border-dashed border-yellow-300/50 opacity-70" : "border-[var(--border)] hover:border-[#22D3EE] hover:shadow-sm"} ${isSoldOut ? "grayscale opacity-80" : ""} ${isOverLimit ? "opacity-50 grayscale" : ""}`}
       >
         {/* Drag Handle */}
         <div
-          className="mt-2 cursor-grab active:cursor-grabbing text-[var(--muted)] hover:text-[var(--text)] outline-none"
+          className="w-6 flex items-center justify-center bg-[var(--bg)]/50 border-r border-[var(--border)] cursor-grab active:cursor-grabbing text-[var(--muted)] hover:text-[var(--text)] outline-none"
           {...attributes}
           {...listeners}
+          style={{ touchAction: 'none' }}
         >
           <GripVertical className="w-4 h-4" />
         </div>
 
         {/* Image */}
-        <div className="relative w-16 h-16 rounded-lg bg-[var(--track)] overflow-hidden shrink-0 group/img cursor-default" onClick={() => !isOverLimit && triggerGenericUpload(item.id, "item")}>
-          {item.imageUrl ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center relative">
-              <ImageIcon className="w-6 h-6 text-[var(--muted)] opacity-50 transition-opacity group-hover/img:opacity-0" />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity bg-black/5">
-                <Plus className="w-5 h-5 text-[var(--text)]" />
+        {canUseImages && (
+          <div
+            className="w-24 relative border-r border-[var(--border)] bg-[var(--track)] group/img cursor-default shrink-0"
+            onClick={() => !isOverLimit && triggerGenericUpload(item.id, "item")}
+            data-help="Click to upload an image for this item."
+          >
+            {item.imageUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={item.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center relative">
+                <ImageIcon className="w-6 h-6 text-[var(--muted)] opacity-50 transition-opacity group-hover/img:opacity-0" />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity bg-black/5">
+                  <Plus className="w-5 h-5 text-[var(--text)]" />
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {!isOverLimit && (
-            <>
-              {uploadingId === item.id ? (
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                  <div className="w-5 h-5 rounded-full border-2 border-transparent animate-spin" style={{ borderTopColor: '#22D3EE', borderRightColor: '#6366f1' }} />
-                </div>
-              ) : item.imageUrl && (
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white">
-                  <X className="w-4 h-4 cursor-default" onClick={(e) => {
-                    e.stopPropagation();
-                    updateItem(item.id, { imageUrl: undefined });
-                  }} />
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            {!isOverLimit && (
+              <>
+                {uploadingId === item.id ? (
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                    <div className="w-5 h-5 rounded-full border-2 border-transparent animate-spin" style={{ borderTopColor: '#22D3EE', borderRightColor: '#6366f1' }} />
+                  </div>
+                ) : item.imageUrl && (
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white">
+                    <X className="w-4 h-4 cursor-default" onClick={(e) => {
+                      e.stopPropagation();
+                      updateItem(item.id, { imageUrl: undefined });
+                    }} />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
-        {/* Inputs */}
-        <div className="flex-1 space-y-2 min-w-0">
-          <div className="flex gap-2">
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col justify-between p-3 gap-2 min-w-0">
+          {/* Top Row */}
+          <div className="flex gap-2 items-start">
             <input
-              className="flex-1 bg-transparent font-bold text-[var(--text)] outline-none placeholder-[var(--muted)]"
+              className="flex-1 bg-transparent font-bold text-[var(--text)] outline-none placeholder-[var(--muted)] text-sm"
               value={item.label}
               onChange={(e) => updateItem(item.id, { label: e.target.value })}
               placeholder={t("Item Name")}
               disabled={isOverLimit}
+              data-help="Enter the name of your item."
             />
-            <div className="flex items-center gap-1 bg-[var(--bg)] rounded-lg px-2 border border-[var(--border)] focus-within:border-[#22D3EE] transition-colors">
+            <div className="flex items-center gap-1 bg-[var(--bg)] rounded-lg px-2 border border-[var(--border)] focus-within:border-[#22D3EE] transition-colors shrink-0 h-8">
               <span className="text-xs text-[var(--muted)] font-bold">{currency}</span>
               <input
                 type="number"
@@ -420,42 +423,105 @@ export default function SimpleListPanel() {
                 onChange={(e) => updateItem(item.id, { price: parseFloat(e.target.value) })}
                 placeholder="0.00"
                 disabled={isOverLimit}
+                data-help="Set the price for this item."
               />
             </div>
+
+            {/* Unit Selector */}
+            <div className="relative shrink-0" data-help="Select unit of measure for pricing">
+              <select
+                value={item.unit || "pcs"}
+                onChange={(e) => updateItem(item.id, { unit: e.target.value })}
+                className="appearance-none bg-[var(--surface)] border border-[var(--border)] text-xs h-8 pl-2 pr-6 rounded-lg outline-none focus:border-[#22D3EE] cursor-pointer text-[var(--text)] hover:bg-[var(--bg)] transition-colors"
+                disabled={isOverLimit}
+              >
+                <option value="pcs">pcs</option>
+                <option value="kg">kg</option>
+                <option value="g">g</option>
+                <option value="lb">lb</option>
+                <option value="l">l</option>
+                <option value="ml">ml</option>
+                <option value="custom">custom</option>
+              </select>
+              <ChevronDown className="w-3 h-3 absolute right-2 top-2.5 pointer-events-none text-[var(--muted)]" />
+            </div>
+
+            {/* Custom Unit Input (conditionally shown) */}
+            {item.unit === "custom" && (
+              <input
+                className="w-16 bg-[var(--surface)] border border-[var(--border)] text-xs h-8 px-2 rounded-lg outline-none focus:border-[#22D3EE] text-[var(--text)] transition-colors"
+                value={item.customUnit || ""}
+                onChange={(e) => updateItem(item.id, { customUnit: e.target.value })}
+                placeholder="unit"
+                disabled={isOverLimit}
+                data-help="Enter custom unit name"
+              />
+            )}
           </div>
-          <textarea
-            className="w-full bg-transparent text-xs text-[var(--muted)] outline-none resize-none"
-            rows={1}
-            value={item.note || ""}
-            onChange={(e) => updateItem(item.id, { note: e.target.value })}
-            placeholder={t("Description (ingredients, details)...")}
-            disabled={isOverLimit}
-          />
+
+          {/* Bottom Row */}
+          <div className="flex items-center gap-2 mt-auto">
+            <input
+              className="flex-1 bg-transparent text-xs text-[var(--muted)] outline-none focus:text-[var(--text)] transition-colors placeholder-[var(--muted)]/40"
+              value={item.note || ""}
+              onChange={(e) => updateItem(item.id, { note: e.target.value })}
+              placeholder={t("Description (ingredients, details)...")}
+              disabled={isOverLimit}
+              data-help="Add a short description or list ingredients."
+            />
+
+            <div className="relative shrink-0" data-help="Add a badge like 'Spicy' or 'Vegan' to this item.">
+              <select
+                value={item.badge || ""}
+                onChange={(e) => updateItem(item.id, { badge: e.target.value })}
+                className="appearance-none bg-[var(--surface)] border border-[var(--border)] text-[10px] h-6 pl-2 pr-6 rounded-full outline-none focus:border-[#22D3EE] cursor-pointer text-[var(--text)] hover:bg-[var(--bg)] font-medium transition-colors"
+                disabled={isOverLimit}
+              >
+                {BADGE_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <Tag className="w-3 h-3 absolute right-2 top-1.5 pointer-events-none text-[var(--muted)]" />
+            </div>
+          </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {/* Visibility Toggle */}
+        {/* Actions Sidebar - FIX: Better colors & Tooltip structure */}
+        <div className="flex flex-col border-l border-[var(--border)] bg-[var(--bg)]/30 w-10 divide-y divide-[var(--border)] relative z-20">
+          {/* Visibility Toggle - Green if visible, Gray if hidden */}
           <button
             onClick={() => updateItem(item.id, { hidden: !item.hidden })}
-            className={`p-2 rounded-md transition ${item.hidden ? 'text-[var(--muted)] hover:text-green-500 hover:bg-green-500/10' : 'text-green-500 hover:text-[var(--muted)] hover:bg-[var(--surface)]'}`}
-            title={item.hidden ? t("Show item on public page") : t("Hide item from public page")}
-            data-help="Toggle item visibility on your public page. Hidden items won't appear to customers but remain in your editor."
+            className={`p-2 flex items-center justify-center transition-colors ${!isHidden
+              ? 'text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10'
+              : 'text-[var(--muted)] hover:text-emerald-500 hover:bg-emerald-500/5'
+              }`}
+            title={isHidden ? t("Hidden") : t("Visible")}
+            data-help="Toggle item visibility. Green means visible on public page."
           >
-            {item.hidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {isHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
 
-          {/* Sold Out Toggle */}
+          {/* Sold Out Toggle - Orange when Active or Hover */}
           <button
             onClick={() => updateItem(item.id, { soldOut: !item.soldOut })}
             disabled={isOverLimit}
-            className={`p-2 rounded-md transition ${item.soldOut ? 'text-amber-500 hover:text-[var(--muted)] hover:bg-[var(--surface)]' : 'text-[var(--muted)] hover:text-amber-500 hover:bg-amber-500/10'} ${isOverLimit ? 'opacity-30 cursor-not-allowed' : ''}`}
-            title={item.soldOut ? t("Mark as available") : t("Mark as sold out")}
-            data-help="Mark item as sold out. Customers will see it but won't be able to select it. Useful for temporarily unavailable items."
+            className={`p-2 flex items-center justify-center transition-colors ${isSoldOut
+              ? 'text-orange-500 bg-orange-500/10'
+              : 'text-[var(--muted)] hover:text-orange-500 hover:bg-orange-500/10'
+              } ${isOverLimit ? 'opacity-30 cursor-not-allowed' : ''}`}
+            title={isSoldOut ? t("Sold Out") : t("Available")}
+            data-help="Mark as Sold Out."
           >
             <Ban className="w-4 h-4" />
           </button>
-          <button onClick={() => removeItem(item.id)} className="p-1.5 text-[var(--muted)] hover:text-red-500 rounded-md hover:bg-red-500/10 transition-colors" title={t("Delete Item")}>
+
+          {/* Delete - Red on Hover */}
+          <button
+            onClick={() => removeItem(item.id)}
+            className="p-2 flex items-center justify-center text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors"
+            title={t("Delete Item")}
+            data-help="Delete this item permanently."
+          >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -487,7 +553,6 @@ export default function SimpleListPanel() {
   /* ---------------- TABS ---------------- */
 
   const renderContentTab = () => {
-    // Apply search filter
     const filterItem = (item: any) => {
       if (!searchQuery.trim()) return true;
       const query = searchQuery.toLowerCase();
@@ -496,11 +561,20 @@ export default function SimpleListPanel() {
       return label.includes(query) || price.includes(query);
     };
 
-    const unsectionedItems = items.filter((it) => !it.simpleSectionId && filterItem(it));
+    // 1. Valid Section IDs
+    const validSectionIds = new Set(simpleSections.map(s => s.id));
+
+    // 2. Unsectioned Items
+    const unsectionedItems = items.filter((it) =>
+      (!it.simpleSectionId || !validSectionIds.has(it.simpleSectionId)) &&
+      filterItem(it)
+    );
+
     const itemsBySection = new Map<string, any[]>();
     items.forEach((it) => {
       const sid = it.simpleSectionId as string | undefined;
-      if (!sid || !filterItem(it)) return;
+      if (!sid || !validSectionIds.has(sid) || !filterItem(it)) return;
+
       if (!itemsBySection.has(sid)) itemsBySection.set(sid, []);
       itemsBySection.get(sid)!.push(it);
     });
@@ -683,7 +757,8 @@ export default function SimpleListPanel() {
 
         {/* Lists */}
         <div className="space-y-6">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          {/* --- FIX 3: Use pointerWithin for collision (Snappier Drag) --- */}
+          <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
             {/* Unsectioned Items */}
             {unsectionedItems.length > 0 && (
               <div className="space-y-4">
@@ -766,15 +841,7 @@ export default function SimpleListPanel() {
                       <div className="text-xs text-[var(--muted)]">{sectionItems.length} {t("items")}</div>
                     </div>
 
-                    <button onClick={() => {
-                      if (confirm(t("Delete section and all its items?"))) {
-                        // Remove items in this section
-                        sectionItems.forEach(it => removeItem(it.id));
-                        // Remove section
-                        const next = simpleSections.filter(s => s.id !== section.id);
-                        setMeta({ simpleSections: next });
-                      }
-                    }} className="p-2 text-[var(--muted)] hover:text-red-500 rounded-md hover:bg-red-500/10 transition-colors">
+                    <button onClick={() => setSectionToDelete(section)} className="p-2 text-[var(--muted)] hover:text-red-500 rounded-md hover:bg-red-500/10 transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -834,14 +901,13 @@ export default function SimpleListPanel() {
     );
   };
 
+  // --- Render other tabs (business, design, settings) ---
   const renderBusinessTab = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-
       <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-6">
         <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2">
           <Store className="w-4 h-4 text-[#4F46E5]" /> {t("Business Identity")}
         </h3>
-
         <div className="space-y-4">
           <div className="space-y-1.5">
             <span className="text-xs text-[var(--muted)] font-bold uppercase tracking-wider">{t("About")}</span>
@@ -850,17 +916,15 @@ export default function SimpleListPanel() {
               value={business.description || ""}
               onChange={e => setBusiness({ description: e.target.value })}
               className="w-full p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] transition-all resize-none"
-              placeholder="Tell your story. e.g. 'Family owned since 1985, serving the best coffee in town...'"
+              placeholder="Tell your story. e.g. 'Family owned since 1985...'"
             />
           </div>
         </div>
       </div>
-
       <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-6">
         <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2">
           <MapPin className="w-4 h-4 text-[#22D3EE]" /> {t("Contact & Location")}
         </h3>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <span className="text-xs text-[var(--muted)] font-medium">{t("Phone Number")}</span>
@@ -880,12 +944,11 @@ export default function SimpleListPanel() {
             <span className="text-xs text-[var(--muted)] font-medium">{t("Google Maps Link")}</span>
             <div className="flex items-center px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] focus-within:border-[#22D3EE] transition-colors">
               <MapPin className="w-3.5 h-3.5 text-[var(--muted)] mr-2" />
-              <input type="text" value={business.location || ""} onChange={e => setBusiness({ location: e.target.value })} className="flex-1 bg-transparent text-sm outline-none" placeholder="https://maps.google.com/..." />
+              <input type="text" value={business.location || ""} onChange={e => setBusiness({ location: e.target.value })} className="flex-1 bg-transparent text-sm outline-none" placeholder="http://googleusercontent.com/maps..." />
             </div>
           </div>
         </div>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4">
           <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2"><Wifi className="w-4 h-4 text-orange-500" /> {t("Guest WiFi")}</h3>
@@ -894,12 +957,10 @@ export default function SimpleListPanel() {
             <input type="text" value={business.wifiPass || ""} onChange={e => setBusiness({ wifiPass: e.target.value })} className="w-full p-2 bg-[var(--bg)] border-b border-[var(--border)] text-sm outline-none focus:border-[#22D3EE]" placeholder="Password" />
           </div>
         </div>
-
         <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4">
           <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2"><Clock className="w-4 h-4 text-green-500" /> {t("Hours")}</h3>
           <div className="space-y-3">
-            <textarea rows={3} value={business.hours || ""} onChange={e => setBusiness({ hours: e.target.value })} className="w-full p-2 bg-[var(--bg)] border border-none text-sm outline-none resize-none" placeholder="Mon-Fri: 9am - 10pm
-Sat-Sun: 10am - 11pm" />
+            <textarea rows={3} value={business.hours || ""} onChange={e => setBusiness({ hours: e.target.value })} className="w-full p-2 bg-[var(--bg)] border border-none text-sm outline-none resize-none" placeholder="Mon-Fri: 9am - 10pm..." />
           </div>
         </div>
       </div>
@@ -912,14 +973,11 @@ Sat-Sun: 10am - 11pm" />
         <h2 className="text-lg font-bold text-[var(--text)]">{t("Choose your vibe")}</h2>
         <p className="text-sm text-[var(--muted)]">{t("Select a theme that matches your brand's personality.")}</p>
       </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {THEME_OPTIONS.map(th => {
           const isActive = activeTheme === th.key;
           const isPremium = ["luxury", "midnight", "elegant", "rosegold", "emerald", "sapphire", "obsidian", "goldluxury"].includes(th.key);
-          const { allowed } = canFeature("premiumThemes", plan);
-          const locked = isPremium && !allowed;
-
+          const locked = isPremium && !premiumThemesAllowed;
           return (
             <button
               key={th.key}
@@ -934,7 +992,6 @@ Sat-Sun: 10am - 11pm" />
                 ? "border-[#22D3EE] shadow-lg scale-[1.02] ring-1 ring-[#22D3EE]"
                 : "border-[var(--border)] hover:border-[var(--text)] hover:shadow-md"
                 } ${locked ? "opacity-75 grayscale-[0.5]" : ""}`}
-              data-help={`Select the ${th.label} theme. ${th.desc} Your menu will adapt to this color scheme.`}
             >
               <div className={`absolute inset-0 opacity-[0.03] ${th.color}`} />
               <div className="flex items-center gap-4 relative z-10">
@@ -968,31 +1025,27 @@ Sat-Sun: 10am - 11pm" />
 
   const renderSettingsTab = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-
       <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-6">
         <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide">{t("Configuration")}</h3>
-
         <div className="grid grid-cols-2 gap-6">
           <label className="space-y-2 group cursor-default">
             <span className="text-xs text-[var(--muted)] font-medium group-hover:text-[var(--text)] transition-colors">{t("Currency Symbol")}</span>
-            <select value={currency || "€"} onChange={e => setI18n({ currency: e.target.value })} className="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] cursor-default" data-help="Choose which currency symbol appears before prices on your menu (e.g., €, $, £).">
+            <select value={currency || "€"} onChange={e => setI18n({ currency: e.target.value })} className="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] cursor-default">
               {CURRENCY_PRESETS.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
           <label className="space-y-2 group cursor-default">
             <span className="text-xs text-[var(--muted)] font-medium group-hover:text-[var(--text)] transition-colors">{t("Price Decimals")}</span>
-            <select value={decimals} onChange={e => setI18n({ decimals: Number(e.target.value) })} className="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] cursor-default" data-help="Choose how prices display: 0 decimals (€10) or 2 decimals (€10.00).">
+            <select value={decimals} onChange={e => setI18n({ decimals: Number(e.target.value) })} className="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] cursor-default">
               <option value={0}>0 (100)</option>
               <option value={2}>2 (100.00)</option>
             </select>
           </label>
         </div>
       </div>
-
       <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4">
         <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide">{t("Advanced Options")}</h3>
-
-        <label className={`flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors ${!removeBadgeAllowed ? "opacity-75" : ""}`} data-help="Show a small 'Powered by Tierless' badge at the bottom of your menu. Helps us grow!">
+        <label className={`flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors ${!removeBadgeAllowed ? "opacity-75" : ""}`}>
           <div className="flex items-center gap-2">
             <span className="text-sm text-[var(--text)] font-medium">{t("Show 'Powered by Tierless' Badge")}</span>
             {!removeBadgeAllowed && <Lock className="w-3 h-3 text-[var(--muted)]" />}
@@ -1002,7 +1055,6 @@ Sat-Sun: 10am - 11pm" />
               type="checkbox"
               checked={meta.simpleShowBadge !== false}
               onChange={e => {
-                // If trying to UNCHECK (hide badge) and not allowed -> block
                 if (!e.target.checked && !removeBadgeAllowed) {
                   openUpsell({ feature: "removeBadge" });
                   return;
@@ -1014,23 +1066,78 @@ Sat-Sun: 10am - 11pm" />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]"></div>
           </div>
         </label>
-
-        <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors" data-help="Let customers tap items on the menu to calculate a running total. Perfect for restaurants and cafes!">
+        <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors">
           <div className="space-y-0.5">
-            <span className="text-sm text-[var(--text)] font-medium block">{t("Allow User Selection")}</span>
-            <span className="text-[10px] text-[var(--muted)] block">{t("Lets customers tap items to calculate total.")}</span>
+            <span className="text-sm text-[var(--text)] font-medium block">{t("Enable Calculations")}</span>
+            <span className="text-[10px] text-[var(--muted)] block">{t("Shows prices and allows quantity selection")}</span>
           </div>
           <div className="relative inline-flex items-center cursor-default">
-            <input type="checkbox" checked={meta.simpleAllowSelection || false} onChange={e => setMeta({ simpleAllowSelection: e.target.checked })} className="sr-only peer" />
+            <input type="checkbox" checked={meta.simpleEnableCalculations || false} onChange={e => setMeta({ simpleEnableCalculations: e.target.checked })} className="sr-only peer" />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]"></div>
           </div>
         </label>
+
+        {/* Add Checkout Button - only shown when Enable Calculations is ON */}
+        {meta.simpleEnableCalculations && (
+          <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors border-l-2 border-[#22D3EE]/30 ml-2 pl-3">
+            <div className="space-y-0.5">
+              <span className="text-sm text-[var(--text)] font-medium block">{t("Add Checkout Button")}</span>
+              <span className="text-[10px] text-[var(--muted)] block">{t("Adds a button for customers to send their order via WhatsApp or Email.")}</span>
+              <span className="text-[9px] text-[var(--muted)]/70 block italic">{t("Configure delivery method in Account Settings")}</span>
+            </div>
+            <div className="relative inline-flex items-center cursor-default">
+              <input type="checkbox" checked={meta.simpleAddCheckout || false} onChange={e => setMeta({ simpleAddCheckout: e.target.checked })} className="sr-only peer" />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]"></div>
+            </div>
+          </label>
+        )}
+
+        {/* Show Unit in Public View */}
+        {meta.simpleEnableCalculations && (
+          <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors border-l-2 border-[#22D3EE]/30 ml-2 pl-3">
+            <div className="space-y-0.5">
+              <span className="text-sm text-[var(--text)] font-medium block">{t("Show Units")}</span>
+              <span className="text-[10px] text-[var(--muted)] block">{t("Display unit of measure (kg, pcs, etc.) next to prices")}</span>
+            </div>
+            <div className="relative inline-flex items-center cursor-default">
+              <input type="checkbox" checked={meta.simpleShowUnits || false} onChange={e => setMeta({ simpleShowUnits: e.target.checked })} className="sr-only peer" />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]"></div>
+            </div>
+          </label>
+        )}
       </div>
     </div>
   );
 
   return (
     <div className="max-w-4xl mx-auto min-h-screen bg-[var(--bg)]">
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {sectionToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-[var(--text)]">Delete "{sectionToDelete.label}"?</h3>
+                <p className="text-sm text-[var(--muted)] mt-2">
+                  This will delete the section <b>AND all items</b> inside it. This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 w-full mt-2">
+                <button onClick={() => setSectionToDelete(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--border)] text-sm font-bold text-[var(--text)] hover:bg-[var(--surface)] transition">
+                  {t("Cancel")}
+                </button>
+                <button onClick={handleConfirmDeleteSection} className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition shadow-lg shadow-red-500/20">
+                  {t("Delete")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Brand Header */}
       <div className="sticky top-0 z-40 bg-[var(--bg)]/95 backdrop-blur-md border-b border-[var(--border)] px-4 pt-4 pb-0 mb-6">
@@ -1065,8 +1172,6 @@ Sat-Sun: 10am - 11pm" />
 
       {/* Main Content Area */}
       <div className="px-4 pb-20">
-
-        {/* --- OVO JE DODATI ERROR BLOK --- */}
         {error && (
           <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-3">
@@ -1080,7 +1185,6 @@ Sat-Sun: 10am - 11pm" />
             </button>
           </div>
         )}
-        {/* --- KRAJ ERROR BLOKA --- */}
 
         {activeTab === "content" && renderContentTab()}
         {activeTab === "business" && renderBusinessTab()}
@@ -1121,8 +1225,8 @@ Sat-Sun: 10am - 11pm" />
             </div>
 
             <div className="space-y-6">
-              <button onClick={() => ocrFileRef.current?.click()} disabled={ocrUploading} className="w-full h-40 border-2 border-dashed border-[var(--border)] rounded-2xl flex flex-col items-center justify-center text-[var(--muted)] hover:border-[#22D3EE] hover:text-[#22D3EE] hover:bg-[#22D3EE]/5 transition disabled:opacity-50 group cursor-default">
-                {ocrUploading ? <div className="animate-spin h-8 w-8 border-4 border-[#22D3EE] border-t-transparent rounded-full mb-2" /> : <ScanLine className="w-10 h-10 mb-3 group-hover:scale-110 transition-transform" />}
+              <button onClick={() => ocrFileRef.current?.click()} disabled={ocrUploading} className="w-full h-40 border-2 border-dashed border-[var(--border)] rounded-2xl flex flex-col items-center justify-center text-[var(--muted)] hover:border-[#4F46E5] hover:text-[#4F46E5] hover:bg-[#4F46E5]/5 transition disabled:opacity-50 group cursor-default">
+                {ocrUploading ? <div className="animate-spin h-8 w-8 border-4 border-[#4F46E5] border-t-transparent rounded-full mb-2" /> : <ScanLine className="w-10 h-10 mb-3 group-hover:scale-110 transition-transform" />}
                 <span className="text-sm font-bold">{ocrUploading ? t("Analyzing Menu...") : t("Click to Upload Photo")}</span>
               </button>
 

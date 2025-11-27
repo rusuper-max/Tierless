@@ -1,0 +1,46 @@
+{
+    "account": {
+        "title": "Kontoeinstellungen",
+        "description": "Verwalten Sie Ihr Geschäftsprofil und Abonnement.",
+        "tabs": {
+            "general": "Allgemein & Branding",
+            "billing": "Abrechnung & Nutzung",
+            "preferences": "Einstellungen"
+        },
+        "general": {
+            "title": "Geschäftsdetails",
+            "description": "Diese Details werden für Ihre öffentlichen Anfragen verwendet.",
+            "businessName": "Name / Unternehmen",
+            "businessNamePlaceholder": "z.B. Meine Agentur",
+            "inquiryEmail": "Anfrage-E-Mail",
+            "inquiryEmailPlaceholder": "z.B. kontakt@meineagentur.de",
+            "phone": "Telefon (optional)",
+            "website": "Webseite (optional)",
+            "saveChanges": "Änderungen speichern"
+        },
+        "defaults": {
+            "title": "Standardeinstellungen",
+            "language": "Oberflächensprache",
+            "currency": "Standardwährung",
+            "currencyDescription": "Standardwährung für neue Projekte."
+        },
+        "billing": {
+            "usage": "Nutzung",
+            "currentPlan": "Aktueller Plan",
+            "renewsOn": "Verlängert sich am",
+            "manageSubscription": "Abonnement verwalten"
+        },
+        "preferences": {
+            "notifications": "Benachrichtigungen",
+            "productUpdates": "Produktaktualisierungen",
+            "weeklyReports": "Wöchentliche Berichte",
+            "dangerZone": "Gefahrenzone",
+            "dangerZoneDescription": "Irreversible Aktionen. Bitte seien Sie vorsichtig.",
+            "resetAccount": "Konto zurücksetzen",
+            "resetAccountDescription": "Löscht alle Projekte und setzt Einstellungen zurück.",
+            "deleteAccount": "Konto löschen",
+            "deleteAccountDescription": "Löscht Ihr Konto und alle Daten dauerhaft.",
+            "reset": "Zurücksetzen"
+        }
+    }
+}

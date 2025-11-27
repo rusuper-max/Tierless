@@ -2,10 +2,11 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
-import { t } from "@/i18n";
+import { useTranslation } from "@/i18n/useTranslation";
 import ShinyButton from "@/components/marketing/ShinyButton";
 
 export default function MainPhase3() {
+    const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement>(null);
 
     const { scrollYProgress } = useScroll({
@@ -47,10 +48,10 @@ export default function MainPhase3() {
 
     // --- DATA ---
     const menuItems = [
-        { name: "Truffle Smash", desc: "Double patty, truffle mayo, swiss", price: "$14" },
-        { name: "Spicy Chicken", desc: "Crispy thigh, slaw, pickles", price: "$12" },
-        { name: "Loaded Fries", desc: "Bacon bits, cheddar sauce", price: "$8" },
-        { name: "Craft Lemonade", desc: "Fresh mint & ginger", price: "$5" },
+        { name: t("phase3.demo.items.0.name"), desc: t("phase3.demo.items.0.desc"), price: "$14" },
+        { name: t("phase3.demo.items.1.name"), desc: t("phase3.demo.items.1.desc"), price: "$12" },
+        { name: t("phase3.demo.items.2.name"), desc: t("phase3.demo.items.2.desc"), price: "$8" },
+        { name: t("phase3.demo.items.3.name"), desc: t("phase3.demo.items.3.desc"), price: "$5" },
     ];
 
     return (
@@ -64,32 +65,32 @@ export default function MainPhase3() {
                 <div className="absolute top-28 w-full px-4 text-center z-30 h-32 pointer-events-none">
 
                     <motion.div style={{ opacity: step1Op }} className="absolute inset-0 flex flex-col items-center">
-                        <Badge text="Step 1" color="cyan" />
+                        <Badge text={t("phase3.step1.badge")} color="cyan" />
                         <h2 className="text-3xl md:text-6xl font-bold text-white mb-3 drop-shadow-xl">
-                            {t("Scan the QR.")}
+                            {t("phase3.step1.title")}
                         </h2>
                         <p className="text-lg text-slate-400">
-                            {t("Put it on tables. No app download needed.")}
+                            {t("phase3.step1.desc")}
                         </p>
                     </motion.div>
 
                     <motion.div style={{ opacity: step2Op }} className="absolute inset-0 flex flex-col items-center">
-                        <Badge text="Step 2" color="indigo" />
+                        <Badge text={t("phase3.step2.badge")} color="indigo" />
                         <h2 className="text-3xl md:text-6xl font-bold text-white mb-3 drop-shadow-xl">
-                            {t("Instant Detect.")}
+                            {t("phase3.step2.title")}
                         </h2>
                         <p className="text-lg text-slate-400">
-                            {t("Lightning fast loading experience.")}
+                            {t("phase3.step2.desc")}
                         </p>
                     </motion.div>
 
                     <motion.div style={{ opacity: step3Op }} className="absolute inset-0 flex flex-col items-center">
-                        <Badge text="Step 3" color="emerald" />
+                        <Badge text={t("phase3.step3.badge")} color="emerald" />
                         <h2 className="text-3xl md:text-6xl font-bold text-white mb-3 drop-shadow-xl">
-                            {t("Order & Enjoy.")}
+                            {t("phase3.step3.title")}
                         </h2>
                         <p className="text-lg text-slate-400">
-                            {t("Beautiful menu. Happy customers.")}
+                            {t("phase3.step3.desc")}
                         </p>
                     </motion.div>
 
@@ -124,7 +125,7 @@ export default function MainPhase3() {
                                     <rect x="80" y="80" width="8" height="8" rx="1" />
                                 </svg>
                             </div>
-                            <p className="mt-5 text-slate-500 text-xs font-bold uppercase tracking-widest">Scan for Menu</p>
+                            <p className="mt-5 text-slate-500 text-xs font-bold uppercase tracking-widest">{t("phase3.demo.scanLabel")}</p>
                         </div>
                         <div className="w-52 h-8 bg-[#1e293b] mx-auto -mt-2 rounded-b-lg shadow-xl relative z-[-1]" />
                     </motion.div>
@@ -155,13 +156,13 @@ export default function MainPhase3() {
                                         <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-cyan-400 rounded-br-lg" />
                                         <div className="w-full h-0.5 bg-cyan-400 shadow-[0_0_15px_#22d3ee] animate-scan" />
                                     </div>
-                                    <p className="mt-8 text-white/70 text-xs font-medium bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">Scanning code...</p>
+                                    <p className="mt-8 text-white/70 text-xs font-medium bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">{t("phase3.demo.scanning")}</p>
                                 </motion.div>
 
                                 {/* LOADING (Cyan) */}
                                 <motion.div style={{ opacity: loaderOpacity }} className="absolute inset-0 bg-[#0f172a] z-40 flex flex-col items-center justify-center">
                                     <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin" />
-                                    <p className="mt-4 text-cyan-200 text-sm font-medium">Loading Menu...</p>
+                                    <p className="mt-4 text-cyan-200 text-sm font-medium">{t("phase3.demo.loading")}</p>
                                 </motion.div>
 
                                 {/* MENU + CTA (Integrated) */}
@@ -174,17 +175,17 @@ export default function MainPhase3() {
                                         <div className="relative z-10 w-full">
                                             <div className="flex justify-between items-end">
                                                 <div>
-                                                    <h3 className="text-white font-bold text-2xl tracking-tight">Burger & Co.</h3>
+                                                    <h3 className="text-white font-bold text-2xl tracking-tight">{t("phase3.demo.restaurantName")}</h3>
                                                     <div className="flex items-center gap-1 text-amber-400 text-xs mt-1"><span>★★★★★</span><span className="text-slate-300">(124)</span></div>
                                                 </div>
-                                                <div className="bg-white/20 backdrop-blur px-2 py-1 rounded-lg text-white text-xs font-bold">OPEN</div>
+                                                <div className="bg-white/20 backdrop-blur px-2 py-1 rounded-lg text-white text-xs font-bold">{t("phase3.demo.open")}</div>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div className="px-4 py-3 flex gap-2 border-b border-slate-800/50">
-                                        <span className="px-3 py-1 rounded-full bg-white text-black text-[10px] font-bold">Popular</span>
-                                        <span className="px-3 py-1 rounded-full bg-slate-800 text-slate-400 text-[10px] font-medium">Mains</span>
+                                        <span className="px-3 py-1 rounded-full bg-white text-black text-[10px] font-bold">{t("phase3.demo.popular")}</span>
+                                        <span className="px-3 py-1 rounded-full bg-slate-800 text-slate-400 text-[10px] font-medium">{t("phase3.demo.mains")}</span>
                                     </div>
 
                                     <div className="flex-1 px-4 py-2 space-y-3 overflow-hidden">
@@ -211,7 +212,7 @@ export default function MainPhase3() {
                                             className="w-full"
                                             rounded="rounded-xl" // <--- OVO REŠAVA PROBLEM
                                         >
-                                            Create My QR Menu
+                                            {t("phase3.demo.cta")}
                                         </ShinyButton>
                                     </div>
                                 </motion.div>

@@ -1,0 +1,59 @@
+{
+    "account": {
+        "title": "Account Settings",
+        "description": "Manage your business profile and subscription.",
+        "tabs": {
+            "general": "General & Branding",
+            "billing": "Billing & Usage",
+            "preferences": "Settings"
+        },
+        "general": {
+            "title": "Business Details",
+            "description": "These details are used for your public inquiries.",
+            "businessName": "Display Name / Business",
+            "businessNamePlaceholder": "e.g. My Agency",
+            "inquiryEmail": "Inquiry Email",
+            "inquiryEmailPlaceholder": "e.g. contact@myagency.com",
+            "phone": "Phone (Optional)",
+            "website": "Website (Optional)",
+            "saveChanges": "Save Changes"
+        },
+        "defaults": {
+            "title": "Defaults",
+            "language": "Interface Language",
+            "currency": "Default Currency",
+            "currencyDescription": "Default currency for new projects."
+        },
+        "orders": {
+            "title": "Order Receiving",
+            "description": "Choose how you want to receive orders and inquiries.",
+            "destination": "Receive orders via",
+            "whatsappNumber": "WhatsApp Number",
+            "whatsappPlaceholder": "e.g. +1234567890"
+        },
+        "billing": {
+            "usage": "Usage",
+            "currentPlan": "Current Plan",
+            "renewsOn": "Renews on",
+            "manageSubscription": "Manage Subscription"
+        },
+        "preferences": {
+            "notifications": "Notifications",
+            "productUpdates": "Product updates",
+            "weeklyReports": "Weekly reports",
+            "dangerZone": "Danger Zone",
+            "dangerZoneDescription": "Irreversible actions. Please be careful.",
+            "deleteAccount": "Delete Account",
+            "deleteAccountDescription": "Permanently delete all your pages and business data. You will be logged out."
+        },
+        "deleteModal": {
+            "title": "Delete Account Permanently",
+            "description": "This action cannot be undone. This will permanently delete all your pages and data. You will be logged out.",
+            "instruction": "Type DELETE FOREVER to confirm.",
+            "placeholder": "DELETE FOREVER",
+            "cancel": "Cancel",
+            "confirm": "Delete Forever",
+            "deleting": "Deleting..."
+        }
+    }
+}

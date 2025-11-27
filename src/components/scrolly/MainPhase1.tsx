@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Coffee, Camera, Scissors, Rocket } from "lucide-react";
-import { t } from "@/i18n";
+import { useTranslation } from "@/i18n/useTranslation";
 import ParticlesBackground from "@/components/landing/ParticlesBackground";
 import ShinyButton from "@/components/marketing/ShinyButton";
 
@@ -16,12 +16,13 @@ const PIN_HEIGHT_SVH = 100;
 
 export default function MainPhase1() {
   const wrapRef = (globalThis as any)._p1ref ??= { current: null as HTMLElement | null };
+  const { t } = useTranslation();
 
   return (
     <section
       id="phase1"
       data-phase="1"
-      aria-label={t("Hero Phase")}
+      aria-label={t("a11y.heroPhase")}
       className="relative w-full"
     >
       <div ref={wrapRef} style={{ height: `${PIN_HEIGHT_SVH}svh` }}>
@@ -50,7 +51,7 @@ export default function MainPhase1() {
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-500"></span>
               </span>
               <span className="text-xs font-semibold text-indigo-100 tracking-wide uppercase">
-                {t("No website required")}
+                {t("phase1.badge")}
               </span>
             </motion.div>
 
@@ -62,13 +63,13 @@ export default function MainPhase1() {
               className="max-w-5xl text-4xl font-bold tracking-tight text-white sm:text-7xl md:text-8xl leading-[1.1]"
             >
               <span className="block text-white drop-shadow-2xl">
-                {t("Your prices.")}
+                {t("phase1.title1")}
               </span>
               <span className="block text-white drop-shadow-2xl">
-                {t("Online.")}
+                {t("phase1.title2")}
               </span>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-400 to-indigo-400 animate-gradient bg-[length:200%_auto]">
-                {t("Beautiful.")}
+                {t("phase1.title3")}
               </span>
             </motion.h1>
 
@@ -79,7 +80,7 @@ export default function MainPhase1() {
               transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
               className="mt-8 max-w-2xl text-base text-slate-300 sm:text-xl leading-relaxed font-medium"
             >
-              {t("Create menus, rate cards, and price calculators in minutes. Share via Link or QR code. Update anytime, instantly.")}
+              {t("phase1.subtitle")}
             </motion.p>
 
             {/* 4. CTA Buttons */}
@@ -91,7 +92,7 @@ export default function MainPhase1() {
             >
               {/* PRIMARY: Shiny Cosmic Button (Tvoj novi brand stil) */}
               <ShinyButton href="/start" className="w-full sm:w-auto">
-                {t("Create My Page Free")}
+                {t("phase1.ctaPrimary")}
               </ShinyButton>
 
               {/* SECONDARY: Glass Outline */}
@@ -99,7 +100,7 @@ export default function MainPhase1() {
                 href="/templates"
                 className="inline-flex items-center justify-center rounded-full border border-slate-600/50 bg-slate-900/40 backdrop-blur-sm px-8 py-3.5 text-lg font-medium text-slate-200 transition-all hover:bg-slate-800/60 hover:border-slate-400 hover:text-white w-full sm:w-auto"
               >
-                {t("See Examples")}
+                {t("phase1.ctaSecondary")}
               </Link>
             </motion.div>
 
@@ -110,7 +111,7 @@ export default function MainPhase1() {
               transition={{ delay: 0.8, duration: 1 }}
               className="mt-16 text-xs text-slate-500 uppercase tracking-widest font-semibold"
             >
-              {t("Perfect for")}
+              {t("phase1.perfectFor")}
             </motion.p>
             <motion.div
               initial={{ opacity: 0 }}
@@ -118,13 +119,13 @@ export default function MainPhase1() {
               transition={{ delay: 1, duration: 1 }}
               className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-3 text-slate-400 text-sm font-medium"
             >
-              <span className="flex items-center gap-2"><Coffee size={16} className="text-cyan-400" /> {t("Cafes & Menus")}</span>
+              <span className="flex items-center gap-2"><Coffee size={16} className="text-cyan-400" /> {t("phase1.useCases.cafes")}</span>
               <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
-              <span className="flex items-center gap-2"><Camera size={16} className="text-indigo-400" /> {t("Freelancers")}</span>
+              <span className="flex items-center gap-2"><Camera size={16} className="text-indigo-400" /> {t("phase1.useCases.freelancers")}</span>
               <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
-              <span className="flex items-center gap-2"><Scissors size={16} className="text-pink-400" /> {t("Salons")}</span>
+              <span className="flex items-center gap-2"><Scissors size={16} className="text-pink-400" /> {t("phase1.useCases.salons")}</span>
               <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
-              <span className="flex items-center gap-2"><Rocket size={16} className="text-emerald-400" /> {t("Startups")}</span>
+              <span className="flex items-center gap-2"><Rocket size={16} className="text-emerald-400" /> {t("phase1.useCases.startups")}</span>
             </motion.div>
 
           </div>

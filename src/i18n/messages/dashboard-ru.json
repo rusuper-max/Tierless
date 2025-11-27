@@ -1,0 +1,46 @@
+{
+    "account": {
+        "title": "Настройки аккаунта",
+        "description": "Управляйте вашим бизнес-профилем и подпиской.",
+        "tabs": {
+            "general": "Общие настройки",
+            "billing": "Платежи и использование",
+            "preferences": "Настройки"
+        },
+        "general": {
+            "title": "Детали бизнеса",
+            "description": "Эти данные используются для публичных запросов.",
+            "businessName": "Название / Компания",
+            "businessNamePlaceholder": "напр. Мое Агентство",
+            "inquiryEmail": "Email для запросов",
+            "inquiryEmailPlaceholder": "напр. kontakt@moeagentstvo.ru",
+            "phone": "Телефон (необязательно)",
+            "website": "Веб-сайт (необязательно)",
+            "saveChanges": "Сохранить изменения"
+        },
+        "defaults": {
+            "title": "По умолчанию",
+            "language": "Язык интерфейса",
+            "currency": "Валюта по умолчанию",
+            "currencyDescription": "Валюта по умолчанию для новых проектов."
+        },
+        "billing": {
+            "usage": "Использование",
+            "currentPlan": "Текущий план",
+            "renewsOn": "Продлевается",
+            "manageSubscription": "Управление подпиской"
+        },
+        "preferences": {
+            "notifications": "Уведомления",
+            "productUpdates": "Обновления продукта",
+            "weeklyReports": "Еженедельные отчеты",
+            "dangerZone": "Опасная зона",
+            "dangerZoneDescription": "Необратимые действия. Будьте осторожны.",
+            "resetAccount": "Сбросить аккаунт",
+            "resetAccountDescription": "Удаляет все проекты и сбрасывает настройки.",
+            "deleteAccount": "Удалить аккаунт",
+            "deleteAccountDescription": "Навсегда удаляет ваш аккаунт и все данные.",
+            "reset": "Сбросить"
+        }
+    }
+}

@@ -1,0 +1,46 @@
+{
+    "account": {
+        "title": "Configuración de cuenta",
+        "description": "Administra tu perfil empresarial y suscripción.",
+        "tabs": {
+            "general": "General y Marca",
+            "billing": "Facturación y Uso",
+            "preferences": "Configuración"
+        },
+        "general": {
+            "title": "Detalles del Negocio",
+            "description": "Estos detalles se utilizan para tus consultas públicas.",
+            "businessName": "Nombre / Empresa",
+            "businessNamePlaceholder": "ej. Mi Agencia",
+            "inquiryEmail": "Email de Consultas",
+            "inquiryEmailPlaceholder": "ej. contacto@miagencia.com",
+            "phone": "Teléfono (opcional)",
+            "website": "Sitio web (opcional)",
+            "saveChanges": "Guardar cambios"
+        },
+        "defaults": {
+            "title": "Predeterminados",
+            "language": "Idioma de interfaz",
+            "currency": "Moneda predeterminada",
+            "currencyDescription": "Moneda predeterminada para nuevos proyectos."
+        },
+        "billing": {
+            "usage": "Uso",
+            "currentPlan": "Plan actual",
+            "renewsOn": "Se renueva el",
+            "manageSubscription": "Gestionar suscripción"
+        },
+        "preferences": {
+            "notifications": "Notificaciones",
+            "productUpdates": "Actualizaciones del producto",
+            "weeklyReports": "Informes semanales",
+            "dangerZone": "Zona de peligro",
+            "dangerZoneDescription": "Acciones irreversibles. Por favor, ten cuidado.",
+            "resetAccount": "Restablecer cuenta",
+            "resetAccountDescription": "Elimina todos los proyectos y restablece la configuración.",
+            "deleteAccount": "Eliminar cuenta",
+            "deleteAccountDescription": "Elimina permanentemente tu cuenta y todos los datos.",
+            "reset": "Restablecer"
+        }
+    }
+}

@@ -97,7 +97,7 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
       premiumThemes: false,
     },
     limits: {
-      pages: 10,
+      pages: 5,
       maxPublicPages: 3,     // 3 Live pages (e.g. Food, Drinks, Happy Hour)
       tiersPerPage: 3,
       items: 50,             // Good for cafes
@@ -123,7 +123,7 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
       premiumThemes: true,   // All themes unlocked
     },
     limits: {
-      pages: "unlimited",    // Unlimited drafts
+      pages: 10,
       maxPublicPages: 5,     // 5 Live pages (Enough for one serious restaurant)
       tiersPerPage: 5,
       items: 100,            // Good for full restaurants
@@ -149,7 +149,7 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
       premiumThemes: true,
     },
     limits: {
-      pages: "unlimited",
+      pages: 50,
       maxPublicPages: 10,    // 10 Live pages (Small franchise limit)
       tiersPerPage: "unlimited",
       items: "unlimited",

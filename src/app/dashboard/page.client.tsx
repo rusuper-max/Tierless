@@ -1162,8 +1162,17 @@ export default function DashboardPageClient() {
             </div>
           </div>
 
-          {/* Published pill */}
-          <div className="flex items-start justify-end">
+          {/* Page count pills */}
+          <div className="flex flex-wrap items-start justify-end gap-2">
+            {/* Total pages pill */}
+            <span
+              className="inline-flex items-center rounded-full border px-3 py-1 text-sm shadow-sm transition-colors duration-300 border-[var(--border)] bg-[var(--card)] text-[var(--text)]"
+              title="Total pages (all pages including drafts)"
+            >
+              {totalPages} / {pagesLimit === "unlimited" ? "∞" : pagesLimit} total
+            </span>
+
+            {/* Published pill */}
             <span
               className={`inline-flex items-center rounded-full border px-3 py-1 text-sm shadow-sm transition-colors duration-300 ${isOverPagesLimit && limitPulse
                 ? "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-700 dark:bg-rose-900/30 dark:text-rose-300"

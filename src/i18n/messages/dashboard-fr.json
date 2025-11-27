@@ -1,0 +1,46 @@
+{
+    "account": {
+        "title": "Paramètres du compte",
+        "description": "Gérez votre profil professionnel et votre abonnement.",
+        "tabs": {
+            "general": "Général et Image de marque",
+            "billing": "Facturation et Utilisation",
+            "preferences": "Paramètres"
+        },
+        "general": {
+            "title": "Détails de l'entreprise",
+            "description": "Ces détails sont utilisés pour vos demandes publiques.",
+            "businessName": "Nom / Entreprise",
+            "businessNamePlaceholder": "ex. Mon Agence",
+            "inquiryEmail": "Email de contact",
+            "inquiryEmailPlaceholder": "ex. contact@monagence.com",
+            "phone": "Téléphone (optionnel)",
+            "website": "Site web (optionnel)",
+            "saveChanges": "Enregistrer les modifications"
+        },
+        "defaults": {
+            "title": "Par défaut",
+            "language": "Langue de l'interface",
+            "currency": "Devise par défaut",
+            "currencyDescription": "Devise par défaut pour les nouveaux projets."
+        },
+        "billing": {
+            "usage": "Utilisation",
+            "currentPlan": "Plan actuel",
+            "renewsOn": "Se renouvelle le",
+            "manageSubscription": "Gérer l'abonnement"
+        },
+        "preferences": {
+            "notifications": "Notifications",
+            "productUpdates": "Mises à jour du produit",
+            "weeklyReports": "Rapports hebdomadaires",
+            "dangerZone": "Zone de danger",
+            "dangerZoneDescription": "Actions irréversibles. Soyez prudent.",
+            "resetAccount": "Réinitialiser le compte",
+            "resetAccountDescription": "Supprime tous les projets et réinitialise les paramètres.",
+            "deleteAccount": "Supprimer le compte",
+            "deleteAccountDescription": "Supprime définitivement votre compte et toutes les données.",
+            "reset": "Réinitialiser"
+        }
+    }
+}

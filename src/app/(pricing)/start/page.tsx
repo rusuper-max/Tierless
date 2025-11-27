@@ -262,13 +262,11 @@ export default function StartPage() {
               <div className="relative flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-full border border-slate-200 dark:border-slate-800">
                 <button
                   onClick={() => setInterval("monthly")}
-                  // Ako je aktivan, primeni gradient border stil. Ako nije, transparent border.
-                  style={interval === "monthly" ? activeToggleStyle : { border: "1px solid transparent" }}
                   className={`
                     relative z-10 px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-200
                     ${interval === "monthly"
-                      ? "text-slate-900 dark:text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                      ? "text-slate-900 dark:text-white shadow-sm [background:linear-gradient(#ffffff,#ffffff)_padding-box,var(--brand-gradient)_border-box] dark:[background:linear-gradient(#000000,#000000)_padding-box,var(--brand-gradient)_border-box] border border-transparent"
+                      : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border border-transparent"
                     }
                   `}
                 >
@@ -277,12 +275,11 @@ export default function StartPage() {
 
                 <button
                   onClick={() => setInterval("yearly")}
-                  style={interval === "yearly" ? activeToggleStyle : { border: "1px solid transparent" }}
                   className={`
                     relative z-10 px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1.5 sm:gap-2
                     ${interval === "yearly"
-                      ? "text-slate-900 dark:text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                      ? "text-slate-900 dark:text-white shadow-sm [background:linear-gradient(#ffffff,#ffffff)_padding-box,var(--brand-gradient)_border-box] dark:[background:linear-gradient(#000000,#000000)_padding-box,var(--brand-gradient)_border-box] border border-transparent"
+                      : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border border-transparent"
                     }
                   `}
                 >

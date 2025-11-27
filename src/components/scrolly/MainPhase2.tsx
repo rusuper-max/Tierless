@@ -1,79 +1,88 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { motion, useScroll, useTransform, useSpring, AnimatePresence } from "framer-motion";
 import {
   Palette,
   Zap,
   Box,
-  Clock,
-  Phone,
-  Wifi,
-  Search,
-  Plus,
   Utensils,
   Scissors,
-  Stethoscope
+  Stethoscope,
+  Search,
+  Plus
 } from "lucide-react";
-import { t } from "@/i18n"; // Pretpostavka da postoji, ili koristi stringove direktno
-
-// --- USE CASES (Podaci) ---
-// Dodao sam 'config' polje da simuliramo kod na levoj strani
-const USE_CASES = [
-  {
-    id: "restaurant",
-    themeColor: "#f97316", // Orange
-    accentColor: "text-orange-400",
-    bgGradient: "from-orange-500/20 to-transparent",
-    title: "Urban Bistro",
-    subtitle: "Est. 1983 • City Center",
-    icon: Utensils,
-    info: ["08:00 - 23:00", "Free WiFi", "069/555-333"],
-    categories: ["Sandwiches", "Soups", "Drinks"],
-    config: { type: "menu", layout: "list", style: "bistro" },
-    items: [
-      { name: "Truffle Burger", desc: "Wagyu beef, swiss cheese, truffle mayo.", price: "$18.00" },
-      { name: "Club Sandwich", desc: "Chicken, bacon, egg, lettuce, tomato.", price: "$12.50" },
-    ]
-  },
-  {
-    id: "salon",
-    themeColor: "#ec4899", // Pink
-    accentColor: "text-pink-400",
-    bgGradient: "from-pink-500/20 to-transparent",
-    title: "Luxe Salon",
-    subtitle: "Beauty & Spa • 4.9 Stars",
-    icon: Scissors,
-    info: ["09:00 - 20:00", "Parking", "Book Online"],
-    categories: ["Hair", "Nails", "Massage"],
-    config: { type: "service_list", layout: "card", style: "elegant" },
-    items: [
-      { name: "Haircut & Style", desc: "Wash, cut, blowdry & styling.", price: "$65.00" },
-      { name: "Gel Manicure", desc: "Premium gel polish, 30min.", price: "$35.00" },
-    ]
-  },
-  {
-    id: "dentist",
-    themeColor: "#06b6d4", // Cyan
-    accentColor: "text-cyan-400",
-    bgGradient: "from-cyan-500/20 to-transparent",
-    title: "Pure Smile",
-    subtitle: "Dental Clinic • Dr. Smith",
-    icon: Stethoscope,
-    info: ["Mon-Fri", "Emergency", "Insurance"],
-    categories: ["Exam", "Whitening", "Surgery"],
-    config: { type: "medical", layout: "clean", style: "trust" },
-    items: [
-      { name: "Full Check-up", desc: "Exam, cleaning & consultation.", price: "$90.00" },
-      { name: "Laser Whitening", desc: "Brighten up to 5 shades.", price: "$250.00" },
-    ]
-  }
-];
+import { useTranslation } from "@/i18n/useTranslation";
 
 export default function MainPhase2() {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeCaseIndex, setActiveCaseIndex] = useState(0);
   const [isInView, setIsInView] = useState(false);
+
+  // --- USE CASES (Podaci) ---
+  const USE_CASES = useMemo(() => [
+    {
+      id: "restaurant",
+      themeColor: "#f97316", // Orange
+      accentColor: "text-orange-400",
+      bgGradient: "from-orange-500/20 to-transparent",
+      title: t("phase2.cases.restaurant.title"),
+      subtitle: t("phase2.cases.restaurant.subtitle"),
+      icon: Utensils,
+      info: ["08:00 - 23:00", "Free WiFi", "069/555-333"],
+      categories: [
+        t("phase2.cases.restaurant.categories.0"),
+        t("phase2.cases.restaurant.categories.1"),
+        t("phase2.cases.restaurant.categories.2")
+      ],
+      config: { type: "menu", layout: "list", style: "bistro" },
+      items: [
+        { name: t("phase2.cases.restaurant.items.0.name"), desc: t("phase2.cases.restaurant.items.0.desc"), price: "$18.00" },
+        { name: t("phase2.cases.restaurant.items.1.name"), desc: t("phase2.cases.restaurant.items.1.desc"), price: "$12.50" },
+      ]
+    },
+    {
+      id: "salon",
+      themeColor: "#ec4899", // Pink
+      accentColor: "text-pink-400",
+      bgGradient: "from-pink-500/20 to-transparent",
+      title: t("phase2.cases.salon.title"),
+      subtitle: t("phase2.cases.salon.subtitle"),
+      icon: Scissors,
+      info: ["09:00 - 20:00", "Parking", "Book Online"],
+      categories: [
+        t("phase2.cases.salon.categories.0"),
+        t("phase2.cases.salon.categories.1"),
+        t("phase2.cases.salon.categories.2")
+      ],
+      config: { type: "service_list", layout: "card", style: "elegant" },
+      items: [
+        { name: t("phase2.cases.salon.items.0.name"), desc: t("phase2.cases.salon.items.0.desc"), price: "$65.00" },
+        { name: t("phase2.cases.salon.items.1.name"), desc: t("phase2.cases.salon.items.1.desc"), price: "$35.00" },
+      ]
+    },
+    {
+      id: "dentist",
+      themeColor: "#06b6d4", // Cyan
+      accentColor: "text-cyan-400",
+      bgGradient: "from-cyan-500/20 to-transparent",
+      title: t("phase2.cases.dentist.title"),
+      subtitle: t("phase2.cases.dentist.subtitle"),
+      icon: Stethoscope,
+      info: ["Mon-Fri", "Emergency", "Insurance"],
+      categories: [
+        t("phase2.cases.dentist.categories.0"),
+        t("phase2.cases.dentist.categories.1"),
+        t("phase2.cases.dentist.categories.2")
+      ],
+      config: { type: "medical", layout: "clean", style: "trust" },
+      items: [
+        { name: t("phase2.cases.dentist.items.0.name"), desc: t("phase2.cases.dentist.items.0.desc"), price: "$90.00" },
+        { name: t("phase2.cases.dentist.items.1.name"), desc: t("phase2.cases.dentist.items.1.desc"), price: "$250.00" },
+      ]
+    }
+  ], [t]);
 
   // Scroll logika
   const { scrollYProgress } = useScroll({
@@ -128,7 +137,7 @@ export default function MainPhase2() {
       clearInterval(interval);
       clearInterval(progressInterval);
     };
-  }, [isInView]);
+  }, [isInView, USE_CASES.length]);
 
   const activeCase = USE_CASES[activeCaseIndex];
   const ActiveIcon = activeCase.icon;
@@ -165,14 +174,14 @@ export default function MainPhase2() {
                   <div className="p-2 bg-slate-800/50 rounded-lg border border-slate-700">
                     <Box size={20} className="text-slate-400" />
                   </div>
-                  <span className="font-mono text-xs text-slate-500 uppercase tracking-widest">Core Engine</span>
+                  <span className="font-mono text-xs text-slate-500 uppercase tracking-widest">{t("phase2.step1.label")}</span>
                 </div>
                 <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-                  One structure.<br />
-                  <span className="text-slate-500">Infinite layouts.</span>
+                  {t("phase2.step1.title")}<br />
+                  <span className="text-slate-500">{t("phase2.step1.subtitle")}</span>
                 </h2>
                 <p className="text-lg text-slate-400 leading-relaxed max-w-md">
-                  Drop in your items once. Our engine automatically organizes them into a conversion-optimized layout. No drag-and-drop chaos.
+                  {t("phase2.step1.desc")}
                 </p>
               </motion.div>
 
@@ -181,14 +190,14 @@ export default function MainPhase2() {
                   <div className="p-2 bg-indigo-900/30 rounded-lg border border-indigo-500/30">
                     <Palette size={20} className="text-indigo-400" />
                   </div>
-                  <span className="font-mono text-xs text-indigo-400 uppercase tracking-widest">Visual DNA</span>
+                  <span className="font-mono text-xs text-indigo-400 uppercase tracking-widest">{t("phase2.step2.label")}</span>
                 </div>
                 <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-                  Instant branding.<br />
-                  <span className="text-indigo-400/60">Zero design skills.</span>
+                  {t("phase2.step2.title")}<br />
+                  <span className="text-indigo-400/60">{t("phase2.step2.subtitle")}</span>
                 </h2>
                 <p className="text-lg text-slate-400 leading-relaxed max-w-md">
-                  Select a vibe. The Tierless Engine repaints every component, button, and font to match your brand identity instantly.
+                  {t("phase2.step2.desc")}
                 </p>
               </motion.div>
 
@@ -198,14 +207,14 @@ export default function MainPhase2() {
                   <div className="p-2 bg-emerald-900/30 rounded-lg border border-emerald-500/30">
                     <Zap size={20} className="text-emerald-400" />
                   </div>
-                  <span className="font-mono text-xs text-emerald-400 uppercase tracking-widest">Deployment</span>
+                  <span className="font-mono text-xs text-emerald-400 uppercase tracking-widest">{t("phase2.step3.label")}</span>
                 </div>
                 <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-                  Always accessible.<br />
-                  <span className="text-emerald-400/60">Blazingly fast.</span>
+                  {t("phase2.step3.title")}<br />
+                  <span className="text-emerald-400/60">{t("phase2.step3.subtitle")}</span>
                 </h2>
                 <p className="text-lg text-slate-400 leading-relaxed max-w-md">
-                  Your Tierless page is a high-performance PWA. It loads instantly on any device, scan after scan.
+                  {t("phase2.step3.desc")}
                 </p>
                 <div className="mt-6 flex items-center gap-4">
                   <div className="flex -space-x-2">
@@ -213,7 +222,7 @@ export default function MainPhase2() {
                     <div className="w-8 h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[10px]">💅</div>
                     <div className="w-8 h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[10px]">🦷</div>
                   </div>
-                  <span className="text-sm text-slate-500">Trusted by 500+ businesses</span>
+                  <span className="text-sm text-slate-500">{t("phase2.step3.trusted")}</span>
                 </div>
               </motion.div>
 

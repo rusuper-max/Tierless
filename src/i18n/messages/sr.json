@@ -1,0 +1,203 @@
+{
+    "brand": {
+        "name": "Tierless"
+    },
+    "nav": {
+        "pages": "Stranice",
+        "templates": "Šabloni",
+        "signin": "Prijavi se",
+        "signup": "Registruj se",
+        "account": "Nalog",
+        "billing": "Plaćanje",
+        "signout": "Odjavi se",
+        "dashboard": "Kontrolna tabla"
+    },
+    "hero": {
+        "title": "Preskoči sajt. Daj svojim cenama stranicu i QR kod",
+        "subtitle": "Za kafiće, restorane, salone i male biznise kojima treba samo čista stranica sa cenama. Dodaj stavke i cene, dobij link i QR kod, i neka klijenti vide tvoje cene na svom telefonu.",
+        "ctaPrimary": "Počni besplatno",
+        "ctaSecondary": "Vidi demo uživo"
+    },
+    "features": {
+        "block1Title": "Bez kodiranja",
+        "block1Body": "Konfiguriši planove, dodatke i pravila bez pisanja koda.",
+        "block2Title": "Deli bilo gde",
+        "block2Body": "Pošalji link ili ugradi na svoj sajt. Radi sjajno na mobilnom.",
+        "block3Title": "Brendiraj po svom",
+        "block3Body": "Boje, tekst i struktura su potpuno pod tvojom kontrolom."
+    },
+    "pricing": {
+        "title": "Jednostavni planovi",
+        "subtitle": "Transparentne cene sa opcionim dodacima.",
+        "from": "od {price}/mesečno"
+    },
+    "cta": {
+        "finalTitle": "Spreman za lansiranje?",
+        "finalButton": "Kreiraj svoju stranicu"
+    },
+    "meta": {
+        "home": {
+            "title": "Tierless — Kalkulatori cena na jednoj strani",
+            "description": "Kreiraj prelepu stranicu sa cenama bez sajta. Podeli link ili ga ugradi bilo gde."
+        }
+    },
+    "a11y": {
+        "mainHeader": "Glavno zaglavlje",
+        "heroPhase": "Hero Faza"
+    },
+    "phase1": {
+        "badge": "Sajt nije potreban",
+        "title1": "Tvoje cene.",
+        "title2": "Online.",
+        "title3": "Prelepo.",
+        "subtitle": "Kreiraj jelovnike, cenovnike i kalkulatore cena za nekoliko minuta. Podeli putem linka ili QR koda. Ažuriraj bilo kada, trenutno.",
+        "ctaPrimary": "Kreiraj moju stranicu besplatno",
+        "ctaSecondary": "Vidi primere",
+        "perfectFor": "Savršeno za",
+        "useCases": {
+            "cafes": "Kafiće i Menije",
+            "freelancers": "Frilensere",
+            "salons": "Salone",
+            "startups": "Startape"
+        }
+    },
+    "phase2": {
+        "step1": {
+            "label": "Glavni Motor",
+            "title": "Jedna struktura.",
+            "subtitle": "Beskonačno rasporeda.",
+            "desc": "Ubaci svoje stavke jednom. Naš motor ih automatski organizuje u raspored optimizovan za konverziju. Bez haosa sa prevlačenjem."
+        },
+        "step2": {
+            "label": "Vizuelni DNK",
+            "title": "Trenutno brendiranje.",
+            "subtitle": "Nula dizajnerskih veština.",
+            "desc": "Izaberi vajb. Tierless Engine ponovo boji svaku komponentu, dugme i font da se trenutno uklopi u tvoj brend."
+        },
+        "step3": {
+            "label": "Isporuka",
+            "title": "Uvek dostupno.",
+            "subtitle": "Munjevito brzo.",
+            "desc": "Tvoja Tierless stranica je PWA visokih performansi. Učitava se trenutno na bilo kom uređaju, sken za skenom.",
+            "trusted": "Veruje nam 500+ biznisa"
+        },
+        "cases": {
+            "restaurant": {
+                "title": "Urban Bistro",
+                "subtitle": "Osnovan 1983 • Centar grada",
+                "categories": [
+                    "Sendviči",
+                    "Supe",
+                    "Pića"
+                ],
+                "items": [
+                    {
+                        "name": "Bureger sa tartufima",
+                        "desc": "Wagyu govedina, švajcarski sir, majonez sa tartufima."
+                    },
+                    {
+                        "name": "Klub Sendvič",
+                        "desc": "Piletina, slanina, jaje, zelena salata, paradajz."
+                    }
+                ]
+            },
+            "salon": {
+                "title": "Luxe Salon",
+                "subtitle": "Lepota i Spa • 4.9 Zvezdica",
+                "categories": [
+                    "Kosa",
+                    "Nokti",
+                    "Masaža"
+                ],
+                "items": [
+                    {
+                        "name": "Šišanje i Feniranje",
+                        "desc": "Pranje, šišanje, feniranje i stilizovanje."
+                    },
+                    {
+                        "name": "Gel Manikir",
+                        "desc": "Premium gel lak, 30min."
+                    }
+                ]
+            },
+            "dentist": {
+                "title": "Pure Smile",
+                "subtitle": "Stomatološka ordinacija • Dr. Smith",
+                "categories": [
+                    "Pregled",
+                    "Izbeljivanje",
+                    "Hirurgija"
+                ],
+                "items": [
+                    {
+                        "name": "Kompletan pregled",
+                        "desc": "Pregled, čišćenje i konsultacije."
+                    },
+                    {
+                        "name": "Lasersko izbeljivanje",
+                        "desc": "Posvetlite do 5 nijansi."
+                    }
+                ]
+            }
+        }
+    },
+    "phase3": {
+        "step1": {
+            "badge": "Korak 1",
+            "title": "Skeniraj QR.",
+            "desc": "Stavi ga na stolove. Nije potrebno preuzimanje aplikacije."
+        },
+        "step2": {
+            "badge": "Korak 2",
+            "title": "Trenutna detekcija.",
+            "desc": "Iskustvo učitavanja brzinom munje."
+        },
+        "step3": {
+            "badge": "Korak 3",
+            "title": "Naruči i uživaj.",
+            "desc": "Prelep meni. Srećni gosti."
+        },
+        "demo": {
+            "scanLabel": "Skeniraj za meni",
+            "scanning": "Skeniranje koda...",
+            "loading": "Učitavanje menija...",
+            "restaurantName": "Burger & Co.",
+            "open": "OTVORENO",
+            "popular": "Popularno",
+            "mains": "Glavna jela",
+            "cta": "Kreiraj moj QR meni",
+            "items": [
+                {
+                    "name": "Truffle Smash",
+                    "desc": "Dupla pljeskavica, majonez sa tartufima, švajcarski sir"
+                },
+                {
+                    "name": "Pikantna Piletina",
+                    "desc": "Hrskavi batak, kupus salata, kiseli krastavci"
+                },
+                {
+                    "name": "Pomfrit sa dodacima",
+                    "desc": "Komadići slanine, čedar sos"
+                },
+                {
+                    "name": "Domaća Limunada",
+                    "desc": "Sveža nana i đumbir"
+                }
+            ]
+        }
+    },
+    "footer": {
+        "desc": "Kreiraj prelepe stranice sa cenama i menije bez kodiranja.",
+        "product": "Proizvod",
+        "pricing": "Cene",
+        "templates": "Šabloni",
+        "builder": "Graditelj",
+        "legal": "Pravno",
+        "privacy": "Privatnost",
+        "terms": "Uslovi",
+        "support": "Podrška",
+        "contact": "Kontaktirajte nas",
+        "rights": "Sva prava zadržana.",
+        "madeWith": "Napravljeno sa ❤️ za graditelje."
+    }
+}

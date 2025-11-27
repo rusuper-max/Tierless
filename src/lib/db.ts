@@ -46,6 +46,30 @@ export async function ensureAuthTables() {
 }
 
 /**
+ * Kreira tabelu za korisničke profile ako ne postoji.
+ */
+export async function ensureUserProfilesTable() {
+  const pool = getPool();
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_profiles (
+        user_id TEXT PRIMARY KEY,
+        business_name TEXT,
+        phone TEXT,
+        website TEXT,
+        inquiry_email TEXT,
+        currency TEXT DEFAULT 'USD',
+        order_destination TEXT DEFAULT 'email',
+        whatsapp_number TEXT
+      );
+    `);
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Generiše novi token za dati email, čuva ga u bazi i vraća ga.
  * Token važi 15 minuta.
  */
@@ -58,11 +82,11 @@ export async function createAuthToken(email: string) {
   try {
     // 1. Brišemo stare tokene za ovaj email da ne pravimo "đubre" u bazi
     await client.query('DELETE FROM auth_tokens WHERE email = $1', [email]);
-    
+
     // 2. Upisujemo novi token
     await client.query(
       'INSERT INTO auth_tokens (token, email, expires_at) VALUES ($1, $2, $3)',
-      [token, email, expiresAt]
+      [token, email.toLowerCase(), expiresAt]
     );
     return token;
   } finally {

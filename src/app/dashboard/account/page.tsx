@@ -1,93 +1,583 @@
-// src/app/dashboard/account/page.tsx
-import { redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/auth";
-import { t } from "@/i18n";
-import { Button } from "@/components/ui/Button";
+"use client";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+import React, { useState, useEffect } from 'react';
+import {
+  CreditCard,
+  Bell,
+  Building,
+  Zap,
+  BarChart3,
+  Mail,
+  Phone,
+  Globe,
+  Save,
+  Loader2,
+  Trash2,
+  ExternalLink,
+  Languages,
+  Coins,
+  MessageCircle
+} from 'lucide-react';
+import { useLanguage } from '@/i18n/LanguageContext';
+import { useDashboardTranslation } from '@/i18n/useDashboardTranslation';
+import { useAccount } from '@/hooks/useAccount';
+import { ENTITLEMENTS } from '@/lib/entitlements';
+import { Button } from '@/components/ui/Button';
 
-export default async function AccountPage() {
-  const user = await getSessionUser();
-  if (!user) redirect("/signin?next=/dashboard/account");
+// --- MOCK DATA for business details (to be replaced with real data later) ---
+const USER_MOCK = {
+  email: "user@example.com",
+  plan: "starter",
+  joinedAt: "Nov 2024",
+  businessName: "Bistro Tierless",
+  phone: "+1 234 567 890",
+  website: "https://bistro.com"
+};
 
-  return (
-    <main className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold">{t("Account")}</h1>
-        <p className="text-xs text-neutral-500">
-          {t("Profile, billing and security (stub).")}
-        </p>
-      </header>
+export default function AccountSettings() {
+  const [activeTab, setActiveTab] = useState('general');
+  const [loading, setLoading] = useState(false);
+  const { locale, setLocale } = useLanguage();
+  const { t } = useDashboardTranslation();
+  const { plan } = useAccount();
 
-      <div className="card p-6 space-y-3 text-sm">
-        <div><b>{t("Email")}:</b> {user.email}</div>
-        <div className="text-neutral-500">{t("More account settings coming soon.")}</div>
-      </div>
+  // Real usage stats
+  const [usageStats, setUsageStats] = useState({
+    publishedPages: 0,
+    totalPages: 0,
+    pagesLimit: 3,
+    publishedLimit: 10
+  });
 
-      {/* Plan controls (client-side fetch, no full page reload) */}
-      <div className="card p-6 space-y-3 text-sm" id="tl-plan-card">
-        <div className="flex items-center justify-between gap-3">
-          <b>{t("Plan")}</b>
-          <span id="tl-plan-status" className="text-xs text-neutral-500" />
-        </div>
-        <div id="tl-plan-controls" className="flex flex-wrap gap-2">
-          <Button variant="neutral" size="xs" data-plan="starter">Starter</Button>
-          <Button variant="neutral" size="xs" data-plan="growth">Growth</Button>
-          <Button variant="neutral" size="xs" data-plan="pro">Pro</Button>
-        </div>
-      </div>
+  // Fetch real usage data and profile
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch Usage
+        const usageRes = await fetch('/api/calculators', {
+          cache: 'no-store',
+          credentials: 'same-origin'
+        });
 
-      {/* Inline script to wire up plan change without converting the page to a client component */}
-      {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `(() => {
-  const root = document.getElementById('tl-plan-controls');
-  const statusEl = document.getElementById('tl-plan-status');
-  if (!root) return;
+        if (usageRes.ok) {
+          const data = await usageRes.json();
+          const rows = Array.isArray(data) ? data : (data.rows || []);
 
-  function setStatus(msg, ok = true) {
-    if (!statusEl) return;
-    statusEl.textContent = msg || '';
-    statusEl.style.color = ok ? 'inherit' : '#ef4444';
-  }
+          const publishedPages = rows.reduce((acc: number, r: any) =>
+            (r.meta?.published ? acc + 1 : acc), 0
+          );
 
-  root.addEventListener('click', async function (e) {
-    const target = e && e.target ? e.target : null;
-    const el = target && typeof target.closest === 'function' ? target.closest('[data-plan]') : null;
-    if (!el) return;
-    e.preventDefault();
+          // Get limits from entitlements
+          const limits = ENTITLEMENTS[plan]?.limits as any;
+          const pagesLimit = limits?.pages ?? "unlimited";
+          const publishedLimit = limits?.maxPublicPages ??
+            (typeof pagesLimit === "number" ? pagesLimit : Infinity);
 
-    const plan = el.getAttribute('data-plan');
-    if (!plan) return;
+          setUsageStats({
+            publishedPages,
+            totalPages: rows.length,
+            pagesLimit: Number.isFinite(pagesLimit) ? pagesLimit : Infinity,
+            publishedLimit: Number.isFinite(publishedLimit) ? publishedLimit : Infinity
+          });
+        }
 
+        // Fetch Profile
+        const profileRes = await fetch('/api/account', {
+          cache: 'no-store',
+          credentials: 'same-origin'
+        });
+
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          console.log("Loaded profile:", profile); // DEBUG
+          if (profile && Object.keys(profile).length > 0) {
+            setFormData(prev => ({
+              ...prev,
+              businessName: profile.business_name ?? "",
+              inquiryEmail: profile.inquiry_email ?? "",
+              phone: profile.phone ?? "",
+              website: profile.website ?? "",
+              currency: profile.currency || "USD",
+              orderDestination: profile.order_destination || "email",
+              whatsapp: profile.whatsapp_number ?? ""
+            }));
+          }
+        }
+
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+      }
+    };
+
+    fetchData();
+  }, [plan]);
+
+  // Form State
+  const [formData, setFormData] = useState({
+    businessName: "",
+    inquiryEmail: "",
+    phone: "",
+    website: "",
+    currency: "USD",
+    orderDestination: "email", // email | whatsapp
+    whatsapp: ""
+  });
+
+  // Delete Account State
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setDeleteBusy(true);
     try {
-      setStatus('Saving…');
-      const res = await fetch('/api/me/plan', {
-        method: 'PUT',
-        credentials: 'same-origin', // ensure cookies are sent
+      // Simulate API call for now since backend endpoint is not confirmed
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log("Account deleted");
+      // Redirect to home or logout
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Failed to delete account", error);
+    } finally {
+      setDeleteBusy(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      console.log("Saving formData:", formData); // DEBUG
+      const res = await fetch('/api/account', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan })
+        body: JSON.stringify(formData)
       });
 
-      const txt = await res.text();
-      if (!res.ok) {
-        setStatus('Error: ' + txt, false);
-        return;
-      }
+      if (!res.ok) throw new Error('Failed to save');
 
-      try { window.dispatchEvent(new Event('TL_AUTH_CHANGED')); } catch {}
-      setStatus('Saved');
-      setTimeout(() => setStatus(''), 1200);
-    } catch (_err) {
-      setStatus('Network error', false);
+      // Optional: Show success toast or feedback
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+    } finally {
+      setLoading(false);
     }
-  });
-})();`
-        }}
-      />
-    </main>
+  };
+
+  const tabs = [
+    { id: 'general', label: t('account.tabs.general'), icon: Building },
+    { id: 'billing', label: t('account.tabs.billing'), icon: CreditCard },
+    { id: 'preferences', label: t('account.tabs.preferences'), icon: Bell },
+  ];
+
+  return (
+    <div className="w-full min-h-screen bg-[var(--bg)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        {/* HEADER */}
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-[var(--text)] mb-2">{t('account.title')}</h1>
+          <p className="text-[var(--muted)] text-base md:text-lg">{t('account.description')}</p>
+        </div>
+
+        {/* TABS */}
+        <div className="flex items-center gap-2 p-1.5 bg-[var(--surface)] border border-[var(--border)] rounded-xl w-fit mb-8">
+          <button
+            onClick={() => setActiveTab('general')}
+            className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'general'
+              ? 'bg-[var(--text)] text-[var(--bg)] shadow-sm'
+              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--bg)]'
+              }`}
+          >
+            {t('account.tabs.general')}
+          </button>
+          <button
+            onClick={() => setActiveTab('billing')}
+            className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'billing'
+              ? 'bg-[var(--text)] text-[var(--bg)] shadow-sm'
+              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--bg)]'
+              }`}
+          >
+            {t('account.tabs.billing')}
+          </button>
+          <button
+            onClick={() => setActiveTab('preferences')}
+            className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'preferences'
+              ? 'bg-[var(--text)] text-[var(--bg)] shadow-sm'
+              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--bg)]'
+              }`}
+          >
+            {t('account.tabs.preferences')}
+          </button>
+        </div>
+
+        {/* CONTENT AREA */}
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+          {/* --- TAB: GENERAL --- */}
+          {activeTab === 'general' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+              {/* Business Details Column */}
+              <div className="lg:col-span-2 space-y-8 order-2 lg:order-1">
+                <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8">
+                  <h3 className="text-xl font-bold text-[var(--text)] mb-2">{t('account.general.title')}</h3>
+                  <p className="text-sm text-[var(--muted)] mb-8">{t('account.general.description')}</p>
+
+                  <div className="space-y-6">
+                    {/* Business Name */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">{t('account.general.businessName')}</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={formData.businessName}
+                          onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                          className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-2.5 text-sm text-[var(--text)] focus:ring-2 focus:ring-[var(--brand-1)] focus:border-transparent outline-none transition-all pl-10"
+                          placeholder={t('account.general.businessNamePlaceholder')}
+                        />
+                        <Building className="absolute left-3 top-2.5 text-[var(--muted)]" size={16} />
+                      </div>
+                    </div>
+
+                    {/* Inquiry Email */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">{t('account.general.inquiryEmail')}</label>
+                      <div className="relative">
+                        <input
+                          type="email"
+                          value={formData.inquiryEmail}
+                          onChange={(e) => setFormData({ ...formData, inquiryEmail: e.target.value })}
+                          className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-2.5 text-sm text-[var(--text)] focus:ring-2 focus:ring-[var(--brand-1)] focus:border-transparent outline-none transition-all pl-10"
+                          placeholder={t('account.general.inquiryEmailPlaceholder')}
+                        />
+                        <Mail className="absolute left-3 top-2.5 text-[var(--muted)]" size={16} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 md:space-y-5 mt-4 md:mt-5">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">{t('account.general.phone')}</label>
+                      <div className="relative">
+                        <input
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-2.5 text-sm text-[var(--text)] focus:ring-2 focus:ring-[var(--brand-1)] focus:border-transparent outline-none transition-all pl-10"
+                        />
+                        <Phone className="absolute left-3 top-2.5 text-[var(--muted)]" size={16} />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">{t('account.general.website')}</label>
+                      <div className="relative">
+                        <input
+                          type="url"
+                          value={formData.website}
+                          onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                          className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-2.5 text-sm text-[var(--text)] focus:ring-2 focus:ring-[var(--brand-1)] focus:border-transparent outline-none transition-all pl-10"
+                        />
+                        <Globe className="absolute left-3 top-2.5 text-[var(--muted)]" size={16} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 flex justify-end border-t border-[var(--border)] mt-6 md:mt-8">
+                    <Button
+                      onClick={handleSave}
+                      disabled={loading}
+                      isLoading={loading}
+                      variant="brand"
+                      icon={<Save size={18} />}
+                    >
+                      {t('account.general.saveChanges')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Defaults Column */}
+              <div className="lg:col-span-1 space-y-8 order-1 lg:order-2">
+                <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8">
+                  <h3 className="text-lg font-bold text-[var(--text)] mb-6">{t('account.defaults.title')}</h3>
+
+                  <div className="space-y-6">
+                    {/* Language Selector */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider flex items-center gap-1.5">
+                        <Languages size={12} /> {t('account.defaults.language')}
+                      </label>
+                      <select
+                        value={locale}
+                        onChange={(e) => setLocale(e.target.value as any)}
+                        className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] outline-none focus:ring-2 focus:ring-[var(--brand-1)]"
+                      >
+                        <option value="en">English</option>
+                        <option value="sr">Srpski</option>
+                        <option value="es">Español</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="ru">Русский</option>
+                      </select>
+                    </div>
+
+                    {/* Currency Selector */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider flex items-center gap-1.5">
+                        <Coins size={12} /> {t('account.defaults.currency')}
+                      </label>
+                      <select
+                        value={formData.currency}
+                        onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                        className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] outline-none focus:ring-2 focus:ring-[var(--brand-1)]"
+                      >
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="RSD">RSD (дин.)</option>
+                      </select>
+                      <p className="text-[10px] text-[var(--muted)]">{t('account.defaults.currencyDescription')}</p>
+                    </div>
+
+                    {/* Order Receiving */}
+                    <div className="pt-6 border-t border-[var(--border)] space-y-6">
+                      <h4 className="text-sm font-bold text-[var(--text)] uppercase tracking-wider">{t('account.orders.title')}</h4>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">{t('account.orders.destination')}</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            onClick={() => setFormData({ ...formData, orderDestination: 'email' })}
+                            variant={formData.orderDestination === 'email' ? 'brand' : 'neutral'}
+                            className="w-full"
+                            icon={<Mail size={14} />}
+                          >
+                            Email
+                          </Button>
+                          <Button
+                            onClick={() => setFormData({ ...formData, orderDestination: 'whatsapp' })}
+                            variant={formData.orderDestination === 'whatsapp' ? 'brand' : 'neutral'}
+                            className="w-full"
+                            icon={<MessageCircle size={14} />}
+                          >
+                            WhatsApp
+                          </Button>
+                        </div>
+                      </div>
+
+                      {formData.orderDestination === 'whatsapp' && (
+                        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2">
+                          <label className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">{t('account.orders.whatsappNumber')}</label>
+                          <div className="relative">
+                            <input
+                              type="tel"
+                              value={formData.whatsapp}
+                              onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                              placeholder={t('account.orders.whatsappPlaceholder')}
+                              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-2.5 text-sm text-[var(--text)] focus:ring-2 focus:ring-[#25D366] focus:border-transparent outline-none transition-all pl-10"
+                            />
+                            <MessageCircle className="absolute left-3 top-2.5 text-[var(--muted)]" size={16} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* --- TAB: BILLING --- */}
+          {activeTab === 'billing' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+              <div className="lg:col-span-1 space-y-4 md:space-y-6 order-2 lg:order-1">
+                <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 md:p-6 space-y-6">
+                  <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2">
+                    <BarChart3 size={16} className="text-[var(--brand-1)]" /> {t('account.billing.usage')}
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-xs mb-2">
+                        <span className="text-[var(--muted)]">Total Pages</span>
+                        <span className="text-[var(--text)] font-bold">
+                          {usageStats.totalPages} / {Number.isFinite(usageStats.pagesLimit) ? usageStats.pagesLimit : '∞'}
+                        </span>
+                      </div>
+                      <div className="relative w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'linear-gradient(90deg, rgba(var(--brand-1-rgb, 79, 70, 229), 0.1) 0%, rgba(var(--brand-2-rgb, 34, 211, 238), 0.1) 100%)' }}>
+                        <div
+                          className="absolute top-0 left-0 h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${Math.min(100, (usageStats.totalPages / (Number.isFinite(usageStats.pagesLimit) ? usageStats.pagesLimit : 100)) * 100)}%`,
+                            background: 'linear-gradient(90deg, var(--brand-1, #4F46E5) 0%, var(--brand-2, #22D3EE) 100%)'
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-xs mb-2">
+                        <span className="text-[var(--muted)]">Published Pages</span>
+                        <span className="text-[var(--text)] font-bold">
+                          {usageStats.publishedPages} / {Number.isFinite(usageStats.publishedLimit) ? usageStats.publishedLimit : '∞'}
+                        </span>
+                      </div>
+                      <div className="relative w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'linear-gradient(90deg, rgba(var(--brand-1-rgb, 79, 70, 229), 0.1) 0%, rgba(var(--brand-2-rgb, 34, 211, 238), 0.1) 100%)' }}>
+                        <div
+                          className="absolute top-0 left-0 h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${Math.min(100, (usageStats.publishedPages / (Number.isFinite(usageStats.publishedLimit) ? usageStats.publishedLimit : 100)) * 100)}%`,
+                            background: 'linear-gradient(90deg, var(--brand-1, #4F46E5) 0%, var(--brand-2, #22D3EE) 100%)'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="lg:col-span-2 space-y-6 order-1 lg:order-2">
+                <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 md:p-8">
+                  <div className="absolute top-0 right-0 p-8 opacity-5">
+                    <Zap size={200} />
+                  </div>
+                  <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 md:gap-6">
+                    <div>
+                      <div className="text-xs text-[var(--muted)] font-bold uppercase tracking-wider mb-2">{t('account.billing.currentPlan')}</div>
+                      <h2 className="text-2xl md:text-3xl font-bold text-[var(--text)] mb-2">Starter</h2>
+                      <p className="text-[var(--muted)] text-xs md:text-sm max-w-md">{t('account.billing.renewsOn')} <b>Dec 01, 2024</b>.</p>
+                    </div>
+                    <div className="flex flex-col gap-3 min-w-[140px]">
+                      <a href="/start" className="w-full px-4 py-2.5 rounded-lg bg-[var(--text)] text-[var(--bg)] text-xs md:text-sm font-bold hover:opacity-90 transition-opacity text-center flex items-center justify-center gap-2">
+                        {t('account.billing.manageSubscription')} <ExternalLink size={14} />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- TAB: SETTINGS (NOTIFICATIONS + DANGER) --- */}
+          {activeTab === 'preferences' && (
+            <div className="max-w-2xl space-y-6 md:space-y-8">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 md:p-6">
+                <h3 className="text-base md:text-lg font-bold text-[var(--text)] mb-4 flex items-center gap-2">
+                  <Bell size={18} className="text-[var(--brand-1)]" /> {t('account.preferences.notifications')}
+                </h3>
+                <div className="space-y-4">
+                  {[
+                    { key: 'productUpdates', label: t('account.preferences.productUpdates') },
+                    { key: 'weeklyReports', label: t('account.preferences.weeklyReports') }
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-2 border-b border-[var(--border)] last:border-0">
+                      <span className="text-sm text-[var(--text)]">{item.label}</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" defaultChecked />
+                        <div className="w-9 h-5 bg-[var(--surface)] rounded-full peer peer-checked:bg-[var(--brand-1)] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 md:p-6 space-y-6">
+                <div>
+                  <h3 className="text-base md:text-lg font-bold text-red-500 mb-2">{t('account.preferences.dangerZone')}</h3>
+                  <p className="text-xs md:text-sm text-[var(--muted)]">{t('account.preferences.dangerZoneDescription')}</p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20">
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-rose-700 dark:text-rose-400">{t('account.preferences.deleteAccount')}</h4>
+                    <p className="text-xs text-rose-600/80 dark:text-rose-400/70 max-w-md">
+                      {t('account.preferences.deleteAccountDescription')}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="px-4 py-2 bg-white dark:bg-rose-950 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors"
+                  >
+                    {t('account.preferences.deleteAccount')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        <ConfirmDeleteAccount
+          open={showDeleteConfirm}
+          onCancel={() => setShowDeleteConfirm(false)}
+          onConfirm={handleDeleteAccount}
+          busy={deleteBusy}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ConfirmDeleteAccount({
+  open,
+  onCancel,
+  onConfirm,
+  busy,
+}: {
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  busy?: boolean;
+}) {
+  const { t } = useDashboardTranslation();
+  const [typed, setTyped] = useState("");
+
+  useEffect(() => {
+    if (open) setTyped("");
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative z-[101] bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl w-[92vw] max-w-md p-6">
+        <h3 className="text-lg font-bold text-[var(--text)]">
+          {t('account.deleteModal.title')}
+        </h3>
+        <p className="mt-2 text-sm text-[var(--muted)]">
+          {t('account.deleteModal.description')}
+        </p>
+        <p className="mt-4 text-sm text-[var(--text)]">
+          {t('account.deleteModal.instruction')}
+        </p>
+
+        <input
+          className="mt-2 w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-2.5 text-sm text-[var(--text)] focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all"
+          placeholder={t('account.deleteModal.placeholder')}
+          value={typed}
+          onChange={(e) => setTyped(e.target.value)}
+          autoFocus
+        />
+
+        <div className="mt-6 flex items-center justify-end gap-3">
+          <Button
+            onClick={onCancel}
+            disabled={busy}
+            variant="brand"
+          >
+            {t('account.deleteModal.cancel')}
+          </Button>
+          <Button
+            onClick={onConfirm}
+            disabled={busy || typed !== "DELETE FOREVER"}
+            variant="danger"
+            isLoading={busy}
+          >
+            {busy ? t('account.deleteModal.deleting') : t('account.deleteModal.confirm')}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

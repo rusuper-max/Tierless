@@ -1,0 +1,203 @@
+{
+    "brand": {
+        "name": "Tierless"
+    },
+    "nav": {
+        "pages": "Seiten",
+        "templates": "Vorlagen",
+        "signin": "Anmelden",
+        "signup": "Registrieren",
+        "account": "Konto",
+        "billing": "Abrechnung",
+        "signout": "Abmelden",
+        "dashboard": "Dashboard"
+    },
+    "hero": {
+        "title": "Vergiss die Website. Gib deinen Preisen eine Seite und einen QR-Code",
+        "subtitle": "Für Cafés, Restaurants, Salons und kleine Unternehmen, die einfach nur eine saubere Preisseite benötigen. Füge deine Artikel und Preise hinzu, erhalte einen Link und QR-Code und lass Kunden deine Preise auf ihrem Gerät sehen.",
+        "ctaPrimary": "Kostenlos starten",
+        "ctaSecondary": "Live-Demo ansehen"
+    },
+    "features": {
+        "block1Title": "Kein Code erforderlich",
+        "block1Body": "Konfiguriere Pläne, Add-ons und Regeln, ohne Code zu berühren.",
+        "block2Title": "Überall teilen",
+        "block2Body": "Sende einen Link oder bette ihn auf deiner Seite ein. Funktioniert hervorragend auf Mobilgeräten.",
+        "block3Title": "Markiere es auf deine Weise",
+        "block3Body": "Farben, Text und Struktur vollständig unter deiner Kontrolle."
+    },
+    "pricing": {
+        "title": "Einfache Pläne",
+        "subtitle": "Transparente Preise mit optionalen Add-ons.",
+        "from": "ab {price}/Monat"
+    },
+    "cta": {
+        "finalTitle": "Bereit zum Start?",
+        "finalButton": "Erstelle deine Seite"
+    },
+    "meta": {
+        "home": {
+            "title": "Tierless — Einseitige Preiskalkulatoren",
+            "description": "Erstelle eine schöne Preisseite ohne Website. Teile einen Link oder bette ihn überall ein."
+        }
+    },
+    "a11y": {
+        "mainHeader": "Hauptkopfzeile",
+        "heroPhase": "Heldenphase"
+    },
+    "phase1": {
+        "badge": "Keine Website erforderlich",
+        "title1": "Deine Preise.",
+        "title2": "Online.",
+        "title3": "Wunderschön.",
+        "subtitle": "Erstelle Speisekarten, Preislisten und Preiskalkulatoren in Minuten. Teile per Link oder QR-Code. Jederzeit sofort aktualisieren.",
+        "ctaPrimary": "Meine Seite kostenlos erstellen",
+        "ctaSecondary": "Beispiele ansehen",
+        "perfectFor": "Perfekt für",
+        "useCases": {
+            "cafes": "Cafés & Menüs",
+            "freelancers": "Freelancer",
+            "salons": "Salons",
+            "startups": "Startups"
+        }
+    },
+    "phase2": {
+        "step1": {
+            "label": "Kernmotor",
+            "title": "Eine Struktur.",
+            "subtitle": "Unendliche Layouts.",
+            "desc": "Füge deine Artikel einmal hinzu. Unser Motor organisiert sie automatisch in einem konversionsoptimierten Layout. Kein Drag-and-Drop-Chaos."
+        },
+        "step2": {
+            "label": "Visuelle DNA",
+            "title": "Sofortiges Branding.",
+            "subtitle": "Null Designkenntnisse.",
+            "desc": "Wähle einen Vibe. Die Tierless Engine malt jede Komponente, jeden Button und jede Schriftart neu, um sofort zu deiner Markenidentität zu passen."
+        },
+        "step3": {
+            "label": "Bereitstellung",
+            "title": "Immer zugänglich.",
+            "subtitle": "Blitzschnell.",
+            "desc": "Deine Tierless-Seite ist eine leistungsstarke PWA. Sie lädt sofort auf jedem Gerät, Scan für Scan.",
+            "trusted": "Vertraut von 500+ Unternehmen"
+        },
+        "cases": {
+            "restaurant": {
+                "title": "Urban Bistro",
+                "subtitle": "Gegr. 1983 • Stadtzentrum",
+                "categories": [
+                    "Sandwiches",
+                    "Suppen",
+                    "Getränke"
+                ],
+                "items": [
+                    {
+                        "name": "Trüffel Burger",
+                        "desc": "Wagyu-Rindfleisch, Schweizer Käse, Trüffelmayonnaise."
+                    },
+                    {
+                        "name": "Club Sandwich",
+                        "desc": "Hähnchen, Speck, Ei, Salat, Tomate."
+                    }
+                ]
+            },
+            "salon": {
+                "title": "Luxe Salon",
+                "subtitle": "Schönheit & Spa • 4.9 Sterne",
+                "categories": [
+                    "Haare",
+                    "Nägel",
+                    "Massage"
+                ],
+                "items": [
+                    {
+                        "name": "Schnitt & Styling",
+                        "desc": "Waschen, Schneiden, Föhnen & Styling."
+                    },
+                    {
+                        "name": "Gel-Maniküre",
+                        "desc": "Premium Gel-Lack, 30min."
+                    }
+                ]
+            },
+            "dentist": {
+                "title": "Pure Smile",
+                "subtitle": "Zahnklinik • Dr. Smith",
+                "categories": [
+                    "Untersuchung",
+                    "Bleaching",
+                    "Chirurgie"
+                ],
+                "items": [
+                    {
+                        "name": "Vollständiger Check-up",
+                        "desc": "Untersuchung, Reinigung & Beratung."
+                    },
+                    {
+                        "name": "Laser-Bleaching",
+                        "desc": "Aufhellung um bis zu 5 Nuancen."
+                    }
+                ]
+            }
+        }
+    },
+    "phase3": {
+        "step1": {
+            "badge": "Schritt 1",
+            "title": "Scanne den QR.",
+            "desc": "Stell es auf die Tische. Kein App-Download erforderlich."
+        },
+        "step2": {
+            "badge": "Schritt 2",
+            "title": "Sofortige Erkennung.",
+            "desc": "Blitzschnelles Ladeerlebnis."
+        },
+        "step3": {
+            "badge": "Schritt 3",
+            "title": "Bestellen & Genießen.",
+            "desc": "Schönes Menü. Glückliche Kunden."
+        },
+        "demo": {
+            "scanLabel": "Scannen für Menü",
+            "scanning": "Code wird gescannt...",
+            "loading": "Menü wird geladen...",
+            "restaurantName": "Burger & Co.",
+            "open": "GEÖFFNET",
+            "popular": "Beliebt",
+            "mains": "Hauptgerichte",
+            "cta": "Mein QR-Menü erstellen",
+            "items": [
+                {
+                    "name": "Trüffel Smash",
+                    "desc": "Doppeltes Patty, Trüffelmayo, Schweizer Käse"
+                },
+                {
+                    "name": "Würziges Hähnchen",
+                    "desc": "Knusprige Keule, Krautsalat, Gurken"
+                },
+                {
+                    "name": "Geladene Pommes",
+                    "desc": "Speckwürfel, Cheddar-Sauce"
+                },
+                {
+                    "name": "Hausgemachte Limonade",
+                    "desc": "Frische Minze & Ingwer"
+                }
+            ]
+        }
+    },
+    "footer": {
+        "desc": "Erstelle schöne Preisseiten und Menüs ohne Code.",
+        "product": "Produkt",
+        "pricing": "Preise",
+        "templates": "Vorlagen",
+        "builder": "Builder",
+        "legal": "Rechtliches",
+        "privacy": "Datenschutz",
+        "terms": "AGB",
+        "support": "Support",
+        "contact": "Kontakt",
+        "rights": "Alle Rechte vorbehalten.",
+        "madeWith": "Gemacht mit ❤️ für Macher."
+    }
+}
