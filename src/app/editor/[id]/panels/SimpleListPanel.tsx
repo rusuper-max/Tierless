@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, ChangeEvent, useEffect, useMemo } from "react";
+import React, { useState, useRef, ChangeEvent, useEffect, useMemo } from "react";
 import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type SimpleSection, type BrandTheme } from "@/hooks/useEditorStore";
@@ -160,7 +160,9 @@ export default function SimpleListPanel() {
 
     if (!file.type.startsWith("image/")) { setError(t("Only image files are allowed.")); return; }
 
-    const maxBytes = (ENTITLEMENTS[plan]?.limits as any)?.uploadSize || 2 * 1024 * 1024;
+    // Client-side size check (optional, but good UX)
+    // Cloudinary free tier has limits, but they are higher than Vercel's 4.5MB
+    const maxBytes = (ENTITLEMENTS[plan]?.limits as any)?.uploadSize || 10 * 1024 * 1024; // Increased limit for direct upload
     if (file.size > maxBytes) {
       const limitMB = Math.round(maxBytes / 1024 / 1024);
       setError(t(`Image is too large (max ${limitMB}MB for your plan). Upgrade for more.`));
@@ -169,14 +171,48 @@ export default function SimpleListPanel() {
 
     try {
       setUploadingId(targetId);
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch("/api/upload-image", { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok || !data?.url) { setError(t("Upload failed.")); return; }
 
-      const url = data.url;
+      // 1. Get Signature from Backend
+      const signRes = await fetch("/api/upload-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "sign" })
+      });
 
+      if (!signRes.ok) {
+        throw new Error("Failed to get upload signature");
+      }
+
+      const signData = await signRes.json();
+      if (signData.error) throw new Error(signData.error);
+
+      const { signature, timestamp, folder, apiKey, cloudName } = signData;
+
+      // 2. Direct Upload to Cloudinary
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("api_key", apiKey);
+      formData.append("timestamp", String(timestamp));
+      formData.append("folder", folder);
+      formData.append("signature", signature);
+
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+      const uploadRes = await fetch(cloudinaryUrl, {
+        method: "POST",
+        body: formData
+      });
+
+      if (!uploadRes.ok) {
+        const errText = await uploadRes.text();
+        console.error("Cloudinary Direct Upload Failed:", errText);
+        throw new Error("Upload failed");
+      }
+
+      const data = await uploadRes.json();
+      const url = data.secure_url || data.url;
+
+      // 3. Update State
       if (type === "item") {
         updateItem(targetId, { imageUrl: url });
       } else if (type === "cover") {
@@ -194,7 +230,7 @@ export default function SimpleListPanel() {
       }
     } catch (err) {
       console.error(err);
-      setError(t("Upload failed."));
+      setError(t("Upload failed. Please try again."));
     } finally {
       setUploadingId(null);
     }
@@ -314,9 +350,42 @@ export default function SimpleListPanel() {
     }
   };
 
-  /* ---------------- Components ---------------- */
+  /* ---------------- Buffered Input (Fixes Focus Loss) ---------------- */
+  const BufferedInput = ({ value, onCommit, className, placeholder, disabled, type = "text", ...props }: any) => {
+    const [localValue, setLocalValue] = React.useState(value);
 
-  const SortableItemRow = ({
+    React.useEffect(() => {
+      setLocalValue(value);
+    }, [value]);
+
+    return (
+      <input
+        {...props}
+        type={type}
+        className={className}
+        placeholder={placeholder}
+        disabled={disabled}
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={() => {
+          if (localValue !== value) {
+            onCommit(localValue);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            if (localValue !== value) {
+              onCommit(localValue);
+            }
+            e.currentTarget.blur();
+          }
+        }}
+      />
+    );
+  };
+
+  /* ---------------- Sortable Item Row (EXTRACTED FOR PERFORMANCE) ---------------- */
+  const SortableItemRow = React.memo(({
     item,
     index,
     maxItems,
@@ -326,7 +395,8 @@ export default function SimpleListPanel() {
     removeItem,
     triggerGenericUpload,
     openUpsell,
-    t
+    t,
+    canUseImages
   }: any) => {
     const {
       attributes,
@@ -406,21 +476,21 @@ export default function SimpleListPanel() {
         <div className="flex-1 flex flex-col justify-between p-3 gap-2 min-w-0">
           {/* Top Row */}
           <div className="flex gap-2 items-start">
-            <input
+            <BufferedInput
               className="flex-1 bg-transparent font-bold text-[var(--text)] outline-none placeholder-[var(--muted)] text-sm"
-              value={item.label}
-              onChange={(e) => updateItem(item.id, { label: e.target.value })}
+              value={item.label || ""}
+              onCommit={(val: string) => updateItem(item.id, { label: val })}
               placeholder={t("Item Name")}
               disabled={isOverLimit}
               data-help="Enter the name of your item."
             />
             <div className="flex items-center gap-1 bg-[var(--bg)] rounded-lg px-2 border border-[var(--border)] focus-within:border-[#22D3EE] transition-colors shrink-0 h-8">
               <span className="text-xs text-[var(--muted)] font-bold">{currency}</span>
-              <input
+              <BufferedInput
                 type="number"
                 className="w-16 bg-transparent text-right font-bold text-[var(--text)] outline-none text-sm py-1"
                 value={item.price ?? ""}
-                onChange={(e) => updateItem(item.id, { price: parseFloat(e.target.value) })}
+                onCommit={(val: string) => updateItem(item.id, { price: parseFloat(val) })}
                 placeholder="0.00"
                 disabled={isOverLimit}
                 data-help="Set the price for this item."
@@ -448,10 +518,10 @@ export default function SimpleListPanel() {
 
             {/* Custom Unit Input (conditionally shown) */}
             {item.unit === "custom" && (
-              <input
+              <BufferedInput
                 className="w-16 bg-[var(--surface)] border border-[var(--border)] text-xs h-8 px-2 rounded-lg outline-none focus:border-[#22D3EE] text-[var(--text)] transition-colors"
                 value={item.customUnit || ""}
-                onChange={(e) => updateItem(item.id, { customUnit: e.target.value })}
+                onCommit={(val: string) => updateItem(item.id, { customUnit: val })}
                 placeholder="unit"
                 disabled={isOverLimit}
                 data-help="Enter custom unit name"
@@ -461,10 +531,10 @@ export default function SimpleListPanel() {
 
           {/* Bottom Row */}
           <div className="flex items-center gap-2 mt-auto">
-            <input
+            <BufferedInput
               className="flex-1 bg-transparent text-xs text-[var(--muted)] outline-none focus:text-[var(--text)] transition-colors placeholder-[var(--muted)]/40"
               value={item.note || ""}
-              onChange={(e) => updateItem(item.id, { note: e.target.value })}
+              onCommit={(val: string) => updateItem(item.id, { note: val })}
               placeholder={t("Description (ingredients, details)...")}
               disabled={isOverLimit}
               data-help="Add a short description or list ingredients."
@@ -531,7 +601,29 @@ export default function SimpleListPanel() {
         )}
       </div>
     );
-  };
+  }, (prevProps, nextProps) => {
+    // Custom comparison function - samo re-renderuj ako se promenio ovaj item
+    return (
+      prevProps.item.id === nextProps.item.id &&
+      prevProps.item.label === nextProps.item.label &&
+      prevProps.item.price === nextProps.item.price &&
+      prevProps.item.note === nextProps.item.note &&
+      prevProps.item.imageUrl === nextProps.item.imageUrl &&
+      prevProps.item.hidden === nextProps.item.hidden &&
+      prevProps.item.soldOut === nextProps.item.soldOut &&
+      prevProps.item.unit === nextProps.item.unit &&
+      prevProps.item.customUnit === nextProps.item.customUnit &&
+      prevProps.item.badge === nextProps.item.badge &&
+      prevProps.index === nextProps.index &&
+      prevProps.uploadingId === nextProps.uploadingId &&
+      prevProps.currency === nextProps.currency &&
+      prevProps.maxItems === nextProps.maxItems
+    );
+  });
+
+  SortableItemRow.displayName = 'SortableItemRow';
+
+  /* ---------------- Components ---------------- */
 
   const TabButton = ({ id, label, icon: Icon }: { id: Tab, label: string, icon: any }) => {
     const isActive = activeTab === id;
@@ -782,6 +874,7 @@ export default function SimpleListPanel() {
                         triggerGenericUpload={triggerGenericUpload}
                         openUpsell={openUpsell}
                         t={t}
+                        canUseImages={canUseImages}
                       />
                     ))}
                   </div>
@@ -864,6 +957,7 @@ export default function SimpleListPanel() {
                               triggerGenericUpload={triggerGenericUpload}
                               openUpsell={openUpsell}
                               t={t}
+                              canUseImages={canUseImages}
                             />
                           ))}
                         </div>

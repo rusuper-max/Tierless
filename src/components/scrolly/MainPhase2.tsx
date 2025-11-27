@@ -160,69 +160,69 @@ export default function MainPhase2() {
       <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
 
         {/* GLAVNI GRID: LEVO TEKST, DESNO TELEFON */}
-        <div className="relative w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 px-6 lg:px-12 z-10">
+        <div className="relative w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 px-4 sm:px-6 lg:px-12 z-10">
 
           {/* --- LEVA STRANA: TEKSTUALNI NARATIV --- */}
           <div className="flex flex-col justify-center h-full relative order-2 lg:order-1">
 
             {/* SCROLL TEXT CONTAINERS (Absolutno pozicionirani jedni preko drugih) */}
-            <div className="relative h-64 w-full">
+            <div className="relative h-48 sm:h-56 lg:h-64 w-full">
 
               {/* STEP 1: STRUCTURE */}
               <motion.div style={{ opacity: opacityText1 }} className="absolute inset-0 flex flex-col justify-center">
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-3 sm:mb-4">
                   <div className="p-2 bg-slate-800/50 rounded-lg border border-slate-700">
-                    <Box size={20} className="text-slate-400" />
+                    <Box size={18} className="text-slate-400" />
                   </div>
                   <span className="font-mono text-xs text-slate-500 uppercase tracking-widest">{t("phase2.step1.label")}</span>
                 </div>
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight">
                   {t("phase2.step1.title")}<br />
                   <span className="text-slate-500">{t("phase2.step1.subtitle")}</span>
                 </h2>
-                <p className="text-lg text-slate-400 leading-relaxed max-w-md">
+                <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-md">
                   {t("phase2.step1.desc")}
                 </p>
               </motion.div>
 
               <motion.div style={{ opacity: opacityText2 }} className="absolute inset-0 flex flex-col justify-center">
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-3 sm:mb-4">
                   <div className="p-2 bg-indigo-900/30 rounded-lg border border-indigo-500/30">
-                    <Palette size={20} className="text-indigo-400" />
+                    <Palette size={18} className="text-indigo-400" />
                   </div>
                   <span className="font-mono text-xs text-indigo-400 uppercase tracking-widest">{t("phase2.step2.label")}</span>
                 </div>
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight">
                   {t("phase2.step2.title")}<br />
                   <span className="text-indigo-400/60">{t("phase2.step2.subtitle")}</span>
                 </h2>
-                <p className="text-lg text-slate-400 leading-relaxed max-w-md">
+                <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-md">
                   {t("phase2.step2.desc")}
                 </p>
               </motion.div>
 
               {/* STEP 3: LIVE */}
               <motion.div style={{ opacity: opacityText3 }} className="absolute inset-0 flex flex-col justify-center">
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-3 sm:mb-4">
                   <div className="p-2 bg-emerald-900/30 rounded-lg border border-emerald-500/30">
-                    <Zap size={20} className="text-emerald-400" />
+                    <Zap size={18} className="text-emerald-400" />
                   </div>
                   <span className="font-mono text-xs text-emerald-400 uppercase tracking-widest">{t("phase2.step3.label")}</span>
                 </div>
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight">
                   {t("phase2.step3.title")}<br />
                   <span className="text-emerald-400/60">{t("phase2.step3.subtitle")}</span>
                 </h2>
-                <p className="text-lg text-slate-400 leading-relaxed max-w-md">
+                <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-md">
                   {t("phase2.step3.desc")}
                 </p>
-                <div className="mt-6 flex items-center gap-4">
+                <div className="mt-4 sm:mt-6 flex items-center gap-4">
                   <div className="flex -space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[10px]">☕️</div>
-                    <div className="w-8 h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[10px]">💅</div>
-                    <div className="w-8 h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[10px]">🦷</div>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[10px]">☕️</div>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[10px]">💅</div>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[10px]">🦷</div>
                   </div>
-                  <span className="text-sm text-slate-500">{t("phase2.step3.trusted")}</span>
+                  <span className="text-xs sm:text-sm text-slate-500">{t("phase2.step3.trusted")}</span>
                 </div>
               </motion.div>
 
@@ -242,10 +242,10 @@ export default function MainPhase2() {
 
             <motion.div
               style={{ scale: phoneScale, y: phoneY }}
-              className="relative z-10 w-[320px] h-[640px] perspective-1000"
+              className="relative z-10 w-[280px] sm:w-[320px] h-[560px] sm:h-[640px] perspective-1000"
             >
-              {/* Phone Frame - Modernizovan da liči na Phase 3 */}
-              <div className="w-full h-full bg-[#020617] rounded-[48px] border-[6px] border-slate-800 shadow-2xl overflow-hidden relative ring-1 ring-white/10">
+              {/* Phone Frame - Scaled down 12.5% on mobile */}
+              <div className="w-full h-full bg-[#020617] rounded-[40px] sm:rounded-[48px] border-[5px] sm:border-[6px] border-slate-800 shadow-2xl overflow-hidden relative ring-1 ring-white/10">
 
                 {/* Dynamic Island */}
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-full z-50 flex items-center justify-center gap-2 px-3">

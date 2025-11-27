@@ -24,6 +24,44 @@ export async function POST(req: Request) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) return jsonNoCache({ error: "unauthorized" }, 401);
 
+  // Check content type to determine mode
+  const contentType = req.headers.get("content-type") || "";
+
+  // --- MODE 1: SIGNATURE GENERATION (For Direct Upload) ---
+  if (contentType.includes("application/json")) {
+    const body = await req.json().catch(() => ({}));
+
+    if (body.mode === "sign") {
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+      const apiKey = process.env.CLOUDINARY_API_KEY;
+      const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+      if (!cloudName || !apiKey || !apiSecret) {
+        return jsonNoCache({ error: "server_configuration_error" }, 500);
+      }
+
+      const userFolder = `tierless-users/${safeUserId(userId)}`;
+      const timestamp = Math.round(new Date().getTime() / 1000);
+
+      // Parameters to sign (must match exactly what is sent to Cloudinary)
+      const paramsToSign = `folder=${userFolder}&timestamp=${timestamp}`;
+
+      const signature = crypto
+        .createHash("sha1")
+        .update(paramsToSign + apiSecret)
+        .digest("hex");
+
+      return jsonNoCache({
+        signature,
+        timestamp,
+        folder: userFolder,
+        apiKey,
+        cloudName
+      });
+    }
+  }
+
+  // --- MODE 2: SERVER-SIDE UPLOAD (Legacy/Fallback) ---
   // 2. Validacija fajla
   const form = await req.formData();
   const file = form.get("file");

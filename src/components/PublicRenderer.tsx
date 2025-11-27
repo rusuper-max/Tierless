@@ -877,7 +877,8 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
   // Local state for quantity editing inside modal before saving? 
   // For now, let's edit directly on the global state for simplicity and instant feedback.
 
-  const step = item.unit === "pcs" || !item.unit ? 1 : 0.01;
+  // Step logic: pcs=1, kg/l=0.1 (100g/ml), g/ml=1, custom=1
+  const step = item.unit === "pcs" || !item.unit ? 1 : (item.unit === "kg" || item.unit === "l") ? 0.1 : 1;
   const unitLabel = item.unit === "custom" ? item.customUnit || "unit" : item.unit || "pcs";
 
   return (
@@ -997,7 +998,8 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
 /* Component: Item Card (Interactive & Compact)              */
 /* --------------------------------------------------------- */
 function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits }: any) {
-  const step = item.unit === "pcs" || !item.unit ? 1 : 0.01;
+  // Step logic: pcs=1, kg/l=0.1 (100g/ml), g/ml=1, custom=1
+  const step = item.unit === "pcs" || !item.unit ? 1 : (item.unit === "kg" || item.unit === "l") ? 0.1 : 1;
   const hasImage = !!item.imageUrl;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
