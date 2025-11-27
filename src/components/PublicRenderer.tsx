@@ -300,6 +300,10 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ItemRow | null>(null);
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
+
+
 
   const totalAmount = useMemo(() => {
     let sum = 0;
@@ -498,7 +502,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
       )}
 
       {/* 3. MAIN CONTENT */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 mt-8 space-y-12">
+      <div className="max-w-full mx-auto px-4 sm:px-8 mt-8 space-y-12">
         <div className="relative group">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-[var(--muted)] group-focus-within:text-[var(--brand-1)] transition-colors">
             <Search className="w-5 h-5" />
@@ -515,7 +519,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
         {unsectioned.length > 0 && (
           <div id="sec-uncategorized" className="scroll-mt-32">
             <h2 className="text-2xl font-extrabold mb-5 flex items-center gap-2 tracking-tight">🔥 Popular</h2>
-            <div className={`grid grid-cols-1 md:grid-cols-2 ${gapClass}`}>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}`}>
               {unsectioned
                 .filter(it => !search || it.label.toLowerCase().includes(search.toLowerCase()) || it.note?.toLowerCase().includes(search.toLowerCase()))
                 .map(item => (
@@ -524,14 +528,14 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                     item={item}
                     formatPrice={formatPrice}
                     borderColor={simpleBorderColor}
-                    allowSelection={allowSelection}
                     quantity={quantities[item.id] || 0}
-                    onUpdateQty={updateQty}
+                    onClick={() => setSelectedItem(item)}
+                    onQuickAdd={(id: string, step: number) => {
+                      const current = quantities[id] || 0;
+                      setQuantity(id, current + step);
+                    }}
                     isTierlessTheme={isTierlessTheme}
-                    enableCalculations={enableCalculations}
                     showUnits={showUnits}
-                    setQuantity={setQuantity}
-                    removeQuantity={removeQuantity}
                   />
                 ))}
             </div>
@@ -561,21 +565,21 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                 )}
                 {section.description && <p className="text-sm sm:text-base opacity-70 max-w-2xl leading-relaxed">{section.description}</p>}
               </div>
-              <div className={`grid grid-cols-1 md:grid-cols-2 ${gapClass}`}>
+              <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}`}>
                 {visibleItems.map(item => (
                   <ItemCard
                     key={item.id}
                     item={item}
                     formatPrice={formatPrice}
                     borderColor={simpleBorderColor}
-                    allowSelection={allowSelection}
                     quantity={quantities[item.id] || 0}
-                    onUpdateQty={updateQty}
+                    onClick={() => setSelectedItem(item)}
+                    onQuickAdd={(id: string, step: number) => {
+                      const current = quantities[id] || 0;
+                      setQuantity(id, current + step);
+                    }}
                     isTierlessTheme={isTierlessTheme}
-                    enableCalculations={enableCalculations}
                     showUnits={showUnits}
-                    setQuantity={setQuantity}
-                    removeQuantity={removeQuantity}
                   />
                 ))}
               </div>
@@ -652,7 +656,11 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                   <button
                     className="px-6 py-3 rounded-xl text-white font-bold text-sm shadow-lg hover:opacity-90 active:scale-95 transition-transform cursor-pointer"
                     style={{ background: "linear-gradient(90deg,var(--brand-1),var(--brand-2))" }}
-                    onClick={(e) => { e.stopPropagation(); /* Checkout logic here */ }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCartOpen(false);
+                      setOrderModalOpen(true);
+                    }}
                   >
                     Checkout
                   </button>
@@ -662,184 +670,475 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
           </div>
         </div>
       )}
+
+      {selectedItem && (
+        <ItemDetailModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          quantity={quantities[selectedItem.id] || 0}
+          setQuantity={setQuantity}
+          formatPrice={formatPrice}
+          showUnits={showUnits}
+        />
+      )}
+
+      {/* Order/Checkout Modal */}
+      <OrderModal
+        isOpen={orderModalOpen}
+        onClose={() => setOrderModalOpen(false)}
+        items={items}
+        quantities={quantities}
+        formatPrice={formatPrice}
+        onSubmitOrder={async (orderData: any) => {
+          // API call to submit order
+          const response = await fetch(`/api/orders/submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...orderData,
+              pageTitle: simpleTitle,
+              accountId: calc.accountId,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to submit order');
+          }
+
+          const result = await response.json();
+
+          // Show success message (if customSuccessMessage is set)
+          const successMessage = meta.customSuccessMessage || "";
+          if (successMessage.trim()) {
+            alert(successMessage);
+          } else {
+            alert('Order submitted successfully!');
+          }
+
+          // Clear cart
+          setQuantities({});
+        }}
+      />
     </div>
   );
 }
 
 /* --------------------------------------------------------- */
-/* Component: Item Card (Responsive Height & Layout)         */
+/* Component: Order/Checkout Modal                           */
 /* --------------------------------------------------------- */
-function ItemCard({ item, formatPrice, borderColor, allowSelection, quantity, onUpdateQty, isTierlessTheme, enableCalculations, showUnits, setQuantity, removeQuantity }: any) {
-  // Logic: Item is selected if quantity is defined (even if 0, so input stays open)
-  const isSelected = quantity !== undefined;
+function OrderModal({ isOpen, onClose, items, quantities, formatPrice, onSubmitOrder }: any) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [note, setNote] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Logic: Show interactions ONLY if calculations are enabled. 
-  // We strictly respect "Enable Calculations" setting now.
-  const showInteractions = enableCalculations && !item.soldOut;
+  if (!isOpen) return null;
 
-  // Logic: Use simple mode (+/- buttons) if units are HIDDEN
-  // Use advanced mode (input) if units are SHOWN
-  const useSimpleMode = !showUnits;
+  // Build order items list
+  const orderItems = items
+    .filter((item: any) => quantities[item.id] > 0)
+    .map((item: any) => ({
+      ...item,
+      quantity: quantities[item.id],
+    }));
+
+  const totalAmount = orderItems.reduce((sum: number, item: any) => {
+    return sum + (item.price || 0) * item.quantity;
+  }, 0);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phone.trim()) {
+      alert("Phone number is required!");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onSubmitOrder({ name, phone, note, items: orderItems });
+      // Reset form
+      setName("");
+      setPhone("");
+      setNote("");
+      onClose();
+    } catch (error) {
+      console.error("Order submission error:", error);
+      alert("Failed to submit order. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <div
-      className={`relative flex flex-col overflow-hidden rounded-2xl transition-all duration-300 ${isSelected && quantity > 0 ? 'shadow-lg scale-[1.02]' : 'hover:shadow-md hover:scale-[1.01]'}`}
-      style={{
-        // FIX: Dynamic height. If image -> at least 90px (compact). If no image -> auto.
-        minHeight: item.imageUrl ? "90px" : "auto",
-        border: isTierlessTheme ? "2px solid transparent" : `1px solid ${borderColor}`,
-        background: isTierlessTheme
-          ? `linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(135deg, ${isSelected && quantity > 0 ? '#4F46E5' : 'rgba(79,70,229,0.3)'}, ${isSelected && quantity > 0 ? '#22D3EE' : 'rgba(34,211,238,0.1)'}) border-box`
-          : "var(--card)",
-      }}
-    >
-      <div className="flex h-full">
-        {/* --- LEVO: Slika (Opciono) --- */}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
+
+      <div className="relative w-full max-w-2xl bg-[var(--card)] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/40 transition-colors cursor-pointer"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
+        {/* Header */}
+        <div className="p-6 sm:p-8 border-b border-[var(--border)] bg-gradient-to-r from-[var(--brand-1)] to-[var(--brand-2)]">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight">Complete Your Order</h2>
+          <p className="text-white/80 text-sm mt-1">Fill in your details to submit the order</p>
+        </div>
+
+        {/* Content */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
+
+          {/* Order Summary */}
+          <div>
+            <h3 className="text-lg font-bold text-[var(--text)] mb-3">Order Summary</h3>
+            <div className="space-y-2 bg-[var(--bg)] rounded-2xl p-4 border border-[var(--border)]">
+              {orderItems.map((item: any) => (
+                <div key={item.id} className="flex justify-between items-center text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[var(--brand-1)]">{item.quantity}x</span>
+                    <span className="text-[var(--text)]">{item.label}</span>
+                  </div>
+                  <span className="font-semibold text-[var(--text)]">{formatPrice(item.price * item.quantity)}</span>
+                </div>
+              ))}
+              <div className="pt-3 mt-3 border-t border-[var(--border)] flex justify-between items-center">
+                <span className="font-bold text-[var(--text)]">Total</span>
+                <span className="text-xl font-black text-[var(--brand-1)]">{formatPrice(totalAmount)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Customer Info Form */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-[var(--text)]">Your Details</h3>
+
+            {/* Name Field */}
+            <div>
+              <label className="block text-sm font-semibold text-[var(--text)] mb-2">Name (Optional)</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your name"
+                className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] outline-none focus:ring-2 focus:ring-[var(--brand-1)]/50 transition-all placeholder-[var(--muted)]"
+              />
+            </div>
+
+            {/* Phone Field */}
+            <div>
+              <label className="block text-sm font-semibold text-[var(--text)] mb-2">Phone Number <span className="text-red-500">*</span></label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Enter your phone number"
+                required
+                className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] outline-none focus:ring-2 focus:ring-[var(--brand-1)]/50 transition-all placeholder-[var(--muted)]"
+              />
+            </div>
+
+            {/* Note Field */}
+            <div>
+              <label className="block text-sm font-semibold text-[var(--text)] mb-2">Note (Optional)</label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Any special requests or comments?"
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] outline-none focus:ring-2 focus:ring-[var(--brand-1)]/50 transition-all resize-none placeholder-[var(--muted)]"
+              />
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isSubmitting || !phone.trim()}
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-[var(--brand-1)] to-[var(--brand-2)] text-white font-bold text-lg hover:opacity-90 active:scale-[0.98] transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? "Submitting..." : "Send Order"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------- */
+/* Component: Item Detail Modal (Popup)                      */
+/* --------------------------------------------------------- */
+function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, showUnits }: any) {
+  if (!item) return null;
+
+  // Local state for quantity editing inside modal before saving? 
+  // For now, let's edit directly on the global state for simplicity and instant feedback.
+
+  const step = item.unit === "pcs" || !item.unit ? 1 : 0.01;
+  const unitLabel = item.unit === "custom" ? item.customUnit || "unit" : item.unit || "pcs";
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
+
+      <div className="relative w-full max-w-lg bg-[var(--card)] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/40 transition-colors cursor-pointer"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
+        {/* Image Header */}
         {item.imageUrl && (
-          <div className="w-1/3 sm:w-[140px] relative shrink-0">
+          <div className="w-full h-64 sm:h-72 shrink-0 relative bg-gray-100">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={item.imageUrl}
               alt={item.label}
               className="absolute inset-0 w-full h-full object-cover"
-              loading="lazy"
             />
-            {/* Gradient Overlay na slici */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[var(--card)]/10"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--card)] to-transparent opacity-60"></div>
           </div>
         )}
 
-        {/* --- DESNO: Sadržaj --- */}
-        <div className={`flex-1 flex flex-col p-3 sm:p-4 ${!item.imageUrl ? 'pl-4' : ''}`}>
-
-          {/* --- VRH: Naslov --- */}
-          <div className="mb-1">
+        {/* Content */}
+        <div className="p-6 sm:p-8 flex flex-col flex-1 overflow-y-auto">
+          <div className="mb-4">
             {item.badge && BADGE_LABELS[item.badge] && (
-              <span className={`inline-block px-1.5 py-0.5 mb-1 rounded text-[9px] font-bold uppercase tracking-wide border ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
+              <span className={`inline-block px-2 py-1 mb-2 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
                 {BADGE_LABELS[item.badge]}
               </span>
             )}
-            <h3 className="font-bold text-lg leading-tight text-[var(--text)] break-words pr-1">
-              {item.label}
-            </h3>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text)] leading-tight mb-2">{item.label}</h2>
+            <div className="text-xl font-bold text-[var(--brand-1)]">
+              {formatPrice(item.price)}
+              {showUnits && item.unit && item.unit !== "pcs" && <span className="text-sm font-normal text-[var(--muted)] ml-1">/ {unitLabel}</span>}
+            </div>
           </div>
 
-          {/* --- SREDINA: Opis --- */}
           {item.note && (
-            <p className="text-xs sm:text-sm opacity-70 leading-relaxed text-[var(--muted)] line-clamp-2 mb-2">
+            <p className="text-[var(--muted)] text-base leading-relaxed mb-8">
               {item.note}
             </p>
           )}
 
-          {/* Spacer koji gura footer na dno */}
-          <div className="mt-auto"></div>
+          <div className="mt-auto pt-6 border-t border-[var(--border)]">
+            <div className="flex items-center justify-between gap-4">
 
-          {/* --- DNO: Cena (Levo) + Dugmići/Quantity (Desno) --- */}
-          <div className="flex flex-col gap-2 pt-2">
+              {/* Quantity Controls */}
+              <div className="flex items-center gap-3 bg-[var(--bg)] rounded-2xl p-1.5 border border-[var(--border)]">
+                <button
+                  onClick={() => setQuantity(item.id, Math.max(0, (quantity || 0) - step))}
+                  className="w-10 h-10 rounded-xl bg-[var(--card)] shadow-sm flex items-center justify-center text-[var(--text)] hover:bg-[var(--brand-1)] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                  disabled={!quantity}
+                >
+                  <Minus className="w-5 h-5" />
+                </button>
 
-            {/* Cena - uvek gore levo u footeru */}
-            {item.price !== null && (
-              <div className="font-bold text-[var(--brand-1)] text-base sm:text-lg bg-[var(--brand-1)]/5 px-2 py-0.5 rounded-lg w-fit whitespace-nowrap">
-                {formatPrice(item.price)}
-                {showUnits && item.unit && item.unit !== "pcs" && (
-                  <span className="text-xs opacity-70 ml-1">
-                    / {item.unit === "custom" ? item.customUnit || "unit" : item.unit}
-                  </span>
-                )}
+                <div className="flex flex-col items-center min-w-[3rem]">
+                  <input
+                    type="number"
+                    step={step}
+                    min="0"
+                    value={quantity === undefined ? "" : quantity}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        setQuantity(item.id, 0);
+                      } else {
+                        const num = parseFloat(val);
+                        setQuantity(item.id, isNaN(num) ? 0 : num);
+                      }
+                    }}
+                    className="w-16 bg-transparent text-center text-lg font-bold text-[var(--text)] outline-none p-0"
+                  />
+                  <span className="text-[10px] uppercase font-bold text-[var(--muted)]">{unitLabel}</span>
+                </div>
+
+                <button
+                  onClick={() => setQuantity(item.id, (quantity || 0) + step)}
+                  className="w-10 h-10 rounded-xl bg-[var(--brand-1)] text-white shadow-lg shadow-[var(--brand-1)]/30 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
               </div>
-            )}
 
-            {/* Quantity Controls - Render ONLY if interactions enabled */}
-            {showInteractions && (
-              <div className="flex justify-end items-center mt-1">
-                {/* Calculation Mode */}
-                {enableCalculations ? (
-                  useSimpleMode ? (
-                    // SIMPLE MODE (Show Units OFF) -> +/- Buttons, Integer only
-                    <div className="flex items-center gap-2">
-                      {quantity > 0 && (
-                        <>
-                          <button onClick={() => onUpdateQty(item.id, -1)} className="w-8 h-8 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-colors text-[var(--text)] cursor-pointer"><Minus className="w-4 h-4" /></button>
-                          <span className="font-bold min-w-[20px] text-center text-[var(--text)] text-base">{quantity}</span>
-                        </>
-                      )}
-                      <button onClick={() => onUpdateQty(item.id, 1)} className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border cursor-pointer", quantity > 0 ? "bg-[var(--brand-1)] text-white border-[var(--brand-1)]" : "bg-[var(--bg)] text-[var(--brand-1)] border-[var(--border)] hover:border-[var(--brand-1)] hover:bg-[var(--brand-1)] hover:text-white")}><Plus className="w-5 h-5" /></button>
-                    </div>
-                  ) : (
-                    // ADVANCED MODE (Show Units ON) -> Input field, Decimals allowed
-                    <div className="flex items-center gap-1.5">
-                      {isSelected ? (
-                        <>
-                          <button
-                            onClick={() => removeQuantity(item.id)}
-                            className="w-8 h-8 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-colors text-[var(--text)] cursor-pointer shrink-0"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                          {/* Input logic allows 0 or empty without vanishing */}
-                          <div className="flex items-center gap-1 bg-[var(--bg)] border border-[var(--border)] rounded-lg px-2 h-9 shrink-0 shadow-sm">
-                            <input
-                              type="number"
-                              step={item.unit === "pcs" || !item.unit ? "1" : "0.01"}
-                              min="0"
-                              value={quantity === undefined ? "" : quantity}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === "") {
-                                  setQuantity(item.id, 0);
-                                } else {
-                                  const num = parseFloat(val);
-                                  setQuantity(item.id, isNaN(num) ? 0 : num);
-                                }
-                              }}
-                              className="w-16 bg-transparent text-center text-base font-bold text-[var(--text)] outline-none"
-                            />
-                            <span className="text-xs text-[var(--muted)] whitespace-nowrap pr-1">
-                              {item.unit === "custom" ? item.customUnit || "unit" : item.unit || "pcs"}
-                            </span>
-                          </div>
-                        </>
-                      ) : null}
+              {/* Total Price Display */}
+              <div className="text-right">
+                <div className="text-xs text-[var(--muted)] uppercase font-bold tracking-wider mb-1">Total</div>
+                <div className="text-2xl font-black text-[var(--text)]">
+                  {formatPrice((item.price || 0) * (quantity || 0))}
+                </div>
+              </div>
 
-                      {/* Add Button - only shows if NOT selected */}
-                      {!isSelected && (
-                        <button
-                          onClick={() => setQuantity(item.id, 1)}
-                          className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border cursor-pointer shrink-0",
-                            "bg-[var(--bg)] text-[var(--brand-1)] border-[var(--border)] hover:border-[var(--brand-1)] hover:bg-[var(--brand-1)] hover:text-white"
-                          )}
-                        >
-                          <Plus className="w-5 h-5" />
-                        </button>
-                      )}
-                    </div>
-                  )
-                ) : (
-                  // Legacy Allow Selection Mode (Fallback)
-                  <div className="flex items-center gap-2">
-                    {quantity > 0 && (
-                      <>
-                        <button onClick={() => onUpdateQty(item.id, -1)} className="w-8 h-8 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-colors text-[var(--text)] cursor-pointer"><Minus className="w-4 h-4" /></button>
-                        <span className="font-bold min-w-[20px] text-center text-[var(--text)] text-base">{quantity}</span>
-                      </>
-                    )}
-                    <button onClick={() => onUpdateQty(item.id, 1)} className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border cursor-pointer", quantity > 0 ? "bg-[var(--brand-1)] text-white border-[var(--brand-1)]" : "bg-[var(--bg)] text-[var(--brand-1)] border-[var(--border)] hover:border-[var(--brand-1)] hover:bg-[var(--brand-1)] hover:text-white")}><Plus className="w-5 h-5" /></button>
-                  </div>
-                )}
+            </div>
+
+            {/* Add to Order Button (Visual confirmation mostly, since state is live) */}
+            <button
+              onClick={onClose}
+              className="w-full mt-6 py-4 rounded-2xl bg-[var(--text)] text-[var(--bg)] font-bold text-lg hover:opacity-90 active:scale-[0.98] transition-all shadow-xl"
+            >
+              {quantity > 0 ? "Update Order" : "Close"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------- */
+/* Component: Item Card (Interactive & Compact)              */
+/* --------------------------------------------------------- */
+function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits }: any) {
+  const step = item.unit === "pcs" || !item.unit ? 1 : 0.01;
+  const hasImage = !!item.imageUrl;
+
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent modal opening
+    onQuickAdd(item.id, step);
+  };
+
+  // --- COMPACT LAYOUT (No Image) ---
+  if (!hasImage) {
+    return (
+      <div
+        onClick={onClick}
+        className="group relative flex flex-col justify-between p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)] cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 min-h-[140px]"
+      >
+        <div>
+          <div className="flex justify-between items-start gap-2 mb-2">
+            <div>
+              {item.badge && BADGE_LABELS[item.badge] && (
+                <span className={`inline-block px-1.5 py-0.5 mb-1.5 rounded text-[9px] font-bold uppercase tracking-wide border ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
+                  {BADGE_LABELS[item.badge]}
+                </span>
+              )}
+              <h3 className="font-bold text-lg leading-tight text-[var(--text)] line-clamp-2 group-hover:text-[var(--brand-1)] transition-colors">
+                {item.label}
+              </h3>
+            </div>
+            {/* Quantity Badge (Compact) */}
+            {quantity > 0 && (
+              <div className="bg-[var(--brand-1)] text-white text-xs font-bold px-2 py-1 rounded-full shrink-0 animate-in zoom-in">
+                {quantity}{item.unit === "pcs" || !item.unit ? "" : item.unit}
               </div>
             )}
           </div>
+
+          {item.note && (
+            <p className="text-sm text-[var(--muted)] line-clamp-2 mb-3 opacity-80">
+              {item.note}
+            </p>
+          )}
         </div>
 
-        {/* Sold Out Overlay - RESTORED STAMP STYLE */}
+        <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--border)]/50">
+          <div className="font-bold text-lg text-[var(--brand-1)]">
+            {formatPrice(item.price)}
+          </div>
+
+          {/* Quick Add Button */}
+          <button
+            onClick={handleQuickAdd}
+            disabled={item.soldOut}
+            className="w-9 h-9 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center text-[var(--text)] hover:bg-[var(--brand-1)] hover:text-white hover:border-[var(--brand-1)] transition-all shadow-sm active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[var(--bg)] disabled:hover:text-[var(--text)] disabled:hover:border-[var(--border)]"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Sold Out Overlay */}
         {item.soldOut && (
-          <div className="absolute inset-0 bg-[var(--bg)]/60 backdrop-blur-[1px] z-10 flex items-center justify-center pointer-events-none">
-            <span className="px-3 py-1 bg-red-500/10 text-red-500 text-xs font-bold uppercase tracking-widest rounded-full border border-red-500/20 shadow-sm transform -rotate-12">
+          <div className="absolute inset-0 bg-[var(--bg)]/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-2xl pointer-events-none">
+            <span className="px-3 py-1 bg-red-500/10 text-red-500 text-xs font-bold uppercase tracking-widest rounded-full border border-red-500/20 shadow-sm transform -rotate-6">
               Sold Out
             </span>
           </div>
         )}
+      </div>
+    );
+  }
+
+  // --- STANDARD LAYOUT (With Image) ---
+  return (
+    <div
+      onClick={onClick}
+      className={`group relative flex flex-col overflow-hidden rounded-3xl transition-all duration-300 cursor-pointer hover:shadow-xl hover:-translate-y-1 bg-[var(--card)] border border-[var(--border)]`}
+      style={{
+        minHeight: "280px",
+      }}
+    >
+      {/* Image Area */}
+      <div className="w-full h-48 relative bg-gray-100 overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={item.imageUrl}
+          alt={item.label}
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          loading="lazy"
+        />
+
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--card)] via-transparent to-transparent opacity-80"></div>
+
+        {/* Quantity Badge */}
+        {quantity > 0 && (
+          <div className="absolute top-3 right-3 bg-[var(--brand-1)] text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg flex items-center gap-1 animate-in zoom-in">
+            <span>{quantity}</span>
+            <span className="text-[10px] opacity-80 uppercase">{item.unit === "pcs" || !item.unit ? "x" : (item.unit === "custom" ? item.customUnit : item.unit)}</span>
+          </div>
+        )}
+
+        {/* Sold Out Overlay */}
+        {item.soldOut && (
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10 flex items-center justify-center pointer-events-none">
+            <span className="px-4 py-2 bg-red-500/20 text-red-500 text-sm font-bold uppercase tracking-widest rounded-xl border border-red-500/30 shadow-2xl transform -rotate-6 backdrop-blur-md">
+              Sold Out
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Content Area */}
+      <div className="p-5 flex flex-col flex-1 relative">
+        <div className="mb-2">
+          {item.badge && BADGE_LABELS[item.badge] && (
+            <span className={`inline-block px-1.5 py-0.5 mb-2 rounded text-[9px] font-bold uppercase tracking-wide border ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
+              {BADGE_LABELS[item.badge]}
+            </span>
+          )}
+          <h3 className="font-bold text-xl leading-tight text-[var(--text)] line-clamp-2 group-hover:text-[var(--brand-1)] transition-colors">
+            {item.label}
+          </h3>
+        </div>
+
+        {item.note && (
+          <p className="text-sm text-[var(--muted)] line-clamp-2 mb-4 opacity-80">
+            {item.note}
+          </p>
+        )}
+
+        <div className="mt-auto pt-4 flex items-center justify-between border-t border-[var(--border)]/50">
+          <div className="font-bold text-lg text-[var(--brand-1)]">
+            {formatPrice(item.price)}
+          </div>
+
+          {/* Quick Add Button */}
+          <button
+            onClick={handleQuickAdd}
+            disabled={item.soldOut}
+            className="w-10 h-10 rounded-full bg-[var(--bg)] flex items-center justify-center text-[var(--text)] group-hover:bg-[var(--brand-1)] group-hover:text-white transition-colors shadow-sm active:scale-95 border border-[var(--border)] group-hover:border-[var(--brand-1)] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[var(--bg)] disabled:hover:text-[var(--text)] disabled:hover:border-[var(--border)]"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
   );
