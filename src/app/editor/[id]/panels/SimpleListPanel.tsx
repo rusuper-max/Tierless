@@ -921,7 +921,7 @@ export default function SimpleListPanel() {
                       )}
                     </div>
 
-                    <div className="flex-1">
+                    <div className="flex-1 space-y-2">
                       <input
                         className="w-full bg-transparent text-base font-bold text-[var(--text)] outline-none placeholder-[var(--muted)]"
                         value={section.label}
@@ -932,6 +932,28 @@ export default function SimpleListPanel() {
                         placeholder={t("Section Name")}
                       />
                       <div className="text-xs text-[var(--muted)]">{sectionItems.length} {t("items")}</div>
+
+                      {/* Video URL Input (Pro Only) */}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="url"
+                          className={`flex-1 text-xs bg-[var(--surface)] border border-[var(--border)] rounded px-2 py-1.5 outline-none focus:border-[#22D3EE] transition-colors placeholder-[var(--muted)] ${plan !== 'pro' ? 'opacity-50' : ''}`}
+                          value={(section as any).videoUrl || ''}
+                          onChange={(e) => {
+                            if (plan !== 'pro') {
+                              openUpsell({ requiredPlan: 'pro' });
+                              return;
+                            }
+                            const next = simpleSections.map(s => s.id === section.id ? { ...s, videoUrl: e.target.value } as any : s);
+                            setMeta({ simpleSections: next });
+                          }}
+                          placeholder={t("Video URL (Pro)")}
+                          disabled={plan !== 'pro'}
+                        />
+                        {plan !== 'pro' && (
+                          <Lock className="w-3 h-3 text-[var(--muted)]" />
+                        )}
+                      </div>
                     </div>
 
                     <button onClick={() => setSectionToDelete(section)} className="p-2 text-[var(--muted)] hover:text-red-500 rounded-md hover:bg-red-500/10 transition-colors">
@@ -1150,8 +1172,8 @@ export default function SimpleListPanel() {
             <button
               onClick={() => setMeta({ layoutMode: 'scroll' })}
               className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${(!meta.layoutMode || meta.layoutMode === 'scroll')
-                  ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
-                  : 'bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--text)]'
+                ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
+                : 'bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--text)]'
                 }`}
             >
               Scroll (Default)
@@ -1159,13 +1181,27 @@ export default function SimpleListPanel() {
             <button
               onClick={() => setMeta({ layoutMode: 'accordion' })}
               className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${meta.layoutMode === 'accordion'
-                  ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
-                  : 'bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--text)]'
+                ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
+                : 'bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--text)]'
                 }`}
             >
               Accordion
             </button>
           </div>
+
+          {/* Solo Mode Option (Only for Accordion) */}
+          {meta.layoutMode === 'accordion' && (
+            <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors border-l-2 border-[#22D3EE]/30 ml-1 pl-3 mt-2">
+              <div className="space-y-0.5">
+                <span className="text-sm text-[var(--text)] font-medium block">{t("Solo Mode")}</span>
+                <span className="text-[10px] text-[var(--muted)] block">{t("Only one section open at a time")}</span>
+              </div>
+              <div className="relative inline-flex items-center cursor-default">
+                <input type="checkbox" checked={meta.layoutAccordionSolo || false} onChange={e => setMeta({ layoutAccordionSolo: e.target.checked })} className="sr-only peer" />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]"></div>
+              </div>
+            </label>
+          )}
         </div>
         <label className={`flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors ${!removeBadgeAllowed ? "opacity-75" : ""}`}>
           <div className="flex items-center gap-2">

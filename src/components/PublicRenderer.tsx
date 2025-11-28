@@ -275,6 +275,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
   const addCheckout = meta.simpleAddCheckout ?? false;
   const showUnits = meta.simpleShowUnits ?? false;
   const layoutMode = meta.layoutMode || 'scroll'; // 'scroll' | 'accordion'
+  const accordionSolo = meta.layoutAccordionSolo ?? false;
 
   const currency = i18n.currency || "";
   const decimals = typeof i18n.decimals === "number" ? i18n.decimals : 0;
@@ -302,6 +303,12 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => {
+      if (accordionSolo) {
+        // Solo mode: if clicking already open, close it (empty set). If clicking closed, open ONLY it.
+        if (prev.has(sectionId)) return new Set();
+        return new Set([sectionId]);
+      }
+      // Normal mode: toggle
       const next = new Set(prev);
       if (next.has(sectionId)) {
         next.delete(sectionId);
@@ -312,9 +319,51 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
     });
   };
 
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      // Offset for sticky header
+      const y = el.getBoundingClientRect().top + window.pageYOffset - 140;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+      setActiveSection(id);
+
+      // If Accordion mode, expand the section we jumped to
+      if (layoutMode === 'accordion') {
+        const sectionId = id.replace('sec-', '');
+        if (sectionId !== 'uncategorized') {
+          setExpandedSections(prev => {
+            if (accordionSolo) return new Set([sectionId]);
+            const next = new Set(prev);
+            next.add(sectionId);
+            return next;
+          });
+        }
+      }
+    }
+  };
+
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ItemRow | null>(null);
+
+  // Flying dot animation state
+  const [flyingDots, setFlyingDots] = useState<Array<{ id: string; fromX: number; fromY: number }>>([]);
+
+  const triggerFlyingDot = (event: React.MouseEvent) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const dotId = `dot-${Date.now()}-${Math.random()}`;
+
+    setFlyingDots(prev => [...prev, {
+      id: dotId,
+      fromX: rect.left + rect.width / 2,
+      fromY: rect.top + rect.height / 2
+    }]);
+
+    // Remove dot after animation completes
+    setTimeout(() => {
+      setFlyingDots(prev => prev.filter(d => d.id !== dotId));
+    }, 600);
+  };
   const [orderModalOpen, setOrderModalOpen] = useState(false);
 
 
@@ -374,21 +423,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
     return () => observer.disconnect();
   }, [simpleSections, unsectioned.length, scrollContainer]);
 
-  const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (scrollContainer?.current) {
-      const container = scrollContainer.current;
-      const containerRect = container.getBoundingClientRect();
-      const elRect = el.getBoundingClientRect();
-      const offset = elRect.top - containerRect.top + container.scrollTop;
-      container.scrollTo({ top: offset - 140, behavior: "smooth" });
-    } else {
-      const y = el.getBoundingClientRect().top + window.scrollY - 140;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-    }
-    setActiveSection(id);
-  };
+  // scrollToSection is defined above
 
   const formatPrice = (p: number | null) => {
     if (p === null || p === undefined) return "";
@@ -477,8 +512,8 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
       </div>
 
       {/* 2. STICKY NAVIGATION */}
-      {/* 2. STICKY NAVIGATION (Only in Scroll Mode) */}
-      {(simpleSections.length > 0) && layoutMode === 'scroll' && (
+      {/* 2. STICKY NAVIGATION (For both Scroll and Accordion) */}
+      {(simpleSections.length > 0) && (
         <div className="sticky top-0 z-40 w-full bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--border)]/10 shadow-sm py-3 px-4 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-2 min-w-max">
             {unsectioned.length > 0 && (
@@ -545,9 +580,10 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                     borderColor={simpleBorderColor}
                     quantity={quantities[item.id] || 0}
                     onClick={() => setSelectedItem(item)}
-                    onQuickAdd={(id: string, step: number) => {
+                    onQuickAdd={(id: string, step: number, e?: React.MouseEvent) => {
                       const current = quantities[id] || 0;
                       setQuantity(id, current + step);
+                      if (e) triggerFlyingDot(e);
                     }}
                     isTierlessTheme={isTierlessTheme}
                     showUnits={showUnits}
@@ -574,7 +610,30 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                   onClick={() => toggleSection(section.id)}
                   className="cursor-pointer group relative overflow-hidden rounded-3xl mb-6 transition-all duration-300 hover:shadow-lg active:scale-[0.99]"
                 >
-                  {section.imageUrl ? (
+                  {section.videoUrl ? (
+                    <div className="w-full h-48 sm:h-64 relative">
+                      <video
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        poster={section.imageUrl}
+                      >
+                        <source src={section.videoUrl} type="video/mp4" />
+                      </video>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 w-full p-6 sm:p-8 flex items-end justify-between">
+                        <div>
+                          <h2 className="text-3xl sm:text-4xl font-extrabold text-white drop-shadow-lg mb-2">{section.label}</h2>
+                          {section.description && <p className="text-white/90 text-sm sm:text-base max-w-xl line-clamp-2">{section.description}</p>}
+                        </div>
+                        <div className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                          <ChevronDown className="w-6 h-6" />
+                        </div>
+                      </div>
+                    </div>
+                  ) : section.imageUrl ? (
                     <div className="w-full h-48 sm:h-64 relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={section.imageUrl} alt={section.label} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -612,9 +671,10 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                       borderColor={simpleBorderColor}
                       quantity={quantities[item.id] || 0}
                       onClick={() => setSelectedItem(item)}
-                      onQuickAdd={(id: string, step: number) => {
+                      onQuickAdd={(id: string, step: number, e?: React.MouseEvent) => {
                         const current = quantities[id] || 0;
                         setQuantity(id, current + step);
+                        if (e) triggerFlyingDot(e);
                       }}
                       isTierlessTheme={isTierlessTheme}
                       showUnits={showUnits}
@@ -630,7 +690,24 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
           return (
             <div key={section.id} id={`sec-${section.id}`} className="scroll-mt-32">
               <div className="mb-6">
-                {section.imageUrl && (
+                {section.videoUrl ? (
+                  <div className="w-full h-36 sm:h-48 rounded-3xl overflow-hidden mb-4 shadow-sm relative group">
+                    <video
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700"
+                      poster={section.imageUrl}
+                    >
+                      <source src={section.videoUrl} type="video/mp4" />
+                    </video>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+                    <div className="absolute bottom-0 left-0 w-full p-4">
+                      <h2 className="text-2xl sm:text-3xl font-extrabold text-white drop-shadow-md">{section.label}</h2>
+                    </div>
+                  </div>
+                ) : section.imageUrl ? (
                   <div className="w-full h-36 sm:h-48 rounded-3xl overflow-hidden mb-4 shadow-sm relative group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={section.imageUrl} alt={section.label} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
@@ -639,8 +716,8 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                       <h2 className="text-2xl sm:text-3xl font-extrabold text-white drop-shadow-md">{section.label}</h2>
                     </div>
                   </div>
-                )}
-                {!section.imageUrl && (
+                ) : null}
+                {!section.videoUrl && !section.imageUrl && (
                   <h2 className="text-2xl sm:text-3xl font-extrabold mb-2 tracking-tight">{section.label}</h2>
                 )}
                 {section.description && <p className="text-sm sm:text-base opacity-70 max-w-2xl leading-relaxed">{section.description}</p>}
@@ -654,9 +731,10 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                     borderColor={simpleBorderColor}
                     quantity={quantities[item.id] || 0}
                     onClick={() => setSelectedItem(item)}
-                    onQuickAdd={(id: string, step: number) => {
+                    onQuickAdd={(id: string, step: number, e?: React.MouseEvent) => {
                       const current = quantities[id] || 0;
                       setQuantity(id, current + step);
+                      if (e) triggerFlyingDot(e);
                     }}
                     isTierlessTheme={isTierlessTheme}
                     showUnits={showUnits}
@@ -671,97 +749,121 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
       {/* 4. TOTAL BAR / CART DRAWER */}
       {/* Show Total Bar if (calculations OR selection) AND there is a total */}
-      {((enableCalculations) || allowSelection) && totalCount > 0 && (
-        <div className="fixed bottom-0 left-0 w-full z-50 flex flex-col items-center pointer-events-none">
+      {
+        ((enableCalculations) || allowSelection) && totalCount > 0 && (
+          <div className="fixed bottom-0 left-0 w-full z-50 flex flex-col items-center pointer-events-none">
 
-          {/* EXPANDED CART LIST (Popup) */}
-          {cartOpen && (
-            <div className="w-full max-w-md bg-[var(--card)] text-[var(--text)] rounded-t-3xl shadow-[0_-10px_60px_-5px_rgba(0,0,0,0.7)] border-x border-t border-[var(--border)] pointer-events-auto animate-in slide-in-from-bottom-20 duration-300 overflow-hidden flex flex-col max-h-[65vh] mb-[-20px] pb-[20px]">
-              {/* Header of Expanded List */}
-              <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg)]/50 backdrop-blur-md sticky top-0 z-10">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="w-5 h-5 text-[var(--brand-1)]" />
-                  <span className="font-bold text-base">Your Order</span>
+            {/* EXPANDED CART LIST (Popup) */}
+            {/* Flying Dot Animations */}
+            {flyingDots.map(dot => {
+              // Calculate the position of the cart total (bottom center)
+              return (
+                <div
+                  key={dot.id}
+                  className="fixed z-[100] pointer-events-none"
+                  style={{
+                    left: `${dot.fromX}px`,
+                    top: `${dot.fromY}px`,
+                    width: '16px',
+                    height: '16px',
+                    animation: 'flyToCart 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+                  }}
+                >
+                  <div className="w-full h-full rounded-full bg-[var(--brand-1)] shadow-lg" />
                 </div>
-                <button onClick={() => setCartOpen(false)} className="p-2 rounded-full hover:bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)] transition cursor-pointer">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+              );
+            })}
 
-              {/* List Items */}
-              <div className="overflow-y-auto p-4 space-y-4 flex-1 pb-24">
-                {items.filter(it => (quantities[it.id] || 0) > 0).map(it => (
-                  <div key={it.id} className="flex justify-between items-start gap-3 pb-3 border-b border-[var(--border)] last:border-0">
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-bold text-[var(--brand-1)] text-base">{quantities[it.id]}x</span>
-                        <span className="text-sm font-medium">{it.label}</span>
-                      </div>
-                      {it.note && <div className="text-xs text-[var(--muted)] pl-6 line-clamp-1">{it.note}</div>}
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-sm">{formatPrice((it.price || 0) * quantities[it.id])}</div>
-                      <div className="flex items-center gap-2 mt-1 justify-end">
-                        <button onClick={() => updateQty(it.id, -1)} className="w-6 h-6 rounded-full border border-[var(--border)] flex items-center justify-center hover:bg-[var(--bg)] cursor-pointer"><Minus className="w-3 h-3" /></button>
-                        <button onClick={() => updateQty(it.id, 1)} className="w-6 h-6 rounded-full border border-[var(--border)] flex items-center justify-center hover:bg-[var(--bg)] cursor-pointer"><Plus className="w-3 h-3" /></button>
-                      </div>
-                    </div>
+            {cartOpen && (
+              <div className="w-full max-w-md bg-[var(--card)] text-[var(--text)] rounded-t-3xl shadow-[0_-10px_60px_-5px_rgba(0,0,0,0.7)] border-x border-t border-[var(--border)] pointer-events-auto animate-in slide-in-from-bottom-20 duration-300 overflow-hidden flex flex-col max-h-[65vh] mb-[-20px] pb-[20px]">
+                {/* Header of Expanded List */}
+                <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg)]/50 backdrop-blur-md sticky top-0 z-10">
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="w-5 h-5 text-[var(--brand-1)]" />
+                    <span className="font-bold text-base">Your Order</span>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TOTAL BAR BUTTON */}
-          <div className="w-full max-w-md pointer-events-auto p-4 pb-6">
-            <div
-              className="bg-[var(--card)] text-[var(--text)] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.35)] p-3 flex items-center justify-between border border-[var(--brand-1)]/50 cursor-pointer hover:scale-[1.02] transition-all active:scale-95 relative z-50"
-              onClick={() => setCartOpen(!cartOpen)}
-            >
-              <div className="flex items-center gap-3 pl-2">
-                <div className="w-11 h-11 rounded-xl bg-[var(--bg)] flex items-center justify-center shadow-inner border border-[var(--border)]">
-                  <span className="font-bold text-lg text-[var(--brand-1)]">{totalCount}</span>
-                </div>
-                <div>
-                  <div className="text-xs opacity-60 font-medium uppercase tracking-wide">Total</div>
-                  <div className="text-xl font-extrabold leading-none">{formatPrice(totalAmount)}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="text-[var(--brand-1)]">
-                  {cartOpen ? <ChevronDown className="w-6 h-6" /> : <ChevronUp className="w-6 h-6" />}
-                </div>
-                {/* --- FIX: CHECKOUT BUTTON VISIBILITY --- */}
-                {addCheckout && (
-                  <button
-                    className="px-6 py-3 rounded-xl text-white font-bold text-sm shadow-lg hover:opacity-90 active:scale-95 transition-transform cursor-pointer"
-                    style={{ background: "linear-gradient(90deg,var(--brand-1),var(--brand-2))" }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCartOpen(false);
-                      setOrderModalOpen(true);
-                    }}
-                  >
-                    Checkout
+                  <button onClick={() => setCartOpen(false)} className="p-2 rounded-full hover:bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)] transition cursor-pointer">
+                    <X className="w-5 h-5" />
                   </button>
-                )}
+                </div>
+
+                {/* List Items */}
+                <div className="overflow-y-auto p-4 space-y-4 flex-1 pb-24">
+                  {items.filter(it => (quantities[it.id] || 0) > 0).map(it => (
+                    <div key={it.id} className="flex justify-between items-start gap-3 pb-3 border-b border-[var(--border)] last:border-0">
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-bold text-[var(--brand-1)] text-base">{quantities[it.id]}x</span>
+                          <span className="text-sm font-medium">{it.label}</span>
+                        </div>
+                        {it.note && <div className="text-xs text-[var(--muted)] pl-6 line-clamp-1">{it.note}</div>}
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-sm">{formatPrice((it.price || 0) * quantities[it.id])}</div>
+                        <div className="flex items-center gap-2 mt-1 justify-end">
+                          <button onClick={() => updateQty(it.id, -1)} className="w-6 h-6 rounded-full border border-[var(--border)] flex items-center justify-center hover:bg-[var(--bg)] cursor-pointer"><Minus className="w-3 h-3" /></button>
+                          <button onClick={() => updateQty(it.id, 1)} className="w-6 h-6 rounded-full border border-[var(--border)] flex items-center justify-center hover:bg-[var(--bg)] cursor-pointer"><Plus className="w-3 h-3" /></button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TOTAL BAR BUTTON */}
+            <div className="w-full max-w-md pointer-events-auto p-4 pb-6">
+              <div
+                className="bg-[var(--card)] text-[var(--text)] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.35)] p-3 flex items-center justify-between border border-[var(--brand-1)]/50 cursor-pointer hover:scale-[1.02] transition-all active:scale-95 relative z-50"
+                onClick={() => setCartOpen(!cartOpen)}
+              >
+                <div className="flex items-center gap-3 pl-2">
+                  <div className="w-11 h-11 rounded-xl bg-[var(--bg)] flex items-center justify-center shadow-inner border border-[var(--border)]">
+                    <span className="font-bold text-lg text-[var(--brand-1)]">{totalCount}</span>
+                  </div>
+                  <div>
+                    <div className="text-xs opacity-60 font-medium uppercase tracking-wide">Total</div>
+                    <div className="text-xl font-extrabold leading-none">{formatPrice(totalAmount)}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="text-[var(--brand-1)]">
+                    {cartOpen ? <ChevronDown className="w-6 h-6" /> : <ChevronUp className="w-6 h-6" />}
+                  </div>
+                  {/* --- FIX: CHECKOUT BUTTON VISIBILITY --- */}
+                  {addCheckout && (
+                    <button
+                      className="px-6 py-3 rounded-xl text-white font-bold text-sm shadow-lg hover:opacity-90 active:scale-95 transition-transform cursor-pointer"
+                      style={{ background: "linear-gradient(90deg,var(--brand-1),var(--brand-2))" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCartOpen(false);
+                        setOrderModalOpen(true);
+                      }}
+                    >
+                      Checkout
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {selectedItem && (
-        <ItemDetailModal
-          item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-          quantity={quantities[selectedItem.id] || 0}
-          setQuantity={setQuantity}
-          formatPrice={formatPrice}
-          showUnits={showUnits}
-        />
-      )}
+      {
+        selectedItem && (
+          <ItemDetailModal
+            item={selectedItem}
+            onClose={() => setSelectedItem(null)}
+            quantity={quantities[selectedItem.id] || 0}
+            setQuantity={setQuantity}
+            formatPrice={formatPrice}
+            showUnits={showUnits}
+          />
+        )
+      }
 
       {/* Order/Checkout Modal */}
       <OrderModal
@@ -800,7 +902,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
           setQuantities({});
         }}
       />
-    </div>
+    </div >
   );
 }
 
@@ -1110,7 +1212,7 @@ function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits,
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent modal opening
-    onQuickAdd(item.id, step);
+    onQuickAdd(item.id, step, e);
   };
 
   // Interaction Logic
@@ -1261,3 +1363,21 @@ function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits,
     </div>
   );
 }
+
+{/* CSS for flying dot animation */ }
+<style jsx global>{`
+  @keyframes flyToCart {
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: translate(calc((50vw - var(--from-x, 0px)) * 0.5), calc((100vh - 100px - var(--from-y, 0px)) * 0.5)) scale(0.8);
+      opacity: 0.8;
+    }
+    100% {
+      transform: translate(calc(50vw - var(--from-x, 0px)), calc(100vh - 100px - var(--from-y, 0px))) scale(0.3);
+      opacity: 0;
+    }
+  }
+`}</style>
