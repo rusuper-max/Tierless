@@ -76,6 +76,11 @@ type ItemRow = {
   unit?: string;
   customUnit?: string;
   discountPercent?: number;
+  // imageLayout is now controlled globally via meta.imageLayout (Design tab)
+  actionUrl?: string;
+  actionLabel?: string;
+  duration?: string; // e.g. "30 min", "1h", etc.
+  pricePrefix?: string; // e.g. "from", "starting at"
 };
 
 type SimpleSection = {
@@ -332,7 +337,9 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
   const allowSelection = meta.simpleAllowSelection ?? false;
   const enableCalculations = meta.simpleEnableCalculations ?? false;
   const addCheckout = meta.simpleAddCheckout ?? false;
+  const checkoutButtonText = meta.checkoutButtonText || "Checkout";
   const showUnits = meta.simpleShowUnits ?? false;
+  const imageLayout = meta.imageLayout || 'cover'; // 'cover' | 'thumbnail' - global layout setting
   const layoutMode = meta.layoutMode || 'scroll'; // 'scroll' | 'accordion'
   const accordionSolo = layoutMode === 'accordion'
     ? (meta.layoutAccordionSolo ?? true) // default to single-open behavior in accordion
@@ -701,9 +708,11 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
           </div>
 
           {unsectioned.length > 0 && (
-            <div id="sec-uncategorized" className="scroll-mt-32">
+            <div id="sec-uncategorized" className="scroll-mt-32 section-observer">
               <h2 className="text-2xl font-extrabold mb-5 flex items-center gap-2 tracking-tight">🔥 Popular</h2>
-              <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}`}>
+            <div className={imageLayout === 'thumbnail'
+              ? "flex flex-col divide-y divide-[var(--border)] rounded-2xl bg-[var(--card)]/30"
+              : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}` }>
                 {unsectioned
                   .filter(it => !search || it.label.toLowerCase().includes(search.toLowerCase()) || it.note?.toLowerCase().includes(search.toLowerCase()))
                   .map(item => (
@@ -723,6 +732,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                       isTierlessTheme={isTierlessTheme}
                       showUnits={showUnits}
                       enableCalculations={enableCalculations}
+                      globalImageLayout={imageLayout}
                     />
                   ))}
               </div>
@@ -739,7 +749,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
               const isExpanded = expandedSections.has(section.id) || !!search; // Always expand if searching
 
               return (
-                <div key={section.id} id={`sec-${section.id}`} className="scroll-mt-32">
+                <div key={section.id} id={`sec-${section.id}`} className="scroll-mt-32 section-observer">
                   {/* Accordion Header (Clickable) */}
                   <div
                     onClick={() => toggleSection(section.id)}
@@ -804,7 +814,13 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                   </div>
 
                   {/* Accordion Content */}
-                  <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass} transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-h-[5000px]' : 'opacity-0 max-h-0 overflow-hidden'}`} style={{ contentVisibility: isExpanded ? 'auto' : undefined }}>
+                <div
+                  className={`${imageLayout === 'thumbnail'
+                    ? "flex flex-col divide-y divide-[var(--border)]"
+                    : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}`
+                    } transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-h-[5000px]' : 'opacity-0 max-h-0 overflow-hidden'}`}
+                  style={{ contentVisibility: isExpanded ? 'auto' : undefined }}
+                >
                     {visibleItems.map(item => (
                       <ItemCard
                         key={item.id}
@@ -822,6 +838,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                         isTierlessTheme={isTierlessTheme}
                         showUnits={showUnits}
                         enableCalculations={enableCalculations}
+                        globalImageLayout={imageLayout}
                       />
                     ))}
                   </div>
@@ -831,7 +848,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
             // SCROLL MODE (Default)
             return (
-              <div key={section.id} id={`sec-${section.id}`} className="scroll-mt-32">
+              <div key={section.id} id={`sec-${section.id}`} className="scroll-mt-32 section-observer">
                 <div className="mb-6">
                   {(section as any).videoUrl ? (
                     <div className="w-full h-36 sm:h-48 rounded-3xl overflow-hidden mb-4 shadow-sm relative group" style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 256px' }}>
@@ -872,7 +889,10 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                   )}
                   {section.description && <p className="text-sm sm:text-base opacity-70 max-w-2xl leading-relaxed">{section.description}</p>}
                 </div>
-                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}`} style={{ contentVisibility: 'auto' }}>
+              <div className={imageLayout === 'thumbnail'
+                ? "flex flex-col divide-y divide-[var(--border)]"
+                : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}` }
+              >
                   {visibleItems.map(item => (
                     <ItemCard
                       key={item.id}
@@ -890,6 +910,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                       isTierlessTheme={isTierlessTheme}
                       showUnits={showUnits}
                       enableCalculations={enableCalculations}
+                      globalImageLayout={imageLayout}
                     />
                   ))}
                 </div>
@@ -992,7 +1013,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                           setOrderModalOpen(true);
                         }}
                       >
-                        Checkout
+                        {checkoutButtonText}
                       </button>
                     )}
                   </div>
@@ -1384,7 +1405,7 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
 /* --------------------------------------------------------- */
 /* Component: Item Card (Interactive & Compact)              */
 /* --------------------------------------------------------- */
-function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick, onQuickAdd, showUnits, enableCalculations }: any) {
+function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick, onQuickAdd, showUnits, enableCalculations, globalImageLayout }: any) {
   // Step logic: pcs=1, kg/l=0.1 (100g/ml), g/ml=1, custom=1
   const step = item.unit === "pcs" || !item.unit ? 1 : (item.unit === "kg" || item.unit === "l") ? 0.1 : 1;
   const hasImage = !!item.imageUrl;
@@ -1405,6 +1426,129 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
   // Interaction Logic
   // If calculations are disabled, the card is purely visual (no click, no quick add)
   const canInteract = enableCalculations;
+
+  // Use global layout setting (strict separation of design and content)
+  const effectiveLayout = globalImageLayout || 'cover';
+
+  // --- LIST/ROW VIEW LAYOUT (Adaptive - with or without image) ---
+  if (effectiveLayout === 'thumbnail') {
+    // Adaptive padding: more compact when no image
+    const rowPadding = hasImage ? 'py-4' : 'py-3';
+    const minRowHeight = hasImage ? 'min-h-[88px] md:min-h-[104px]' : 'min-h-0';
+    
+    return (
+      <div 
+        onClick={canInteract ? onClick : undefined}
+        className={`group relative flex items-center gap-3 md:gap-4 ${rowPadding} px-1 transition-all duration-200 ${minRowHeight} ${canInteract ? 'cursor-pointer hover:bg-[var(--bg)]/50' : ''} ${item.soldOut ? 'opacity-50' : ''}`}
+      >
+        {/* Left: Thumbnail Image (only if exists) */}
+        {hasImage && (
+          <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden bg-[var(--border)]/20 shrink-0 relative shadow-sm">
+            <Image
+              loader={cloudinaryLoader}
+              src={item.imageUrl}
+              alt={item.label}
+              fill
+              sizes="(max-width: 768px) 64px, 80px"
+              className={`object-cover transition-transform duration-300 ${canInteract ? 'group-hover:scale-105' : ''}`}
+            />
+            {item.soldOut && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <span className="text-[8px] font-bold text-white uppercase tracking-wider">Sold Out</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Middle: Content Section - expands when no image */}
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
+          {/* Title + Badges Row */}
+          <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 mb-0.5">
+            <h3 className={`font-semibold text-[15px] leading-tight text-[var(--text)] ${canInteract ? 'group-hover:text-[var(--brand-1)] transition-colors' : ''}`}>
+              {item.label}
+            </h3>
+            {/* Inline Sold Out badge for text-only items */}
+            {item.soldOut && !hasImage && (
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-red-100 text-red-600 border border-red-200">
+                Sold Out
+              </span>
+            )}
+          </div>
+
+          {/* Meta Row: Duration + Badge (compact) */}
+          {(item.duration || item.badge) && (
+            <div className="flex flex-wrap items-center gap-1.5 mb-1">
+              {item.duration && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[var(--bg)] text-[10px] font-medium text-[var(--muted)]">
+                  <Clock className="w-2.5 h-2.5" />
+                  {item.duration}
+                </span>
+              )}
+              {item.badge && (
+                <span className={`inline-block px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase border ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
+                  {item.badge === 'sale' && item.discountPercent ? `-${item.discountPercent}%` : (BADGE_LABELS[item.badge] || item.badge)}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Description - only show if exists */}
+          {item.note && (
+            <p className="text-[12px] md:text-[13px] text-[var(--muted)] line-clamp-1 md:line-clamp-2 leading-snug">
+              {item.note}
+            </p>
+          )}
+        </div>
+
+        {/* Right: Price & Action */}
+        <div className="flex flex-col items-end justify-center shrink-0 pl-2 gap-1">
+          {/* Price */}
+          <div className="text-right">
+            {item.pricePrefix && (
+              <span className="text-[9px] text-[var(--muted)] font-medium mr-1">{item.pricePrefix}</span>
+            )}
+            {discount > 0 && (
+              <span className="text-[10px] text-[var(--muted)] line-through mr-1">{formatPrice(item.price)}</span>
+            )}
+            <span className="font-bold text-base md:text-lg text-[var(--text)]">
+              {formatPrice(finalPrice || item.price)}
+            </span>
+            {showUnitLabel && (
+              <span className="text-[9px] text-[var(--muted)] ml-0.5">/{unitLabel}</span>
+            )}
+          </div>
+
+          {/* Action Button or Quick Add */}
+          {item.actionUrl ? (
+            <a
+              href={item.actionUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-[var(--brand-1)] text-white text-[11px] font-bold hover:opacity-90 transition-all active:scale-95 whitespace-nowrap"
+            >
+              {item.actionLabel || "Book"}
+            </a>
+          ) : canInteract && (
+            <button
+              onClick={handleQuickAdd}
+              disabled={item.soldOut}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] hover:bg-[var(--brand-1)] hover:text-white hover:border-[var(--brand-1)] transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Quantity Indicator */}
+        {quantity > 0 && canInteract && (
+          <div className="absolute -top-1 -right-1 bg-[var(--brand-1)] text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center shadow-md animate-in zoom-in">
+            {formatQuantityDisplay(quantity)}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // --- COMPACT LAYOUT (No Image) ---
   if (!hasImage) {
@@ -1443,6 +1587,9 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
 
         <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--border)]/50">
           <div className="flex flex-col items-start">
+            {item.pricePrefix && (
+              <span className="text-[10px] text-[var(--muted)] font-medium">{item.pricePrefix}</span>
+            )}
             {discount > 0 && (
               <span className="text-xs text-[var(--muted)] line-through decoration-red-500/50">{formatPrice(item.price)}</span>
             )}
@@ -1538,6 +1685,9 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
 
         <div className="mt-auto pt-4 flex items-center justify-between border-t border-[var(--border)]/50">
           <div className="flex flex-col items-start">
+            {item.pricePrefix && (
+              <span className="text-[10px] text-[var(--muted)] font-medium">{item.pricePrefix}</span>
+            )}
             {discount > 0 && (
               <span className="text-xs text-[var(--muted)] line-through decoration-red-500/50">{formatPrice(item.price)}</span>
             )}

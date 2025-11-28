@@ -74,6 +74,10 @@ export type ItemRow = {
     tags?: string[];
     badge?: string; // Dodato iz prethodnog zahteva
     discountPercent?: number;
+    unit?: string;
+    customUnit?: string;
+    actionUrl?: string;
+    actionLabel?: string;
 };
 
 export type SocialNetworks = {

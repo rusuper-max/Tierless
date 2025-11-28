@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, ChangeEvent, useEffect, useMemo } from "react";
-import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle, LayoutList, ScrollText, Share2, Globe, Percent, MessageCircle } from "lucide-react";
+import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle, LayoutList, ScrollText, Share2, Globe, Percent, MessageCircle, ArrowUp, ArrowDown } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type SimpleSection, type BrandTheme } from "@/hooks/useEditorStore";
 import { useAccount } from "@/hooks/useAccount";
@@ -56,6 +56,10 @@ const THEME_OPTIONS: { key: BrandTheme; label: string; color: string; desc: stri
 
 const BRAND_GRADIENT = "linear-gradient(135deg, #4F46E5 0%, #22D3EE 100%)";
 const CURRENCY_PRESETS = ["€", "$", "£", "CHF", "CAD", "AUD", "RSD", "BAM", "PLN"];
+const LAYOUT_OPTIONS = [
+  { key: "cover", icon: "📸", title: "Grid / Cover", description: "Large image cards in a grid. Best for restaurants and products." },
+  { key: "thumbnail", icon: "📋", title: "List / Row", description: "Compact rows with optional thumbnails. Perfect for services and price lists." },
+] as const;
 
 const createId = () => `sec_${Math.random().toString(36).slice(2, 10)}`;
 
@@ -406,6 +410,104 @@ export default function SimpleListPanel() {
     );
   };
 
+  /* ---------------- Advanced Service Panel (Collapsible) ---------------- */
+  const AdvancedServicePanel = ({ item, updateItem, isOverLimit, t }: any) => {
+    const [isOpen, setIsOpen] = useState(false);
+    
+    // Check if any advanced options are filled
+    const hasDuration = !!item.duration;
+    const hasPricePrefix = !!item.pricePrefix;
+    const hasAnyOption = hasDuration || hasPricePrefix;
+
+    return (
+      <div className="mt-2">
+        {/* Toggle Button with Pill Badges */}
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          disabled={isOverLimit}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all text-left group ${
+            isOpen 
+              ? 'bg-[var(--surface)] border-[#22D3EE]/30 shadow-sm' 
+              : 'bg-[var(--bg)]/50 border-[var(--border)] hover:border-[var(--text)]/30 hover:bg-[var(--surface)]'
+          } ${isOverLimit ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        >
+          <div className="flex items-center gap-2">
+            <Settings className="w-3.5 h-3.5 text-[var(--muted)] group-hover:text-[var(--text)] transition-colors" />
+            <span className="text-[11px] font-semibold text-[var(--muted)] group-hover:text-[var(--text)] transition-colors">
+              {t("Advanced")} / {t("Services")}
+            </span>
+            
+            {/* Pill Badges - show when collapsed and has values */}
+            {!isOpen && hasAnyOption && (
+              <div className="flex items-center gap-1.5 ml-1">
+                {hasDuration && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[var(--border)]/50 text-[9px] font-medium text-[var(--muted)]">
+                    <Clock className="w-2.5 h-2.5" />
+                    {item.duration}
+                  </span>
+                )}
+                {hasPricePrefix && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[var(--border)]/50 text-[9px] font-medium text-[var(--muted)]">
+                    {item.pricePrefix}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {isOpen ? (
+            <ChevronUp className="w-4 h-4 text-[var(--muted)]" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-[var(--muted)]" />
+          )}
+        </button>
+
+        {/* Expanded Panel Content */}
+        {isOpen && (
+          <div className="mt-2 p-3 bg-[var(--surface)] rounded-xl border border-[var(--border)] animate-in slide-in-from-top-1 duration-200">
+            {/* Duration + Price Prefix in one row */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Duration */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wide flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {t("Duration")}
+                </label>
+                <BufferedInput
+                  type="text"
+                  value={item.duration || ""}
+                  onCommit={(val: string) => updateItem(item.id, { duration: val || undefined })}
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-xs rounded-lg px-2.5 py-1.5 outline-none focus:border-[#22D3EE] transition-colors placeholder-[var(--muted)]"
+                  placeholder="30 min"
+                  disabled={isOverLimit}
+                  data-help="Service duration (displayed as badge in List mode)"
+                />
+              </div>
+
+              {/* Price Prefix */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wide flex items-center gap-1">
+                  <Tag className="w-3 h-3" />
+                  {t("Price Prefix")}
+                </label>
+                <BufferedInput
+                  type="text"
+                  value={item.pricePrefix || ""}
+                  onCommit={(val: string) => updateItem(item.id, { pricePrefix: val || undefined })}
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-xs rounded-lg px-2.5 py-1.5 outline-none focus:border-[#22D3EE] transition-colors placeholder-[var(--muted)]"
+                  placeholder="from, starting at..."
+                  disabled={isOverLimit}
+                  data-help="Text shown before price (e.g. 'from €50')"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   /* ---------------- Sortable Item Row (EXTRACTED FOR PERFORMANCE) ---------------- */
   const SortableItemRow = React.memo(({
     item,
@@ -633,6 +735,14 @@ export default function SimpleListPanel() {
               </button>
             </div>
           </div>
+
+          {/* Advanced / Services Panel - Collapsible */}
+          <AdvancedServicePanel
+            item={item}
+            updateItem={updateItem}
+            isOverLimit={isOverLimit}
+            t={t}
+          />
         </div>
 
         {/* Actions Sidebar - FIX: Better colors & Tooltip structure */}
@@ -695,6 +805,10 @@ export default function SimpleListPanel() {
       prevProps.item.badge === nextProps.item.badge &&
       prevProps.item.discountPercent === nextProps.item.discountPercent &&
       prevProps.item.imagePublicId === nextProps.item.imagePublicId &&
+      prevProps.item.actionUrl === nextProps.item.actionUrl &&
+      prevProps.item.actionLabel === nextProps.item.actionLabel &&
+      prevProps.item.duration === nextProps.item.duration &&
+      prevProps.item.pricePrefix === nextProps.item.pricePrefix &&
       prevProps.index === nextProps.index &&
       prevProps.uploadingId === nextProps.uploadingId &&
       prevProps.currency === nextProps.currency &&
@@ -767,6 +881,18 @@ export default function SimpleListPanel() {
       }
       const newId = addItem(t("New item"), 0);
       updateItem(newId, { simpleSectionId: sid } as any);
+    };
+
+    const moveSection = (index: number, direction: -1 | 1) => {
+      updateCalc(draft => {
+        const m = draft.meta as any;
+        const secs = m.simpleSections || [];
+        if (index + direction < 0 || index + direction >= secs.length) return;
+        const temp = secs[index];
+        secs[index] = secs[index + direction];
+        secs[index + direction] = temp;
+        m.simpleSections = secs;
+      });
     };
 
     return (
@@ -964,7 +1090,7 @@ export default function SimpleListPanel() {
             )}
 
             {/* Sections */}
-            {simpleSections.map((section) => {
+            {simpleSections.map((section, sectionIndex) => {
               const sectionItems = itemsBySection.get(section.id) ?? [];
               const collapsed = !!sectionStates[section.id];
 
@@ -976,7 +1102,27 @@ export default function SimpleListPanel() {
               return (
                 <div key={section.id} className="group/section rounded-xl border border-[var(--border)] bg-[var(--bg)] overflow-hidden">
                   {/* Section Header */}
-                  <div className="flex items-center gap-3 p-3 bg-[var(--card)]">
+                  <div className="flex items-center gap-2 p-3 bg-[var(--card)]">
+                    {/* Section Reorder Buttons */}
+                    <div className="flex flex-col gap-0.5 border-r border-[var(--border)] pr-2 mr-1">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); moveSection(sectionIndex, -1); }} 
+                        disabled={sectionIndex === 0}
+                        className="p-0.5 hover:bg-[var(--surface)] rounded text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-default"
+                        title={t("Move Up")}
+                      >
+                        <ArrowUp className="w-3 h-3" />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); moveSection(sectionIndex, 1); }} 
+                        disabled={sectionIndex === simpleSections.length - 1}
+                        className="p-0.5 hover:bg-[var(--surface)] rounded text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-default"
+                        title={t("Move Down")}
+                      >
+                        <ArrowDown className="w-3 h-3" />
+                      </button>
+                    </div>
+
                     <button onClick={toggleCollapse} className="cursor-default p-1.5 hover:bg-[var(--surface)] rounded-md text-[var(--muted)] transition-colors" data-help="Collapse or expand this section to organize your view. Items inside won't be affected.">
                       {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
@@ -1206,7 +1352,29 @@ export default function SimpleListPanel() {
         <h2 className="text-lg font-bold text-[var(--text)]">{t("Choose your vibe")}</h2>
         <p className="text-sm text-[var(--muted)]">{t("Select a theme that matches your brand's personality.")}</p>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {LAYOUT_OPTIONS.map((layout) => {
+            const isActive = meta.imageLayout === layout.key;
+            return (
+              <button
+                key={layout.key}
+                onClick={() => setMeta({ imageLayout: layout.key })}
+                className={`cursor-default p-4 rounded-2xl border text-left transition-all duration-200 ${isActive
+                  ? "border-[#22D3EE] bg-[#22D3EE]/5 shadow-lg shadow-[#22D3EE]/20"
+                  : "border-[var(--border)] hover:border-[#22D3EE] hover:bg-[#22D3EE]/5"
+                  }`}
+              >
+                <div className="text-xl mb-2">
+                  {layout.icon}
+                </div>
+                <div className="font-bold text-sm text-[var(--text)] mb-1">{layout.title}</div>
+                <p className="text-xs text-[var(--muted)]">{layout.description}</p>
+              </button>
+            );
+          })}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {THEME_OPTIONS.map(th => {
           const isActive = activeTheme === th.key;
           const isPremium = ["luxury", "midnight", "elegant", "rosegold", "emerald", "sapphire", "obsidian", "goldluxury"].includes(th.key);
@@ -1252,6 +1420,7 @@ export default function SimpleListPanel() {
             </button>
           )
         })}
+      </div>
       </div>
     </div>
   );
@@ -1389,17 +1558,38 @@ export default function SimpleListPanel() {
 
         {/* Add Checkout Button */}
         {meta.simpleEnableCalculations && (
-          <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors border-l-2 border-[#22D3EE]/30 ml-2 pl-3">
-            <div className="space-y-0.5">
-              <span className="text-sm text-[var(--text)] font-medium block">{t("Add Checkout Button")}</span>
-              <span className="text-[10px] text-[var(--muted)] block">{t("Adds a button for customers to send their order via WhatsApp or Email.")}</span>
-              <span className="text-[9px] text-[var(--muted)]/70 block italic">{t("Configure delivery method in Account Settings")}</span>
-            </div>
-            <div className="relative inline-flex items-center cursor-default">
-              <input type="checkbox" checked={meta.simpleAddCheckout || false} onChange={e => setMeta({ simpleAddCheckout: e.target.checked })} className="sr-only peer" />
-              <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${meta.simpleAddCheckout ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
-            </div>
-          </label>
+          <div className="space-y-3">
+            <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors border-l-2 border-[#22D3EE]/30 ml-2 pl-3">
+              <div className="space-y-0.5">
+                <span className="text-sm text-[var(--text)] font-medium block">{t("Add Checkout Button")}</span>
+                <span className="text-[10px] text-[var(--muted)] block">{t("Adds a button for customers to send their order via WhatsApp or Email.")}</span>
+                <span className="text-[9px] text-[var(--muted)]/70 block italic">{t("Configure delivery method in Account Settings")}</span>
+              </div>
+              <div className="relative inline-flex items-center cursor-default">
+                <input type="checkbox" checked={meta.simpleAddCheckout || false} onChange={e => setMeta({ simpleAddCheckout: e.target.checked })} className="sr-only peer" />
+                <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${meta.simpleAddCheckout ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
+              </div>
+            </label>
+
+            {/* Custom Checkout Button Text - only show when checkout is enabled */}
+            {meta.simpleAddCheckout && (
+              <div className="ml-2 pl-3 border-l-2 border-[#22D3EE]/30 space-y-1.5">
+                <label className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wide flex items-center gap-1">
+                  <Tag className="w-3 h-3" />
+                  {t("Button Text")}
+                </label>
+                <BufferedInput
+                  type="text"
+                  value={meta.checkoutButtonText || ""}
+                  onCommit={(val: string) => setMeta({ checkoutButtonText: val || undefined })}
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-xs rounded-lg px-2.5 py-1.5 outline-none focus:border-[#22D3EE] transition-colors placeholder-[var(--muted)]"
+                  placeholder="Checkout"
+                  data-help="Custom text for the checkout button (default: Checkout)"
+                />
+                <p className="text-[9px] text-[var(--muted)]/70 italic">{t("Examples: 'Send Order', 'Book Now', 'Submit Inquiry'")}</p>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Show Unit in Public View */}
