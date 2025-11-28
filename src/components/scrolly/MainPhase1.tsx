@@ -95,9 +95,9 @@ export default function MainPhase1() {
                 {t("phase1.ctaPrimary")}
               </ShinyButton>
 
-              {/* SECONDARY: Glass Outline */}
+              {/* SECONDARY: Glass Outline - SADA VODI NA /examples */}
               <Link
-                href="/templates"
+                href="/examples"
                 className="inline-flex items-center justify-center rounded-full border border-slate-600/50 bg-slate-900/40 backdrop-blur-sm px-8 py-3.5 text-lg font-medium text-slate-200 transition-all hover:bg-slate-800/60 hover:border-slate-400 hover:text-white w-full sm:w-auto"
               >
                 {t("phase1.ctaSecondary")}

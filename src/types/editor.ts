@@ -107,6 +107,8 @@ export type CalcMeta = {
     simpleTextColor?: string;
     simpleBorderColor?: string;
     simpleFont?: string;
+    autosaveEnabled?: boolean;
+    autosaveInterval?: number; // in seconds
     [k: string]: unknown;
 };
 

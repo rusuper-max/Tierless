@@ -94,6 +94,9 @@ function EditorContent({ slug, initialCalc }: Props) {
 
   /* ---------------- Save (manual) ---------------- */
   const [toast, setToast] = useState<string | null>(null);
+  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAutosavedStateRef = useRef<string | null>(null);
+
   const saveNow = async () => {
     if (!calc) return;
     try {
@@ -119,6 +122,18 @@ function EditorContent({ slug, initialCalc }: Props) {
         return;
       }
       if (json) (useEditorStore as any).setState({ calc: json as CalcJson });
+
+      // Update last autosaved state after manual save
+      if (json) {
+        lastAutosavedStateRef.current = JSON.stringify(json);
+      }
+
+      // Reset autosave timer
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+
       setToast(t("Saved"));
       setTimeout(() => setToast(null), 1000);
     } finally {
@@ -129,6 +144,102 @@ function EditorContent({ slug, initialCalc }: Props) {
       });
     }
   };
+
+  /* ---------------- Autosave Logic ---------------- */
+  useEffect(() => {
+    const autosaveEnabled = calc?.meta?.autosaveEnabled ?? false;
+    const autosaveInterval = (calc?.meta?.autosaveInterval ?? 60) * 1000;
+
+    if (!autosaveEnabled || !calc) {
+      return;
+    }
+
+    // Debounce: Reset timer on every change
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+
+    // Set new timer
+    autosaveTimerRef.current = setTimeout(async () => {
+      // Don't save if already saving
+      if (isSaving) return;
+
+      try {
+        const currentState = JSON.stringify(calc);
+
+        // Skip if no changes since last autosave
+        if (currentState === lastAutosavedStateRef.current) {
+          return;
+        }
+
+        // Perform the save
+        (useEditorStore as any).setState({ isSaving: true });
+        const r = await fetch(`/api/calculators/${encodeURIComponent(slug)}`, {
+          method: "PUT",
+          headers: {
+            "content-type": "application/json",
+            Accept: "application/json",
+          },
+          cache: "no-store",
+          body: currentState,
+        });
+
+        if (r.ok) {
+          const json = await r.json();
+          (useEditorStore as any).setState({ calc: json as CalcJson });
+          lastAutosavedStateRef.current = JSON.stringify(json);
+
+          (useEditorStore as any).setState({
+            isDirty: false,
+            lastSaved: Date.now(),
+          });
+        }
+      } catch (error) {
+        console.error("Autosave failed:", error);
+      } finally {
+        (useEditorStore as any).setState({ isSaving: false });
+      }
+    }, autosaveInterval);
+
+    // Cleanup on unmount
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [calc, slug, isSaving]);
+
+  /* ---------------- Save on page leave (beforeunload) ---------------- */
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Only save if autosave is enabled and there are unsaved changes
+      if (!calc?.meta?.autosaveEnabled || !isDirty || isSaving) {
+        return;
+      }
+
+      try {
+        const currentState = JSON.stringify(calc);
+
+        // Use fetch with keepalive for reliable save on page unload
+        fetch(`/api/calculators/${encodeURIComponent(slug)}`, {
+          method: "PUT",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: currentState,
+          keepalive: true, // Ensures request completes even if page unloads
+        }).catch(err => {
+          console.error("Save on unload failed:", err);
+        });
+      } catch (error) {
+        console.error("Save on unload failed:", error);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [calc, slug, isDirty, isSaving]);
 
   /* ---------------- Toggle Publish/Unpublish ---------------- */
   const handleTogglePublish = async () => {
@@ -197,11 +308,28 @@ function EditorContent({ slug, initialCalc }: Props) {
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      const helpElement = target.closest("[data-help]") as HTMLElement;
+      let helpElement = target.closest("[data-help]") as HTMLElement;
 
       if (helpElement) {
         e.preventDefault();
         e.stopPropagation();
+
+        // Ensure we have the element with actual dimensions
+        // Sometimes closest() returns an element without layout
+        const rect = helpElement.getBoundingClientRect();
+        console.log('Help Mode - Clicked element:', helpElement);
+        console.log('Help Mode - Element rect:', rect);
+
+        // If this element has no dimensions, it might be an SVG or inline element
+        // Try to find a parent with dimensions
+        if (rect.width === 0 || rect.height === 0) {
+          const parentButton = helpElement.closest('button') as HTMLElement;
+          if (parentButton && parentButton.hasAttribute('data-help')) {
+            helpElement = parentButton;
+            console.log('Help Mode - Using parent button instead');
+          }
+        }
+
         const helpText = helpElement.getAttribute("data-help");
         if (helpText) {
           setHelpTooltip({ content: helpText, element: helpElement });
@@ -255,7 +383,6 @@ function EditorContent({ slug, initialCalc }: Props) {
       {isHelpMode && helpTooltip && (
         <HelpTooltip
           content={helpTooltip.content}
-          targetElement={helpTooltip.element}
           onClose={() => setHelpTooltip(null)}
         />
       )}

@@ -166,63 +166,63 @@ export default function MainPhase2() {
           <div className="flex flex-col justify-center h-full relative order-2 lg:order-1">
 
             {/* SCROLL TEXT CONTAINERS (Absolutno pozicionirani jedni preko drugih) */}
-            <div className="relative h-48 sm:h-56 lg:h-64 w-full">
+            <div className="relative min-h-[240px] sm:h-56 lg:h-64 w-full">
 
               {/* STEP 1: STRUCTURE */}
               <motion.div style={{ opacity: opacityText1 }} className="absolute inset-0 flex flex-col justify-center">
-                <div className="flex items-center gap-3 mb-3 sm:mb-4">
-                  <div className="p-2 bg-slate-800/50 rounded-lg border border-slate-700">
-                    <Box size={18} className="text-slate-400" />
+                <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
+                  <div className="p-1.5 sm:p-2 bg-slate-800/50 rounded-lg border border-slate-700">
+                    <Box size={16} className="text-slate-400 sm:w-[18px] sm:h-[18px]" />
                   </div>
-                  <span className="font-mono text-xs text-slate-500 uppercase tracking-widest">{t("phase2.step1.label")}</span>
+                  <span className="font-mono text-[10px] sm:text-xs text-slate-500 uppercase tracking-widest">{t("phase2.step1.label")}</span>
                 </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight">
+                <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-4 leading-tight">
                   {t("phase2.step1.title")}<br />
                   <span className="text-slate-500">{t("phase2.step1.subtitle")}</span>
                 </h2>
-                <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-md">
+                <p className="text-sm sm:text-lg text-slate-400 leading-relaxed max-w-md">
                   {t("phase2.step1.desc")}
                 </p>
               </motion.div>
 
               <motion.div style={{ opacity: opacityText2 }} className="absolute inset-0 flex flex-col justify-center">
-                <div className="flex items-center gap-3 mb-3 sm:mb-4">
-                  <div className="p-2 bg-indigo-900/30 rounded-lg border border-indigo-500/30">
-                    <Palette size={18} className="text-indigo-400" />
+                <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
+                  <div className="p-1.5 sm:p-2 bg-indigo-900/30 rounded-lg border border-indigo-500/30">
+                    <Palette size={16} className="text-indigo-400 sm:w-[18px] sm:h-[18px]" />
                   </div>
-                  <span className="font-mono text-xs text-indigo-400 uppercase tracking-widest">{t("phase2.step2.label")}</span>
+                  <span className="font-mono text-[10px] sm:text-xs text-indigo-400 uppercase tracking-widest">{t("phase2.step2.label")}</span>
                 </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight">
+                <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-4 leading-tight">
                   {t("phase2.step2.title")}<br />
                   <span className="text-indigo-400/60">{t("phase2.step2.subtitle")}</span>
                 </h2>
-                <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-md">
+                <p className="text-sm sm:text-lg text-slate-400 leading-relaxed max-w-md">
                   {t("phase2.step2.desc")}
                 </p>
               </motion.div>
 
               {/* STEP 3: LIVE */}
               <motion.div style={{ opacity: opacityText3 }} className="absolute inset-0 flex flex-col justify-center">
-                <div className="flex items-center gap-3 mb-3 sm:mb-4">
-                  <div className="p-2 bg-emerald-900/30 rounded-lg border border-emerald-500/30">
-                    <Zap size={18} className="text-emerald-400" />
+                <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
+                  <div className="p-1.5 sm:p-2 bg-emerald-900/30 rounded-lg border border-emerald-500/30">
+                    <Zap size={16} className="text-emerald-400 sm:w-[18px] sm:h-[18px]" />
                   </div>
-                  <span className="font-mono text-xs text-emerald-400 uppercase tracking-widest">{t("phase2.step3.label")}</span>
+                  <span className="font-mono text-[10px] sm:text-xs text-emerald-400 uppercase tracking-widest">{t("phase2.step3.label")}</span>
                 </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight">
+                <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-4 leading-tight">
                   {t("phase2.step3.title")}<br />
                   <span className="text-emerald-400/60">{t("phase2.step3.subtitle")}</span>
                 </h2>
-                <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-md">
+                <p className="text-sm sm:text-lg text-slate-400 leading-relaxed max-w-md">
                   {t("phase2.step3.desc")}
                 </p>
-                <div className="mt-4 sm:mt-6 flex items-center gap-4">
+                <div className="mt-3 sm:mt-6 flex items-center gap-3 sm:gap-4">
                   <div className="flex -space-x-2">
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[10px]">☕️</div>
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[10px]">💅</div>
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[10px]">🦷</div>
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[9px] sm:text-[10px]">☕️</div>
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[9px] sm:text-[10px]">💅</div>
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[9px] sm:text-[10px]">🦷</div>
                   </div>
-                  <span className="text-xs sm:text-sm text-slate-500">{t("phase2.step3.trusted")}</span>
+                  <span className="text-[10px] sm:text-sm text-slate-500">{t("phase2.step3.trusted")}</span>
                 </div>
               </motion.div>
 

@@ -401,7 +401,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const next = clone(calc);
     const id = genId("it");
     if (!Array.isArray(next.items)) next.items = [];
-    next.items.unshift({
+    next.items.push({
       id,
       label: label ?? "Item",
       price: Number.isFinite(price) ? (price as number) : 0,

@@ -9,53 +9,10 @@ const BRAND_GRADIENT = "linear-gradient(135deg, #4F46E5 0%, #22D3EE 100%)";
 
 type Props = {
     content: string;
-    targetElement: HTMLElement;
     onClose: () => void;
 };
 
-export default function HelpTooltip({ content, targetElement, onClose }: Props) {
-    const tooltipRef = useRef<HTMLDivElement>(null);
-    const [position, setPosition] = useState({ top: 0, left: 0 });
-
-    useEffect(() => {
-        if (!tooltipRef.current || !targetElement) return;
-
-        const updatePosition = () => {
-            const targetRect = targetElement.getBoundingClientRect();
-            const tooltipRect = tooltipRef.current!.getBoundingClientRect();
-            const padding = 12;
-
-            let top = targetRect.bottom + padding;
-            let left = targetRect.left + targetRect.width / 2 - tooltipRect.width / 2;
-
-            // Keep within viewport
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-
-            // Adjust horizontal position
-            if (left < padding) left = padding;
-            if (left + tooltipRect.width > viewportWidth - padding) {
-                left = viewportWidth - tooltipRect.width - padding;
-            }
-
-            // If no space below, show above
-            if (top + tooltipRect.height > viewportHeight - padding) {
-                top = targetRect.top - tooltipRect.height - padding;
-            }
-
-            setPosition({ top, left });
-        };
-
-        updatePosition();
-        window.addEventListener("resize", updatePosition);
-        window.addEventListener("scroll", updatePosition);
-
-        return () => {
-            window.removeEventListener("resize", updatePosition);
-            window.removeEventListener("scroll", updatePosition);
-        };
-    }, [targetElement]);
-
+export default function HelpTooltip({ content, onClose }: Props) {
     // Close on ESC
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
@@ -69,15 +26,13 @@ export default function HelpTooltip({ content, targetElement, onClose }: Props) 
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 z-[90]"
+                className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm"
                 onClick={onClose}
             />
 
-            {/* Tooltip */}
+            {/* Centered Tooltip */}
             <div
-                ref={tooltipRef}
-                className="fixed z-[95] w-72 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-2xl animate-in fade-in zoom-in-95 duration-200"
-                style={{ top: position.top, left: position.left }}
+                className="fixed z-[95] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 max-w-[90vw] rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-2xl animate-in fade-in zoom-in-95 duration-200"
             >
                 {/* Header */}
                 <div className="relative p-4 pb-3 border-b border-[var(--border)]">
@@ -115,16 +70,6 @@ export default function HelpTooltip({ content, targetElement, onClose }: Props) 
                         {t("Got it")}
                     </button>
                 </div>
-
-                {/* Arrow pointing to element */}
-                <div
-                    className="absolute w-3 h-3 rotate-45 border-l border-t border-[var(--border)] bg-[var(--card)]"
-                    style={{
-                        top: -6,
-                        left: "50%",
-                        transform: "translateX(-50%) rotate(45deg)",
-                    }}
-                />
             </div>
         </>
     );
