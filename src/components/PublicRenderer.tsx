@@ -353,6 +353,8 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
     const rect = event.currentTarget.getBoundingClientRect();
     const dotId = `dot-${Date.now()}-${Math.random()}`;
 
+    console.log('🎯 Flying Dot Triggered!', { dotId, fromX: rect.left + rect.width / 2, fromY: rect.top + rect.height / 2 });
+
     setFlyingDots(prev => [...prev, {
       id: dotId,
       fromX: rect.left + rect.width / 2,
@@ -361,6 +363,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
     // Remove dot after animation completes
     setTimeout(() => {
+      console.log('🗑️ Removing dot:', dotId);
       setFlyingDots(prev => prev.filter(d => d.id !== dotId));
     }, 600);
   };
@@ -610,7 +613,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                   onClick={() => toggleSection(section.id)}
                   className="cursor-pointer group relative overflow-hidden rounded-3xl mb-6 transition-all duration-300 hover:shadow-lg active:scale-[0.99]"
                 >
-                  {section.videoUrl ? (
+                  {(section as any).videoUrl ? (
                     <div className="w-full h-48 sm:h-64 relative">
                       <video
                         autoPlay
@@ -620,7 +623,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         poster={section.imageUrl}
                       >
-                        <source src={section.videoUrl} type="video/mp4" />
+                        <source src={(section as any).videoUrl} type="video/mp4" />
                       </video>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                       <div className="absolute bottom-0 left-0 w-full p-6 sm:p-8 flex items-end justify-between">
@@ -690,7 +693,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
           return (
             <div key={section.id} id={`sec-${section.id}`} className="scroll-mt-32">
               <div className="mb-6">
-                {section.videoUrl ? (
+                {(section as any).videoUrl ? (
                   <div className="w-full h-36 sm:h-48 rounded-3xl overflow-hidden mb-4 shadow-sm relative group">
                     <video
                       autoPlay
@@ -700,7 +703,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                       className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700"
                       poster={section.imageUrl}
                     >
-                      <source src={section.videoUrl} type="video/mp4" />
+                      <source src={(section as any).videoUrl} type="video/mp4" />
                     </video>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
                     <div className="absolute bottom-0 left-0 w-full p-4">
@@ -717,7 +720,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                     </div>
                   </div>
                 ) : null}
-                {!section.videoUrl && !section.imageUrl && (
+                {!(section as any).videoUrl && !section.imageUrl && (
                   <h2 className="text-2xl sm:text-3xl font-extrabold mb-2 tracking-tight">{section.label}</h2>
                 )}
                 {section.description && <p className="text-sm sm:text-base opacity-70 max-w-2xl leading-relaxed">{section.description}</p>}
@@ -756,6 +759,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
             {/* EXPANDED CART LIST (Popup) */}
             {/* Flying Dot Animations */}
             {flyingDots.map(dot => {
+              console.log('🔵 Rendering dot:', dot);
               return (
                 <div
                   key={dot.id}
