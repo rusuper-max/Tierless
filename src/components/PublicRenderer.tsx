@@ -756,20 +756,24 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
             {/* EXPANDED CART LIST (Popup) */}
             {/* Flying Dot Animations */}
             {flyingDots.map(dot => {
-              // Calculate the position of the cart total (bottom center)
               return (
                 <div
                   key={dot.id}
                   className="fixed z-[100] pointer-events-none"
                   style={{
-                    left: `${dot.fromX}px`,
-                    top: `${dot.fromY}px`,
+                    left: `${dot.fromX - 8}px`,
+                    top: `${dot.fromY - 8}px`,
                     width: '16px',
                     height: '16px',
-                    animation: 'flyToCart 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
                   }}
                 >
-                  <div className="w-full h-full rounded-full bg-[var(--brand-1)] shadow-lg" />
+                  <div
+                    className="w-full h-full rounded-full bg-[var(--brand-1)] shadow-lg animate-flyToCart"
+                    style={{
+                      '--target-x': 'calc(50vw - 8px)',
+                      '--target-y': 'calc(100vh - 80px)',
+                    } as React.CSSProperties}
+                  />
                 </div>
               );
             })}
@@ -1366,17 +1370,20 @@ function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits,
 
 {/* CSS for flying dot animation */ }
 <style jsx global>{`
+  .animate-flyToCart {
+    animation: flyToCart 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
   @keyframes flyToCart {
     0% {
       transform: translate(0, 0) scale(1);
       opacity: 1;
     }
     50% {
-      transform: translate(calc((50vw - var(--from-x, 0px)) * 0.5), calc((100vh - 100px - var(--from-y, 0px)) * 0.5)) scale(0.8);
       opacity: 0.8;
     }
     100% {
-      transform: translate(calc(50vw - var(--from-x, 0px)), calc(100vh - 100px - var(--from-y, 0px))) scale(0.3);
+      transform: translate(calc(50vw - 50%), calc(100vh - 100px)) scale(0.3);
       opacity: 0;
     }
   }
