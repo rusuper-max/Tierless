@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect, useState, RefObject, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X } from "lucide-react";
+import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Facebook, Instagram, Youtube, Globe, MessageCircle } from "lucide-react";
 
 import Image, { ImageLoaderProps } from "next/image";
 
@@ -18,8 +18,9 @@ function cloudinaryLoader({ src, width, quality }: ImageLoaderProps) {
   const i = src.indexOf('/upload/');
   if (i === -1) return src;
 
-  // Params: Auto format, Auto quality, Limit width to Next.js requested width
-  const params = ['f_auto', 'q_auto', 'c_limit', `w_${width}`];
+  // Params: Auto format, Auto quality (eco for speed), Limit width to Next.js requested width
+  // q_auto:good provides slightly better compression than default q_auto with virtually no visual difference
+  const params = ['f_auto', 'q_auto:good', 'c_limit', `w_${width}`];
   if (quality) params.push(`q_${quality}`);
 
   const prefix = src.slice(0, i + 8); // keep "/upload/"
@@ -41,7 +42,7 @@ function cldImg(url: string, opts?: { w?: number; h?: number; fit?: 'fill' | 'co
   const c = opts?.fit ? `c_${opts.fit}` : 'c_limit'; // Default to limit to preserve aspect if not specified
 
   // Clean up empty params
-  const base = ['f_auto', 'q_auto', c, w, h].filter(Boolean).join(',');
+  const base = ['f_auto', 'q_auto:good', c, w, h].filter(Boolean).join(',');
 
   const prefix = url.slice(0, i + 8);
   const suffix = url.slice(i + 8);
@@ -55,7 +56,7 @@ function cldVideo(url: string, w = 1280) {
   const i = url.indexOf('/upload/');
   if (i === -1) return url;
 
-  const base = `f_auto,vc_auto,q_auto,w_${w}`;
+  const base = `f_auto,vc_auto,q_auto:good,w_${w}`;
   const prefix = url.slice(0, i + 8);
   const suffix = url.slice(i + 8);
   return `${prefix}${base}/${suffix}`;
@@ -74,6 +75,7 @@ type ItemRow = {
   badge?: string;
   unit?: string;
   customUnit?: string;
+  discountPercent?: number;
 };
 
 type SimpleSection = {
@@ -444,7 +446,11 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
     let sum = 0;
     items.forEach(it => {
       const qty = quantities[it.id] || 0;
-      if (qty > 0 && it.price) sum += it.price * qty;
+      if (qty > 0 && it.price) {
+        const discount = it.badge === 'sale' ? (it.discountPercent || 0) : 0;
+        const price = it.price * (1 - discount / 100);
+        sum += price * qty;
+      }
     });
     return sum;
   }, [items, quantities]);
@@ -536,6 +542,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
           {simpleCoverImage ? (
             <div className="relative w-full h-64 sm:h-80 md:h-[400px] overflow-hidden">
+              {/* INSTANT FIX: Removed animate-in fade-in duration-700 to make it appear instantly */}
               <Image
                 loader={cloudinaryLoader}
                 src={simpleCoverImage}
@@ -544,7 +551,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                 sizes="100vw"
                 priority
                 fetchPriority="high"
-                className="object-cover animate-in fade-in duration-700"
+                className="object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 w-full p-5 md:p-8 text-white">
@@ -576,6 +583,19 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                   {business.phone && <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 hover:bg-white/30 transition cursor-pointer"><Phone className="w-3.5 h-3.5" /> <span>Call</span></a>}
                   {business.email && <a href={`mailto:${business.email}`} className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 hover:bg-white/30 transition cursor-pointer"><Mail className="w-3.5 h-3.5" /> <span>Email</span></a>}
                   {business.wifiSsid && <WifiDisplay ssid={business.wifiSsid} password={business.wifiPass} />}
+
+                  {/* Social Icons (Hero) */}
+                  {business.social && (
+                    <div className="flex items-center gap-2 ml-2 pl-2 border-l border-white/20">
+                      {business.social.instagram && <a href={business.social.instagram} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><Instagram className="w-3.5 h-3.5" /></a>}
+                      {business.social.facebook && <a href={business.social.facebook} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><Facebook className="w-3.5 h-3.5" /></a>}
+                      {business.social.tiktok && <a href={business.social.tiktok} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><span className="font-bold text-[10px]">Tk</span></a>}
+                      {business.social.youtube && <a href={business.social.youtube} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><Youtube className="w-3.5 h-3.5" /></a>}
+                      {business.social.whatsapp && <a href={business.social.whatsapp} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><MessageCircle className="w-3.5 h-3.5" /></a>}
+                      {business.social.telegram && <a href={business.social.telegram} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><MessageCircle className="w-3.5 h-3.5" /></a>}
+                      {business.social.website && <a href={business.social.website} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><Globe className="w-3.5 h-3.5" /></a>}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -607,6 +627,19 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                 {business.phone && <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition cursor-pointer"><Phone className="w-4 h-4" /> Call</a>}
                 {business.email && <a href={`mailto:${business.email}`} className="flex items-center gap-1.5 bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition cursor-pointer"><Mail className="w-4 h-4" /> Email</a>}
                 {business.wifiSsid && <WifiDisplayThemed ssid={business.wifiSsid} password={business.wifiPass} />}
+
+                {/* Social Icons (Simple Header) */}
+                {business.social && (
+                  <div className="flex items-center gap-2 ml-2 pl-2 border-l border-[var(--border)]">
+                    {business.social.instagram && <a href={business.social.instagram} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><Instagram className="w-4 h-4" /></a>}
+                    {business.social.facebook && <a href={business.social.facebook} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><Facebook className="w-4 h-4" /></a>}
+                    {business.social.tiktok && <a href={business.social.tiktok} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><span className="font-bold text-[10px]">Tk</span></a>}
+                    {business.social.youtube && <a href={business.social.youtube} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><Youtube className="w-4 h-4" /></a>}
+                    {business.social.whatsapp && <a href={business.social.whatsapp} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><MessageCircle className="w-4 h-4" /></a>}
+                    {business.social.telegram && <a href={business.social.telegram} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><MessageCircle className="w-4 h-4" /></a>}
+                    {business.social.website && <a href={business.social.website} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><Globe className="w-4 h-4" /></a>}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1064,7 +1097,9 @@ function OrderModal({ isOpen, onClose, items, quantities, formatPrice, formatQua
     }));
 
   const totalAmount = orderItems.reduce((sum: number, item: any) => {
-    return sum + (item.price || 0) * item.quantity;
+    const discount = item.badge === 'sale' ? (item.discountPercent || 0) : 0;
+    const price = item.price * (1 - discount / 100);
+    return sum + (price || 0) * item.quantity;
   }, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1123,7 +1158,9 @@ function OrderModal({ isOpen, onClose, items, quantities, formatPrice, formatQua
                     <span className="font-bold text-[var(--brand-1)]">{formatQuantityDisplay(item.quantity)}x</span>
                     <span className="text-[var(--text)]">{item.label}</span>
                   </div>
-                  <span className="font-semibold text-[var(--text)]">{formatPrice(item.price * item.quantity)}</span>
+                  <span className="font-semibold text-[var(--text)]">
+                    {formatPrice((item.price * (1 - (item.badge === 'sale' ? (item.discountPercent || 0) : 0) / 100)) * item.quantity)}
+                  </span>
                 </div>
               ))}
               <div className="pt-3 mt-3 border-t border-[var(--border)] flex justify-between items-center">
@@ -1206,6 +1243,9 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
   const unitLabel = item.unit === "custom" ? item.customUnit || "unit" : item.unit || "pcs";
   const isSoldOut = item.soldOut;
 
+  const discount = item.badge === 'sale' ? (item.discountPercent || 0) : 0;
+  const finalPrice = item.price ? item.price * (1 - discount / 100) : 0;
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
@@ -1247,14 +1287,17 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
         {/* Content */}
         <div className="p-6 sm:p-8 flex flex-col flex-1 overflow-y-auto">
           <div className="mb-4">
-            {item.badge && BADGE_LABELS[item.badge] && (
+            {item.badge && (
               <span className={`inline-block px-2 py-1 mb-2 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
-                {BADGE_LABELS[item.badge]}
+                {item.badge === 'sale' && item.discountPercent ? `💰 -${item.discountPercent}%` : (BADGE_LABELS[item.badge] || item.badge)}
               </span>
             )}
             <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text)] leading-tight mb-2">{item.label}</h2>
-            <div className="text-xl font-bold text-[var(--brand-1)]">
-              {formatPrice(item.price)}
+            <div className="text-xl font-bold text-[var(--brand-1)] flex items-center gap-2">
+              {discount > 0 && (
+                <span className="text-base text-[var(--muted)] line-through decoration-red-500/50">{formatPrice(item.price)}</span>
+              )}
+              <span>{formatPrice(finalPrice)}</span>
               {showUnits && item.unit && item.unit !== "pcs" && <span className="text-sm font-normal text-[var(--muted)] ml-1">/ {unitLabel}</span>}
             </div>
           </div>
@@ -1312,7 +1355,7 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
               <div className="text-right">
                 <div className="text-xs text-[var(--muted)] uppercase font-bold tracking-wider mb-1">Total</div>
                 <div className="text-2xl font-black text-[var(--text)]">
-                  {formatPrice((item.price || 0) * (quantity || 0))}
+                  {formatPrice(finalPrice * (quantity || 0))}
                 </div>
               </div>
 
@@ -1346,6 +1389,10 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
   const step = item.unit === "pcs" || !item.unit ? 1 : (item.unit === "kg" || item.unit === "l") ? 0.1 : 1;
   const hasImage = !!item.imageUrl;
 
+  // Discount Logic
+  const discount = item.badge === 'sale' ? (item.discountPercent || 0) : 0;
+  const finalPrice = item.price ? item.price * (1 - discount / 100) : null;
+
   // Unit Label Logic
   const unitLabel = item.unit === "custom" ? item.customUnit : item.unit;
   const showUnitLabel = showUnits && unitLabel && unitLabel !== "pcs";
@@ -1369,9 +1416,9 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
         <div>
           <div className="flex justify-between items-start gap-2 mb-2">
             <div>
-              {item.badge && BADGE_LABELS[item.badge] && (
+              {item.badge && (
                 <span className={`inline-block px-1.5 py-0.5 mb-1.5 rounded text-[9px] font-bold uppercase tracking-wide border ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
-                  {BADGE_LABELS[item.badge]}
+                  {item.badge === 'sale' && item.discountPercent ? `💰 -${item.discountPercent}%` : (BADGE_LABELS[item.badge] || item.badge)}
                 </span>
               )}
               <h3 className={`font-bold text-lg leading-tight text-[var(--text)] line-clamp-2 transition-colors ${canInteract ? 'group-hover:text-[var(--brand-1)]' : ''}`}>
@@ -1395,9 +1442,14 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
         </div>
 
         <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--border)]/50">
-          <div className="font-bold text-lg text-[var(--brand-1)]">
-            {formatPrice(item.price)}
-            {showUnitLabel && <span className="text-xs font-normal text-[var(--muted)] ml-1">/ {unitLabel}</span>}
+          <div className="flex flex-col items-start">
+            {discount > 0 && (
+              <span className="text-xs text-[var(--muted)] line-through decoration-red-500/50">{formatPrice(item.price)}</span>
+            )}
+            <div className="font-bold text-lg text-[var(--brand-1)]">
+              {formatPrice(finalPrice || item.price)}
+              {showUnitLabel && <span className="text-xs font-normal text-[var(--muted)] ml-1">/ {unitLabel}</span>}
+            </div>
           </div>
 
           {/* Quick Add Button - Only if calculations enabled */}
@@ -1468,9 +1520,9 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
       {/* Content Area */}
       <div className="p-5 flex flex-col flex-1 relative">
         <div className="mb-2">
-          {item.badge && BADGE_LABELS[item.badge] && (
+          {item.badge && (
             <span className={`inline-block px-1.5 py-0.5 mb-2 rounded text-[9px] font-bold uppercase tracking-wide border ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
-              {BADGE_LABELS[item.badge]}
+              {item.badge === 'sale' && item.discountPercent ? `💰 -${item.discountPercent}%` : (BADGE_LABELS[item.badge] || item.badge)}
             </span>
           )}
           <h3 className={`font-bold text-xl leading-tight text-[var(--text)] line-clamp-2 transition-colors ${canInteract ? 'group-hover:text-[var(--brand-1)]' : ''}`}>
@@ -1485,9 +1537,14 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
         )}
 
         <div className="mt-auto pt-4 flex items-center justify-between border-t border-[var(--border)]/50">
-          <div className="font-bold text-lg text-[var(--brand-1)]">
-            {formatPrice(item.price)}
-            {showUnitLabel && <span className="text-xs font-normal text-[var(--muted)] ml-1">/ {unitLabel}</span>}
+          <div className="flex flex-col items-start">
+            {discount > 0 && (
+              <span className="text-xs text-[var(--muted)] line-through decoration-red-500/50">{formatPrice(item.price)}</span>
+            )}
+            <div className="font-bold text-lg text-[var(--brand-1)]">
+              {formatPrice(finalPrice || item.price)}
+              {showUnitLabel && <span className="text-xs font-normal text-[var(--muted)] ml-1">/ {unitLabel}</span>}
+            </div>
           </div>
 
           {/* Quick Add Button - Only if calculations enabled */}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, ChangeEvent, useEffect, useMemo } from "react";
-import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle } from "lucide-react";
+import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle, LayoutList, ScrollText, Share2, Globe, Percent, MessageCircle } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type SimpleSection, type BrandTheme } from "@/hooks/useEditorStore";
 import { useAccount } from "@/hooks/useAccount";
@@ -211,20 +211,42 @@ export default function SimpleListPanel() {
 
       const data = await uploadRes.json();
       const url = data.secure_url || data.url;
+      const publicId = data.public_id;
+
+      // Helper to destroy old image
+      const destroyOldImage = async (oldPublicId?: string) => {
+        if (!oldPublicId) return;
+        try {
+          await fetch("/api/cloudinary/destroy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ public_id: oldPublicId })
+          });
+        } catch (e) {
+          console.error("Failed to destroy old image:", e);
+        }
+      };
 
       // 3. Update State
       if (type === "item") {
-        updateItem(targetId, { imageUrl: url });
+        const oldItem = items.find(it => it.id === targetId);
+        if (oldItem?.imagePublicId) destroyOldImage(oldItem.imagePublicId);
+        updateItem(targetId, { imageUrl: url, imagePublicId: publicId });
       } else if (type === "cover") {
-        setBusiness({ coverUrl: url });
+        if (business.coverPublicId) destroyOldImage(business.coverPublicId);
+        setBusiness({ coverUrl: url, coverPublicId: publicId });
         setMeta({ simpleCoverImage: url });
       } else if (type === "logo") {
-        setBusiness({ logoUrl: url });
+        if (business.logoPublicId) destroyOldImage(business.logoPublicId);
+        setBusiness({ logoUrl: url, logoPublicId: publicId });
       } else if (type === "section") {
         updateCalc((draft) => {
           const m = draft.meta as any;
           const secs: SimpleSection[] = m.simpleSections || [];
-          const next = secs.map(s => s.id === targetId ? { ...s, imageUrl: url } : s);
+          const oldSec = secs.find(s => s.id === targetId);
+          if (oldSec?.imagePublicId) destroyOldImage(oldSec.imagePublicId);
+
+          const next = secs.map(s => s.id === targetId ? { ...s, imageUrl: url, imagePublicId: publicId } : s);
           m.simpleSections = next;
         });
       }
@@ -543,7 +565,13 @@ export default function SimpleListPanel() {
             <div className="relative shrink-0" data-help="Add a badge like 'Spicy' or 'Vegan' to this item.">
               <select
                 value={item.badge || ""}
-                onChange={(e) => updateItem(item.id, { badge: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  updateItem(item.id, {
+                    badge: val,
+                    discountPercent: val === 'sale' ? (item.discountPercent ?? 10) : undefined
+                  });
+                }}
                 className="appearance-none bg-[var(--surface)] border border-[var(--border)] text-[10px] h-6 pl-2 pr-6 rounded-full outline-none focus:border-[#22D3EE] cursor-pointer text-[var(--text)] hover:bg-[var(--bg)] font-medium transition-colors"
                 disabled={isOverLimit}
               >
@@ -552,6 +580,57 @@ export default function SimpleListPanel() {
                 ))}
               </select>
               <Tag className="w-3 h-3 absolute right-2 top-1.5 pointer-events-none text-[var(--muted)]" />
+            </div>
+          </div>
+
+          {/* Sale Discount Panel */}
+          {/* Sale Discount Panel - kept in DOM to preserve focus */}
+          <div className={`mt-2 p-3 bg-[var(--surface)] rounded-xl border border-[#22D3EE]/30 flex items-center gap-4 animate-in slide-in-from-top-1 ${item.badge === 'sale' ? '' : 'hidden'}`}>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-[#22D3EE]/10 text-[#22D3EE] rounded-lg">
+                <Percent className="w-4 h-4" />
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wide">{t("Discount")}</span>
+                <div className="flex items-center gap-1">
+                  <BufferedInput
+                    type="number"
+                    min="0"
+                    max="95"
+                    value={item.discountPercent ?? 0}
+                    onCommit={(val: string) => {
+                      let num = parseInt(val) || 0;
+                      if (num < 0) num = 0;
+                      if (num > 95) num = 95;
+                      updateItem(item.id, { discountPercent: num });
+                    }}
+                    className="w-12 bg-[var(--bg)] border border-[var(--border)] rounded px-1.5 py-0.5 text-sm font-bold text-[var(--text)] outline-none focus:border-[#22D3EE] text-center"
+                  />
+                  <span className="text-sm font-bold text-[var(--text)]">%</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-8 w-px bg-[var(--border)]"></div>
+
+            <div className="flex-1 flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wide">{t("New Price")}</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs text-[var(--muted)] line-through decoration-red-500/50">
+                    {item.price?.toFixed(2)}
+                  </span>
+                  <span className="text-sm font-bold text-[#22D3EE]">
+                    {(item.price * (1 - (item.discountPercent || 0) / 100)).toFixed(2)} {currency}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => updateItem(item.id, { discountPercent: 0 })}
+                className="text-[10px] font-bold text-[var(--muted)] hover:text-[var(--text)] hover:underline"
+              >
+                {t("Reset")}
+              </button>
             </div>
           </div>
         </div>
@@ -614,6 +693,8 @@ export default function SimpleListPanel() {
       prevProps.item.unit === nextProps.item.unit &&
       prevProps.item.customUnit === nextProps.item.customUnit &&
       prevProps.item.badge === nextProps.item.badge &&
+      prevProps.item.discountPercent === nextProps.item.discountPercent &&
+      prevProps.item.imagePublicId === nextProps.item.imagePublicId &&
       prevProps.index === nextProps.index &&
       prevProps.uploadingId === nextProps.uploadingId &&
       prevProps.currency === nextProps.currency &&
@@ -1080,6 +1161,42 @@ export default function SimpleListPanel() {
           </div>
         </div>
       </div>
+
+      {/* Social Networks */}
+      <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-6">
+        <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2">
+          <Share2 className="w-4 h-4 text-pink-500" /> {t("Social Networks")}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/...', icon: <div className="w-3.5 h-3.5 rounded bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500" /> },
+            { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/...', icon: <div className="w-3.5 h-3.5 rounded bg-blue-600" /> },
+            { key: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@...', icon: <div className="w-3.5 h-3.5 rounded bg-black border border-white/20" /> },
+            { key: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/...', icon: <div className="w-3.5 h-3.5 rounded bg-red-600" /> },
+            { key: 'whatsapp', label: 'WhatsApp', placeholder: 'https://wa.me/...', icon: <MessageCircle className="w-3.5 h-3.5 text-green-500" /> },
+            { key: 'telegram', label: 'Telegram', placeholder: 'https://t.me/...', icon: <MessageCircle className="w-3.5 h-3.5 text-blue-400" /> },
+            { key: 'website', label: 'Website', placeholder: 'https://...', icon: <Globe className="w-3.5 h-3.5 text-[var(--muted)]" /> },
+          ].map((soc) => (
+            <div key={soc.key} className="space-y-1.5">
+              <span className="text-xs text-[var(--muted)] font-medium flex items-center gap-1.5">
+                {soc.icon} {soc.label}
+              </span>
+              <div className="flex items-center px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] focus-within:border-[#22D3EE] transition-colors">
+                <input
+                  type="text"
+                  value={(business.social as any)?.[soc.key] || ""}
+                  onChange={e => {
+                    const nextSocial = { ...(business.social || {}), [soc.key]: e.target.value };
+                    setBusiness({ social: nextSocial });
+                  }}
+                  className="flex-1 bg-transparent text-sm outline-none placeholder-[var(--muted)]/50"
+                  placeholder={soc.placeholder}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 
@@ -1163,46 +1280,79 @@ export default function SimpleListPanel() {
         <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide">{t("Advanced Options")}</h3>
 
         {/* Layout Mode Setting */}
-        <div className="p-2 rounded-lg space-y-2">
+        <div className="space-y-3 pt-2">
           <div className="space-y-0.5">
             <span className="text-sm text-[var(--text)] font-medium block">{t("Layout Mode")}</span>
-            <span className="text-[10px] text-[var(--muted)] block">{t("Choose how your menu is displayed")}</span>
+            <span className="text-[10px] text-[var(--muted)] block">{t("Choose structure based on your content size")}</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* SCROLL OPTION */}
             <button
               onClick={() => setMeta({ layoutMode: 'scroll' })}
-              className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${(!meta.layoutMode || meta.layoutMode === 'scroll')
-                ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
-                : 'bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--text)]'
+              className={`cursor-default relative group p-3 rounded-xl border text-left transition-all duration-200 flex items-start gap-3 ${(!meta.layoutMode || meta.layoutMode === 'scroll')
+                ? "border-[#22D3EE] bg-[var(--surface)] ring-1 ring-[#22D3EE]"
+                : "border-[var(--border)] hover:border-[var(--text)] bg-[var(--bg)]"
                 }`}
             >
-              Scroll (Default)
+              <div className={`p-2 rounded-lg ${(!meta.layoutMode || meta.layoutMode === 'scroll') ? "bg-[#22D3EE]/10 text-[#22D3EE]" : "bg-[var(--track)] text-[var(--muted)]"}`}>
+                <ScrollText className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-[var(--text)]">Scroll (Default)</span>
+                  {(!meta.layoutMode || meta.layoutMode === 'scroll') && <div className="w-4 h-4 bg-[#22D3EE] rounded-full flex items-center justify-center text-white"><Check className="w-2.5 h-2.5" /></div>}
+                </div>
+                <p className="text-[10px] text-[var(--muted)] mt-1 leading-snug">
+                  {t("Best for lists & pricing pages with fewer than 50 items.")}
+                </p>
+              </div>
             </button>
+
+            {/* ACCORDION OPTION */}
             <button
               onClick={() => setMeta({ layoutMode: 'accordion' })}
-              className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${meta.layoutMode === 'accordion'
-                ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
-                : 'bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--text)]'
+              className={`cursor-default relative group p-3 rounded-xl border text-left transition-all duration-200 flex items-start gap-3 ${meta.layoutMode === 'accordion'
+                ? "border-[#22D3EE] bg-[var(--surface)] ring-1 ring-[#22D3EE]"
+                : "border-[var(--border)] hover:border-[var(--text)] bg-[var(--bg)]"
                 }`}
             >
-              Accordion
+              <div className={`p-2 rounded-lg ${meta.layoutMode === 'accordion' ? "bg-[#22D3EE]/10 text-[#22D3EE]" : "bg-[var(--track)] text-[var(--muted)]"}`}>
+                <LayoutList className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-[var(--text)]">Accordion</span>
+                  {meta.layoutMode === 'accordion' && <div className="w-4 h-4 bg-[#22D3EE] rounded-full flex items-center justify-center text-white"><Check className="w-2.5 h-2.5" /></div>}
+                </div>
+                <p className="text-[10px] text-[var(--muted)] mt-1 leading-snug">
+                  {t("Best for extensive menus (>50 items) organized by categories.")}
+                </p>
+              </div>
             </button>
           </div>
 
           {/* Solo Mode Option (Only for Accordion) */}
           {meta.layoutMode === 'accordion' && (
-            <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors border-l-2 border-[#22D3EE]/30 ml-1 pl-3 mt-2">
-              <div className="space-y-0.5">
-                <span className="text-sm text-[var(--text)] font-medium block">{t("Solo Mode")}</span>
-                <span className="text-[10px] text-[var(--muted)] block">{t("Only one section open at a time")}</span>
-              </div>
-              <div className="relative inline-flex items-center cursor-default">
-                <input type="checkbox" checked={meta.layoutAccordionSolo || false} onChange={e => setMeta({ layoutAccordionSolo: e.target.checked })} className="sr-only peer" />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]"></div>
-              </div>
-            </label>
+            <div className="animate-in slide-in-from-top-2 fade-in duration-300">
+              <label className="flex items-center justify-between p-3 rounded-xl cursor-default bg-[var(--surface)] border border-[var(--border)] transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="h-full w-1 rounded-full bg-gradient-to-b from-[#4F46E5] to-[#22D3EE]"></div>
+                  <div className="space-y-0.5">
+                    <span className="text-sm text-[var(--text)] font-bold block">{t("Solo Mode")}</span>
+                    <span className="text-[10px] text-[var(--muted)] block">{t("Auto-close other sections when one is opened")}</span>
+                  </div>
+                </div>
+                <div className="relative inline-flex items-center cursor-default">
+                  <input type="checkbox" checked={meta.layoutAccordionSolo || false} onChange={e => setMeta({ layoutAccordionSolo: e.target.checked })} className="sr-only peer" />
+                  <div className={`w-9 h-5 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${meta.layoutAccordionSolo ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
+                </div>
+              </label>
+            </div>
           )}
         </div>
+
+        {/* Show 'Powered by Tierless' Badge */}
         <label className={`flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors ${!removeBadgeAllowed ? "opacity-75" : ""}`}>
           <div className="flex items-center gap-2">
             <span className="text-sm text-[var(--text)] font-medium">{t("Show 'Powered by Tierless' Badge")}</span>
@@ -1221,9 +1371,11 @@ export default function SimpleListPanel() {
               }}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]"></div>
+            <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${meta.simpleShowBadge !== false ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
           </div>
         </label>
+
+        {/* Enable Calculations */}
         <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors">
           <div className="space-y-0.5">
             <span className="text-sm text-[var(--text)] font-medium block">{t("Enable Calculations")}</span>
@@ -1231,11 +1383,11 @@ export default function SimpleListPanel() {
           </div>
           <div className="relative inline-flex items-center cursor-default">
             <input type="checkbox" checked={meta.simpleEnableCalculations || false} onChange={e => setMeta({ simpleEnableCalculations: e.target.checked })} className="sr-only peer" />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]"></div>
+            <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${meta.simpleEnableCalculations ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
           </div>
         </label>
 
-        {/* Add Checkout Button - only shown when Enable Calculations is ON */}
+        {/* Add Checkout Button */}
         {meta.simpleEnableCalculations && (
           <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors border-l-2 border-[#22D3EE]/30 ml-2 pl-3">
             <div className="space-y-0.5">
@@ -1245,7 +1397,7 @@ export default function SimpleListPanel() {
             </div>
             <div className="relative inline-flex items-center cursor-default">
               <input type="checkbox" checked={meta.simpleAddCheckout || false} onChange={e => setMeta({ simpleAddCheckout: e.target.checked })} className="sr-only peer" />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]"></div>
+              <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${meta.simpleAddCheckout ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
             </div>
           </label>
         )}
@@ -1258,7 +1410,7 @@ export default function SimpleListPanel() {
           </div>
           <div className="relative inline-flex items-center cursor-default">
             <input type="checkbox" checked={meta.simpleShowUnits || false} onChange={e => setMeta({ simpleShowUnits: e.target.checked })} className="sr-only peer" />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]"></div>
+            <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${meta.simpleShowUnits ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
           </div>
         </label>
       </div>

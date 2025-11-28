@@ -41,7 +41,9 @@ export type BusinessInfo = {
     wifiPass?: string;
     hours?: string;
     logoUrl?: string;
+    logoPublicId?: string;
     coverUrl?: string;
+    coverPublicId?: string;
 };
 
 export type FloatingCta = {
@@ -55,6 +57,7 @@ export type SimpleSection = {
     label: string;
     description?: string;
     imageUrl?: string;
+    imagePublicId?: string;
     collapsed?: boolean;
 };
 
@@ -64,11 +67,23 @@ export type ItemRow = {
     price: number | null;
     note?: string;
     imageUrl?: string;
+    imagePublicId?: string;
     simpleSectionId?: string;
     hidden?: boolean;
     soldOut?: boolean;
     tags?: string[];
     badge?: string; // Dodato iz prethodnog zahteva
+    discountPercent?: number;
+};
+
+export type SocialNetworks = {
+    facebook?: string;
+    instagram?: string;
+    tiktok?: string;
+    youtube?: string;
+    telegram?: string;
+    whatsapp?: string;
+    website?: string;
 };
 
 export type CalcMeta = {
@@ -77,7 +92,7 @@ export type CalcMeta = {
     slug?: string;
     editorMode?: Mode;
     theme?: BrandTheme;
-    business?: BusinessInfo;
+    business?: BusinessInfo & { social?: SocialNetworks };
     cta?: FloatingCta;
     simpleCoverImage?: string;
     simpleSections?: SimpleSection[];
