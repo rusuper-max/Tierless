@@ -35,7 +35,27 @@
             "usage": "Usage",
             "currentPlan": "Current Plan",
             "renewsOn": "Renews on",
-            "manageSubscription": "Manage Subscription"
+            "renewsUnknown": "Date to be determined",
+            "freePlanInfo": "Free Tier does not have a renewal date.",
+            "manageSubscription": "Manage Subscription",
+            "planNames": {
+                "free": "Free Tier",
+                "starter": "Starter",
+                "growth": "Growth",
+                "pro": "Pro",
+                "tierless": "Tierless"
+            },
+            "cancel": {
+                "cta": "Cancel Plan",
+                "keep": "Keep Plan",
+                "description": "You will be moved to Free Tier at the end of your billing period.",
+                "scheduled": "Cancellation scheduled",
+                "scheduledDescription": "You'll stay on {plan} until {date}, then move to Free Tier.",
+                "modalTitle": "Cancel subscription?",
+                "modalBody": "You will be moved to Free Tier at the end of your billing period. Are you sure?",
+                "modalConfirm": "Yes, cancel it",
+                "modalKeep": "Keep Plan"
+            }
         },
         "preferences": {
             "notifications": "Notifications",

@@ -159,6 +159,17 @@ const PLAN_RANK: Record<PlanId, number> = {
   pro: 3,
 };
 
+function getNextRenewalISO(interval: Interval, plan: PlanId) {
+  if (plan === "free") return null;
+  const date = new Date();
+  if (interval === "yearly") {
+    date.setFullYear(date.getFullYear() + 1);
+  } else {
+    date.setMonth(date.getMonth() + 1);
+  }
+  return date.toISOString();
+}
+
 function getYearlyPricing(monthly: number) {
   const effMonthly = Math.round(monthly * 0.8 * 100) / 100;
   const perYear = Math.round(monthly * 12 * 0.8);
@@ -219,10 +230,11 @@ export default function StartPage() {
   const handlePlanChange = async (planId: PlanId) => {
     if (!authed) return false;
     try {
+      const renewsOn = getNextRenewalISO(interval, planId);
       const res = await fetch("/api/me/plan", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planId }),
+        body: JSON.stringify({ plan: planId, renewsOn }),
       });
       if (!res.ok) return false;
       setCurrentPlan(planId);

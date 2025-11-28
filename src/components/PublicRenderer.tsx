@@ -274,6 +274,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
   const enableCalculations = meta.simpleEnableCalculations ?? false;
   const addCheckout = meta.simpleAddCheckout ?? false;
   const showUnits = meta.simpleShowUnits ?? false;
+  const layoutMode = meta.layoutMode || 'scroll'; // 'scroll' | 'accordion'
 
   const currency = i18n.currency || "";
   const decimals = typeof i18n.decimals === "number" ? i18n.decimals : 0;
@@ -297,6 +298,19 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
   const [search, setSearch] = useState("");
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
+  };
 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
@@ -463,7 +477,8 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
       </div>
 
       {/* 2. STICKY NAVIGATION */}
-      {(simpleSections.length > 0) && (
+      {/* 2. STICKY NAVIGATION (Only in Scroll Mode) */}
+      {(simpleSections.length > 0) && layoutMode === 'scroll' && (
         <div className="sticky top-0 z-40 w-full bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--border)]/10 shadow-sm py-3 px-4 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-2 min-w-max">
             {unsectioned.length > 0 && (
@@ -536,6 +551,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                     }}
                     isTierlessTheme={isTierlessTheme}
                     showUnits={showUnits}
+                    enableCalculations={enableCalculations}
                   />
                 ))}
             </div>
@@ -547,6 +563,70 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
           const visibleItems = sItems.filter(it => !search || it.label.toLowerCase().includes(search.toLowerCase()) || it.note?.toLowerCase().includes(search.toLowerCase()));
           if (visibleItems.length === 0 && search) return null;
 
+          // ACCORDION MODE LOGIC
+          if (layoutMode === 'accordion') {
+            const isExpanded = expandedSections.has(section.id) || !!search; // Always expand if searching
+
+            return (
+              <div key={section.id} className="scroll-mt-32">
+                {/* Accordion Header (Clickable) */}
+                <div
+                  onClick={() => toggleSection(section.id)}
+                  className="cursor-pointer group relative overflow-hidden rounded-3xl mb-6 transition-all duration-300 hover:shadow-lg active:scale-[0.99]"
+                >
+                  {section.imageUrl ? (
+                    <div className="w-full h-48 sm:h-64 relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={section.imageUrl} alt={section.label} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 w-full p-6 sm:p-8 flex items-end justify-between">
+                        <div>
+                          <h2 className="text-3xl sm:text-4xl font-extrabold text-white drop-shadow-lg mb-2">{section.label}</h2>
+                          {section.description && <p className="text-white/90 text-sm sm:text-base max-w-xl line-clamp-2">{section.description}</p>}
+                        </div>
+                        <div className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                          <ChevronDown className="w-6 h-6" />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full p-6 sm:p-8 bg-[var(--card)] border border-[var(--border)] flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--text)] mb-2">{section.label}</h2>
+                        {section.description && <p className="text-[var(--muted)] text-sm sm:text-base max-w-xl">{section.description}</p>}
+                      </div>
+                      <div className={`w-10 h-10 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center text-[var(--text)] transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                        <ChevronDown className="w-6 h-6" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Accordion Content */}
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass} transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-h-[5000px]' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+                  {visibleItems.map(item => (
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      formatPrice={formatPrice}
+                      borderColor={simpleBorderColor}
+                      quantity={quantities[item.id] || 0}
+                      onClick={() => setSelectedItem(item)}
+                      onQuickAdd={(id: string, step: number) => {
+                        const current = quantities[id] || 0;
+                        setQuantity(id, current + step);
+                      }}
+                      isTierlessTheme={isTierlessTheme}
+                      showUnits={showUnits}
+                      enableCalculations={enableCalculations}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          // SCROLL MODE (Default)
           return (
             <div key={section.id} id={`sec-${section.id}`} className="scroll-mt-32">
               <div className="mb-6">
@@ -580,6 +660,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                     }}
                     isTierlessTheme={isTierlessTheme}
                     showUnits={showUnits}
+                    enableCalculations={enableCalculations}
                   />
                 ))}
               </div>
@@ -871,6 +952,9 @@ function OrderModal({ isOpen, onClose, items, quantities, formatPrice, onSubmitO
 /* --------------------------------------------------------- */
 /* Component: Item Detail Modal (Popup)                      */
 /* --------------------------------------------------------- */
+/* --------------------------------------------------------- */
+/* Component: Item Detail Modal (Popup)                      */
+/* --------------------------------------------------------- */
 function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, showUnits }: any) {
   if (!item) return null;
 
@@ -880,6 +964,7 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
   // Step logic: pcs=1, kg/l=0.1 (100g/ml), g/ml=1, custom=1
   const step = item.unit === "pcs" || !item.unit ? 1 : (item.unit === "kg" || item.unit === "l") ? 0.1 : 1;
   const unitLabel = item.unit === "custom" ? item.customUnit || "unit" : item.unit || "pcs";
+  const isSoldOut = item.soldOut;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
@@ -905,6 +990,15 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
               className="absolute inset-0 w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--card)] to-transparent opacity-60"></div>
+
+            {/* Sold Out Badge in Modal */}
+            {isSoldOut && (
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
+                <span className="px-6 py-2 bg-red-500/20 text-red-500 text-lg font-bold uppercase tracking-widest rounded-xl border border-red-500/30 shadow-2xl transform -rotate-6 backdrop-blur-md">
+                  Sold Out
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -933,11 +1027,11 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
             <div className="flex items-center justify-between gap-4">
 
               {/* Quantity Controls */}
-              <div className="flex items-center gap-3 bg-[var(--bg)] rounded-2xl p-1.5 border border-[var(--border)]">
+              <div className={`flex items-center gap-3 bg-[var(--bg)] rounded-2xl p-1.5 border border-[var(--border)] ${isSoldOut ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
                 <button
                   onClick={() => setQuantity(item.id, Math.max(0, (quantity || 0) - step))}
                   className="w-10 h-10 rounded-xl bg-[var(--card)] shadow-sm flex items-center justify-center text-[var(--text)] hover:bg-[var(--brand-1)] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
-                  disabled={!quantity}
+                  disabled={!quantity || isSoldOut}
                 >
                   <Minus className="w-5 h-5" />
                 </button>
@@ -957,14 +1051,16 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
                         setQuantity(item.id, isNaN(num) ? 0 : num);
                       }
                     }}
-                    className="w-16 bg-transparent text-center text-lg font-bold text-[var(--text)] outline-none p-0"
+                    disabled={isSoldOut}
+                    className="w-16 bg-transparent text-center text-lg font-bold text-[var(--text)] outline-none p-0 disabled:cursor-not-allowed"
                   />
                   <span className="text-[10px] uppercase font-bold text-[var(--muted)]">{unitLabel}</span>
                 </div>
 
                 <button
                   onClick={() => setQuantity(item.id, (quantity || 0) + step)}
-                  className="w-10 h-10 rounded-xl bg-[var(--brand-1)] text-white shadow-lg shadow-[var(--brand-1)]/30 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                  className="w-10 h-10 rounded-xl bg-[var(--brand-1)] text-white shadow-lg shadow-[var(--brand-1)]/30 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSoldOut}
                 >
                   <Plus className="w-5 h-5" />
                 </button>
@@ -983,9 +1079,12 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
             {/* Add to Order Button (Visual confirmation mostly, since state is live) */}
             <button
               onClick={onClose}
-              className="w-full mt-6 py-4 rounded-2xl bg-[var(--text)] text-[var(--bg)] font-bold text-lg hover:opacity-90 active:scale-[0.98] transition-all shadow-xl"
+              disabled={isSoldOut}
+              className={`w-full mt-6 py-4 rounded-2xl font-bold text-lg transition-all shadow-xl ${isSoldOut
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none border border-gray-200'
+                : 'bg-[var(--text)] text-[var(--bg)] hover:opacity-90 active:scale-[0.98]'}`}
             >
-              {quantity > 0 ? "Update Order" : "Close"}
+              {isSoldOut ? "Sold Out" : (quantity > 0 ? "Update Order" : "Close")}
             </button>
           </div>
         </div>
@@ -997,22 +1096,33 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
 /* --------------------------------------------------------- */
 /* Component: Item Card (Interactive & Compact)              */
 /* --------------------------------------------------------- */
-function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits }: any) {
+/* --------------------------------------------------------- */
+/* Component: Item Card (Interactive & Compact)              */
+/* --------------------------------------------------------- */
+function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits, enableCalculations }: any) {
   // Step logic: pcs=1, kg/l=0.1 (100g/ml), g/ml=1, custom=1
   const step = item.unit === "pcs" || !item.unit ? 1 : (item.unit === "kg" || item.unit === "l") ? 0.1 : 1;
   const hasImage = !!item.imageUrl;
+
+  // Unit Label Logic
+  const unitLabel = item.unit === "custom" ? item.customUnit : item.unit;
+  const showUnitLabel = showUnits && unitLabel && unitLabel !== "pcs";
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent modal opening
     onQuickAdd(item.id, step);
   };
 
+  // Interaction Logic
+  // If calculations are disabled, the card is purely visual (no click, no quick add)
+  const canInteract = enableCalculations;
+
   // --- COMPACT LAYOUT (No Image) ---
   if (!hasImage) {
     return (
       <div
-        onClick={onClick}
-        className="group relative flex flex-col justify-between p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)] cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 min-h-[140px]"
+        onClick={canInteract ? onClick : undefined}
+        className={`group relative flex flex-col justify-between p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)] transition-all duration-300 min-h-[140px] ${canInteract ? 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5' : ''}`}
       >
         <div>
           <div className="flex justify-between items-start gap-2 mb-2">
@@ -1022,7 +1132,7 @@ function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits 
                   {BADGE_LABELS[item.badge]}
                 </span>
               )}
-              <h3 className="font-bold text-lg leading-tight text-[var(--text)] line-clamp-2 group-hover:text-[var(--brand-1)] transition-colors">
+              <h3 className={`font-bold text-lg leading-tight text-[var(--text)] line-clamp-2 transition-colors ${canInteract ? 'group-hover:text-[var(--brand-1)]' : ''}`}>
                 {item.label}
               </h3>
             </div>
@@ -1044,16 +1154,19 @@ function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits 
         <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--border)]/50">
           <div className="font-bold text-lg text-[var(--brand-1)]">
             {formatPrice(item.price)}
+            {showUnitLabel && <span className="text-xs font-normal text-[var(--muted)] ml-1">/ {unitLabel}</span>}
           </div>
 
-          {/* Quick Add Button */}
-          <button
-            onClick={handleQuickAdd}
-            disabled={item.soldOut}
-            className="w-9 h-9 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center text-[var(--text)] hover:bg-[var(--brand-1)] hover:text-white hover:border-[var(--brand-1)] transition-all shadow-sm active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[var(--bg)] disabled:hover:text-[var(--text)] disabled:hover:border-[var(--border)]"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
+          {/* Quick Add Button - Only if calculations enabled */}
+          {canInteract && (
+            <button
+              onClick={handleQuickAdd}
+              disabled={item.soldOut}
+              className="w-9 h-9 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center text-[var(--text)] hover:bg-[var(--brand-1)] hover:text-white hover:border-[var(--brand-1)] transition-all shadow-sm active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[var(--bg)] disabled:hover:text-[var(--text)] disabled:hover:border-[var(--border)]"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Sold Out Overlay */}
@@ -1071,8 +1184,8 @@ function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits 
   // --- STANDARD LAYOUT (With Image) ---
   return (
     <div
-      onClick={onClick}
-      className={`group relative flex flex-col overflow-hidden rounded-3xl transition-all duration-300 cursor-pointer hover:shadow-xl hover:-translate-y-1 bg-[var(--card)] border border-[var(--border)]`}
+      onClick={canInteract ? onClick : undefined}
+      className={`group relative flex flex-col overflow-hidden rounded-3xl transition-all duration-300 bg-[var(--card)] border border-[var(--border)] ${canInteract ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1' : ''}`}
       style={{
         minHeight: "280px",
       }}
@@ -1083,7 +1196,7 @@ function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits 
         <img
           src={item.imageUrl}
           alt={item.label}
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 ${canInteract ? 'group-hover:scale-110' : ''}`}
           loading="lazy"
         />
 
@@ -1116,7 +1229,7 @@ function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits 
               {BADGE_LABELS[item.badge]}
             </span>
           )}
-          <h3 className="font-bold text-xl leading-tight text-[var(--text)] line-clamp-2 group-hover:text-[var(--brand-1)] transition-colors">
+          <h3 className={`font-bold text-xl leading-tight text-[var(--text)] line-clamp-2 transition-colors ${canInteract ? 'group-hover:text-[var(--brand-1)]' : ''}`}>
             {item.label}
           </h3>
         </div>
@@ -1130,16 +1243,19 @@ function ItemCard({ item, formatPrice, quantity, onClick, onQuickAdd, showUnits 
         <div className="mt-auto pt-4 flex items-center justify-between border-t border-[var(--border)]/50">
           <div className="font-bold text-lg text-[var(--brand-1)]">
             {formatPrice(item.price)}
+            {showUnitLabel && <span className="text-xs font-normal text-[var(--muted)] ml-1">/ {unitLabel}</span>}
           </div>
 
-          {/* Quick Add Button */}
-          <button
-            onClick={handleQuickAdd}
-            disabled={item.soldOut}
-            className="w-10 h-10 rounded-full bg-[var(--bg)] flex items-center justify-center text-[var(--text)] group-hover:bg-[var(--brand-1)] group-hover:text-white transition-colors shadow-sm active:scale-95 border border-[var(--border)] group-hover:border-[var(--brand-1)] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[var(--bg)] disabled:hover:text-[var(--text)] disabled:hover:border-[var(--border)]"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
+          {/* Quick Add Button - Only if calculations enabled */}
+          {canInteract && (
+            <button
+              onClick={handleQuickAdd}
+              disabled={item.soldOut}
+              className="w-10 h-10 rounded-full bg-[var(--bg)] flex items-center justify-center text-[var(--text)] group-hover:bg-[var(--brand-1)] group-hover:text-white transition-colors shadow-sm active:scale-95 border border-[var(--border)] group-hover:border-[var(--brand-1)] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[var(--bg)] disabled:hover:text-[var(--text)] disabled:hover:border-[var(--border)]"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
     </div>

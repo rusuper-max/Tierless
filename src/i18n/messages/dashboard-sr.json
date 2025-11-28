@@ -35,7 +35,27 @@
             "usage": "Korišćenje",
             "currentPlan": "Trenutni plan",
             "renewsOn": "Obnavlja se",
-            "manageSubscription": "Upravljaj pretplatom"
+            "renewsUnknown": "Datum obnavljanja još nije postavljen",
+            "freePlanInfo": "Besplatan plan se ne obnavlja.",
+            "manageSubscription": "Upravljaj pretplatom",
+            "planNames": {
+                "free": "Free Tier",
+                "starter": "Starter",
+                "growth": "Growth",
+                "pro": "Pro",
+                "tierless": "Tierless"
+            },
+            "cancel": {
+                "cta": "Otkaži plan",
+                "keep": "Zadrži plan",
+                "description": "Bićete prebačeni na Free Tier na kraju obračunskog perioda.",
+                "scheduled": "Otkazivanje zakazano",
+                "scheduledDescription": "Ostaćete na planu {plan} do {date}, a zatim prelazite na Free Tier.",
+                "modalTitle": "Otkaži pretplatu?",
+                "modalBody": "Bićete prebačeni na Free Tier na kraju obračunskog perioda. Da li ste sigurni?",
+                "modalConfirm": "Da, otkaži",
+                "modalKeep": "Zadrži plan"
+            }
         },
         "preferences": {
             "notifications": "Obaveštenja",

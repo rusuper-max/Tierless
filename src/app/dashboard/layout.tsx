@@ -26,13 +26,21 @@ async function loadAccountSSR() {
 
     // 2) plan (ako je auth)
     let plan: Plan = "free";
+    let renewsOn: string | null = null;
+    let cancelAtPeriodEnd = false;
     if (authenticated) {
-      const mRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/me`, {
+      const mRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/me/plan`, {
         cache: "no-store",
         credentials: "same-origin",
-      }).catch(() => fetch("/api/me", { cache: "no-store", credentials: "same-origin" }));
-      const mJson = (await mRes?.json().catch(() => ({}))) as { user?: { plan?: Plan }; plan?: Plan };
-      plan = (mJson?.user?.plan || mJson?.plan || "free") as Plan;
+      }).catch(() => fetch("/api/me/plan", { cache: "no-store", credentials: "same-origin" }));
+      const mJson = (await mRes?.json().catch(() => ({}))) as {
+        plan?: Plan;
+        renewsOn?: string | null;
+        cancelAtPeriodEnd?: boolean;
+      };
+      plan = (mJson?.plan || "free") as Plan;
+      renewsOn = typeof mJson?.renewsOn === "string" ? mJson.renewsOn : null;
+      cancelAtPeriodEnd = !!mJson?.cancelAtPeriodEnd;
     }
 
     return {
@@ -41,6 +49,8 @@ async function loadAccountSSR() {
       email,
       plan,
       entitlements: entitlementsFor(plan),
+      renewsOn,
+      cancelAtPeriodEnd,
     };
   } catch {
     return {
@@ -49,6 +59,8 @@ async function loadAccountSSR() {
       email: null,
       plan: "free" as Plan,
       entitlements: entitlementsFor("free"),
+      renewsOn: null,
+      cancelAtPeriodEnd: false,
     };
   }
 }

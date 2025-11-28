@@ -1139,6 +1139,34 @@ export default function SimpleListPanel() {
       </div>
       <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4">
         <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide">{t("Advanced Options")}</h3>
+
+        {/* Layout Mode Setting */}
+        <div className="p-2 rounded-lg space-y-2">
+          <div className="space-y-0.5">
+            <span className="text-sm text-[var(--text)] font-medium block">{t("Layout Mode")}</span>
+            <span className="text-[10px] text-[var(--muted)] block">{t("Choose how your menu is displayed")}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setMeta({ layoutMode: 'scroll' })}
+              className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${(!meta.layoutMode || meta.layoutMode === 'scroll')
+                  ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
+                  : 'bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--text)]'
+                }`}
+            >
+              Scroll (Default)
+            </button>
+            <button
+              onClick={() => setMeta({ layoutMode: 'accordion' })}
+              className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${meta.layoutMode === 'accordion'
+                  ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
+                  : 'bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--text)]'
+                }`}
+            >
+              Accordion
+            </button>
+          </div>
+        </div>
         <label className={`flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors ${!removeBadgeAllowed ? "opacity-75" : ""}`}>
           <div className="flex items-center gap-2">
             <span className="text-sm text-[var(--text)] font-medium">{t("Show 'Powered by Tierless' Badge")}</span>
@@ -1187,18 +1215,16 @@ export default function SimpleListPanel() {
         )}
 
         {/* Show Unit in Public View */}
-        {meta.simpleEnableCalculations && (
-          <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors border-l-2 border-[#22D3EE]/30 ml-2 pl-3">
-            <div className="space-y-0.5">
-              <span className="text-sm text-[var(--text)] font-medium block">{t("Show Units")}</span>
-              <span className="text-[10px] text-[var(--muted)] block">{t("Display unit of measure (kg, pcs, etc.) next to prices")}</span>
-            </div>
-            <div className="relative inline-flex items-center cursor-default">
-              <input type="checkbox" checked={meta.simpleShowUnits || false} onChange={e => setMeta({ simpleShowUnits: e.target.checked })} className="sr-only peer" />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]"></div>
-            </div>
-          </label>
-        )}
+        <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors">
+          <div className="space-y-0.5">
+            <span className="text-sm text-[var(--text)] font-medium block">{t("Show Units")}</span>
+            <span className="text-[10px] text-[var(--muted)] block">{t("Display unit of measure (kg, pcs, etc.) next to prices")}</span>
+          </div>
+          <div className="relative inline-flex items-center cursor-default">
+            <input type="checkbox" checked={meta.simpleShowUnits || false} onChange={e => setMeta({ simpleShowUnits: e.target.checked })} className="sr-only peer" />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]"></div>
+          </div>
+        </label>
       </div>
     </div>
   );

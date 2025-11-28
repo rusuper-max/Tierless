@@ -28,7 +28,27 @@
             "usage": "Использование",
             "currentPlan": "Текущий план",
             "renewsOn": "Продлевается",
-            "manageSubscription": "Управление подпиской"
+            "renewsUnknown": "Дата пока не определена",
+            "freePlanInfo": "Бесплатный тариф не имеет даты продления.",
+            "manageSubscription": "Управление подпиской",
+            "planNames": {
+                "free": "Free Tier",
+                "starter": "Starter",
+                "growth": "Growth",
+                "pro": "Pro",
+                "tierless": "Tierless"
+            },
+            "cancel": {
+                "cta": "Отменить план",
+                "keep": "Сохранить план",
+                "description": "В конце расчетного периода вы будете переведены на Free Tier.",
+                "scheduled": "Отмена запланирована",
+                "scheduledDescription": "Вы останетесь на плане {plan} до {date}, затем вернетесь на Free Tier.",
+                "modalTitle": "Отменить подписку?",
+                "modalBody": "В конце расчетного периода вы будете переведены на Free Tier. Вы уверены?",
+                "modalConfirm": "Да, отменить",
+                "modalKeep": "Сохранить план"
+            }
         },
         "preferences": {
             "notifications": "Уведомления",

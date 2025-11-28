@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   CreditCard,
   Bell,
@@ -39,7 +39,7 @@ export default function AccountSettings() {
   const [loading, setLoading] = useState(false);
   const { locale, setLocale } = useLanguage();
   const { t } = useDashboardTranslation();
-  const { plan } = useAccount();
+  const { plan, renewsOn, cancelAtPeriodEnd } = useAccount();
 
   // Real usage stats
   const [usageStats, setUsageStats] = useState({
@@ -126,6 +126,8 @@ export default function AccountSettings() {
   // Delete Account State
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [showCancelPlan, setShowCancelPlan] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
 
   const handleDeleteAccount = async () => {
     setDeleteBusy(true);
@@ -163,6 +165,49 @@ export default function AccountSettings() {
     }
   };
 
+  const planLabelKey = `account.billing.planNames.${plan}`;
+  const translatedPlanLabel = t(planLabelKey);
+  const planLabel = translatedPlanLabel === planLabelKey
+    ? plan.charAt(0).toUpperCase() + plan.slice(1)
+    : translatedPlanLabel;
+
+  const renewalLabel = useMemo(() => {
+    if (!renewsOn) return null;
+    try {
+      const parsed = new Date(renewsOn);
+      if (Number.isNaN(parsed.getTime())) return null;
+      return new Intl.DateTimeFormat(locale || "en", {
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
+      }).format(parsed);
+    } catch {
+      return null;
+    }
+  }, [renewsOn, locale]);
+
+  const renewalText = renewalLabel ?? t('account.billing.renewsUnknown');
+  const canCancelPlan = plan !== "free";
+
+  const updateCancellation = async (shouldCancel: boolean) => {
+    if (!canCancelPlan && shouldCancel) return;
+    setCancelBusy(true);
+    try {
+      const res = await fetch('/api/me/plan', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cancelAtPeriodEnd: shouldCancel }),
+      });
+      if (!res.ok) throw new Error('Failed to update plan cancellation');
+      window.dispatchEvent(new Event('TL_AUTH_CHANGED'));
+      setShowCancelPlan(false);
+    } catch (error) {
+      console.error('Failed to update plan cancellation', error);
+    } finally {
+      setCancelBusy(false);
+    }
+  };
+
   const tabs = [
     { id: 'general', label: t('account.tabs.general'), icon: Building },
     { id: 'billing', label: t('account.tabs.billing'), icon: CreditCard },
@@ -184,7 +229,7 @@ export default function AccountSettings() {
           <button
             onClick={() => setActiveTab('general')}
             className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'general'
-              ? 'bg-[var(--text)] text-[var(--bg)] shadow-sm'
+              ? 'bg-[var(--card)] text-[var(--text)] shadow-sm border border-[var(--border)]/50'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--bg)]'
               }`}
           >
@@ -193,7 +238,7 @@ export default function AccountSettings() {
           <button
             onClick={() => setActiveTab('billing')}
             className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'billing'
-              ? 'bg-[var(--text)] text-[var(--bg)] shadow-sm'
+              ? 'bg-[var(--card)] text-[var(--text)] shadow-sm border border-[var(--border)]/50'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--bg)]'
               }`}
           >
@@ -202,7 +247,7 @@ export default function AccountSettings() {
           <button
             onClick={() => setActiveTab('preferences')}
             className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'preferences'
-              ? 'bg-[var(--text)] text-[var(--bg)] shadow-sm'
+              ? 'bg-[var(--card)] text-[var(--text)] shadow-sm border border-[var(--border)]/50'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--bg)]'
               }`}
           >
@@ -441,16 +486,59 @@ export default function AccountSettings() {
                   <div className="absolute top-0 right-0 p-8 opacity-5">
                     <Zap size={200} />
                   </div>
-                  <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 md:gap-6">
-                    <div>
-                      <div className="text-xs text-[var(--muted)] font-bold uppercase tracking-wider mb-2">{t('account.billing.currentPlan')}</div>
-                      <h2 className="text-2xl md:text-3xl font-bold text-[var(--text)] mb-2">Starter</h2>
-                      <p className="text-[var(--muted)] text-xs md:text-sm max-w-md">{t('account.billing.renewsOn')} <b>Dec 01, 2024</b>.</p>
+                  <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="space-y-2">
+                      <div className="text-xs text-[var(--muted)] font-bold uppercase tracking-wider">{t('account.billing.currentPlan')}</div>
+                      <h2 className="text-2xl md:text-3xl font-bold text-[var(--text)]">{planLabel}</h2>
+                      {plan === "free" ? (
+                        <p className="text-[var(--muted)] text-xs md:text-sm max-w-md">{t('account.billing.freePlanInfo')}</p>
+                      ) : (
+                        <p className="text-[var(--muted)] text-xs md:text-sm max-w-md">
+                          {t('account.billing.renewsOn')}{" "}
+                          <span className="font-semibold text-[var(--text)]">{renewalText}</span>.
+                        </p>
+                      )}
                     </div>
-                    <div className="flex flex-col gap-3 min-w-[140px]">
-                      <a href="/start" className="w-full px-4 py-2.5 rounded-lg bg-[var(--text)] text-[var(--bg)] text-xs md:text-sm font-bold hover:opacity-90 transition-opacity text-center flex items-center justify-center gap-2">
-                        {t('account.billing.manageSubscription')} <ExternalLink size={14} />
+                    <div className="flex flex-col gap-3 min-w-[220px] w-full sm:w-auto">
+                      <a
+                        href="/start"
+                        className="group relative inline-flex h-11 w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-[var(--brand-1,#4F46E5)] to-[var(--brand-2,#22D3EE)] px-4 text-sm font-semibold text-white shadow-lg shadow-[var(--brand-2,#22D3EE)]/30 transition-all hover:scale-[1.01] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-1,#4F46E5)]"
+                      >
+                        <span className="absolute inset-0 bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                        <span className="relative flex items-center gap-2">
+                          {t('account.billing.manageSubscription')}
+                          <ExternalLink size={14} />
+                        </span>
                       </a>
+                      {canCancelPlan && !cancelAtPeriodEnd && (
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => setShowCancelPlan(true)}
+                            disabled={cancelBusy}
+                            className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-[var(--border)] px-4 text-xs md:text-sm font-semibold text-[var(--text)]/80 transition-colors hover:border-rose-400 hover:text-rose-500 disabled:opacity-60"
+                          >
+                            {t('account.billing.cancel.cta')}
+                          </button>
+                          <p className="text-[11px] text-[var(--muted)]">{t('account.billing.cancel.description')}</p>
+                        </div>
+                      )}
+                      {canCancelPlan && cancelAtPeriodEnd && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10 px-4 py-3 space-y-2">
+                          <p className="text-xs font-semibold text-amber-800 dark:text-amber-100">
+                            {t('account.billing.cancel.scheduled')}
+                          </p>
+                          <p className="text-xs text-amber-700/90 dark:text-amber-100/80">
+                            {t('account.billing.cancel.scheduledDescription', { plan: planLabel, date: renewalText })}
+                          </p>
+                          <button
+                            onClick={() => updateCancellation(false)}
+                            disabled={cancelBusy}
+                            className="inline-flex h-9 items-center justify-center rounded-lg bg-white text-xs font-semibold text-amber-900 shadow-sm transition hover:bg-amber-100 disabled:opacity-60 dark:bg-transparent dark:text-amber-200 dark:hover:bg-amber-500/10"
+                          >
+                            {t('account.billing.cancel.keep')}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -507,12 +595,61 @@ export default function AccountSettings() {
 
         </div>
 
+        <CancelPlanModal
+          open={showCancelPlan}
+          onCancel={() => setShowCancelPlan(false)}
+          onConfirm={() => updateCancellation(true)}
+          busy={cancelBusy}
+        />
+
         <ConfirmDeleteAccount
           open={showDeleteConfirm}
           onCancel={() => setShowDeleteConfirm(false)}
           onConfirm={handleDeleteAccount}
           busy={deleteBusy}
         />
+      </div>
+    </div>
+  );
+}
+
+function CancelPlanModal({
+  open,
+  onCancel,
+  onConfirm,
+  busy,
+}: {
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  busy?: boolean;
+}) {
+  const { t } = useDashboardTranslation();
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={busy ? undefined : onCancel} />
+      <div className="relative z-[101] bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl w-[92vw] max-w-md p-6 space-y-4">
+        <h3 className="text-lg font-bold text-[var(--text)]">
+          {t('account.billing.cancel.modalTitle')}
+        </h3>
+        <p className="text-sm text-[var(--muted)]">
+          {t('account.billing.cancel.modalBody')}
+        </p>
+        <div className="pt-2 flex items-center justify-end gap-3">
+          <Button onClick={onCancel} disabled={busy}>
+            {t('account.billing.cancel.modalKeep')}
+          </Button>
+          <Button
+            onClick={onConfirm}
+            disabled={busy}
+            isLoading={busy}
+            variant="danger"
+          >
+            {t('account.billing.cancel.modalConfirm')}
+          </Button>
+        </div>
       </div>
     </div>
   );

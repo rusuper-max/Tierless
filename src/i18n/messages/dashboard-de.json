@@ -28,7 +28,27 @@
             "usage": "Nutzung",
             "currentPlan": "Aktueller Plan",
             "renewsOn": "Verlängert sich am",
-            "manageSubscription": "Abonnement verwalten"
+            "renewsUnknown": "Termin steht noch aus",
+            "freePlanInfo": "Der Free-Tier-Plan besitzt kein Verlängerungsdatum.",
+            "manageSubscription": "Abonnement verwalten",
+            "planNames": {
+                "free": "Free Tier",
+                "starter": "Starter",
+                "growth": "Growth",
+                "pro": "Pro",
+                "tierless": "Tierless"
+            },
+            "cancel": {
+                "cta": "Plan kündigen",
+                "keep": "Plan behalten",
+                "description": "Sie werden am Ende des Abrechnungszeitraums auf den Free Tier herabgestuft.",
+                "scheduled": "Kündigung geplant",
+                "scheduledDescription": "Sie bleiben bis {date} im Plan {plan} und wechseln danach zum Free Tier.",
+                "modalTitle": "Abonnement kündigen?",
+                "modalBody": "Sie werden am Ende des Abrechnungszeitraums auf den Free Tier herabgestuft. Sind Sie sicher?",
+                "modalConfirm": "Ja, kündigen",
+                "modalKeep": "Plan behalten"
+            }
         },
         "preferences": {
             "notifications": "Benachrichtigungen",

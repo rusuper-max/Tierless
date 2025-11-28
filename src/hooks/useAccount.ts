@@ -10,6 +10,8 @@ export type AccountSnapshot = {
   email: string | null;
   plan: Plan;
   entitlements: string[];
+  renewsOn: string | null;
+  cancelAtPeriodEnd: boolean;
 };
 
 // ------- Lightweight store (bez React setState u efektima) -------
@@ -24,6 +26,8 @@ let state: AccountSnapshot = {
   email: null,
   plan: "free",
   entitlements: entitlementsFor("free"),
+  renewsOn: null,
+  cancelAtPeriodEnd: false,
 };
 
 async function fetchStatusAndMe() {
@@ -46,14 +50,22 @@ async function fetchStatusAndMe() {
     const email = authenticated ? (sJson?.user?.email || null) : null;
 
     let plan: Plan = "free";
+    let renewsOn: string | null = null;
+    let cancelAtPeriodEnd = false;
     if (authenticated) {
       const mRes = await fetch("/api/me/plan", {
         cache: "no-store",
         credentials: "same-origin",
         headers: { "x-no-cache": String(Date.now()) },
       });
-      const mJson = (await mRes.json().catch(() => ({}))) as { plan?: Plan };
+      const mJson = (await mRes.json().catch(() => ({}))) as {
+        plan?: Plan;
+        renewsOn?: string | null;
+        cancelAtPeriodEnd?: boolean;
+      };
       plan = (mJson?.plan ?? "free") as Plan;
+      renewsOn = typeof mJson?.renewsOn === "string" ? mJson.renewsOn : null;
+      cancelAtPeriodEnd = !!mJson?.cancelAtPeriodEnd;
     }
 
     state = {
@@ -62,6 +74,8 @@ async function fetchStatusAndMe() {
       email,
       plan,
       entitlements: entitlementsFor(plan),
+      renewsOn,
+      cancelAtPeriodEnd,
     };
     notify();
   } catch {
@@ -71,6 +85,8 @@ async function fetchStatusAndMe() {
       email: null,
       plan: "free",
       entitlements: entitlementsFor("free"),
+      renewsOn: null,
+      cancelAtPeriodEnd: false,
     };
     notify();
   }
@@ -123,6 +139,8 @@ export function injectInitialAccountSnapshot(s: AccountSnapshot) {
       email: s.email ?? null,
       plan: s.plan,
       entitlements: Array.isArray(s.entitlements) ? s.entitlements : entitlementsFor(s.plan),
+      renewsOn: s.renewsOn ?? null,
+      cancelAtPeriodEnd: !!s.cancelAtPeriodEnd,
     };
     notify();
   }
