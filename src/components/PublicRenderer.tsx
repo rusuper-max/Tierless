@@ -607,7 +607,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
             const isExpanded = expandedSections.has(section.id) || !!search; // Always expand if searching
 
             return (
-              <div key={section.id} className="scroll-mt-32">
+              <div key={section.id} id={`sec-${section.id}`} className="scroll-mt-32">
                 {/* Accordion Header (Clickable) */}
                 <div
                   onClick={() => toggleSection(section.id)}
