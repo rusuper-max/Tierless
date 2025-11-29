@@ -1,0 +1,17 @@
+/* Add to globals.css or create a new CSS file */
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(79, 70, 229, 0.5), 0 0 20px rgba(34, 211, 238, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(79, 70, 229, 0.7), 0 0 35px rgba(34, 211, 238, 0.5);
+    }
+}
+
+.animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+}

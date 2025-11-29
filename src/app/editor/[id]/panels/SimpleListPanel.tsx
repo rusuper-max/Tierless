@@ -1545,7 +1545,10 @@ export default function SimpleListPanel() {
         </label>
 
         {/* Enable Calculations */}
-        <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors">
+        <label
+          className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors"
+          data-help="Enable or disable price display and quantity selection for items."
+        >
           <div className="space-y-0.5">
             <span className="text-sm text-[var(--text)] font-medium block">{t("Enable Calculations")}</span>
             <span className="text-[10px] text-[var(--muted)] block">{t("Shows prices and allows quantity selection")}</span>
@@ -1559,7 +1562,10 @@ export default function SimpleListPanel() {
         {/* Add Checkout Button */}
         {meta.simpleEnableCalculations && (
           <div className="space-y-3">
-            <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors border-l-2 border-[#22D3EE]/30 ml-2 pl-3">
+            <label
+              className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors border-l-2 border-[#22D3EE]/30 ml-2 pl-3"
+              data-help="Add a checkout/order button that lets customers easily send their selections via WhatsApp or Email."
+            >
               <div className="space-y-0.5">
                 <span className="text-sm text-[var(--text)] font-medium block">{t("Add Checkout Button")}</span>
                 <span className="text-[10px] text-[var(--muted)] block">{t("Adds a button for customers to send their order via WhatsApp or Email.")}</span>
@@ -1593,7 +1599,10 @@ export default function SimpleListPanel() {
         )}
 
         {/* Show Unit in Public View */}
-        <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors">
+        <label
+          className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors"
+          data-help="Display the unit of measure (kg, pcs, liters, etc.) next to item prices. Useful for products sold by weight or volume."
+        >
           <div className="space-y-0.5">
             <span className="text-sm text-[var(--text)] font-medium block">{t("Show Units")}</span>
             <span className="text-[10px] text-[var(--muted)] block">{t("Display unit of measure (kg, pcs, etc.) next to prices")}</span>
@@ -1605,7 +1614,10 @@ export default function SimpleListPanel() {
         </label>
 
         {/* Allow Rating */}
-        <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors">
+        <label
+          className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors"
+          data-help="Enable visitors to rate your page with 1-5 stars. Ratings help showcase quality and build trust with potential customers."
+        >
           <div className="space-y-0.5">
             <span className="text-sm text-[var(--text)] font-medium block">{t("Allow Rating")}</span>
             <span className="text-[10px] text-[var(--muted)] block">{t("Allow visitors to rate this page")}</span>
@@ -1616,12 +1628,30 @@ export default function SimpleListPanel() {
           </div>
         </label>
 
+        {/* List in Examples */}
+        <label
+          className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors"
+          data-help="Display this page in the public examples gallery. Great for showcasing your work and attracting new customers through discovery."
+        >
+          <div className="space-y-0.5">
+            <span className="text-sm text-[var(--text)] font-medium block">{t("Show in Examples")}</span>
+            <span className="text-[10px] text-[var(--muted)] block">{t("Display this page in the public examples gallery")}</span>
+          </div>
+          <div className="relative inline-flex items-center cursor-default">
+            <input type="checkbox" checked={meta.listInExamples || false} onChange={e => setMeta({ listInExamples: e.target.checked })} className="sr-only peer" />
+            <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${meta.listInExamples ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
+          </div>
+        </label>
+
         {/* Autosave Section */}
         <div className="mt-4 pt-4 border-t border-[var(--border)]">
           <h4 className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-3">{t("Autosave")}</h4>
 
           {/* Enable Autosave Toggle */}
-          <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors">
+          <label
+            className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors"
+            data-help="Automatically save your changes in the background. Never lose work again! Changes save at your chosen interval."
+          >
             <div className="space-y-0.5">
               <span className="text-sm text-[var(--text)] font-medium block">{t("Enable Autosave")}</span>
               <span className="text-[10px] text-[var(--muted)] block">{t("Automatically save your changes in the background")}</span>

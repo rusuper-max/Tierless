@@ -84,7 +84,7 @@ html:not(.dark) {
   --border: var(--border-light);
   --card: var(--card-light);
   --btn-outline: #cbd5e1;
-  
+
   /* Button theming */
   --btn-bg-dark: #ffffff;
   --btn-bg-lighter: #f8fafc;
@@ -369,12 +369,29 @@ html.dark .neon-surface::before {
 .status-badge.online .dot {
   position: absolute;
   inset: -4px;
-  /* malo veći od bež-a da bi dot bio tik izvan teksta */
+  /* malo veći od badge-a da bi dot bio tik izvan teksta */
   border-radius: 9999px;
   background:
     radial-gradient(circle at 50% 0, rgba(16, 185, 129, .95) 0 3px, transparent 4px);
   animation: tl-rotate 1.6s linear infinite;
   pointer-events: none;
+}
+
+/* Guide button pulsing animation */
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(79, 70, 229, 0.5), 0 0 20px rgba(34, 211, 238, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.7), 0 0 35px rgba(34, 211, 238, 0.5);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
 
 .status-badge.offline .dot {

@@ -184,7 +184,22 @@ export default function EditorNavBar({
 }) {
   const [qrOpen, setQrOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [hasClickedGuide, setHasClickedGuide] = useState(true); // default true to avoid flash
   const { plan } = useAccount();
+
+  // Check if user has clicked Guide before
+  useEffect(() => {
+    const clicked = localStorage.getItem('guide_clicked');
+    setHasClickedGuide(clicked === 'true');
+  }, []);
+
+  const handleGuideClick = () => {
+    if (!hasClickedGuide) {
+      localStorage.setItem('guide_clicked', 'true');
+      setHasClickedGuide(true);
+    }
+    onGuideClick?.();
+  };
 
   const fullPublicUrl = useMemo(() => {
     if (!publicHref) return "";
@@ -259,10 +274,16 @@ export default function EditorNavBar({
                 <ThemeToggle />
               </div>
 
-              {/* Guide Button (compact) */}
+              {/* Guide Button (compact with pulsing animation) */}
               <button
-                onClick={onGuideClick}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--muted)] hover:text-[var(--text)] rounded-full hover:bg-white/5 dark:hover:bg-white/5 transition-all cursor-pointer"
+                onClick={handleGuideClick}
+                className={`
+                  flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer relative
+                  ${!hasClickedGuide
+                    ? 'text-white bg-gradient-to-r from-[#4F46E5] to-[#22D3EE] shadow-lg animate-pulse-glow'
+                    : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/5 dark:hover:bg-white/5'
+                  }
+                `}
                 title={t("Quick tour")}
                 data-help="Activate Help Mode to learn what each element does. Click on any button or field to see an explanation."
               >
