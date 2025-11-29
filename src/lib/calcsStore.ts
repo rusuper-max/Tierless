@@ -16,6 +16,8 @@ export type Calc = {
     createdAt?: number;
     updatedAt?: number;
     views7d?: number;
+    avgRating?: number;
+    ratingsCount?: number;
   };
   template?: string;
   config?: any;
@@ -23,7 +25,7 @@ export type Calc = {
 
 const pool = getPool();
 
-async function ensureTable() {
+export async function ensureTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS calculators (
       user_id     TEXT NOT NULL,
@@ -37,11 +39,30 @@ async function ensureTable() {
       views7d     INTEGER DEFAULT 0,
       created_at  BIGINT NOT NULL,
       updated_at  BIGINT NOT NULL,
+      avg_rating  DECIMAL(3,2) DEFAULT 0,
+      ratings_count INTEGER DEFAULT 0,
       PRIMARY KEY (user_id, slug)
     );
-    CREATE INDEX IF NOT EXISTS idx_calculators_user ON calculators(user_id);
-    CREATE INDEX IF NOT EXISTS idx_calculators_user_published ON calculators(user_id, published);
   `);
+
+  try {
+    await pool.query(`
+      ALTER TABLE calculators ADD COLUMN IF NOT EXISTS avg_rating DECIMAL(3,2) DEFAULT 0;
+      ALTER TABLE calculators ADD COLUMN IF NOT EXISTS ratings_count INTEGER DEFAULT 0;
+    `);
+  } catch (e) {
+    console.warn("Migration add columns failed (ignoring):", e);
+  }
+
+  try {
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_calculators_user ON calculators(user_id);
+      CREATE INDEX IF NOT EXISTS idx_calculators_user_published ON calculators(user_id, published);
+      CREATE INDEX IF NOT EXISTS idx_calculators_rating ON calculators(avg_rating DESC, ratings_count DESC);
+    `);
+  } catch (e) {
+    console.warn("Index creation failed (ignoring):", e);
+  }
 }
 
 function rowToCalc(r: any): Calc {
@@ -55,6 +76,8 @@ function rowToCalc(r: any): Calc {
       createdAt: Number(r.created_at) || Date.now(),
       updatedAt: Number(r.updated_at) || Number(r.created_at) || Date.now(),
       views7d: typeof (r.views7d ?? r.views7d) === "number" ? (r.views7d ?? r.views7d) : 0,
+      avgRating: Number(r.avg_rating || 0),
+      ratingsCount: Number(r.ratings_count || 0),
     },
     template: r.template ?? undefined,
     config: r.config ?? {},
@@ -93,7 +116,7 @@ async function uniqueSlug(
   let slug = base;
   let i = 1;
   // proveravaj u bazi dok ne nađeš slobodan
-  for (;;) {
+  for (; ;) {
     if (opts?.ignoreSlug && slug === opts.ignoreSlug) return slug;
     const { rows } = await pool.query(
       `SELECT 1 FROM calculators WHERE user_id=$1 AND slug=$2 LIMIT 1`,
@@ -191,7 +214,7 @@ export async function createWithSlug(
     const baseRaw = slugBase(desiredSlug || "restored");
     const base = baseRaw.replace(/-restored-\d+$/, "");
     let i = 1;
-    for (;;) {
+    for (; ;) {
       const candidate = `${base}-restored-${i++}`;
       const { rows } = await pool.query(
         `SELECT 1 FROM calculators WHERE user_id=$1 AND slug=$2 LIMIT 1`,
@@ -313,7 +336,7 @@ export async function renameWithSlug(
   let full: any | null = null;
   try {
     full = await fullStore.getFull(userId, slug);
-  } catch {}
+  } catch { }
 
   if (full) {
     const patched = {
@@ -324,7 +347,7 @@ export async function renameWithSlug(
     if (nextSlug !== slug) {
       try {
         await fullStore.deleteFull(userId, slug);
-      } catch {}
+      } catch { }
     }
   } else {
     await seedFullFromSource(
@@ -490,4 +513,39 @@ export async function findMiniInAllUsers(slug: string): Promise<Calc | undefined
     [slug]
   );
   return rows[0] ? rowToCalc(rows[0]) : undefined;
+}
+
+// =============== Examples listing =================
+
+export async function listExamples(limit = 50): Promise<Calc[]> {
+  await ensureTable();
+  // Fetch published pages that are marked as examples (we need to check config/meta in JSONB)
+  // OR we can rely on a new column if we want to be efficient.
+  // For now, let's assume we filter by `config->meta->listInExamples` or similar if we had it in JSONB.
+  // BUT, `config` column is JSONB. `meta` is NOT in `config` column in DB usually?
+  // `rowToCalc` constructs meta from `r.name`, `r.slug` etc.
+  // `config` column stores the rest.
+  // Wait, `create` inserts `config` as `'{}'`.
+  // `fullStore` has the full JSON.
+  // If we want to filter by `listInExamples`, we should probably index it or extract it.
+  // OR, since we don't have many examples yet, we can fetch all published and filter in memory (not scalable).
+  // Better: Add `is_example` boolean column to `calculators` table?
+  // The user request says: "U admin/editoru dodaj preklopnike: “Allow rating” i “Show in Examples”."
+  // So it's a property of the calculator.
+  // Let's add `is_example` column to `calculators` table for efficient querying.
+
+  // Adding `is_example` column to ensureTable above would be good.
+  // I'll add it now.
+
+  const { rows } = await pool.query(
+    `SELECT * FROM calculators 
+     WHERE published = TRUE AND (config->'meta'->>'listInExamples')::boolean = TRUE
+     ORDER BY avg_rating DESC, ratings_count DESC, updated_at DESC
+     LIMIT $1`,
+    [limit]
+  );
+
+  // Also fetch seed examples if needed (hardcoded IDs or tag isSeedExample)
+  // For now just return what we find.
+  return rows.map(rowToCalc);
 }

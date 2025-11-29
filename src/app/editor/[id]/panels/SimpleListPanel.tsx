@@ -427,8 +427,8 @@ export default function SimpleListPanel() {
           onClick={() => setIsOpen(!isOpen)}
           disabled={isOverLimit}
           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all text-left group ${isOpen
-              ? 'bg-[var(--surface)] border-[#22D3EE]/30 shadow-sm'
-              : 'bg-[var(--bg)]/50 border-[var(--border)] hover:border-[var(--text)]/30 hover:bg-[var(--surface)]'
+            ? 'bg-[var(--surface)] border-[#22D3EE]/30 shadow-sm'
+            : 'bg-[var(--bg)]/50 border-[var(--border)] hover:border-[var(--text)]/30 hover:bg-[var(--surface)]'
             } ${isOverLimit ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
           <div className="flex items-center gap-2">
@@ -1442,6 +1442,7 @@ export default function SimpleListPanel() {
               <option value={2}>2 (100.00)</option>
             </select>
           </label>
+
         </div>
       </div>
       <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4">
@@ -1603,6 +1604,18 @@ export default function SimpleListPanel() {
           </div>
         </label>
 
+        {/* Allow Rating */}
+        <label className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors">
+          <div className="space-y-0.5">
+            <span className="text-sm text-[var(--text)] font-medium block">{t("Allow Rating")}</span>
+            <span className="text-[10px] text-[var(--muted)] block">{t("Allow visitors to rate this page")}</span>
+          </div>
+          <div className="relative inline-flex items-center cursor-default">
+            <input type="checkbox" checked={meta.allowRating || false} onChange={e => setMeta({ allowRating: e.target.checked })} className="sr-only peer" />
+            <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${meta.allowRating ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
+          </div>
+        </label>
+
         {/* Autosave Section */}
         <div className="mt-4 pt-4 border-t border-[var(--border)]">
           <h4 className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-3">{t("Autosave")}</h4>
@@ -1635,6 +1648,9 @@ export default function SimpleListPanel() {
                 onChange={e => setMeta({ autosaveInterval: parseInt(e.target.value) })}
                 className="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] cursor-default"
               >
+                <option value={2}>2 seconds</option>
+                <option value={5}>5 seconds</option>
+                <option value={10}>10 seconds</option>
                 <option value={30}>30 seconds</option>
                 <option value={60}>1 minute</option>
                 <option value={120}>2 minutes</option>

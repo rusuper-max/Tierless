@@ -40,11 +40,24 @@ async function ensureTable() {
       deleted_at  BIGINT NOT NULL,
       PRIMARY KEY (user_id, slug)
     );
-    CREATE INDEX IF NOT EXISTS idx_trash_user ON trash_items(user_id);
-    CREATE INDEX IF NOT EXISTS idx_trash_user_deleted ON trash_items(user_id, deleted_at DESC);
-    ALTER TABLE trash_items
-      ADD COLUMN IF NOT EXISTS original_slug TEXT;
   `);
+
+  try {
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_trash_user ON trash_items(user_id);
+      CREATE INDEX IF NOT EXISTS idx_trash_user_deleted ON trash_items(user_id, deleted_at DESC);
+    `);
+  } catch (e) {
+    console.warn("Trash index creation failed:", e);
+  }
+
+  try {
+    await pool.query(`
+      ALTER TABLE trash_items ADD COLUMN IF NOT EXISTS original_slug TEXT;
+    `);
+  } catch (e) {
+    console.warn("Trash migration (original_slug) failed:", e);
+  }
 }
 
 function normalizeSlug(s: string | undefined) {
@@ -64,7 +77,7 @@ async function uniqueTrashSlug(userId: string, base: string): Promise<string> {
   const cleanBase = normalizeSlug(base);
   let candidate = cleanBase;
   let i = 1;
-  for (;;) {
+  for (; ;) {
     const { rows } = await pool.query(
       `SELECT 1 FROM trash_items WHERE user_id=$1 AND slug=$2 LIMIT 1`,
       [userId, candidate]

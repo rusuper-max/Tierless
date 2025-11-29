@@ -116,6 +116,14 @@ export default function AdvancedPanelInner() {
     setAdvancedSliderColorMode,
     setAdvancedSliderSolidColor,
     formatPrice,
+    advancedAutosaveInterval,
+    setAdvancedAutosaveInterval,
+    advancedAutosaveEnabled,
+    setAdvancedAutosaveEnabled,
+    advancedAllowRating,
+    setAdvancedAllowRating,
+    advancedListInExamples,
+    setAdvancedListInExamples,
   } = useAdvancedState();
 
   /* ---------------------------------------------------------------------- */
@@ -142,9 +150,8 @@ export default function AdvancedPanelInner() {
                 key={mode}
                 type="button"
                 onClick={() => setUiMode(mode)}
-                className={`relative inline-flex items-center justify-center rounded-full px-2.5 py-1 font-medium transition ${
-                  active ? "text-[var(--text)]" : "text-[var(--muted)]"
-                }`}
+                className={`relative inline-flex items-center justify-center rounded-full px-2.5 py-1 font-medium transition ${active ? "text-[var(--text)]" : "text-[var(--muted)]"
+                  }`}
               >
                 {active && (
                   <span
@@ -237,6 +244,70 @@ export default function AdvancedPanelInner() {
                   />
                 </div>
               )}
+
+              <div className="space-y-3 pt-2 border-t border-[var(--border)]">
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <span className="text-[11px] font-medium text-[var(--muted)] group-hover:text-[var(--text)] transition-colors">
+                    {t("Enable Autosave")}
+                  </span>
+                  <div className="relative inline-flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={advancedAutosaveEnabled}
+                      onChange={(e) => setAdvancedAutosaveEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className={`w-8 h-4 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all ${advancedAutosaveEnabled ? "bg-[var(--brand-1,#4F46E5)]" : "bg-gray-200"}`}></div>
+                  </div>
+                </label>
+
+                {advancedAutosaveEnabled && (
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-[var(--muted)]">
+                      {t("Autosave Interval")}
+                    </label>
+                    <select
+                      value={advancedAutosaveInterval}
+                      onChange={(e) => setAdvancedAutosaveInterval(Number(e.target.value))}
+                      className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-[var(--brand-1,#4F46E5)]"
+                    >
+                      <option value={2}>2s (Fastest)</option>
+                      <option value={5}>5s (Fast)</option>
+                      <option value={10}>10s (Normal)</option>
+                      <option value={30}>30s (Slow)</option>
+                      <option value={60}>60s (Default)</option>
+                      <option value={120}>2m</option>
+                      <option value={300}>5m</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-[var(--border)] space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={advancedAllowRating}
+                    onChange={(e) => setAdvancedAllowRating(e.target.checked)}
+                    className="rounded border-[var(--border)] text-[var(--brand-1,#4F46E5)] focus:ring-[var(--brand-1,#4F46E5)]"
+                  />
+                  <span className="text-[13px] text-[var(--text)] group-hover:text-[var(--brand-1,#4F46E5)] transition-colors">
+                    {t("Allow visitors to rate this page")}
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={advancedListInExamples}
+                    onChange={(e) => setAdvancedListInExamples(e.target.checked)}
+                    className="rounded border-[var(--border)] text-[var(--brand-1,#4F46E5)] focus:ring-[var(--brand-1,#4F46E5)]"
+                  />
+                  <span className="text-[13px] text-[var(--text)] group-hover:text-[var(--brand-1,#4F46E5)] transition-colors">
+                    {t("Show in 'See examples' list")}
+                  </span>
+                </label>
+              </div>
             </div>
           </section>
 
@@ -342,22 +413,20 @@ export default function AdvancedPanelInner() {
                     <button
                       type="button"
                       onClick={() => setAdvancedSummaryPosition("right")}
-                      className={`flex-1 rounded-full border px-2 py-1 ${
-                        advancedSummaryPosition === "right"
-                          ? "border-[var(--brand-1,#4F46E5)] text-[var(--text)]"
-                          : "border-[var(--border)] text-[var(--muted)]"
-                      }`}
+                      className={`flex-1 rounded-full border px-2 py-1 ${advancedSummaryPosition === "right"
+                        ? "border-[var(--brand-1,#4F46E5)] text-[var(--text)]"
+                        : "border-[var(--border)] text-[var(--muted)]"
+                        }`}
                     >
                       {t("Right")}
                     </button>
                     <button
                       type="button"
                       onClick={() => setAdvancedSummaryPosition("bottom")}
-                      className={`flex-1 rounded-full border px-2 py-1 ${
-                        advancedSummaryPosition === "bottom"
-                          ? "border-[var(--brand-1,#4F46E5)] text-[var(--text)]"
-                          : "border-[var(--border)] text-[var(--muted)]"
-                      }`}
+                      className={`flex-1 rounded-full border px-2 py-1 ${advancedSummaryPosition === "bottom"
+                        ? "border-[var(--brand-1,#4F46E5)] text-[var(--text)]"
+                        : "border-[var(--border)] text-[var(--muted)]"
+                        }`}
                     >
                       {t("Bottom")}
                     </button>
@@ -579,7 +648,7 @@ export default function AdvancedPanelInner() {
                         onChange={(e) =>
                           setAdvancedSelectedHighlightMode(
                             (e.target.value as SelectedHighlightMode) ||
-                              "brandGlow"
+                            "brandGlow"
                           )
                         }
                         className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-[var(--brand-1,#4F46E5)]"
@@ -600,18 +669,18 @@ export default function AdvancedPanelInner() {
 
                       {(advancedSelectedHighlightMode === "solidBg" ||
                         advancedSelectedHighlightMode === "outlineGlow") && (
-                        <input
-                          type="text"
-                          placeholder={t("#22D3EE")}
-                          value={advancedSelectedHighlightColor || ""}
-                          onChange={(e) =>
-                            setAdvancedSelectedHighlightColor(
-                              e.target.value
-                            )
-                          }
-                          className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-[var(--brand-1,#4F46E5)]"
-                        />
-                      )}
+                          <input
+                            type="text"
+                            placeholder={t("#22D3EE")}
+                            value={advancedSelectedHighlightColor || ""}
+                            onChange={(e) =>
+                              setAdvancedSelectedHighlightColor(
+                                e.target.value
+                              )
+                            }
+                            className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-[var(--brand-1,#4F46E5)]"
+                          />
+                        )}
                     </div>
                   </div>
 
@@ -744,18 +813,17 @@ export default function AdvancedPanelInner() {
                       return (
                         <li
                           key={node.id}
-                         className={`relative flex items-center gap-2 px-3 py-2.5 cursor-pointer rounded-2xl ${
-                            isSelected
-                              ? "shadow-[0_8px_24px_rgba(15,23,42,0.18)]"
-                              : "hover:bg-[var(--surface)] rounded-xl"
-                          }`}
+                          className={`relative flex items-center gap-2 px-3 py-2.5 cursor-pointer rounded-2xl ${isSelected
+                            ? "shadow-[0_8px_24px_rgba(15,23,42,0.18)]"
+                            : "hover:bg-[var(--surface)] rounded-xl"
+                            }`}
                           style={
                             isSelected
                               ? {
-                                  backgroundImage:
-                                    "linear-gradient(120deg, rgba(79,70,229,0.15), rgba(45,212,191,0.12))",
-                                  border: "1px solid rgba(79,70,229,0.25)",
-                                }
+                                backgroundImage:
+                                  "linear-gradient(120deg, rgba(79,70,229,0.15), rgba(45,212,191,0.12))",
+                                border: "1px solid rgba(79,70,229,0.25)",
+                              }
                               : undefined
                           }
                           onClick={() => setSelectedId(node.id)}
@@ -777,10 +845,10 @@ export default function AdvancedPanelInner() {
                                     (node.kind === "tier"
                                       ? t("Untitled tier")
                                       : node.kind === "addon"
-                                      ? t("Untitled addon")
-                                      : node.kind === "item"
-                                      ? t("Untitled item")
-                                      : t("Untitled slider"))}
+                                        ? t("Untitled addon")
+                                        : node.kind === "item"
+                                          ? t("Untitled item")
+                                          : t("Untitled slider"))}
                                 </span>
                                 {node.kind === "tier" &&
                                   node.emphasis === "featured" && (
@@ -965,23 +1033,23 @@ export default function AdvancedPanelInner() {
                     {(selectedNode.kind === "tier" ||
                       selectedNode.kind === "addon" ||
                       selectedNode.kind === "slider") && (
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-medium text-[var(--muted)]">
-                          {t("Unit label")}
-                        </label>
-                        <input
-                          type="text"
-                          value={selectedNode.unitLabel || ""}
-                          onChange={(e) =>
-                            handleUpdateNode(selectedNode.id, {
-                              unitLabel: e.target.value,
-                            })
-                          }
-                          className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-[var(--brand-1,#4F46E5)]"
-                          placeholder={t("per project, per hour…")}
-                        />
-                      </div>
-                    )}
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-medium text-[var(--muted)]">
+                            {t("Unit label")}
+                          </label>
+                          <input
+                            type="text"
+                            value={selectedNode.unitLabel || ""}
+                            onChange={(e) =>
+                              handleUpdateNode(selectedNode.id, {
+                                unitLabel: e.target.value,
+                              })
+                            }
+                            className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-[var(--brand-1,#4F46E5)]"
+                            placeholder={t("per project, per hour…")}
+                          />
+                        </div>
+                      )}
 
                     {/* Slider-specific */}
                     {selectedNode.kind === "slider" && (
@@ -1049,7 +1117,7 @@ export default function AdvancedPanelInner() {
                               handleUpdateNode(selectedNode.id, {
                                 pricePerStep:
                                   e.target.value === "" ||
-                                  Number.isNaN(Number(e.target.value))
+                                    Number.isNaN(Number(e.target.value))
                                     ? null
                                     : Number(e.target.value),
                               })
@@ -1130,12 +1198,12 @@ export default function AdvancedPanelInner() {
 
                       {(!selectedNode.features ||
                         selectedNode.features.length === 0) && (
-                        <p className="text-[11px] text-[var(--muted)]">
-                          {t(
-                            "Add bullet points to describe what this tier includes."
-                          )}
-                        </p>
-                      )}
+                          <p className="text-[11px] text-[var(--muted)]">
+                            {t(
+                              "Add bullet points to describe what this tier includes."
+                            )}
+                          </p>
+                        )}
 
                       {selectedNode.features &&
                         selectedNode.features.length > 0 && (
@@ -1309,68 +1377,68 @@ export default function AdvancedPanelInner() {
                         {/* CTA po tieru */}
                         {(selectedNode.kind === "tier" ||
                           selectedNode.kind === "addon") && (
-                          <>
-                            <div className="space-y-1">
-                              <label className="text-[11px] font-medium text-[var(--muted)]">
-                                {t("CTA label override")}
-                              </label>
-                              <input
-                                type="text"
-                                value={selectedNode.ctaLabel || ""}
-                                onChange={(e) =>
-                                  handleUpdateNode(selectedNode.id, {
-                                    ctaLabel: e.target.value || null,
-                                  })
-                                }
-                                placeholder={t("Leave empty to use global")}
-                                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-[var(--brand-1,#4F46E5)]"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[11px] font-medium text-[var(--muted)]">
-                                {t("CTA kind")}
-                              </label>
-                              <select
-                                value={selectedNode.ctaKind || "link"}
-                                onChange={(e) =>
-                                  handleUpdateNode(selectedNode.id, {
-                                    ctaKind: e.target
-                                      .value as AdvancedTierCtaKind,
-                                  })
-                                }
-                                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-[var(--brand-1,#4F46E5)]"
-                              >
-                                {CTA_KIND_OPTIONS.map((opt) => (
-                                  <option
-                                    key={opt.value}
-                                    value={opt.value}
-                                    disabled={
-                                      opt.value === "checkout"
-                                    }
-                                  >
-                                    {t(opt.label)}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="sm:col-span-2 space-y-1">
-                              <label className="text-[11px] font-medium text-[var(--muted)]">
-                                {t("CTA URL / target")}
-                              </label>
-                              <input
-                                type="text"
-                                value={selectedNode.ctaUrl || ""}
-                                onChange={(e) =>
-                                  handleUpdateNode(selectedNode.id, {
-                                    ctaUrl: e.target.value || null,
-                                  })
-                                }
-                                placeholder={t("https://... or mailto:...")}
-                                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-[var(--brand-1,#4F46E5)]"
-                              />
-                            </div>
-                          </>
-                        )}
+                            <>
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-medium text-[var(--muted)]">
+                                  {t("CTA label override")}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={selectedNode.ctaLabel || ""}
+                                  onChange={(e) =>
+                                    handleUpdateNode(selectedNode.id, {
+                                      ctaLabel: e.target.value || null,
+                                    })
+                                  }
+                                  placeholder={t("Leave empty to use global")}
+                                  className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-[var(--brand-1,#4F46E5)]"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-medium text-[var(--muted)]">
+                                  {t("CTA kind")}
+                                </label>
+                                <select
+                                  value={selectedNode.ctaKind || "link"}
+                                  onChange={(e) =>
+                                    handleUpdateNode(selectedNode.id, {
+                                      ctaKind: e.target
+                                        .value as AdvancedTierCtaKind,
+                                    })
+                                  }
+                                  className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-[var(--brand-1,#4F46E5)]"
+                                >
+                                  {CTA_KIND_OPTIONS.map((opt) => (
+                                    <option
+                                      key={opt.value}
+                                      value={opt.value}
+                                      disabled={
+                                        opt.value === "checkout"
+                                      }
+                                    >
+                                      {t(opt.label)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="sm:col-span-2 space-y-1">
+                                <label className="text-[11px] font-medium text-[var(--muted)]">
+                                  {t("CTA URL / target")}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={selectedNode.ctaUrl || ""}
+                                  onChange={(e) =>
+                                    handleUpdateNode(selectedNode.id, {
+                                      ctaUrl: e.target.value || null,
+                                    })
+                                  }
+                                  placeholder={t("https://... or mailto:...")}
+                                  className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-[13px] outline-none focus:ring-1 focus:ring-[var(--brand-1,#4F46E5)]"
+                                />
+                              </div>
+                            </>
+                          )}
                       </div>
                     </div>
                   )}

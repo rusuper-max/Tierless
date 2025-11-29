@@ -160,7 +160,7 @@ export default function MainPhase2() {
       <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
 
         {/* GLAVNI GRID: LEVO TEKST, DESNO TELEFON */}
-        <div className="relative w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 px-4 sm:px-6 lg:px-12 z-10">
+        <div className="relative w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-12 px-4 sm:px-6 lg:px-12 z-10 py-4 sm:py-0">
 
           {/* --- LEVA STRANA: TEKSTUALNI NARATIV --- */}
           <div className="flex flex-col justify-center h-full relative order-2 lg:order-1">
@@ -216,14 +216,6 @@ export default function MainPhase2() {
                 <p className="text-sm sm:text-lg text-slate-400 leading-relaxed max-w-md">
                   {t("phase2.step3.desc")}
                 </p>
-                <div className="mt-3 sm:mt-6 flex items-center gap-3 sm:gap-4">
-                  <div className="flex -space-x-2">
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[9px] sm:text-[10px]">☕️</div>
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[9px] sm:text-[10px]">💅</div>
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-800 border-2 border-[#020617] flex items-center justify-center text-[9px] sm:text-[10px]">🦷</div>
-                  </div>
-                  <span className="text-[10px] sm:text-sm text-slate-500">{t("phase2.step3.trusted")}</span>
-                </div>
               </motion.div>
 
             </div>
@@ -242,14 +234,14 @@ export default function MainPhase2() {
 
             <motion.div
               style={{ scale: phoneScale, y: phoneY }}
-              className="relative z-10 w-[280px] sm:w-[320px] h-[560px] sm:h-[640px] perspective-1000"
+              className="relative z-10 w-[220px] sm:w-[280px] lg:w-[320px] h-[440px] sm:h-[560px] lg:h-[640px] perspective-1000"
             >
-              {/* Phone Frame - Scaled down 12.5% on mobile */}
-              <div className="w-full h-full bg-[#020617] rounded-[40px] sm:rounded-[48px] border-[5px] sm:border-[6px] border-slate-800 shadow-2xl overflow-hidden relative ring-1 ring-white/10">
+              {/* Phone Frame - Further scaled down on mobile */}
+              <div className="w-full h-full bg-[#020617] rounded-[32px] sm:rounded-[40px] lg:rounded-[48px] border-[4px] sm:border-[5px] lg:border-[6px] border-slate-800 shadow-2xl overflow-hidden relative ring-1 ring-white/10">
 
                 {/* Dynamic Island */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-full z-50 flex items-center justify-center gap-2 px-3">
-                  <div className="w-2 h-2 bg-[#1e293b] rounded-full" />
+                <div className="absolute top-3 sm:top-4 left-1/2 -translate-x-1/2 w-20 sm:w-28 h-5 sm:h-7 bg-black rounded-full z-50 flex items-center justify-center gap-2 px-2 sm:px-3">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#1e293b] rounded-full" />
                   <div className="w-1 h-1 bg-[#0f172a] rounded-full" />
                 </div>
 

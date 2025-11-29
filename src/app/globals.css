@@ -84,12 +84,22 @@ html:not(.dark) {
   --border: var(--border-light);
   --card: var(--card-light);
   --btn-outline: #cbd5e1;
+  
+  /* Button theming */
+  --btn-bg-dark: #ffffff;
+  --btn-bg-lighter: #f8fafc;
+  --btn-text: #0f172a;
 }
 
 html.dark {
   --border: var(--border-dark);
   --card: var(--card-dark);
   --btn-outline: #3b3f46;
+
+  /* Button theming */
+  --btn-bg-dark: #020617;
+  --btn-bg-lighter: #0f172a;
+  --btn-text: #ffffff;
 }
 
 /* =========================================

@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect, useState, RefObject, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Facebook, Instagram, Youtube, Globe, MessageCircle } from "lucide-react";
+import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Facebook, Instagram, Youtube, Globe, MessageCircle, Star } from "lucide-react";
 
 import Image, { ImageLoaderProps } from "next/image";
 
@@ -294,6 +294,221 @@ function WifiDisplayThemed({ ssid, password }: { ssid: string; password?: string
         {showPassword ? <span>{password}</span> : <span className="text-xs opacity-70 group-hover:opacity-100 transition">Click to show password</span>}
       </span>
     </button>
+  );
+}
+
+
+
+function RatingWidget({ pageId, initialAvg, initialCount, initialUserScore, allowRating }: { pageId: string; initialAvg: number; initialCount: number; initialUserScore: number; allowRating: boolean }) {
+  const [avg, setAvg] = useState(initialAvg);
+  const [count, setCount] = useState(initialCount);
+  const [userScore, setUserScore] = useState(initialUserScore);
+  const [hoverScore, setHoverScore] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch latest status on mount to get user's rating if not provided or stale
+  useEffect(() => {
+    if (!allowRating) return;
+    fetch(`/api/rating/status?pageId=${pageId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.avg !== undefined) {
+          setAvg(data.avg);
+          setCount(data.count);
+          setUserScore(data.userScore);
+        }
+      })
+      .catch(console.error);
+  }, [pageId, allowRating]);
+
+  if (!allowRating) return null;
+
+  const handleRate = async (score: number) => {
+    if (loading) return;
+
+    // Optimistic update
+    const prevUserScore = userScore;
+    const prevAvg = avg;
+    const prevCount = count;
+
+    setUserScore(score);
+    // Simple optimistic math: remove old score if exists, add new
+    let newTotal = prevAvg * prevCount;
+    let newCount = prevCount;
+
+    if (prevUserScore > 0) {
+      newTotal -= prevUserScore;
+    } else {
+      newCount += 1;
+    }
+    newTotal += score;
+    const newAvg = newCount > 0 ? newTotal / newCount : 0;
+
+    setAvg(newAvg);
+    setCount(newCount);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/rating", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId, score }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setAvg(data.avg);
+        setCount(data.count);
+        setUserScore(data.userScore);
+      } else {
+        // Rollback
+        setUserScore(prevUserScore);
+        setAvg(prevAvg);
+        setCount(prevCount);
+      }
+    } catch (err) {
+      // Rollback
+      setUserScore(prevUserScore);
+      setAvg(prevAvg);
+      setCount(prevCount);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 mt-3 group/rating">
+      <div className="flex items-center gap-0.5 bg-black/20 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 transition-colors hover:bg-black/30">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => handleRate(star)}
+            onMouseEnter={() => setHoverScore(star)}
+            onMouseLeave={() => setHoverScore(0)}
+            className="p-0.5 focus:outline-none transition-transform hover:scale-110"
+            title={`Rate ${star} stars`}
+          >
+            <Star
+              className={cn(
+                "w-4 h-4 transition-colors",
+                (hoverScore || userScore) >= star
+                  ? "fill-yellow-400 text-yellow-400"
+                  : "text-white/40 fill-transparent"
+              )}
+            />
+          </button>
+        ))}
+      </div>
+      <div className="text-xs font-medium text-white/80 flex flex-col leading-tight">
+        <span className="flex items-center gap-1">
+          <span className="text-white font-bold">{avg.toFixed(1)}</span>
+          <span className="opacity-60">({count})</span>
+        </span>
+        {userScore > 0 && <span className="text-[10px] opacity-60">Your rating: {userScore}</span>}
+      </div>
+    </div>
+  );
+}
+
+function RatingWidgetThemed({ pageId, initialAvg, initialCount, initialUserScore, allowRating }: { pageId: string; initialAvg: number; initialCount: number; initialUserScore: number; allowRating: boolean }) {
+  const [avg, setAvg] = useState(initialAvg);
+  const [count, setCount] = useState(initialCount);
+  const [userScore, setUserScore] = useState(initialUserScore);
+  const [hoverScore, setHoverScore] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!allowRating) return;
+    fetch(`/api/rating/status?pageId=${pageId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.avg !== undefined) {
+          setAvg(data.avg);
+          setCount(data.count);
+          setUserScore(data.userScore);
+        }
+      })
+      .catch(console.error);
+  }, [pageId, allowRating]);
+
+  if (!allowRating) return null;
+
+  const handleRate = async (score: number) => {
+    if (loading) return;
+    const prevUserScore = userScore;
+    const prevAvg = avg;
+    const prevCount = count;
+    setUserScore(score);
+    let newTotal = prevAvg * prevCount;
+    let newCount = prevCount;
+    if (prevUserScore > 0) newTotal -= prevUserScore;
+    else newCount += 1;
+    newTotal += score;
+    const newAvg = newCount > 0 ? newTotal / newCount : 0;
+    setAvg(newAvg);
+    setCount(newCount);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/rating", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId, score }),
+      });
+      const data = await res.json();
+      console.log("[Rating] API response:", data, "Status:", res.status);
+      if (data.ok) {
+        setAvg(data.avg);
+        setCount(data.count);
+        setUserScore(data.userScore);
+      } else {
+        console.warn("[Rating] API returned not ok, rolling back");
+        setUserScore(prevUserScore);
+        setAvg(prevAvg);
+        setCount(prevCount);
+      }
+    } catch (err) {
+      console.error("[Rating] API error:", err);
+      setUserScore(prevUserScore);
+      setAvg(prevAvg);
+      setCount(prevCount);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 mt-3 group/rating justify-center sm:justify-start">
+      <div className="flex items-center gap-0.5 bg-[var(--card)] px-2 py-1 rounded-lg border border-[var(--border)] transition-colors hover:border-[var(--brand-1)]">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => handleRate(star)}
+            onMouseEnter={() => setHoverScore(star)}
+            onMouseLeave={() => setHoverScore(0)}
+            className="p-0.5 focus:outline-none transition-transform hover:scale-110"
+            title={`Rate ${star} stars`}
+          >
+            <Star
+              className={cn(
+                "w-4 h-4 transition-colors",
+                (hoverScore || userScore) >= star
+                  ? "fill-yellow-400 text-yellow-400"
+                  : "text-[var(--muted)] fill-transparent"
+              )}
+            />
+          </button>
+        ))}
+      </div>
+      <div className="text-xs font-medium text-[var(--muted)] flex flex-col leading-tight text-left">
+        <span className="flex items-center gap-1">
+          <span className="text-[var(--text)] font-bold">{avg.toFixed(1)}</span>
+          <span className="opacity-60">({count})</span>
+        </span>
+        {userScore > 0 && <span className="text-[10px] opacity-60">Your rating: {userScore}</span>}
+      </div>
+    </div>
   );
 }
 
@@ -604,6 +819,13 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                     </div>
                   )}
                 </div>
+                <RatingWidget
+                  pageId={meta.slug || ""}
+                  initialAvg={meta.avgRating || 0}
+                  initialCount={meta.ratingsCount || 0}
+                  initialUserScore={0}
+                  allowRating={meta.allowRating || false}
+                />
               </div>
             </div>
           ) : (
@@ -648,6 +870,13 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                   </div>
                 )}
               </div>
+              <RatingWidgetThemed
+                pageId={meta.slug || ""}
+                initialAvg={meta.avgRating || 0}
+                initialCount={meta.ratingsCount || 0}
+                initialUserScore={0}
+                allowRating={meta.allowRating || false}
+              />
             </div>
           )}
         </div>
@@ -710,9 +939,9 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
           {unsectioned.length > 0 && (
             <div id="sec-uncategorized" className="scroll-mt-32 section-observer">
               <h2 className="text-2xl font-extrabold mb-5 flex items-center gap-2 tracking-tight">🔥 Popular</h2>
-            <div className={imageLayout === 'thumbnail'
-              ? "flex flex-col divide-y divide-[var(--border)] rounded-2xl bg-[var(--card)]/30"
-              : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}` }>
+              <div className={imageLayout === 'thumbnail'
+                ? "flex flex-col divide-y divide-[var(--border)] rounded-2xl bg-[var(--card)]/30"
+                : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}`}>
                 {unsectioned
                   .filter(it => !search || it.label.toLowerCase().includes(search.toLowerCase()) || it.note?.toLowerCase().includes(search.toLowerCase()))
                   .map(item => (
@@ -752,7 +981,22 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                 <div key={section.id} id={`sec-${section.id}`} className="scroll-mt-32 section-observer">
                   {/* Accordion Header (Clickable) */}
                   <div
-                    onClick={() => toggleSection(section.id)}
+                    onClick={() => {
+                      const wasOpen = expandedSections.has(section.id);
+                      toggleSection(section.id);
+
+                      // If opening in accordion mode, scroll to top after a brief delay
+                      // to account for layout shift from other sections closing
+                      if (!wasOpen && accordionSolo) {
+                        setTimeout(() => {
+                          const el = document.getElementById(`sec-${section.id}`);
+                          if (el) {
+                            const y = el.getBoundingClientRect().top + window.pageYOffset - 140;
+                            window.scrollTo({ top: y, behavior: 'smooth' });
+                          }
+                        }, 150);
+                      }
+                    }}
                     className="cursor-pointer group relative overflow-hidden rounded-3xl mb-6 transition-all duration-300 hover:shadow-lg active:scale-[0.99]"
                   >
                     {(section as any).videoUrl ? (
@@ -814,13 +1058,13 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                   </div>
 
                   {/* Accordion Content */}
-                <div
-                  className={`${imageLayout === 'thumbnail'
-                    ? "flex flex-col divide-y divide-[var(--border)]"
-                    : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}`
-                    } transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-h-[5000px]' : 'opacity-0 max-h-0 overflow-hidden'}`}
-                  style={{ contentVisibility: isExpanded ? 'auto' : undefined }}
-                >
+                  <div
+                    className={`${imageLayout === 'thumbnail'
+                      ? "flex flex-col divide-y divide-[var(--border)]"
+                      : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}`
+                      } transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-h-[5000px]' : 'opacity-0 max-h-0 overflow-hidden'}`}
+                    style={{ contentVisibility: isExpanded ? 'auto' : undefined }}
+                  >
                     {visibleItems.map(item => (
                       <ItemCard
                         key={item.id}
@@ -889,10 +1133,10 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                   )}
                   {section.description && <p className="text-sm sm:text-base opacity-70 max-w-2xl leading-relaxed">{section.description}</p>}
                 </div>
-              <div className={imageLayout === 'thumbnail'
-                ? "flex flex-col divide-y divide-[var(--border)]"
-                : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}` }
-              >
+                <div className={imageLayout === 'thumbnail'
+                  ? "flex flex-col divide-y divide-[var(--border)]"
+                  : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClass}`}
+                >
                   {visibleItems.map(item => (
                     <ItemCard
                       key={item.id}
@@ -1435,9 +1679,9 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
     // Adaptive padding: more compact when no image
     const rowPadding = hasImage ? 'py-4' : 'py-3';
     const minRowHeight = hasImage ? 'min-h-[88px] md:min-h-[104px]' : 'min-h-0';
-    
+
     return (
-      <div 
+      <div
         onClick={canInteract ? onClick : undefined}
         className={`group relative flex items-center gap-3 md:gap-4 ${rowPadding} px-1 transition-all duration-200 ${minRowHeight} ${canInteract ? 'cursor-pointer hover:bg-[var(--bg)]/50' : ''} ${item.soldOut ? 'opacity-50' : ''}`}
       >

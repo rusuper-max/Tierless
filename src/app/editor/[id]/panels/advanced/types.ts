@@ -386,6 +386,26 @@ export interface AdvancedPublicMeta {
    * Generic flags za feature gating, A/B testove itd.
    */
   experimentalFlags?: string[];
+
+  /**
+   * Interval za autosave u sekundama (default 60).
+   */
+  autosaveInterval?: number;
+
+  /**
+   * Da li je autosave uključen.
+   */
+  autosaveEnabled?: boolean;
+
+  /**
+   * Da li je dozvoljeno ocenjivanje stranice.
+   */
+  allowRating?: boolean;
+
+  /**
+   * Da li se stranica prikazuje u "See examples" listi.
+   */
+  listInExamples?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */

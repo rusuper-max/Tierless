@@ -23,7 +23,7 @@ function useCurrencyFormat(calc?: CalcJson | null) {
 
   const decimalsConf =
     typeof calc?.i18n?.decimals === "number" &&
-    Number.isFinite(calc.i18n.decimals)
+      Number.isFinite(calc.i18n.decimals)
       ? (calc!.i18n!.decimals as number)
       : 0;
 
@@ -89,10 +89,10 @@ function makeDefaultNode(kind: AdvancedNodeKind): AdvancedNode {
       kind === "tier"
         ? "New tier"
         : kind === "addon"
-        ? "New addon"
-        : kind === "item"
-        ? "New item"
-        : "New slider",
+          ? "New addon"
+          : kind === "item"
+            ? "New item"
+            : "New slider",
     description: null,
     badgeText: null,
     badgeColor: null,
@@ -306,6 +306,14 @@ export function useAdvancedState() {
   const advancedSliderSolidColor: string | null =
     rawMeta.sliderSolidColor ?? null;
 
+  const advancedAutosaveInterval: number =
+    typeof rawMeta.autosaveInterval === "number" ? rawMeta.autosaveInterval : 60;
+
+  const advancedAutosaveEnabled: boolean = rawMeta.autosaveEnabled ?? false;
+
+  const advancedAllowRating: boolean = rawMeta.allowRating ?? false;
+  const advancedListInExamples: boolean = rawMeta.listInExamples ?? false;
+
   /* ---------------------- Meta setters (write both keys) ------------------ */
 
   const setAdvancedShowInquiry = useCallback(
@@ -518,6 +526,38 @@ export function useAdvancedState() {
     [updateMeta]
   );
 
+  const setAdvancedAutosaveInterval = useCallback(
+    (val: number) => {
+      updateMeta({
+        autosaveInterval: val,
+      });
+    },
+    [updateMeta]
+  );
+
+  const setAdvancedAutosaveEnabled = useCallback(
+    (val: boolean) => {
+      updateMeta({
+        autosaveEnabled: val,
+      });
+    },
+    [updateMeta]
+  );
+
+  const setAdvancedAllowRating = useCallback(
+    (val: boolean) => {
+      updateMeta({ allowRating: val });
+    },
+    [updateMeta]
+  );
+
+  const setAdvancedListInExamples = useCallback(
+    (val: boolean) => {
+      updateMeta({ listInExamples: val });
+    },
+    [updateMeta]
+  );
+
   /* -------------------------- Node updaters ------------------------------- */
 
   const commitNodes = useCallback(
@@ -671,5 +711,13 @@ export function useAdvancedState() {
     setAdvancedSliderColorMode,
     setAdvancedSliderSolidColor,
     formatPrice,
+    advancedAutosaveInterval,
+    setAdvancedAutosaveInterval,
+    advancedAutosaveEnabled,
+    setAdvancedAutosaveEnabled,
+    advancedAllowRating,
+    setAdvancedAllowRating,
+    advancedListInExamples,
+    setAdvancedListInExamples,
   };
 }

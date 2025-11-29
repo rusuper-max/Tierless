@@ -45,11 +45,9 @@ export default function CTAButton({
   glow = false,
   ...rest
 }: Props) {
-  
+
   // --- BOJE (Prilagođeno za Dark Mode) ---
-  const TEXT_COLOR = "#ffffff"; // Uvek beo tekst na tamnoj pozadini
-  const DARK_BG = "#020617";    // Tvoja glavna pozadina
-  const LIGHTER_BG = "#0f172a"; // Malo svetlija za outline varijante
+  // Koristimo CSS varijable definisane u globals.css za theming
 
   // Da li koristimo gradient border tehniku?
   const useGradientBorder = variant === "brand" || variant === "outline";
@@ -99,17 +97,17 @@ export default function CTAButton({
 
       // Ako je textGradientUnified, koristimo gradient na tekstu
       const allowGradient = textGradientUnified && measured;
-      
+
       const gradStyle: CSSProperties | undefined = allowGradient
         ? {
-            backgroundImage: "linear-gradient(90deg, #4F46E5, #22D3EE)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-            WebkitTextFillColor: "transparent",
-            backgroundSize: `${totalW}px 100%`,
-            backgroundPosition: `-${offsets[i] || 0}px 0`,
-          }
+          backgroundImage: "linear-gradient(90deg, #4F46E5, #22D3EE)",
+          WebkitBackgroundClip: "text",
+          backgroundClip: "text",
+          color: "transparent",
+          WebkitTextFillColor: "transparent",
+          backgroundSize: `${totalW}px 100%`,
+          backgroundPosition: `-${offsets[i] || 0}px 0`,
+        }
         : undefined;
 
       return (
@@ -127,7 +125,7 @@ export default function CTAButton({
   }
 
   // --- KLASE I STILOVI ---
-  
+
   // Osnovne Tailwind klase za pozicioniranje i tranzicije
   // Dodajemo 'group' da bismo mogli da animiramo glow
   const baseClasses = `
@@ -143,21 +141,21 @@ export default function CTAButton({
   // Stil za gradient border (Dark Mode Version)
   const gradientBorderStyle: CSSProperties = useGradientBorder
     ? {
-        // Trik: Dva gradienta. Prvi je boja pozadine (padding-box), drugi je border (border-box).
-        background: `
-          linear-gradient(${variant === "brand" ? DARK_BG : LIGHTER_BG}, ${variant === "brand" ? DARK_BG : LIGHTER_BG}) padding-box,
+      // Trik: Dva gradienta. Prvi je boja pozadine (padding-box), drugi je border (border-box).
+      background: `
+          linear-gradient(${variant === "brand" ? "var(--btn-bg-dark)" : "var(--btn-bg-lighter)"}, ${variant === "brand" ? "var(--btn-bg-dark)" : "var(--btn-bg-lighter)"}) padding-box,
           linear-gradient(90deg, #4F46E5, #22D3EE) border-box
         `,
-        border: hairlineOutline ? "1px solid transparent" : "2px solid transparent",
-        color: TEXT_COLOR,
-      }
+      border: hairlineOutline ? "1px solid transparent" : "2px solid transparent",
+      color: "var(--btn-text)",
+    }
     : {};
 
   const content = (
     <>
       {/* GLOW EFEKAT (Samo ako je upaljen) */}
       {glow && (
-        <div 
+        <div
           className="absolute inset-0 -z-10 rounded-full opacity-0 group-hover:opacity-50 transition-opacity duration-500 blur-xl"
           style={{ background: "linear-gradient(90deg, #4F46E5, #22D3EE)" }}
         />

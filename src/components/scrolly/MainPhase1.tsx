@@ -37,20 +37,20 @@ export default function MainPhase1() {
           <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-b from-transparent via-[#020617]/40 to-[#020617]" />
 
           {/* LAYER 2: CONTENT */}
-          <div className="relative z-20 flex h-full flex-col items-center justify-center px-4 text-center sm:px-6 pt-12">
+          <div className="relative z-20 flex h-full flex-col items-center justify-center px-4 text-center sm:px-6 pt-8 sm:pt-12">
 
             {/* 1. Badge: Jasno stavljamo do znanja da sajt nije potreban */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
-              className="mb-8 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-950/40 px-4 py-1.5 backdrop-blur-md"
+              className="mb-4 sm:mb-8 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-950/40 px-3 py-1 sm:px-4 sm:py-1.5 backdrop-blur-md"
             >
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75"></span>
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-500"></span>
               </span>
-              <span className="text-xs font-semibold text-indigo-100 tracking-wide uppercase">
+              <span className="text-[10px] sm:text-xs font-semibold text-indigo-100 tracking-wide uppercase">
                 {t("phase1.badge")}
               </span>
             </motion.div>
@@ -60,7 +60,7 @@ export default function MainPhase1() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-              className="max-w-5xl text-4xl font-bold tracking-tight text-white sm:text-7xl md:text-8xl leading-[1.1]"
+              className="max-w-5xl text-3xl sm:text-4xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-[1.1]"
             >
               <span className="block text-white drop-shadow-2xl">
                 {t("phase1.title1")}
@@ -78,7 +78,7 @@ export default function MainPhase1() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-              className="mt-8 max-w-2xl text-base text-slate-300 sm:text-xl leading-relaxed font-medium"
+              className="mt-4 sm:mt-8 max-w-2xl text-sm sm:text-base md:text-xl text-slate-300 leading-relaxed font-medium"
             >
               {t("phase1.subtitle")}
             </motion.p>
@@ -88,7 +88,7 @@ export default function MainPhase1() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-              className="mt-10 flex flex-col w-full sm:w-auto sm:flex-row gap-5 justify-center items-center"
+              className="mt-6 sm:mt-10 flex flex-col w-full sm:w-auto sm:flex-row gap-3 sm:gap-5 justify-center items-center"
             >
               {/* PRIMARY: Shiny Cosmic Button (Tvoj novi brand stil) */}
               <ShinyButton href="/start" className="w-full sm:w-auto">
@@ -98,7 +98,7 @@ export default function MainPhase1() {
               {/* SECONDARY: Glass Outline - SADA VODI NA /examples */}
               <Link
                 href="/examples"
-                className="inline-flex items-center justify-center rounded-full border border-slate-600/50 bg-slate-900/40 backdrop-blur-sm px-8 py-3.5 text-lg font-medium text-slate-200 transition-all hover:bg-slate-800/60 hover:border-slate-400 hover:text-white w-full sm:w-auto"
+                className="inline-flex items-center justify-center rounded-full border border-slate-600/50 bg-slate-900/40 backdrop-blur-sm px-8 py-3 sm:py-3.5 text-base sm:text-lg font-medium text-slate-200 transition-all hover:bg-slate-800/60 hover:border-slate-400 hover:text-white w-full sm:w-auto"
               >
                 {t("phase1.ctaSecondary")}
               </Link>
@@ -109,7 +109,7 @@ export default function MainPhase1() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8, duration: 1 }}
-              className="mt-16 text-xs text-slate-500 uppercase tracking-widest font-semibold"
+              className="mt-8 sm:mt-16 text-[10px] sm:text-xs text-slate-500 uppercase tracking-widest font-semibold"
             >
               {t("phase1.perfectFor")}
             </motion.p>
@@ -117,7 +117,7 @@ export default function MainPhase1() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1, duration: 1 }}
-              className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-3 text-slate-400 text-sm font-medium"
+              className="mt-3 sm:mt-4 flex flex-wrap justify-center gap-x-4 sm:gap-x-6 gap-y-2 sm:gap-y-3 text-slate-400 text-xs sm:text-sm font-medium"
             >
               <span className="flex items-center gap-2"><Coffee size={16} className="text-cyan-400" /> {t("phase1.useCases.cafes")}</span>
               <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />

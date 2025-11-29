@@ -62,34 +62,34 @@ export default function MainPhase3() {
             <div className="sticky top-0 h-screen w-full flex flex-col items-center overflow-hidden perspective-1000">
 
                 {/* --- TEKST ZONA --- */}
-                <div className="absolute top-28 w-full px-4 text-center z-30 h-32 pointer-events-none">
+                <div className="absolute top-20 sm:top-24 md:top-28 w-full px-4 text-center z-30 h-32 pointer-events-none">
 
                     <motion.div style={{ opacity: step1Op }} className="absolute inset-0 flex flex-col items-center">
                         <Badge text={t("phase3.step1.badge")} color="cyan" />
-                        <h2 className="text-3xl md:text-6xl font-bold text-white mb-3 drop-shadow-xl">
+                        <h2 className="text-2xl sm:text-3xl md:text-6xl font-bold text-white mb-2 sm:mb-3 drop-shadow-xl">
                             {t("phase3.step1.title")}
                         </h2>
-                        <p className="text-lg text-slate-400">
+                        <p className="text-sm sm:text-lg text-slate-400 max-w-xs sm:max-w-none mx-auto">
                             {t("phase3.step1.desc")}
                         </p>
                     </motion.div>
 
                     <motion.div style={{ opacity: step2Op }} className="absolute inset-0 flex flex-col items-center">
                         <Badge text={t("phase3.step2.badge")} color="indigo" />
-                        <h2 className="text-3xl md:text-6xl font-bold text-white mb-3 drop-shadow-xl">
+                        <h2 className="text-2xl sm:text-3xl md:text-6xl font-bold text-white mb-2 sm:mb-3 drop-shadow-xl">
                             {t("phase3.step2.title")}
                         </h2>
-                        <p className="text-lg text-slate-400">
+                        <p className="text-sm sm:text-lg text-slate-400 max-w-xs sm:max-w-none mx-auto">
                             {t("phase3.step2.desc")}
                         </p>
                     </motion.div>
 
                     <motion.div style={{ opacity: step3Op }} className="absolute inset-0 flex flex-col items-center">
                         <Badge text={t("phase3.step3.badge")} color="emerald" />
-                        <h2 className="text-3xl md:text-6xl font-bold text-white mb-3 drop-shadow-xl">
+                        <h2 className="text-2xl sm:text-3xl md:text-6xl font-bold text-white mb-2 sm:mb-3 drop-shadow-xl">
                             {t("phase3.step3.title")}
                         </h2>
-                        <p className="text-lg text-slate-400">
+                        <p className="text-sm sm:text-lg text-slate-400 max-w-xs sm:max-w-none mx-auto">
                             {t("phase3.step3.desc")}
                         </p>
                     </motion.div>
@@ -97,7 +97,7 @@ export default function MainPhase3() {
                 </div>
 
                 {/* --- SCENA --- */}
-                <div className="relative w-full max-w-md h-full flex items-center justify-center pointer-events-none scale-75 md:scale-100 origin-center">
+                <div className="relative w-full max-w-md h-full flex items-center justify-center pointer-events-none scale-[0.65] sm:scale-75 md:scale-100 origin-center">
 
                     {/* 1. TABLE TENT */}
                     <motion.div
