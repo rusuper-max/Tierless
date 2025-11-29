@@ -1,62 +1,83 @@
-// Debug endpoint to check stored events
+// Debug endpoint to check stored events in PostgreSQL
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
+import { getPool } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const EVENTS_DIR = path.join(process.cwd(), "data", "events");
-
 export async function GET() {
   try {
-    // Check if events directory exists
-    let dirExists = false;
-    try {
-      await fs.access(EVENTS_DIR);
-      dirExists = true;
-    } catch {
-      dirExists = false;
-    }
+    const pool = getPool();
 
-    if (!dirExists) {
+    // Check if analytics_events table exists
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'analytics_events'
+      ) as exists
+    `);
+
+    if (!tableCheck.rows[0]?.exists) {
       return NextResponse.json({
-        status: "no_events_dir",
-        path: EVENTS_DIR,
-        message: "Events directory does not exist yet. No events have been recorded.",
+        status: "no_table",
+        message: "analytics_events table does not exist yet. No events have been recorded.",
       });
     }
 
-    // List all event files
-    const files = await fs.readdir(EVENTS_DIR);
-    const eventFiles = files.filter(f => f.endsWith(".json"));
+    // Get total count
+    const countResult = await pool.query(`SELECT COUNT(*) as total FROM analytics_events`);
+    const totalEvents = parseInt(countResult.rows[0]?.total || "0");
 
-    // Read each file and count events
-    const summary: Record<string, { count: number; types: Record<string, number>; lastEvent?: any }> = {};
+    // Get events by type
+    const typeStats = await pool.query(`
+      SELECT event_type, COUNT(*) as count 
+      FROM analytics_events 
+      GROUP BY event_type 
+      ORDER BY count DESC
+    `);
 
-    for (const file of eventFiles) {
-      try {
-        const content = await fs.readFile(path.join(EVENTS_DIR, file), "utf-8");
-        const events = JSON.parse(content);
-        const types: Record<string, number> = {};
-        for (const e of events) {
-          types[e.type] = (types[e.type] || 0) + 1;
-        }
-        summary[file] = {
-          count: events.length,
-          types,
-          lastEvent: events[events.length - 1],
-        };
-      } catch (e) {
-        summary[file] = { count: 0, types: {}, lastEvent: null };
-      }
-    }
+    // Get events by page
+    const pageStats = await pool.query(`
+      SELECT page_id, COUNT(*) as count 
+      FROM analytics_events 
+      GROUP BY page_id 
+      ORDER BY count DESC
+      LIMIT 20
+    `);
+
+    // Get recent events
+    const recentEvents = await pool.query(`
+      SELECT page_id, event_type, session_id, ts, props
+      FROM analytics_events
+      ORDER BY ts DESC
+      LIMIT 10
+    `);
+
+    // Get unique sessions count
+    const sessionCount = await pool.query(`
+      SELECT COUNT(DISTINCT session_id) as count FROM analytics_events
+    `);
 
     return NextResponse.json({
       status: "ok",
-      eventsDir: EVENTS_DIR,
-      files: eventFiles,
-      summary,
+      database: "PostgreSQL",
+      totalEvents,
+      uniqueSessions: parseInt(sessionCount.rows[0]?.count || "0"),
+      byType: typeStats.rows.reduce((acc: Record<string, number>, row: any) => {
+        acc[row.event_type] = parseInt(row.count);
+        return acc;
+      }, {}),
+      byPage: pageStats.rows.map((row: any) => ({
+        pageId: row.page_id,
+        count: parseInt(row.count),
+      })),
+      recentEvents: recentEvents.rows.map((row: any) => ({
+        pageId: row.page_id,
+        type: row.event_type,
+        sessionId: row.session_id?.slice(0, 15) + "...",
+        ts: new Date(parseInt(row.ts)).toISOString(),
+        props: row.props,
+      })),
     });
   } catch (error) {
     return NextResponse.json({
@@ -65,4 +86,3 @@ export async function GET() {
     });
   }
 }
-

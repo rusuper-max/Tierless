@@ -1,12 +1,12 @@
 // src/app/api/stats/route.ts
 // Analytics Stats API - Aggregates events for dashboard
+// Storage: PostgreSQL database (Vercel-compatible)
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { promises as fs } from "fs";
-import path from "path";
+import { getPool } from "@/lib/db";
 
 // Event types we track
 type EventType =
@@ -50,47 +50,41 @@ interface AnalyticsEvent {
   };
 }
 
-// Simple file-based event storage for MVP (replace with DB in production)
-const EVENTS_DIR = path.join(process.cwd(), "data", "events");
-
-async function ensureEventsDir() {
-  try {
-    await fs.mkdir(EVENTS_DIR, { recursive: true });
-  } catch { }
-}
-
+// Fetch events from PostgreSQL database
 async function getEventsForPages(pageIds: string[], days: number = 7): Promise<AnalyticsEvent[]> {
-  await ensureEventsDir();
-
+  if (pageIds.length === 0) return [];
+  
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-  const allEvents: AnalyticsEvent[] = [];
 
-  // Read events from each page's event file
-  for (const pageId of pageIds) {
-    try {
-      const pageEventsFile = path.join(EVENTS_DIR, `page_${pageId.replace(/[^a-zA-Z0-9-]/g, "_")}.json`);
-      const content = await fs.readFile(pageEventsFile, "utf-8");
-      const pageEvents: AnalyticsEvent[] = JSON.parse(content);
-
-      // Filter by time and add to results
-      const filtered = pageEvents.filter(e => e.ts >= cutoff);
-      allEvents.push(...filtered);
-    } catch {
-      // No events file for this page yet - that's ok
-    }
-  }
-
-  return allEvents;
-}
-
-async function getPageIdsForUser(userId: string): Promise<string[]> {
-  // Get list of pages owned by this user from calculators
   try {
-    const calcsPath = path.join(process.cwd(), "data", "users", userId.replace(/[@.]/g, "_"), "full");
-    const files = await fs.readdir(calcsPath);
-    return files.filter(f => f.endsWith(".json")).map(f => f.replace(".json", ""));
-  } catch {
-    return [];
+    const pool = getPool();
+
+    // Query events for all pageIds within time range
+    const { rows } = await pool.query(
+      `SELECT 
+        page_id as "pageId",
+        event_type as type,
+        session_id as "sessionId",
+        client_id as "clientId",
+        ts,
+        props
+      FROM analytics_events
+      WHERE page_id = ANY($1)
+        AND ts >= $2
+      ORDER BY ts DESC`,
+      [pageIds, cutoff]
+    );
+
+    console.log(`[stats] Fetched ${rows.length} events from database for ${pageIds.length} pages`);
+
+    // Parse JSONB props back to objects
+    return rows.map(row => ({
+      ...row,
+      props: typeof row.props === 'string' ? JSON.parse(row.props) : row.props
+    }));
+  } catch (error) {
+    console.error("[stats] Error fetching events from database:", error);
+    return []; // Return empty array on error to prevent dashboard crash
   }
 }
 
@@ -281,59 +275,49 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
 export async function GET(req: NextRequest) {
   try {
     const user = await getSessionUser(req);
-    console.log("[stats] User from JWT:", user);
-    console.log("[stats] User email:", user?.email);
 
     if (!user?.email) {
-      console.error("[stats] Unauthorized - no user or email");
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
     const days = parseInt(searchParams.get("days") || "7");
-    const pageIdFilter = searchParams.get("pageId"); // Optional filter
+    const pageIdFilter = searchParams.get("pageId");
 
     const userId = user.email;
+    const pool = getPool();
 
-    // Get all user pages from DATABASE (not file system!)
+    // Get all user pages from database
     const userPages: { slug: string; id: string }[] = [];
     try {
-      const pool = await import("@/lib/db").then(m => m.getPool());
       const { rows } = await pool.query(
         `SELECT slug FROM calculators WHERE user_id = $1`,
         [userId]
       );
-      console.log("[stats] DB rows:", rows);
 
       // For each slug, try to get the ID from fullStore
+      const fullStore = await import("@/lib/fullStore");
       for (const row of rows) {
         const slug = row.slug;
         try {
-          const fullStore = await import("@/lib/fullStore");
           const full = await fullStore.getFull(userId, slug);
           userPages.push({
             slug,
             id: full?.meta?.id || ""
           });
         } catch {
-          // If fullStore fails, just use slug
           userPages.push({ slug, id: "" });
         }
       }
     } catch (e) {
-      console.error("[stats] Error reading from database:", e);
+      console.error("[stats] Error reading pages from database:", e);
     }
 
-    console.log("[stats] User pages loaded from DB:", userPages);
-
-    const pageIds = userPages.map(p => p.slug); // For backward compatibility in response
-
-    console.log("[stats] User:", userId, "Pages:", userPages.length);
+    const pageIds = userPages.map(p => p.slug);
 
     // Determine which page IDs (slugs AND uuids) to fetch events for
     let targetIdentifiers: string[] = [];
     if (pageIdFilter) {
-      // If filtering by a specific page (slug), also include its ID
       const page = userPages.find(p => p.slug === pageIdFilter);
       if (page) {
         targetIdentifiers.push(page.slug);
@@ -342,37 +326,25 @@ export async function GET(req: NextRequest) {
         targetIdentifiers.push(pageIdFilter);
       }
     } else {
-      // Fetch for all pages (slugs and IDs)
       for (const p of userPages) {
         targetIdentifiers.push(p.slug);
         if (p.id) targetIdentifiers.push(p.id);
       }
     }
 
-    console.log("[stats] Target identifiers to fetch events for:", targetIdentifiers);
-
-    // Fetch events
+    // Fetch events from database
     const events = await getEventsForPages(targetIdentifiers, days);
 
-    console.log("[stats] Found", events.length, "events");
-    console.log("[stats] Event pageIds:", [...new Set(events.map(e => e.pageId))]);
-
-    // Normalize events: map UUIDs back to Slugs
+    // Normalize events: map UUIDs back to Slugs for aggregation
     const normalizedEvents = events.map(e => {
       const page = userPages.find(p => p.id === e.pageId);
       if (page) {
-        console.log("[stats] Normalizing event pageId from", e.pageId, "to", page.slug);
         return { ...e, pageId: page.slug };
       }
       return e;
     });
 
-    console.log("[stats] Normalized event pageIds:", [...new Set(normalizedEvents.map(e => e.pageId))]);
-
     const stats = aggregateEvents(normalizedEvents, userPages.map(p => p.slug));
-
-    console.log("[stats] Aggregated stats summary:", stats.summary);
-    console.log("[stats] Aggregated perPage keys:", Object.keys(stats.perPage));
 
     return NextResponse.json({
       ok: true,
@@ -381,62 +353,73 @@ export async function GET(req: NextRequest) {
       ...stats,
     });
   } catch (error) {
-    console.error("[stats] Error:", error);
+    console.error("[stats] GET Error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }
 
-// Record new events
+// Record new events to PostgreSQL
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { events } = body as { events: AnalyticsEvent[] };
 
-    console.log("[stats] POST received", events?.length, "events");
-
     if (!Array.isArray(events) || events.length === 0) {
       return NextResponse.json({ error: "no_events" }, { status: 400 });
     }
 
-    // For MVP, store by pageId
-    await ensureEventsDir();
+    const pool = getPool();
 
-    // Group events by pageId
-    const eventsByPage: Record<string, AnalyticsEvent[]> = {};
-    for (const e of events) {
-      const pid = e.pageId || "_global";
-      if (!eventsByPage[pid]) eventsByPage[pid] = [];
-      eventsByPage[pid].push(e);
-    }
+    // Ensure analytics table exists (idempotent - safe on every request)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS analytics_events (
+        id BIGSERIAL PRIMARY KEY,
+        page_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        session_id TEXT NOT NULL,
+        client_id TEXT NOT NULL,
+        ts BIGINT NOT NULL,
+        props JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
 
-    console.log("[stats] Grouped events by page:", Object.keys(eventsByPage));
+    // Create indexes if they don't exist
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_analytics_page_ts ON analytics_events(page_id, ts DESC);
+      CREATE INDEX IF NOT EXISTS idx_analytics_session ON analytics_events(session_id, page_id);
+      CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type);
+    `);
 
-    for (const [pageId, pageEvents] of Object.entries(eventsByPage)) {
-      const filePath = path.join(EVENTS_DIR, `page_${pageId.replace(/[^a-zA-Z0-9-]/g, "_")}.json`);
+    // Insert events using batch insert for better performance
+    const values: any[] = [];
+    const placeholders: string[] = [];
+    
+    events.forEach((event, i) => {
+      const offset = i * 6;
+      placeholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`);
+      values.push(
+        event.pageId,
+        event.type,
+        event.sessionId,
+        event.clientId,
+        event.ts,
+        JSON.stringify(event.props || {})
+      );
+    });
 
-      console.log("[stats] Writing to:", filePath);
+    await pool.query(
+      `INSERT INTO analytics_events (page_id, event_type, session_id, client_id, ts, props)
+       VALUES ${placeholders.join(', ')}`,
+      values
+    );
 
-      let existing: AnalyticsEvent[] = [];
-      try {
-        const content = await fs.readFile(filePath, "utf-8");
-        existing = JSON.parse(content);
-      } catch { }
-
-      // Append new events
-      existing.push(...pageEvents);
-
-      // Keep only last 90 days
-      const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
-      existing = existing.filter(e => e.ts >= cutoff);
-
-      await fs.writeFile(filePath, JSON.stringify(existing, null, 2));
-      console.log("[stats] Saved", existing.length, "total events for page", pageId);
-    }
+    console.log(`[stats] Inserted ${events.length} events into PostgreSQL`);
 
     return NextResponse.json({ ok: true, recorded: events.length });
   } catch (error) {
     console.error("[stats] POST Error:", error);
-    return NextResponse.json({ error: "internal_error" }, { status: 500 });
+    return NextResponse.json({ error: "internal_error", details: String(error) }, { status: 500 });
   }
 }
 

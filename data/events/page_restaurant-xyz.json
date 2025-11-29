@@ -699,5 +699,31 @@
       "platform": "macOS",
       "referrer": "direct"
     }
+  },
+  {
+    "type": "page_exit",
+    "pageId": "restaurant-xyz",
+    "ts": 1764442935129,
+    "sessionId": "s_1764442341413_6rk3cp95c",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "timeOnPage": 593,
+      "timeBucket": "5m+",
+      "maxScrollDepth": 100,
+      "device": "desktop",
+      "platform": "macOS"
+    }
+  },
+  {
+    "type": "page_view",
+    "pageId": "restaurant-xyz",
+    "ts": 1764442938708,
+    "sessionId": "s_1764442341413_6rk3cp95c",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
   }
 ]
