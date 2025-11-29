@@ -1522,7 +1522,10 @@ export default function SimpleListPanel() {
         </div>
 
         {/* Show 'Powered by Tierless' Badge */}
-        <label className={`flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors ${!removeBadgeAllowed ? "opacity-75" : ""}`}>
+        <label
+          className={`flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors ${!removeBadgeAllowed ? "opacity-75" : ""}`}
+          data-help="Show or hide the 'Powered by Tierless' badge on your public page. Pro plan users can remove this badge."
+        >
           <div className="flex items-center gap-2">
             <span className="text-sm text-[var(--text)] font-medium">{t("Show 'Powered by Tierless' Badge")}</span>
             {!removeBadgeAllowed && <Lock className="w-3 h-3 text-[var(--muted)]" />}

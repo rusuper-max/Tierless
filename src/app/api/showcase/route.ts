@@ -78,76 +78,69 @@ export async function GET() {
             })
         );
 
-        // 3) TOP CREATORS - agregacija po user_id
-        // Uzmi sve published + listInExamples stranice i grupiši po user_id
-        const creatorsRes = await pool.query(
+        // 3) TOP RATED PAGES - top 100 stranica sa najboljim rejtingom
+        const topPagesRes = await pool.query(
             `SELECT 
                 c.user_id,
-                SUM(c.ratings_count) as total_votes,
-                SUM(c.avg_rating * c.ratings_count) as weighted_rating_sum,
-                SUM(c.views7d) as total_views
+                c.slug,
+                c.avg_rating,
+                c.ratings_count,
+                c.views7d
              FROM calculators c
              INNER JOIN calc_full cf ON c.user_id = cf.user_id AND c.slug = cf.slug
              WHERE c.published = true
                AND (cf.calc->'meta'->>'listInExamples')::boolean = true
-             GROUP BY c.user_id
-             HAVING SUM(c.ratings_count) > 0
+               AND c.ratings_count > 0
              ORDER BY 
-                (SUM(c.avg_rating * c.ratings_count) / NULLIF(SUM(c.ratings_count), 0)) DESC,
-                SUM(c.ratings_count) DESC,
-                SUM(c.views7d) DESC
+                c.avg_rating DESC NULLS LAST,
+                c.ratings_count DESC NULLS LAST,
+                c.views7d DESC
              LIMIT 100`
         );
 
-        const creators = creatorsRes.rows.map((row, index) => {
-            const totalVotes = Number(row.total_votes || 0);
-            const avgRating = totalVotes > 0
-                ? Number((row.weighted_rating_sum / totalVotes).toFixed(2))
-                : 0;
+        const topPages = await Promise.all(
+            topPagesRes.rows.map(async (row, index) => {
+                const fullCalc = await fullStore.getFull(row.user_id, row.slug);
+                const meta = fullCalc?.meta || {};
 
-            return {
-                rank: index + 1,
-                userId: row.user_id,
-                avgRating,
-                ratingsCount: totalVotes,
-                totalViews: Number(row.total_views || 0),
-            };
-        });
+                // Extract author name from user_id (email)
+                let authorName = `user_${row.user_id.slice(0, 8)}`;
+                if (row.user_id && row.user_id.includes('@')) {
+                    authorName = row.user_id.split('@')[0];
+                }
 
-        // user_id je već email u tvom sistemu, pa izvuči prefix
-        const creatorsWithNames = creators.map(c => {
-            let name = `user_${c.userId.slice(0, 8)}`;
-
-            // user_id je email, izvuci deo pre @
-            if (c.userId && c.userId.includes('@')) {
-                name = c.userId.split('@')[0];
-            }
-
-            return {
-                ...c,
-                name,
-            };
-        });
+                return {
+                    rank: index + 1,
+                    slug: row.slug,
+                    title: meta.name || "Untitled",
+                    author: authorName,
+                    avgRating: Number(row.avg_rating || 0),
+                    ratingsCount: Number(row.ratings_count || 0),
+                    totalViews: Number(row.views7d || 0),
+                };
+            })
+        );
 
         // Popuni do 100 ako nema dovoljno
-        while (creatorsWithNames.length < 100) {
-            creatorsWithNames.push({
-                rank: creatorsWithNames.length + 1,
-                userId: `empty-${creatorsWithNames.length + 1}`,
-                name: "Empty spot",
+        while (topPages.length < 100) {
+            topPages.push({
+                rank: topPages.length + 1,
+                slug: `empty-${topPages.length + 1}`,
+                title: "Empty spot",
+                author: "",
                 avgRating: 0,
                 ratingsCount: 0,
                 totalViews: 0,
             });
         }
 
-        return NextResponse.json({ featured, community, creators: creatorsWithNames });
+        return NextResponse.json({ featured, community, topPages });
     } catch (e) {
         console.error("SHOWCASE_API_ERROR", e);
         return NextResponse.json({
             featured: [],
             community: [],
-            creators: []
+            topPages: []
         });
     }
 }

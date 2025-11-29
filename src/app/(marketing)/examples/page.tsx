@@ -23,10 +23,11 @@ type ShowcaseCard = {
     description?: string | null;
 };
 
-type CreatorRow = {
+type TopPageRow = {
     rank: number;
-    userId: string;
-    name: string;
+    slug: string;
+    title: string;
+    author: string;
     avgRating: number;
     ratingsCount: number;
     totalViews: number;
@@ -35,7 +36,7 @@ type CreatorRow = {
 export default function ExamplesPage() {
     const [featured, setFeatured] = useState<ShowcaseCard[]>([]);
     const [community, setCommunity] = useState<ShowcaseCard[]>([]);
-    const [creators, setCreators] = useState<CreatorRow[]>([]);
+    const [topPages, setTopPages] = useState<TopPageRow[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -44,13 +45,13 @@ export default function ExamplesPage() {
             .then((data) => {
                 setFeatured(Array.isArray(data?.featured) ? data.featured : []);
                 setCommunity(Array.isArray(data?.community) ? data.community : []);
-                setCreators(Array.isArray(data?.creators) ? data.creators : []);
+                setTopPages(Array.isArray(data?.topPages) ? data.topPages : []);
             })
             .catch((e) => {
                 console.error(e);
                 setFeatured([]);
                 setCommunity([]);
-                setCreators([]);
+                setTopPages([]);
             })
             .finally(() => setLoading(false));
     }, []);
@@ -151,46 +152,53 @@ export default function ExamplesPage() {
                         )}
                     </div>
 
-                    {/* RIGHT: Top Creators */}
+                    {/* RIGHT: Top Rated Pages */}
                     <aside className="w-full lg:w-80 shrink-0">
                         <div className="sticky top-24">
                             <div className="rounded-2xl border border-white/10 bg-[#0B0F19] p-6">
                                 <div className="flex items-center gap-3 mb-6">
                                     <Trophy className="text-yellow-500 w-5 h-5" />
-                                    <h3 className="font-bold text-white">Top Creators</h3>
+                                    <h3 className="font-bold text-white">Top Rated Pages</h3>
                                 </div>
 
                                 {loading ? (
                                     <div className="space-y-3">
                                         {Array.from({ length: 10 }).map((_, i) => (
-                                            <div key={i} className="h-8 bg-white/5 rounded animate-pulse" />
+                                            <div key={i} className="h-12 bg-white/5 rounded animate-pulse" />
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {creators.slice(0, 100).map((c) => (
-                                            <div
-                                                key={`${c.rank}-${c.userId}`}
-                                                className="flex items-center justify-between group hover:bg-white/5 p-2 rounded-lg transition-colors"
-                                                title={`${c.avgRating.toFixed(2)} (${c.ratingsCount})`}
+                                    <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                        {topPages.slice(0, 100).map((page) => (
+                                            <Link
+                                                key={`${page.rank}-${page.slug}`}
+                                                href={page.slug.startsWith('empty-') ? '#' : `/p/${page.slug}`}
+                                                className={`flex items-start gap-3 group hover:bg-white/5 p-2 rounded-lg transition-colors ${page.slug.startsWith('empty-') ? 'pointer-events-none opacity-50' : ''
+                                                    }`}
+                                                title={`${page.avgRating.toFixed(2)} (${page.ratingsCount} ratings)`}
                                             >
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold
-                            ${c.rank === 1 ? "bg-yellow-500 text-black"
-                                                            : c.rank === 2 ? "bg-slate-300 text-black"
-                                                                : c.rank === 3 ? "bg-orange-700 text-white"
-                                                                    : "bg-slate-800 text-slate-400"}`}>
-                                                        {c.rank}
-                                                    </div>
-                                                    <div className="text-sm text-slate-300 font-medium group-hover:text-white truncate max-w-[140px]">
-                                                        {c.name}
-                                                    </div>
+                                                <div className={`w-7 h-7 shrink-0 rounded flex items-center justify-center text-xs font-bold
+                            ${page.rank === 1 ? "bg-yellow-500 text-black"
+                                                        : page.rank === 2 ? "bg-slate-300 text-black"
+                                                            : page.rank === 3 ? "bg-orange-700 text-white"
+                                                                : "bg-slate-800 text-slate-400"}`}>
+                                                    {page.rank}
                                                 </div>
-                                                <div className="text-xs text-slate-500 flex items-center gap-1">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm text-slate-200 font-medium group-hover:text-cyan-400 truncate transition-colors">
+                                                        {page.title}
+                                                    </div>
+                                                    {page.author && (
+                                                        <div className="text-[10px] text-slate-500 truncate">
+                                                            by {page.author}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-1 text-xs text-slate-500 shrink-0">
                                                     <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                                                    {c.avgRating.toFixed(2)}
+                                                    <span className="text-slate-300">{page.avgRating.toFixed(2)}</span>
                                                 </div>
-                                            </div>
+                                            </Link>
                                         ))}
                                     </div>
                                 )}
