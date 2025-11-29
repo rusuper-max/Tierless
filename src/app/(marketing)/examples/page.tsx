@@ -15,6 +15,21 @@ import Footer from "@/components/marketing/Footer";
 import ParticlesBackground from "@/components/landing/ParticlesBackground";
 import ShinyButton from "@/components/marketing/ShinyButton";
 
+// Cloudinary optimization helper - add width limit and auto format
+function optimizeCloudinaryUrl(url: string | null, width: number = 600): string | null {
+    if (!url) return null;
+    if (!url.includes("res.cloudinary.com")) return url;
+    
+    const i = url.indexOf('/upload/');
+    if (i === -1) return url;
+    
+    const params = `f_auto,q_auto:eco,c_limit,w_${width}`;
+    const prefix = url.slice(0, i + 8);
+    const suffix = url.slice(i + 8);
+    
+    return `${prefix}${params}/${suffix}`;
+}
+
 type ShowcaseCard = {
     slug: string;
     title: string;
@@ -255,8 +270,13 @@ function Card({ card, tall = false }: { card: ShowcaseCard; tall?: boolean }) {
             <div className="relative flex-1 bg-[#0f1115] overflow-hidden">
                 <div className="w-full h-full overflow-hidden group-hover:scale-[1.03] transition-transform duration-700 origin-top">
                     {card.cover ? (
-                        // koristimo <img> da izbegnemo next/image domain issues na ovoj stranici
-                        <img src={card.cover} alt={card.title} className="w-full h-full object-cover" />
+                        // Optimized Cloudinary URL with width limit
+                        <img 
+                            src={optimizeCloudinaryUrl(card.cover, tall ? 500 : 400) || card.cover} 
+                            alt={card.title} 
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                        />
                     ) : (
                         <div className="flex h-full w-full items-center justify-center text-slate-700">
                             <span className="text-3xl font-bold opacity-30">Tierless</span>

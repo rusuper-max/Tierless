@@ -172,7 +172,11 @@ export function trackEvent(
 
 // Convenience functions
 export function trackPageView(pageId: string) {
-  console.log("[Analytics] Tracking page view for:", pageId);
+  if (typeof window === "undefined") {
+    console.log("[Analytics] SSR - skipping page view tracking");
+    return;
+  }
+  console.log("%c[Analytics] Tracking page view for: " + pageId, "background: #22D3EE; color: black; padding: 2px 8px; border-radius: 4px;");
   trackEvent("page_view", pageId);
   // Flush page view immediately - it's critical
   scheduleFlush(true);
