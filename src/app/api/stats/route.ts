@@ -59,22 +59,28 @@ async function ensureEventsDir() {
   } catch {}
 }
 
-async function getEventsForUser(userId: string, days: number = 7): Promise<AnalyticsEvent[]> {
+async function getEventsForPages(pageIds: string[], days: number = 7): Promise<AnalyticsEvent[]> {
   await ensureEventsDir();
   
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-  const events: AnalyticsEvent[] = [];
+  const allEvents: AnalyticsEvent[] = [];
   
-  try {
-    const userEventsFile = path.join(EVENTS_DIR, `${userId.replace(/[^a-zA-Z0-9]/g, "_")}.json`);
-    const content = await fs.readFile(userEventsFile, "utf-8");
-    const allEvents: AnalyticsEvent[] = JSON.parse(content);
-    
-    return allEvents.filter(e => e.ts >= cutoff);
-  } catch {
-    // No events file yet
-    return [];
+  // Read events from each page's event file
+  for (const pageId of pageIds) {
+    try {
+      const pageEventsFile = path.join(EVENTS_DIR, `page_${pageId.replace(/[^a-zA-Z0-9-]/g, "_")}.json`);
+      const content = await fs.readFile(pageEventsFile, "utf-8");
+      const pageEvents: AnalyticsEvent[] = JSON.parse(content);
+      
+      // Filter by time and add to results
+      const filtered = pageEvents.filter(e => e.ts >= cutoff);
+      allEvents.push(...filtered);
+    } catch {
+      // No events file for this page yet - that's ok
+    }
   }
+  
+  return allEvents;
 }
 
 async function getPageIdsForUser(userId: string): Promise<string[]> {
@@ -281,20 +287,25 @@ export async function GET(req: NextRequest) {
     
     const { searchParams } = new URL(req.url);
     const days = parseInt(searchParams.get("days") || "7");
-    const pageId = searchParams.get("pageId"); // Optional filter
+    const pageIdFilter = searchParams.get("pageId"); // Optional filter
     
     const userId = session.user.email;
     const pageIds = await getPageIdsForUser(userId);
-    const events = await getEventsForUser(userId, days);
     
-    const stats = aggregateEvents(
-      events, 
-      pageId ? [pageId] : pageIds
-    );
+    console.log("[stats] User:", userId, "PageIds:", pageIds);
+    
+    // Fetch events for user's pages
+    const targetPageIds = pageIdFilter ? [pageIdFilter] : pageIds;
+    const events = await getEventsForPages(targetPageIds, days);
+    
+    console.log("[stats] Found", events.length, "events for", targetPageIds.length, "pages");
+    
+    const stats = aggregateEvents(events, targetPageIds);
     
     return NextResponse.json({
       ok: true,
       period: { days, from: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString(), to: new Date().toISOString() },
+      pageIds, // Include for debugging
       ...stats,
     });
   } catch (error) {
@@ -309,16 +320,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { events } = body as { events: AnalyticsEvent[] };
     
+    console.log("[stats] POST received", events?.length, "events");
+    
     if (!Array.isArray(events) || events.length === 0) {
       return NextResponse.json({ error: "no_events" }, { status: 400 });
     }
     
-    // Get user ID from page ownership (or just store globally for now)
     // For MVP, store by pageId
     await ensureEventsDir();
     
-    // Group events by pageId owner
-    // For simplicity, store all events in a single file per pageId
+    // Group events by pageId
     const eventsByPage: Record<string, AnalyticsEvent[]> = {};
     for (const e of events) {
       const pid = e.pageId || "_global";
@@ -326,8 +337,12 @@ export async function POST(req: NextRequest) {
       eventsByPage[pid].push(e);
     }
     
+    console.log("[stats] Grouped events by page:", Object.keys(eventsByPage));
+    
     for (const [pageId, pageEvents] of Object.entries(eventsByPage)) {
       const filePath = path.join(EVENTS_DIR, `page_${pageId.replace(/[^a-zA-Z0-9-]/g, "_")}.json`);
+      
+      console.log("[stats] Writing to:", filePath);
       
       let existing: AnalyticsEvent[] = [];
       try {
@@ -343,6 +358,7 @@ export async function POST(req: NextRequest) {
       existing = existing.filter(e => e.ts >= cutoff);
       
       await fs.writeFile(filePath, JSON.stringify(existing, null, 2));
+      console.log("[stats] Saved", existing.length, "total events for page", pageId);
     }
     
     return NextResponse.json({ ok: true, recorded: events.length });

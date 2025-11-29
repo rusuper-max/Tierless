@@ -112,25 +112,35 @@ async function flushEvents() {
   const events = [...eventQueue];
   eventQueue = [];
   
+  console.log("[Analytics] Sending", events.length, "events:", events.map(e => e.type));
+  
   try {
-    await fetch("/api/stats", {
+    const res = await fetch("/api/stats", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ events }),
     });
+    const data = await res.json();
+    console.log("[Analytics] Response:", data);
   } catch (e) {
     console.error("[Analytics] Failed to send events:", e);
     eventQueue.unshift(...events);
   }
 }
 
-function scheduleFlush() {
-  if (flushTimeout) return;
+function scheduleFlush(immediate = false) {
+  if (flushTimeout) clearTimeout(flushTimeout);
+  
+  if (immediate) {
+    flushTimeout = null;
+    flushEvents();
+    return;
+  }
   
   flushTimeout = setTimeout(() => {
     flushTimeout = null;
     flushEvents();
-  }, 2000);
+  }, 1000); // Reduced from 2s to 1s
 }
 
 // Main tracking function
@@ -162,7 +172,10 @@ export function trackEvent(
 
 // Convenience functions
 export function trackPageView(pageId: string) {
+  console.log("[Analytics] Tracking page view for:", pageId);
   trackEvent("page_view", pageId);
+  // Flush page view immediately - it's critical
+  scheduleFlush(true);
 }
 
 export function trackInteraction(
