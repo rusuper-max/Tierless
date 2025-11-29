@@ -433,6 +433,21 @@ export default function StatsPage() {
         />
       </div>
 
+      {/* METRICS EXPLANATION */}
+      <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl">
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+          <div>
+            <h3 className="text-sm font-bold text-[var(--text)] mb-2">What counts as an Interaction?</h3>
+            <p className="text-xs text-[var(--muted)] leading-relaxed">
+              <strong>Interactions</strong> include any action beyond just viewing: opening sections, searching, clicking +/-, 
+              scrolling 25%+, copying contact info, or clicking links. 
+              <strong className="text-[var(--text)]"> Bounce rate = % who left without ANY interaction.</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* MAIN CHART */}
         <section className="lg:col-span-2 p-6 border border-[var(--border)] bg-[var(--card)] rounded-xl">
