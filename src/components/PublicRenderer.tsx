@@ -3,6 +3,7 @@
 import { useMemo, useEffect, useState, RefObject, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Facebook, Instagram, Youtube, Globe, MessageCircle, Star } from "lucide-react";
+import { trackPageView, trackInteraction, trackCheckout, trackSectionOpen, trackSearch, initAnalytics, startTimeTracking } from "@/lib/analytics";
 
 import Image, { ImageLoaderProps } from "next/image";
 
@@ -516,6 +517,9 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
   const meta = calc?.meta || {};
   const i18n = calc?.i18n || {};
   const items: ItemRow[] = calc?.items || [];
+  
+  // Analytics page ID
+  const pageId = meta.slug || calc?.id || "unknown";
 
   const business = meta.business || {};
   const simpleCoverImage = business.coverUrl || meta.simpleCoverImage || "";
@@ -584,16 +588,32 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
+  // Track search with debounce
+  useEffect(() => {
+    if (!search || search.length < 2) return;
+    const timeout = setTimeout(() => {
+      trackSearch(pageId, search);
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [search, pageId]);
+
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => {
+      const wasOpen = prev.has(sectionId);
+      
+      // Track section open (only when opening, not closing)
+      if (!wasOpen) {
+        trackSectionOpen(pageId, sectionId);
+      }
+      
       if (accordionSolo) {
         // Solo mode: if clicking already open, close it (empty set). If clicking closed, open ONLY it.
-        if (prev.has(sectionId)) return new Set();
+        if (wasOpen) return new Set();
         return new Set([sectionId]);
       }
       // Normal mode: toggle
       const next = new Set(prev);
-      if (next.has(sectionId)) {
+      if (wasOpen) {
         next.delete(sectionId);
       } else {
         next.add(sectionId);
@@ -691,8 +711,12 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
     });
   };
 
-  const setQuantity = (id: string, value: number) => {
+  const setQuantity = (id: string, value: number, interactionType?: "qty_plus" | "qty_minus") => {
     setQuantities(prev => {
+      // Track interaction
+      if (interactionType) {
+        trackInteraction(pageId, interactionType);
+      }
       // Allow 0 to exist so input stays open while typing (e.g. deleting "1" to type "0.5")
       return { ...prev, [id]: value };
     });
@@ -706,6 +730,13 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
   };
 
   const gapClass = spacingMode === "compact" ? "gap-3" : spacingMode === "relaxed" ? "gap-6" : "gap-4";
+
+  // Analytics: Track page view on mount
+  useEffect(() => {
+    initAnalytics();
+    trackPageView(pageId);
+    startTimeTracking(pageId);
+  }, [pageId]);
 
   useEffect(() => {
     const root = scrollContainer?.current || null;
@@ -1253,6 +1284,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                         style={{ background: "linear-gradient(90deg,var(--brand-1),var(--brand-2))" }}
                         onClick={(e) => {
                           e.stopPropagation();
+                          trackCheckout(pageId, "custom");
                           setCartOpen(false);
                           setOrderModalOpen(true);
                         }}

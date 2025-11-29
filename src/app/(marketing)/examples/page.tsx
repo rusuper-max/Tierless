@@ -8,6 +8,7 @@ import {
     TrendingUp,
     Trophy,
     ExternalLink,
+    ChevronDown,
 } from "lucide-react";
 import MarketingHeader from "@/components/marketing/MarketingHeader";
 import Footer from "@/components/marketing/Footer";
@@ -38,6 +39,7 @@ export default function ExamplesPage() {
     const [community, setCommunity] = useState<ShowcaseCard[]>([]);
     const [topPages, setTopPages] = useState<TopPageRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const [visibleCommunity, setVisibleCommunity] = useState(20); // Start with 20
 
     useEffect(() => {
         fetch("/api/showcase")
@@ -55,6 +57,10 @@ export default function ExamplesPage() {
             })
             .finally(() => setLoading(false));
     }, []);
+
+    const handleLoadMore = () => {
+        setVisibleCommunity(prev => Math.min(prev + 20, community.length));
+    };
 
     return (
         <div className="min-h-screen bg-[#020617] text-white selection:bg-indigo-500/30">
@@ -142,12 +148,25 @@ export default function ExamplesPage() {
                             <SkeletonGrid />
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {community.map((ex) => (
+                                {community.slice(0, visibleCommunity).map((ex) => (
                                     <Card key={ex.slug} card={ex} />
                                 ))}
                                 {community.length === 0 && (
                                     <EmptyState text="No community pages yet." />
                                 )}
+                            </div>
+                        )}
+
+                        {/* Load More Button */}
+                        {!loading && community.length > visibleCommunity && (
+                            <div className="mt-12 flex justify-center">
+                                <button
+                                    onClick={handleLoadMore}
+                                    className="group flex items-center gap-2 px-6 py-3 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all text-sm font-medium text-slate-300 hover:text-white"
+                                >
+                                    <span>Load More Examples</span>
+                                    <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+                                </button>
                             </div>
                         )}
                     </div>
