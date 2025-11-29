@@ -25,30 +25,40 @@ interface AnalyticsEvent {
 // Generate or retrieve session/client IDs
 function getSessionId(): string {
   if (typeof window === "undefined") return "ssr";
-  
-  let sessionId = sessionStorage.getItem("tierless_session_id");
-  if (!sessionId) {
-    sessionId = `s_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-    sessionStorage.setItem("tierless_session_id", sessionId);
+
+  try {
+    let sessionId = sessionStorage.getItem("tierless_session_id");
+    if (!sessionId) {
+      sessionId = `s_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+      sessionStorage.setItem("tierless_session_id", sessionId);
+    }
+    return sessionId;
+  } catch (e) {
+    // Fallback for private mode / storage disabled
+    return `s_fallback_${Date.now()}`;
   }
-  return sessionId;
 }
 
 function getClientId(): string {
   if (typeof window === "undefined") return "ssr";
-  
-  let clientId = localStorage.getItem("tierless_client_id");
-  if (!clientId) {
-    clientId = `c_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-    localStorage.setItem("tierless_client_id", clientId);
+
+  try {
+    let clientId = localStorage.getItem("tierless_client_id");
+    if (!clientId) {
+      clientId = `c_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+      localStorage.setItem("tierless_client_id", clientId);
+    }
+    return clientId;
+  } catch (e) {
+    // Fallback for private mode / storage disabled
+    return `c_fallback_${Date.now()}`;
   }
-  return clientId;
 }
 
 // Detect device type
 function getDeviceType(): string {
   if (typeof window === "undefined") return "unknown";
-  
+
   const ua = navigator.userAgent.toLowerCase();
   if (/tablet|ipad|playbook|silk/.test(ua)) return "tablet";
   if (/mobile|iphone|ipod|android|blackberry|opera mini|iemobile/.test(ua)) return "mobile";
@@ -58,7 +68,7 @@ function getDeviceType(): string {
 // Get platform (iOS, Android, etc.)
 function getPlatform(): string {
   if (typeof window === "undefined") return "unknown";
-  
+
   const ua = navigator.userAgent;
   if (/iPad|iPhone|iPod/.test(ua)) return "iOS";
   if (/Android/.test(ua)) return "Android";
@@ -71,10 +81,10 @@ function getPlatform(): string {
 // Get referrer domain
 function getReferrer(): string {
   if (typeof document === "undefined") return "direct";
-  
+
   const ref = document.referrer;
   if (!ref) return "direct";
-  
+
   try {
     const url = new URL(ref);
     if (url.hostname.includes("google")) return "Google";
@@ -93,7 +103,7 @@ function getReferrer(): string {
 // Get UTM parameters
 function getUtmParams(): { utm_source?: string; utm_medium?: string; utm_campaign?: string } {
   if (typeof window === "undefined") return {};
-  
+
   const params = new URLSearchParams(window.location.search);
   return {
     utm_source: params.get("utm_source") || undefined,
@@ -108,12 +118,12 @@ let flushTimeout: ReturnType<typeof setTimeout> | null = null;
 
 async function flushEvents() {
   if (eventQueue.length === 0) return;
-  
+
   const events = [...eventQueue];
   eventQueue = [];
-  
+
   console.log("[Analytics] Sending", events.length, "events:", events.map(e => e.type));
-  
+
   try {
     const res = await fetch("/api/stats", {
       method: "POST",
@@ -130,13 +140,13 @@ async function flushEvents() {
 
 function scheduleFlush(immediate = false) {
   if (flushTimeout) clearTimeout(flushTimeout);
-  
+
   if (immediate) {
     flushTimeout = null;
     flushEvents();
     return;
   }
-  
+
   flushTimeout = setTimeout(() => {
     flushTimeout = null;
     flushEvents();
@@ -150,7 +160,7 @@ export function trackEvent(
   props?: Record<string, any>
 ) {
   if (typeof window === "undefined") return;
-  
+
   const event: AnalyticsEvent = {
     type,
     pageId,
@@ -165,7 +175,7 @@ export function trackEvent(
       ...getUtmParams(),
     },
   };
-  
+
   eventQueue.push(event);
   scheduleFlush();
 }
@@ -249,7 +259,7 @@ function getTimeBucket(seconds: number): string {
 // Initialize page unload handlers
 export function initAnalytics() {
   if (typeof window === "undefined") return;
-  
+
   // Track page exit with time and scroll depth
   window.addEventListener("beforeunload", () => {
     if (currentPageId) {
@@ -271,7 +281,7 @@ export function initAnalytics() {
           },
         },
       ];
-      
+
       if (navigator.sendBeacon) {
         navigator.sendBeacon(
           "/api/stats",
@@ -280,13 +290,13 @@ export function initAnalytics() {
       }
     }
   });
-  
+
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
       flushEvents();
     }
   });
-  
+
   // Track scroll depth on scroll
   let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
   window.addEventListener("scroll", () => {
