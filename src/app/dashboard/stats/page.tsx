@@ -109,6 +109,7 @@ export default function StatsPage() {
   const [selectedPage, setSelectedPage] = useState<Page | null>(null);
   const [deviceFilter, setDeviceFilter] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [dismissedInsights, setDismissedInsights] = useState<Set<number>>(new Set());
 
   // Share state
   const [shareSlug, setShareSlug] = useState<string | null>(null);
@@ -372,20 +373,31 @@ export default function StatsPage() {
       {/* SMART INSIGHTS */}
       {insights.length > 0 && (
         <div className="space-y-2">
-          {insights.map((insight, i) => (
-            <div
-              key={i}
-              className={cn(
-                "flex items-start gap-3 p-4 rounded-xl border",
-                insight.type === "warning" && "bg-amber-500/5 border-amber-500/20 text-amber-700 dark:text-amber-400",
-                insight.type === "success" && "bg-emerald-500/5 border-emerald-500/20 text-emerald-700 dark:text-emerald-400",
-                insight.type === "info" && "bg-blue-500/5 border-blue-500/20 text-blue-700 dark:text-blue-400"
-              )}
-            >
-              <Lightbulb className="w-5 h-5 mt-0.5 shrink-0" />
-              <p className="text-sm">{insight.message}</p>
-            </div>
-          ))}
+          {insights.map((insight, originalIndex) => {
+            if (dismissedInsights.has(originalIndex)) return null;
+
+            return (
+              <div
+                key={originalIndex}
+                className={cn(
+                  "flex items-start gap-3 p-4 rounded-xl border relative",
+                  insight.type === "warning" && "bg-amber-500/5 border-amber-500/20 text-amber-700 dark:text-amber-400",
+                  insight.type === "success" && "bg-emerald-500/5 border-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+                  insight.type === "info" && "bg-blue-500/5 border-blue-500/20 text-blue-700 dark:text-blue-400"
+                )}
+              >
+                <Lightbulb className="w-5 h-5 mt-0.5 shrink-0" />
+                <p className="text-sm flex-1">{insight.message}</p>
+                <button
+                  onClick={() => setDismissedInsights(prev => new Set(prev).add(originalIndex))}
+                  className="shrink-0 p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-colors"
+                  aria-label="Dismiss"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 

@@ -4,7 +4,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+import { getSessionUser } from "@/lib/auth";
 import { promises as fs } from "fs";
 import path from "path";
 
@@ -280,8 +280,12 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user?.email) {
+    const user = await getSessionUser(req);
+    console.log("[stats] User from JWT:", user);
+    console.log("[stats] User email:", user?.email);
+
+    if (!user?.email) {
+      console.error("[stats] Unauthorized - no user or email");
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
@@ -289,33 +293,38 @@ export async function GET(req: NextRequest) {
     const days = parseInt(searchParams.get("days") || "7");
     const pageIdFilter = searchParams.get("pageId"); // Optional filter
 
-    const userId = session.user.email;
+    const userId = user.email;
 
-    // Get all user pages with their IDs and Slugs
+    // Get all user pages from DATABASE (not file system!)
     const userPages: { slug: string; id: string }[] = [];
     try {
-      const calcsPath = path.join(process.cwd(), "data", "users", userId.replace(/[@.]/g, "_"), "full");
-      console.log("[stats] Reading pages from:", calcsPath);
-      const files = await fs.readdir(calcsPath);
-      console.log("[stats] Found files:", files);
-      for (const file of files) {
-        if (!file.endsWith(".json")) continue;
+      const pool = await import("@/lib/db").then(m => m.getPool());
+      const { rows } = await pool.query(
+        `SELECT slug FROM calculators WHERE user_id = $1`,
+        [userId]
+      );
+      console.log("[stats] DB rows:", rows);
+
+      // For each slug, try to get the ID from fullStore
+      for (const row of rows) {
+        const slug = row.slug;
         try {
-          const content = await fs.readFile(path.join(calcsPath, file), "utf-8");
-          const json = JSON.parse(content);
+          const fullStore = await import("@/lib/fullStore");
+          const full = await fullStore.getFull(userId, slug);
           userPages.push({
-            slug: json.meta?.slug || file.replace(".json", ""),
-            id: json.meta?.id || ""
+            slug,
+            id: full?.meta?.id || ""
           });
-        } catch (e) {
-          console.error("[stats] Error reading file:", file, e);
+        } catch {
+          // If fullStore fails, just use slug
+          userPages.push({ slug, id: "" });
         }
       }
     } catch (e) {
-      console.error("[stats] Error reading user directory:", e);
+      console.error("[stats] Error reading from database:", e);
     }
 
-    console.log("[stats] User pages loaded:", userPages);
+    console.log("[stats] User pages loaded from DB:", userPages);
 
     const pageIds = userPages.map(p => p.slug); // For backward compatibility in response
 
