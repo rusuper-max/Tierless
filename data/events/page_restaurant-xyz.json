@@ -1,0 +1,431 @@
+[
+  {
+    "type": "page_view",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440769628,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "scroll_depth",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440771523,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "depth": 25,
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "scroll_depth",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440771523,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "depth": 50,
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "section_open",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440772218,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "sectionId": "sec_2ww2oatj",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "section_open",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440772218,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "sectionId": "sec_2ww2oatj",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "scroll_depth",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440773470,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "depth": 75,
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "section_open",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440774228,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "sectionId": "sec_hct0i9dc",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "section_open",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440774228,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "sectionId": "sec_hct0i9dc",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "scroll_depth",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440774834,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "depth": 100,
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "section_open",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440775426,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "sectionId": "sec_9ceurkxu",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "section_open",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440775426,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "sectionId": "sec_9ceurkxu",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "page_exit",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440993029,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "timeOnPage": 223,
+      "timeBucket": "2-5m",
+      "maxScrollDepth": 100,
+      "device": "desktop",
+      "platform": "macOS"
+    }
+  },
+  {
+    "type": "page_view",
+    "pageId": "restaurant-xyz",
+    "ts": 1764440995471,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "page_view",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441000948,
+    "sessionId": "s_1764441000948_2c8us4bk6",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "page_exit",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441001912,
+    "sessionId": "s_1764440769628_c30szx497",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "timeOnPage": 6,
+      "timeBucket": "0-10s",
+      "maxScrollDepth": 0,
+      "device": "desktop",
+      "platform": "macOS"
+    }
+  },
+  {
+    "type": "scroll_depth",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441003086,
+    "sessionId": "s_1764441000948_2c8us4bk6",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "depth": 25,
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "scroll_depth",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441003086,
+    "sessionId": "s_1764441000948_2c8us4bk6",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "depth": 50,
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "scroll_depth",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441003086,
+    "sessionId": "s_1764441000948_2c8us4bk6",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "depth": 75,
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "scroll_depth",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441003086,
+    "sessionId": "s_1764441000948_2c8us4bk6",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "depth": 100,
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "section_open",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441003177,
+    "sessionId": "s_1764441000948_2c8us4bk6",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "sectionId": "sec_9ceurkxu",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "section_open",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441003177,
+    "sessionId": "s_1764441000948_2c8us4bk6",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "sectionId": "sec_9ceurkxu",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "section_open",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441004569,
+    "sessionId": "s_1764441000948_2c8us4bk6",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "sectionId": "sec_hct0i9dc",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "section_open",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441004569,
+    "sessionId": "s_1764441000948_2c8us4bk6",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "sectionId": "sec_hct0i9dc",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "checkout_click",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441006941,
+    "sessionId": "s_1764441000948_2c8us4bk6",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "method": "custom",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "localhost"
+    }
+  },
+  {
+    "type": "page_exit",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441008722,
+    "sessionId": "s_1764441000948_2c8us4bk6",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "timeOnPage": 7,
+      "timeBucket": "0-10s",
+      "maxScrollDepth": 100,
+      "device": "desktop",
+      "platform": "macOS"
+    }
+  },
+  {
+    "type": "page_view",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441437275,
+    "sessionId": "s_1764441437275_l72dpm8ad",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "direct"
+    }
+  },
+  {
+    "type": "scroll_depth",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441438666,
+    "sessionId": "s_1764441437275_l72dpm8ad",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "depth": 25,
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "direct"
+    }
+  },
+  {
+    "type": "scroll_depth",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441438666,
+    "sessionId": "s_1764441437275_l72dpm8ad",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "depth": 50,
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "direct"
+    }
+  },
+  {
+    "type": "scroll_depth",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441438666,
+    "sessionId": "s_1764441437275_l72dpm8ad",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "depth": 75,
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "direct"
+    }
+  },
+  {
+    "type": "scroll_depth",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441438666,
+    "sessionId": "s_1764441437275_l72dpm8ad",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "depth": 100,
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "direct"
+    }
+  },
+  {
+    "type": "section_open",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441438884,
+    "sessionId": "s_1764441437275_l72dpm8ad",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "sectionId": "sec_hct0i9dc",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "direct"
+    }
+  },
+  {
+    "type": "section_open",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441438884,
+    "sessionId": "s_1764441437275_l72dpm8ad",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "sectionId": "sec_hct0i9dc",
+      "device": "desktop",
+      "platform": "macOS",
+      "referrer": "direct"
+    }
+  },
+  {
+    "type": "page_exit",
+    "pageId": "restaurant-xyz",
+    "ts": 1764441444719,
+    "sessionId": "s_1764441437275_l72dpm8ad",
+    "clientId": "c_1764440769629_b4fgbbxb7",
+    "props": {
+      "timeOnPage": 7,
+      "timeBucket": "0-10s",
+      "maxScrollDepth": 100,
+      "device": "desktop",
+      "platform": "macOS"
+    }
+  }
+]

@@ -295,7 +295,9 @@ export async function GET(req: NextRequest) {
     const userPages: { slug: string; id: string }[] = [];
     try {
       const calcsPath = path.join(process.cwd(), "data", "users", userId.replace(/[@.]/g, "_"), "full");
+      console.log("[stats] Reading pages from:", calcsPath);
       const files = await fs.readdir(calcsPath);
+      console.log("[stats] Found files:", files);
       for (const file of files) {
         if (!file.endsWith(".json")) continue;
         try {
@@ -305,9 +307,15 @@ export async function GET(req: NextRequest) {
             slug: json.meta?.slug || file.replace(".json", ""),
             id: json.meta?.id || ""
           });
-        } catch { }
+        } catch (e) {
+          console.error("[stats] Error reading file:", file, e);
+        }
       }
-    } catch { }
+    } catch (e) {
+      console.error("[stats] Error reading user directory:", e);
+    }
+
+    console.log("[stats] User pages loaded:", userPages);
 
     const pageIds = userPages.map(p => p.slug); // For backward compatibility in response
 
@@ -332,21 +340,30 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    console.log("[stats] Target identifiers to fetch events for:", targetIdentifiers);
+
     // Fetch events
     const events = await getEventsForPages(targetIdentifiers, days);
 
-    console.log("[stats] Found", events.length, "events for identifiers:", targetIdentifiers);
+    console.log("[stats] Found", events.length, "events");
+    console.log("[stats] Event pageIds:", [...new Set(events.map(e => e.pageId))]);
 
     // Normalize events: map UUIDs back to Slugs
     const normalizedEvents = events.map(e => {
       const page = userPages.find(p => p.id === e.pageId);
       if (page) {
+        console.log("[stats] Normalizing event pageId from", e.pageId, "to", page.slug);
         return { ...e, pageId: page.slug };
       }
       return e;
     });
 
+    console.log("[stats] Normalized event pageIds:", [...new Set(normalizedEvents.map(e => e.pageId))]);
+
     const stats = aggregateEvents(normalizedEvents, userPages.map(p => p.slug));
+
+    console.log("[stats] Aggregated stats summary:", stats.summary);
+    console.log("[stats] Aggregated perPage keys:", Object.keys(stats.perPage));
 
     return NextResponse.json({
       ok: true,

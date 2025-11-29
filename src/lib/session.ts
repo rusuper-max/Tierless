@@ -26,7 +26,7 @@ export const sessionOptions: SessionOptions = {
 // 1) Za server komponente / obične API read-ove
 export async function getSession() {
   // cookies() store radi u App Router API/Server kontekstu
-  const store = cookies() as unknown as any;
+  const store = await cookies() as unknown as any;
   return getIronSession<SessionData>(store, sessionOptions);
 }
 

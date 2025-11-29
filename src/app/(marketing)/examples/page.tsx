@@ -9,6 +9,7 @@ import {
     Trophy,
     ExternalLink,
     ChevronDown,
+    ArrowUpRight,
 } from "lucide-react";
 import MarketingHeader from "@/components/marketing/MarketingHeader";
 import Footer from "@/components/marketing/Footer";
@@ -19,24 +20,26 @@ import ShinyButton from "@/components/marketing/ShinyButton";
 function optimizeCloudinaryUrl(url: string | null, width: number = 600): string | null {
     if (!url) return null;
     if (!url.includes("res.cloudinary.com")) return url;
-    
+
     const i = url.indexOf('/upload/');
     if (i === -1) return url;
-    
+
     const params = `f_auto,q_auto:eco,c_limit,w_${width}`;
     const prefix = url.slice(0, i + 8);
     const suffix = url.slice(i + 8);
-    
+
     return `${prefix}${params}/${suffix}`;
 }
 
 type ShowcaseCard = {
     slug: string;
     title: string;
+    description: string;
     cover: string | null;
-    avgRating: number;
-    ratingsCount: number;
-    description?: string | null;
+    views: number;
+    avgRating?: number;
+    ratingsCount?: number;
+    author?: string;
 };
 
 type TopPageRow = {
@@ -271,9 +274,9 @@ function Card({ card, tall = false }: { card: ShowcaseCard; tall?: boolean }) {
                 <div className="w-full h-full overflow-hidden group-hover:scale-[1.03] transition-transform duration-700 origin-top">
                     {card.cover ? (
                         // Optimized Cloudinary URL with width limit
-                        <img 
-                            src={optimizeCloudinaryUrl(card.cover, tall ? 500 : 400) || card.cover} 
-                            alt={card.title} 
+                        <img
+                            src={optimizeCloudinaryUrl(card.cover, tall ? 500 : 400) || card.cover}
+                            alt={card.title}
                             className="w-full h-full object-cover"
                             loading="lazy"
                         />
@@ -309,8 +312,20 @@ function Card({ card, tall = false }: { card: ShowcaseCard; tall?: boolean }) {
                     </div>
                 </div>
                 {tall && card.description && (
-                    <p className="text-xs text-slate-500 mb-1 line-clamp-2">{card.description}</p>
+                    <p className="text-xs text-slate-500 mb-3 line-clamp-2">{card.description}</p>
                 )}
+
+                <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                        <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[8px]">
+                            {card.author?.charAt(0).toUpperCase() || "?"}
+                        </span>
+                        <span className="truncate max-w-[80px]">{card.author || "Unknown"}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs font-medium text-cyan-400 group-hover:underline">
+                        Visit Page <ArrowUpRight size={12} />
+                    </div>
+                </div>
             </div>
         </div>
     );
