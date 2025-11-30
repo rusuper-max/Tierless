@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Loader2,
   Zap,
+  Eye,
 } from "lucide-react";
 import { useMemo, useRef, useState, useEffect } from "react";
 import { t } from "@/i18n";
@@ -169,6 +170,7 @@ export default function EditorNavBar({
   editorMode,
   onGuideClick,
   onTogglePublish,
+  onPreview,
 }: {
   calcName?: string;
   showBack?: boolean;
@@ -181,6 +183,7 @@ export default function EditorNavBar({
   editorMode: Mode;
   onGuideClick?: () => void;
   onTogglePublish?: () => void;
+  onPreview?: () => void;
 }) {
   const [qrOpen, setQrOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -292,14 +295,14 @@ export default function EditorNavBar({
               </button>
             </div>
 
-            {/* Save Button (compact brand style - same size as Guide) */}
+            {/* Save Button (enhanced when dirty) */}
             <button
               onClick={onSave}
               disabled={isSaving}
               className={`
                 relative flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 cursor-pointer
                 ${isDirty
-                  ? "text-cyan-600 dark:text-cyan-400 bg-white dark:bg-slate-800 border border-cyan-200 dark:border-cyan-500/30 shadow-sm shadow-cyan-500/10 hover:border-cyan-400 hover:shadow-md hover:shadow-cyan-500/20 active:scale-95 focus:ring-cyan-500"
+                  ? "text-white bg-gradient-to-r from-[#4F46E5] to-[#22D3EE] shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 active:scale-95 focus:ring-cyan-500 animate-pulse-glow"
                   : "text-[var(--muted)] bg-transparent hover:bg-white/5 dark:hover:bg-white/5 active:scale-95 focus:ring-[var(--brand-2)]"
                 }
               `}
@@ -316,6 +319,19 @@ export default function EditorNavBar({
                 {isSaving ? t("Saving") : isDirty ? t("Save") : t("Saved")}
               </span>
             </button>
+
+            {/* Preview Button */}
+            {onPreview && (
+              <button
+                onClick={onPreview}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/5 dark:hover:bg-white/5 transition-all cursor-pointer"
+                title={t("Preview")}
+                data-help="Preview how your page looks to visitors. See it exactly as they will!"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t("Preview")}</span>
+              </button>
+            )}
 
             {/* Public/Share Split (compact pill style) */}
             <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800/50 p-0.5 rounded-full border border-slate-200 dark:border-slate-700">

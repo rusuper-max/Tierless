@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, ChangeEvent, useEffect, useMemo } from "react";
-import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle, LayoutList, ScrollText, Share2, Globe, Percent, MessageCircle, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle, LayoutList, ScrollText, Share2, Globe, Percent, MessageCircle, ArrowUp, ArrowDown, Pencil } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type SimpleSection, type BrandTheme } from "@/hooks/useEditorStore";
 import { useAccount } from "@/hooks/useAccount";
@@ -599,14 +599,17 @@ export default function SimpleListPanel() {
         <div className="flex-1 flex flex-col justify-between p-3 gap-2 min-w-0">
           {/* Top Row */}
           <div className="flex gap-2 items-start">
-            <BufferedInput
-              className="flex-1 bg-transparent font-bold text-[var(--text)] outline-none placeholder-[var(--muted)] text-sm"
-              value={item.label || ""}
-              onCommit={(val: string) => updateItem(item.id, { label: val })}
-              placeholder={t("Item Name")}
-              disabled={isOverLimit}
-              data-help="Enter the name of your item."
-            />
+            <div className="flex-1 relative group/name">
+              <BufferedInput
+                className="w-full bg-transparent font-bold text-[var(--text)] outline-none placeholder-[var(--muted)] text-sm pr-6"
+                value={item.label || ""}
+                onCommit={(val: string) => updateItem(item.id, { label: val })}
+                placeholder={t("Item Name")}
+                disabled={isOverLimit}
+                data-help="Click to rename this item."
+              />
+              <Pencil className="w-3 h-3 text-[var(--muted)] absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover/name:opacity-100 transition-opacity pointer-events-none" />
+            </div>
             <div className="flex items-center gap-1 bg-[var(--bg)] rounded-lg px-2 border border-[var(--border)] focus-within:border-[#22D3EE] transition-colors shrink-0 h-8">
               <span className="text-xs text-[var(--muted)] font-bold">{currency}</span>
               <BufferedInput

@@ -2,11 +2,12 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState, useRef } from "react";
-import { ChevronLeft, Eye, X } from "lucide-react";
+import { ChevronLeft, Eye, X, XCircle } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type CalcJson, type Mode } from "@/hooks/useEditorStore";
 import { HelpModeProvider, useHelpMode } from "@/hooks/useHelpMode";
 import EditorNavBar from "./components/EditorNavBar";
+import OnboardingIntro from "@/components/editor/OnboardingIntro";
 import HelpModeIntro from "@/components/editor/HelpModeIntro";
 import HelpTooltip from "@/components/editor/HelpTooltip";
 
@@ -41,9 +42,20 @@ function EditorContent({ slug, initialCalc }: Props) {
   const { calc, init, isDirty, isSaving, setEditorMode } = useEditorStore();
   const { isActive: isHelpMode, hasSeenIntro, markIntroAsSeen, enableHelpMode, disableHelpMode, toggleHelpMode } = useHelpMode();
 
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
   // Help Mode state
   const [showIntro, setShowIntro] = useState(false);
   const [helpTooltip, setHelpTooltip] = useState<{ content: string; element: HTMLElement } | null>(null);
+
+  // Check if user has been onboarded
+  useEffect(() => {
+    const hasOnboarded = localStorage.getItem('editor_onboarded');
+    if (!hasOnboarded && !inSetup) {
+      setShowOnboarding(true);
+    }
+  }, []);
 
   /* ---------------- Init calc ---------------- */
   useEffect(() => {
@@ -364,6 +376,21 @@ function EditorContent({ slug, initialCalc }: Props) {
         </div>
       )}
 
+      {/* Onboarding Modal */}
+      {showOnboarding && (
+        <OnboardingIntro
+          onStartTour={() => {
+            localStorage.setItem('editor_onboarded', 'true');
+            setShowOnboarding(false);
+            setShowIntro(true);
+          }}
+          onSkip={() => {
+            localStorage.setItem('editor_onboarded', 'true');
+            setShowOnboarding(false);
+          }}
+        />
+      )}
+
       {/* Help Mode Intro Modal */}
       {showIntro && !hasSeenIntro && (
         <HelpModeIntro
@@ -398,6 +425,7 @@ function EditorContent({ slug, initialCalc }: Props) {
         isPublished={isPublished}
         editorMode={uiMode}
         onTogglePublish={handleTogglePublish}
+        onPreview={() => setPreviewOpen(true)}
         onGuideClick={() => {
           // If seen intro before, toggle Help Mode directly
           // Otherwise show intro first
@@ -410,32 +438,6 @@ function EditorContent({ slug, initialCalc }: Props) {
       />
 
       <div className="px-4 lg:px-8 py-5">
-        {/* Quick preview toolbar */}
-        {!inSetup && (
-          <div className="mb-3 flex items-center justify-end">
-            <button
-              type="button"
-              onClick={() => setPreviewOpen(true)}
-              className="relative inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-3.5 py-2 text-xs sm:text-sm group hover:shadow-[0_10px_24px_rgba(2,6,23,.10)] hover:-translate-y-0.5 transition"
-            >
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-0 rounded-full"
-                style={{
-                  padding: 1.5,
-                  background: BRAND_GRADIENT,
-                  WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                  WebkitMaskComposite: "xor",
-                  maskComposite: "exclude",
-                }}
-              />
-              <span className="relative z-[1] inline-flex items-center gap-2 text-[var(--text)]">
-                <Eye className="h-3.5 w-3.5" />
-                {t("Quick preview")}
-              </span>
-            </button>
-          </div>
-        )}
 
         <div className="tl-body relative">
           <section className="flex-1 min-w-0">
@@ -510,6 +512,18 @@ function EditorContent({ slug, initialCalc }: Props) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Mobile Exit Button for Guide Mode */}
+      {isHelpMode && (
+        <button
+          onClick={disableHelpMode}
+          className="md:hidden fixed bottom-6 right-6 z-[150] flex items-center gap-2 px-4 py-3 rounded-full text-sm font-bold text-white shadow-2xl hover:scale-105 active:scale-95 transition-all animate-in slide-in-from-bottom-4 duration-300"
+          style={{ background: BRAND_GRADIENT }}
+        >
+          <XCircle className="w-4 h-4" />
+          {t("Exit Guide Mode")}
+        </button>
       )}
 
       <style jsx global>{`

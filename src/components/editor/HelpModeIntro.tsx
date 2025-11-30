@@ -57,24 +57,24 @@ export default function HelpModeIntro({ onClose, onDontShowAgain }: Props) {
                         </div>
                         <div className="flex-1">
                             <h3 className="text-sm font-bold text-[var(--text)] mb-1">
-                                {t("Your cursor is now a question mark")}
+                                {t("Click to learn")}
                             </h3>
                             <p className="text-xs text-[var(--muted)]">
-                                {t("Click on any button or element to see what it does. Try clicking Save, Add Item, or Theme buttons!")}
+                                {t("Your cursor is now a question mark. Click on any button, field, or element to see what it does!")}
                             </p>
                         </div>
                     </div>
 
                     <div className="flex items-start gap-3 p-4 rounded-xl bg-[var(--bg)]/50 border border-[var(--border)]">
                         <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0 text-white font-bold text-lg">
-                            ?
+                            ✓
                         </div>
                         <div className="flex-1">
                             <h3 className="text-sm font-bold text-[var(--text)] mb-1">
                                 {t("Exit anytime")}
                             </h3>
                             <p className="text-xs text-[var(--muted)]">
-                                {t("Press ESC or click the Guide button again to exit Help Mode.")}
+                                {t("Press ESC on your keyboard, click the Guide button in the navbar, or use the Exit button that appears on mobile.")}
                             </p>
                         </div>
                     </div>
