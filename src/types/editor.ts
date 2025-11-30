@@ -82,12 +82,14 @@ export type ItemRow = {
     hidden?: boolean;
     soldOut?: boolean;
     tags?: string[];
-    badge?: string; // Dodato iz prethodnog zahteva
+    badge?: string;
     discountPercent?: number;
     unit?: string;
     customUnit?: string;
     actionUrl?: string;
     actionLabel?: string;
+    duration?: string;      // Service duration (e.g., "30min")
+    pricePrefix?: string;   // Price prefix (e.g., "from", "starting at")
 };
 
 export type SocialNetworks = {

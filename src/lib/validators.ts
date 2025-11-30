@@ -53,7 +53,7 @@ export const OptionGroupSchema = z.object({
   base: z.number().optional(),
   pricing: RangePricingSchema.optional(),
   color: z.string().optional(),
-});
+}).passthrough(); // Allow additional fields
 
 export const PkgSchema = z.object({
   id: z.string().min(1),
@@ -62,7 +62,7 @@ export const PkgSchema = z.object({
   description: z.string().optional(),
   featured: z.boolean().optional(),
   color: z.string().optional(),
-});
+}).passthrough(); // Allow additional fields
 
 export const SocialNetworksSchema = z.object({
   facebook: z.string().optional(),
@@ -102,9 +102,9 @@ export const SimpleSectionSchema = z.object({
   description: z.string().optional(),
   imageUrl: z.string().optional(),
   imagePublicId: z.string().optional(),
-  videoUrl: z.string().optional(), // ✅ Added for Pro video feature
+  videoUrl: z.string().optional(), // Pro video feature
   collapsed: z.boolean().optional(),
-});
+}).passthrough(); // Allow additional fields to be preserved
 
 export const ItemRowSchema = z.object({
   id: z.string().min(1),
@@ -125,7 +125,7 @@ export const ItemRowSchema = z.object({
   actionLabel: z.string().optional(),
   duration: z.string().optional(),
   pricePrefix: z.string().optional(),
-});
+}).passthrough(); // Allow additional fields to be preserved
 
 export const ContactInfoSchema = z.object({
   type: ContactTypeSchema.optional(),
