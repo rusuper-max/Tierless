@@ -82,11 +82,11 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
   // Aggregate by type
   const pageViews = pageEvents.filter(e => e.type === "page_view");
   const pageExits = pageEvents.filter(e => e.type === "page_exit");
-  
+
   // ALL engagement events (not just "interaction" type)
-  const engagementEvents = pageEvents.filter(e => 
-    e.type === "interaction" || 
-    e.type === "section_open" || 
+  const engagementEvents = pageEvents.filter(e =>
+    e.type === "interaction" ||
+    e.type === "section_open" ||
     e.type === "search" ||
     e.type === "checkout_click" ||
     e.type === "rating_set" ||
@@ -94,16 +94,14 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
     e.type === "copy_contact" ||
     e.type === "click_link"
   );
-  
-  // Legacy - keep for backwards compatibility
-  const interactions = pageEvents.filter(e => e.type === "interaction");
+
   const checkouts = pageEvents.filter(e => e.type === "checkout_click");
   const ratings = pageEvents.filter(e => e.type === "rating_set");
   const scrollEvents = pageEvents.filter(e => e.type === "scroll_depth");
 
   // Unique sessions (total visitors)
   const uniqueSessions = new Set(pageViews.map(e => e.sessionId)).size;
-  
+
   // Engaged sessions (visitors who did ANYTHING beyond just viewing)
   const engagedSessions = new Set(engagementEvents.map(e => e.sessionId)).size;
 
@@ -132,6 +130,7 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
   const perPage: Record<string, {
     views: number;
     uniqueVisitors: number;
+    engagedSessions: number; // ADDED: New metric
     interactions: number;
     checkouts: number;
     checkoutMethods: Record<string, number>;
@@ -148,13 +147,13 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
   for (const pid of pageIds) {
     const pv = pageViews.filter(e => e.pageId === pid);
     const pe = pageExits.filter(e => e.pageId === pid);
-    const pi = interactions.filter(e => e.pageId === pid);
     const pc = checkouts.filter(e => e.pageId === pid);
     const pr = ratings.filter(e => e.pageId === pid);
     const ps = scrollEvents.filter(e => e.pageId === pid);
-    
+
     // All engagement events for this page
     const pageEngagement = engagementEvents.filter(e => e.pageId === pid);
+    const pageEngagedSessions = new Set(pageEngagement.map(e => e.sessionId)).size;
 
     const pageScrollDepth: Record<number, number> = { 25: 0, 50: 0, 75: 0, 100: 0 };
     for (const e of ps) {
@@ -167,7 +166,8 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
     perPage[pid] = {
       views: pv.length,
       uniqueVisitors: new Set(pv.map(e => e.sessionId)).size,
-      interactions: pageEngagement.length, // All engagement, not just "interaction" type
+      engagedSessions: pageEngagedSessions,
+      interactions: pageEngagement.length, // Raw interactions count
       checkouts: pc.length,
       checkoutMethods: pc.reduce((acc, e) => {
         const m = e.props?.method || "unknown";
@@ -192,7 +192,6 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
         return acc;
       }, {} as Record<string, number>),
       interactionTypes: pageEngagement.reduce((acc, e) => {
-        // Group by event type + optional subtype
         let key = e.type;
         if (e.type === "interaction" && e.props?.interactionType) {
           key = e.props.interactionType;
@@ -205,7 +204,7 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
     };
   }
 
-  // Daily breakdown for chart
+  // Daily breakdown
   const dailyStats: Record<string, { views: number; interactions: number; checkouts: number }> = {};
 
   for (const e of pageEvents) {
@@ -214,22 +213,21 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
       dailyStats[day] = { views: 0, interactions: 0, checkouts: 0 };
     }
     if (e.type === "page_view") dailyStats[day].views++;
-    // Count ALL engagement types as interactions for the chart
-    if (e.type === "interaction" || e.type === "section_open" || e.type === "search" || 
-        e.type === "scroll_depth" || e.type === "copy_contact" || e.type === "click_link") {
+    // Keep showing raw interaction count on graph, but maybe you want engaged sessions here too?
+    // For now, raw interactions is fine for a line chart "volume"
+    if (engagementEvents.includes(e)) {
       dailyStats[day].interactions++;
     }
     if (e.type === "checkout_click") dailyStats[day].checkouts++;
   }
 
-  // Top referrers
+  // Helper lists
   const allReferrers: Record<string, number> = {};
   for (const e of pageViews) {
     const r = e.props?.referrer || "direct";
     allReferrers[r] = (allReferrers[r] || 0) + 1;
   }
 
-  // Top UTM sources
   const utmSources: Record<string, number> = {};
   for (const e of pageViews) {
     if (e.props?.utm_source) {
@@ -238,14 +236,12 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
     }
   }
 
-  // Device breakdown
   const devices: Record<string, number> = {};
   for (const e of pageViews) {
     const d = e.props?.device || "unknown";
     devices[d] = (devices[d] || 0) + 1;
   }
 
-  // Country breakdown
   const countries: Record<string, number> = {};
   for (const e of pageViews) {
     const c = e.props?.country || "Unknown";
@@ -256,11 +252,12 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
     summary: {
       totalViews: pageViews.length,
       uniqueVisitors: uniqueSessions,
-      totalInteractions: engagementEvents.length, // All engagement actions
+      totalInteractions: engagementEvents.length,
       totalCheckouts: checkouts.length,
-      conversionRate: pageViews.length > 0 ? (checkouts.length / pageViews.length * 100).toFixed(2) : "0",
-      interactionRate: pageViews.length > 0 ? (engagementEvents.length / pageViews.length * 100).toFixed(2) : "0",
-      engagedSessions, // Sessions with ANY engagement
+      conversionRate: uniqueSessions > 0 ? (checkouts.length / uniqueSessions * 100).toFixed(2) : "0",
+      // FIX: Interaction Rate is now Engaged Sessions / Total Sessions
+      interactionRate: uniqueSessions > 0 ? (engagedSessions / uniqueSessions * 100).toFixed(2) : "0",
+      engagedSessions,
       avgTimeOnPage: Math.round(avgTimeOnPage),
       timeBuckets,
       scrollDepth: scrollDepthCounts,
@@ -302,15 +299,12 @@ export async function GET(req: NextRequest) {
     const userId = user.email;
     const pool = getPool();
 
-    // Get all user pages from PostgreSQL
     const { rows } = await pool.query(
       `SELECT slug FROM calculators WHERE user_id = $1`,
       [userId]
     );
 
     const userPages: { slug: string; id: string }[] = [];
-
-    // For each slug, try to get the ID from fullStore
     const fullStore = await import("@/lib/fullStore");
     for (const row of rows) {
       const slug = row.slug;
@@ -322,9 +316,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    console.log("[stats] User:", userId, "Pages:", userPages.length);
-
-    // Determine which page IDs (slugs AND IDs) to fetch events for
     let targetIdentifiers: string[] = [];
     if (pageIdFilter) {
       const page = userPages.find(p => p.slug === pageIdFilter);
@@ -341,14 +332,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    console.log("[stats] Fetching events for:", targetIdentifiers);
-
-    // Fetch events from PostgreSQL
     const events = await getEventsForPages(targetIdentifiers, days);
 
-    console.log("[stats] Found", events.length, "events");
-
-    // Normalize events: map IDs back to slugs
     const normalizedEvents = events.map(e => {
       const page = userPages.find(p => p.id === e.pageId);
       return page ? { ...e, pageId: page.slug } : e;
@@ -374,16 +359,29 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { events } = body as { events: AnalyticsEvent[] };
 
-    console.log("[stats] POST received", events?.length, "events");
-
     if (!Array.isArray(events) || events.length === 0) {
       return NextResponse.json({ error: "no_events" }, { status: 400 });
     }
 
+    // --- FIX FOR COUNTRY ---
+    // Extract country from Vercel headers (or Cloudflare/Next headers)
+    const country = req.headers.get("x-vercel-ip-country") ||
+      req.headers.get("cf-ipcountry") ||
+      "Unknown";
+
+    // Inject country into page_view events
+    events.forEach(e => {
+      if (e.type === "page_view" && e.props) {
+        e.props.country = country;
+      } else if (e.type === "page_view") {
+        e.props = { country };
+      }
+    });
+    // -----------------------
+
     const pool = getPool();
     await ensureAnalyticsTable();
 
-    // Insert events into PostgreSQL
     for (const event of events) {
       await pool.query(
         `INSERT INTO analytics_events (event_type, page_id, ts, session_id, client_id, props)
@@ -398,8 +396,6 @@ export async function POST(req: NextRequest) {
         ]
       );
     }
-
-    console.log("[stats] Saved", events.length, "events to PostgreSQL");
 
     return NextResponse.json({ ok: true, recorded: events.length });
   } catch (error) {
