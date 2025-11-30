@@ -66,36 +66,32 @@ export async function GET(req: Request) {
 
   const rows = await calcsStore.list(userId);
 
-  // Osiguraj da svi kalkulatori imaju meta.id (ako nemaju, generiši i upiši)
-  for (const r of rows) {
-    const slug = r?.meta?.slug;
-    if (!slug) continue;
-    try {
-      let full = await fullStore.getFull(userId, slug);
-      if (!full) {
-        // Ako nema full fajl, napravi ga iz mini zapisa
-        const { calcFromMetaConfig } = await import("@/lib/calc-init");
-        full = calcFromMetaConfig(r);
-      }
-      if (!full?.meta?.id) {
-        await ensureIdOnFull(userId, slug, full);
-      }
-    } catch {
-      // ignoriši pojedinačne greške
-    }
-  }
-
-  // Enrichment: pridruži meta.id iz fullStore (i garantuj da postoji)
+  // 🚀 PERFORMANCE FIX: Process all rows in parallel instead of sequential loop
+  // This reduces N * latency to just 1 * latency
+  const { calcFromMetaConfig } = await import("@/lib/calc-init");
+  
   const enriched = await Promise.all(
     rows.map(async (r) => {
       const slug = r?.meta?.slug;
       if (!slug) return r;
+      
       try {
-        const full = await fullStore.getFull(userId, slug);
-        if (!full) return r; // još nije otvoreno u editoru – ok, bez id-a
-        const withId = await ensureIdOnFull(userId, slug, full);
-        return { ...r, meta: { ...r.meta, id: withId.meta.id } };
+        let full = await fullStore.getFull(userId, slug);
+        
+        // If no full file exists, create from mini record
+        if (!full) {
+          full = calcFromMetaConfig(r);
+        }
+        
+        // Ensure meta.id exists
+        if (!full?.meta?.id) {
+          full = await ensureIdOnFull(userId, slug, full);
+        }
+        
+        // Return enriched row with meta.id
+        return { ...r, meta: { ...r.meta, id: full.meta.id } };
       } catch {
+        // On error, return original row
         return r;
       }
     })
