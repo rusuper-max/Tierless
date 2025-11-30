@@ -8,6 +8,8 @@ import * as fullStore from "@/lib/fullStore";
 import * as calcsStore from "@/lib/calcsStore";
 import { randomBytes } from "crypto";
 import * as trash from "@/lib/data/trash";
+import { CalcJsonSchema, validateBody, validationErrorResponse } from "@/lib/validators";
+import { VersionConflictError } from "@/lib/fullStore";
 
 function jsonNoCache(data: any, status = 200) {
   const res = NextResponse.json(data, { status });
@@ -163,9 +165,11 @@ export async function GET(req: Request, ctx: { params?: { slug?: string } }) {
     // Uvek prvo mini red – zbog imena, published itd.
     const miniRow = await calcsStore.get(userId, slug);
 
-    // 1) FULL iz storage-a
-    const full = await fullStore.getFull(userId, slug);
-    if (full) {
+    // 1) FULL iz storage-a (with version for optimistic locking)
+    const fullRecord = await fullStore.getFullWithVersion(userId, slug);
+    if (fullRecord) {
+      const full = fullRecord.calc;
+      const version = fullRecord.version;
       const id = full?.meta?.id || genId();
 
       // Merge meta: uzmi sve iz FULL, ali ime pregazi vrednošću iz mini reda, ako postoji
@@ -176,14 +180,18 @@ export async function GET(req: Request, ctx: { params?: { slug?: string } }) {
         id,
       };
 
-      const ready = { ...full, meta: mergedMeta };
+      const ready = { ...full, meta: mergedMeta, _version: version };
 
       // Ako ranije nije imao id ili je ime promenjeno – upiši nazad u fullStore
       if (!full?.meta?.id || full?.meta?.name !== mergedMeta.name) {
         await fullStore.putFull(userId, slug, ready);
       }
 
-      return jsonNoCache(ready);
+      // Return with ETag header for version tracking
+      const res = NextResponse.json(ready);
+      res.headers.set("cache-control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+      res.headers.set("ETag", String(version));
+      return res;
     }
 
     // 2) Nema FULL – seed iz mini reda (ako postoji)
@@ -194,9 +202,14 @@ export async function GET(req: Request, ctx: { params?: { slug?: string } }) {
         ...seeded,
         blocks: normalizeBlocks(seeded),
         meta: { ...seeded.meta, slug, id: genId() },
+        _version: 1, // New record starts at version 1
       };
       await fullStore.putFull(userId, slug, normalized);
-      return jsonNoCache(normalized);
+      
+      const res = NextResponse.json(normalized);
+      res.headers.set("cache-control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+      res.headers.set("ETag", "1");
+      return res;
     }
 
     // 3) Ni full ni mini – 404
@@ -215,10 +228,26 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
   const slug = await extractSlug(req, ctx);
   if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
-  console.log("[EDITOR PUT] userId:", userId, "slug:", slug);
+  // ========== OPTIMISTIC LOCKING ==========
+  // Client can send If-Match header with version number
+  const ifMatch = req.headers.get("If-Match");
+  const expectedVersion = ifMatch ? parseInt(ifMatch, 10) : undefined;
+  // =========================================
+
+  console.log("[EDITOR PUT] userId:", userId, "slug:", slug, "expectedVersion:", expectedVersion);
 
   try {
-    const body = await req.json();
+    const rawBody = await req.json();
+    
+    // ========== ZOD VALIDATION ==========
+    const validation = validateBody(rawBody, CalcJsonSchema);
+    if (!validation.success) {
+      console.warn("[EDITOR PUT] Validation failed:", validation.error);
+      return jsonNoCache(validationErrorResponse(validation), 422);
+    }
+    const body = validation.data;
+    // =====================================
+    
     if (!body?.meta?.slug || body.meta.slug !== slug) {
       return jsonNoCache({ error: "slug_mismatch" }, 400);
     }
@@ -259,14 +288,34 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
       hasSections: !!(normalized.meta?.simpleSections?.length),
     });
 
-    // FULL persist
-    await fullStore.putFull(userId, slug, normalized);
-
-    // mini ime (dashboard)
+    // ========== ATOMIC SAVE (Meta + Full in transaction) ==========
     const newName = String(body?.meta?.name ?? "").trim();
-    if (newName) {
-      await calcsStore.updateName(userId, slug, newName).catch(() => { });
+    const saveResult = await calcsStore.saveAtomic(
+      userId,
+      slug,
+      normalized,
+      newName ? { name: newName } : undefined,
+      expectedVersion
+    );
+    
+    if (!saveResult.success) {
+      if (saveResult.error === "VERSION_CONFLICT") {
+        return jsonNoCache({
+          error: "VERSION_CONFLICT",
+          message: "Another save occurred. Please refresh and try again.",
+          expectedVersion: expectedVersion,
+          currentVersion: saveResult.currentVersion,
+        }, 409);
+      }
+      return jsonNoCache({ error: saveResult.error }, 404);
     }
+    // ===============================================================
+
+    // Add version to response
+    const responseWithVersion = {
+      ...normalized,
+      _version: saveResult.version,
+    };
 
     try {
       const mini = await calcsStore.get(userId, slug);
@@ -279,8 +328,22 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
       console.warn("[EDITOR PUT] revalidate failed:", err);
     }
 
-    return jsonNoCache(normalized);
+    // Return with ETag header for version tracking
+    const res = NextResponse.json(responseWithVersion);
+    res.headers.set("cache-control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+    res.headers.set("ETag", String(saveResult.version));
+    return res;
   } catch (e: any) {
+    // Handle version conflict errors from fullStore
+    if (e instanceof VersionConflictError) {
+      return jsonNoCache({
+        error: "VERSION_CONFLICT",
+        message: "Another save occurred. Please refresh and try again.",
+        expectedVersion: e.expectedVersion,
+        currentVersion: e.currentVersion,
+      }, 409);
+    }
+    
     console.error("PUT full error:", e);
     return jsonNoCache({ error: "invalid_payload", detail: e?.stack ?? String(e) }, 400);
   }

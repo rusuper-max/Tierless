@@ -4,6 +4,7 @@ import { syncPublicationState } from "@/lib/publishSync";
 import * as fullStore from "@/lib/fullStore";
 import { calcBlank, calcFromMetaConfig } from "@/lib/calc-init";
 import { randomBytes } from "crypto";
+import type { PoolClient } from "pg";
 
 export type Calc = {
   meta: {
@@ -570,4 +571,183 @@ export async function setIsExample(userId: string, slug: string, isExample: bool
     [isExample, now, userId, slug]
   );
   return (res.rowCount ?? 0) > 0;
+}
+
+// ============================================================================
+// TRANSACTION SUPPORT
+// ============================================================================
+
+/**
+ * Update name in a transaction (for atomic operations with fullStore).
+ */
+export async function updateNameWithClient(
+  client: PoolClient,
+  userId: string,
+  slug: string,
+  newName: string
+): Promise<boolean> {
+  const now = Date.now();
+  const res = await client.query(
+    `UPDATE calculators SET name = $1, updated_at = $2 WHERE user_id = $3 AND slug = $4`,
+    [newName, now, userId, slug]
+  );
+  return (res.rowCount ?? 0) > 0;
+}
+
+/**
+ * Set published status in a transaction.
+ */
+export async function setPublishedWithClient(
+  client: PoolClient,
+  userId: string,
+  slug: string,
+  isPublished: boolean
+): Promise<boolean> {
+  const now = Date.now();
+  const res = await client.query(
+    `UPDATE calculators SET published = $1, updated_at = $2 WHERE user_id = $3 AND slug = $4`,
+    [isPublished, now, userId, slug]
+  );
+  return (res.rowCount ?? 0) > 0;
+}
+
+// ============================================================================
+// ATOMIC OPERATIONS (Meta + Full in one transaction)
+// ============================================================================
+
+export type SaveResult = 
+  | { success: true; version: number }
+  | { success: false; error: "VERSION_CONFLICT"; currentVersion: number }
+  | { success: false; error: "NOT_FOUND" };
+
+/**
+ * Atomically save both calculators meta AND calc_full in a single transaction.
+ * This ensures data consistency between the two tables.
+ * 
+ * @param userId - User ID
+ * @param slug - Calculator slug
+ * @param fullCalc - Full calculator data (will be saved to calc_full)
+ * @param metaUpdate - Optional meta updates for calculators table (name, etc.)
+ * @param expectedVersion - For optimistic locking (optional)
+ */
+export async function saveAtomic(
+  userId: string,
+  slug: string,
+  fullCalc: any,
+  metaUpdate?: { name?: string },
+  expectedVersion?: number
+): Promise<SaveResult> {
+  await ensureTable();
+  const client = await pool.connect();
+  const now = Date.now();
+  
+  try {
+    await client.query("BEGIN");
+    
+    // 1) If version check is required, verify it first
+    if (expectedVersion !== undefined) {
+      const versionCheck = await client.query(
+        `SELECT version FROM calc_full WHERE user_id = $1 AND slug = $2`,
+        [userId, slug]
+      );
+      
+      if (versionCheck.rows[0]) {
+        const currentVersion = Number(versionCheck.rows[0].version);
+        if (currentVersion !== expectedVersion) {
+          await client.query("ROLLBACK");
+          return { success: false, error: "VERSION_CONFLICT", currentVersion };
+        }
+      }
+    }
+    
+    // 2) Update calculators table (meta)
+    if (metaUpdate?.name) {
+      await client.query(
+        `UPDATE calculators SET name = $1, updated_at = $2 WHERE user_id = $3 AND slug = $4`,
+        [metaUpdate.name, now, userId, slug]
+      );
+    }
+    
+    // 3) Update calc_full table
+    const newVersion = await fullStore.putFullWithClient(client, userId, slug, fullCalc);
+    
+    await client.query("COMMIT");
+    
+    return { success: true, version: newVersion };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Atomically publish/unpublish a calculator.
+ * Updates both calculators.published and ensures calc_full is consistent.
+ */
+export async function publishAtomic(
+  userId: string,
+  slug: string,
+  isPublished: boolean,
+  contactInfo?: { type: string; [key: string]: any }
+): Promise<boolean> {
+  await ensureTable();
+  const client = await pool.connect();
+  const now = Date.now();
+  
+  try {
+    await client.query("BEGIN");
+    
+    // 1) Update calculators table
+    const metaResult = await client.query(
+      `UPDATE calculators SET published = $1, updated_at = $2 WHERE user_id = $3 AND slug = $4`,
+      [isPublished, now, userId, slug]
+    );
+    
+    if ((metaResult.rowCount ?? 0) === 0) {
+      await client.query("ROLLBACK");
+      return false;
+    }
+    
+    // 2) If publishing and contact info provided, update calc_full
+    if (isPublished && contactInfo) {
+      const existing = await client.query(
+        `SELECT calc FROM calc_full WHERE user_id = $1 AND slug = $2`,
+        [userId, slug]
+      );
+      
+      if (existing.rows[0]) {
+        const calc = existing.rows[0].calc;
+        const updated = {
+          ...calc,
+          meta: {
+            ...(calc.meta || {}),
+            contact: contactInfo,
+            published: true,
+          },
+        };
+        
+        await client.query(
+          `UPDATE calc_full SET calc = $1, updated_at = $2, version = version + 1 WHERE user_id = $3 AND slug = $4`,
+          [updated, now, userId, slug]
+        );
+      }
+    }
+    
+    await client.query("COMMIT");
+    return true;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Get a database connection for manual transaction control.
+ */
+export async function getClient(): Promise<PoolClient> {
+  return pool.connect();
 }

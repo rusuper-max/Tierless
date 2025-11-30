@@ -7,6 +7,7 @@ import * as calcsStore from "@/lib/calcsStore";
 import { withinLimits, type PlanId } from "@/lib/entitlements";
 import * as fullStore from "@/lib/fullStore";
 import { calcFromMetaConfig } from "@/lib/calc-init";
+import { PublishRequestSchema, validateBody, validationErrorResponse } from "@/lib/validators";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -202,16 +203,19 @@ export async function POST(req: Request) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
-  let body: any = {};
-  try { body = await req.json(); } catch { }
+  let rawBody: unknown = {};
+  try { rawBody = await req.json(); } catch { }
 
-  const { slug, publish } = body ?? {};
+  // ========== ZOD VALIDATION ==========
+  const validation = validateBody(rawBody, PublishRequestSchema);
+  if (!validation.success) {
+    console.warn("[PUBLISH] Validation failed:", validation.error);
+    return NextResponse.json(validationErrorResponse(validation), { status: 422 });
+  }
+  const { slug, publish } = validation.data;
+  // =====================================
   
   console.log("[PUBLISH] Request:", { userId, slug, publish });
-  
-  if (typeof slug !== "string") {
-    return NextResponse.json({ error: "Missing slug" }, { status: 400 });
-  }
 
   const plan = await getPlanForUser(userId);
   const current = await calcsStore.get(userId, slug);
