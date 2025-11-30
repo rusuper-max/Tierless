@@ -7,6 +7,15 @@ export type RangePricing =
     | { mode: "linear"; deltaPerUnit: number }
     | { mode: "per-step"; perStep: number[] };
 
+export type ContactType = "email" | "whatsapp" | "telegram";
+
+export type ContactInfo = {
+    type?: ContactType;
+    whatsapp?: string;
+    telegram?: string;
+    email?: string;
+};
+
 export type OptionGroup = {
     id: string;
     title: string;
@@ -109,6 +118,8 @@ export type CalcMeta = {
     simpleFont?: string;
     autosaveEnabled?: boolean;
     autosaveInterval?: number; // in seconds
+    contactOverride?: ContactInfo;
+    contact?: ContactInfo;
     [k: string]: unknown;
 };
 

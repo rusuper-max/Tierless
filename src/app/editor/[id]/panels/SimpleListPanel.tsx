@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, ChangeEvent, useEffect, useMemo } from "react";
-import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle, LayoutList, ScrollText, Share2, Globe, Percent, MessageCircle, ArrowUp, ArrowDown, Pencil } from "lucide-react";
+import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle, LayoutList, ScrollText, Share2, Globe, Percent, MessageCircle, ArrowUp, ArrowDown, Pencil, Send } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type SimpleSection, type BrandTheme } from "@/hooks/useEditorStore";
 import { useAccount } from "@/hooks/useAccount";
@@ -1346,6 +1346,149 @@ export default function SimpleListPanel() {
           ))}
         </div>
       </div>
+      {/* --- START OF NEW CHECKOUT SECTION --- */}
+      <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-6">
+        <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2">
+          <ShoppingBag className="w-4 h-4 text-purple-500" /> {t("Checkout & Ordering")}
+        </h3>
+        <p className="text-xs text-[var(--muted)]">
+          {t("Choose where orders should be sent. Each menu manages its own destination.")}
+        </p>
+
+        {(() => {
+          const override = (meta.contactOverride as any) || {};
+          const currentType: "email" | "whatsapp" | "telegram" = (override.type as any) || "email";
+          const currentValue: string = override.value || "";
+          const isConfirmed = !!override.confirmed;
+
+          const setType = (type: "email" | "whatsapp" | "telegram") => {
+            updateCalc((draft) => {
+              if (!draft.meta) draft.meta = {};
+              const prev = (draft.meta as any).contactOverride || {};
+              (draft.meta as any).contactOverride = {
+                type,
+                value: prev.type === type ? prev.value || "" : "",
+                confirmed: prev.type === type ? prev.confirmed : false,
+              };
+            });
+          };
+
+          const setValue = (val: string) => {
+            updateCalc((draft) => {
+              if (!draft.meta) draft.meta = {};
+              if (!(draft.meta as any).contactOverride) {
+                (draft.meta as any).contactOverride = { type: currentType, value: "", confirmed: false };
+              }
+              (draft.meta as any).contactOverride.value = val;
+              (draft.meta as any).contactOverride.confirmed = false;
+            });
+          };
+
+          const setConfirmed = (checked: boolean) => {
+            updateCalc((draft) => {
+              if (!draft.meta) draft.meta = {};
+              if (!(draft.meta as any).contactOverride) {
+                (draft.meta as any).contactOverride = { type: currentType, value: currentValue, confirmed: checked };
+                return;
+              }
+              (draft.meta as any).contactOverride.confirmed = checked;
+            });
+          };
+
+          return (
+            <div className="space-y-4">
+              <div className="space-y-3">
+                {[
+                  { value: "whatsapp", label: "WhatsApp", icon: <MessageCircle className="w-3.5 h-3.5 text-green-500" /> },
+                  { value: "telegram", label: "Telegram", icon: <Send className="w-3.5 h-3.5 text-blue-400" /> },
+                  { value: "email", label: "Email", icon: <Mail className="w-3.5 h-3.5 text-gray-500" /> },
+                ].map((option) => {
+                  const isSelected = currentType === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => setType(option.value as "email" | "whatsapp" | "telegram")}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all ${isSelected
+                        ? "border-[#22D3EE] bg-[#22D3EE]/5 ring-1 ring-[#22D3EE]"
+                        : "border-[var(--border)] hover:border-[var(--muted)] bg-[var(--bg)]"
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {option.icon}
+                        <span className="text-sm font-medium text-[var(--text)]">{option.label}</span>
+                      </div>
+                      {isSelected && <Check className="w-4 h-4 text-[#22D3EE]" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="pt-4 border-t border-[var(--border)] space-y-4 animate-in slide-in-from-top-2 fade-in">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-[var(--muted)] uppercase tracking-wide">
+                    {currentType === "whatsapp"
+                      ? t("WhatsApp Number (with country code)")
+                      : currentType === "telegram"
+                        ? t("Telegram Username (without @)")
+                        : t("Email Address")}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={currentType === "email" ? "email" : "text"}
+                      value={currentValue}
+                      onChange={(e) => setValue(e.target.value)}
+                      placeholder={
+                        currentType === "whatsapp"
+                          ? "+381 60 1234567"
+                          : currentType === "telegram"
+                            ? "moj_restoran"
+                            : "orders@restoran.com"
+                      }
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] transition-all"
+                    />
+                    <div className="absolute left-3 top-2.5 pointer-events-none">
+                      {currentType === "whatsapp" ? (
+                        <MessageCircle className="w-4 h-4 text-green-500" />
+                      ) : currentType === "telegram" ? (
+                        <Send className="w-4 h-4 text-blue-400" />
+                      ) : (
+                        <Mail className="w-4 h-4 text-gray-500" />
+                      )}
+                    </div>
+                  </div>
+                  {currentType === "whatsapp" && (
+                    <p className="text-[10px] text-[var(--muted)]">
+                      {t("Must include country code (e.g., +381 for Serbia).")}
+                    </p>
+                  )}
+                </div>
+
+                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isConfirmed
+                  ? "bg-green-500/5 border-green-500/30"
+                  : "bg-red-500/5 border-red-500/20"
+                  }`}>
+                  <input
+                    type="checkbox"
+                    checked={isConfirmed}
+                    onChange={(e) => setConfirmed(e.target.checked)}
+                    className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <span className={`text-sm font-medium ${isConfirmed ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
+                      }`}>
+                      {t("I confirm this account belongs to me")}
+                    </span>
+                    <p className="text-[10px] text-[var(--muted)]">
+                      {t("I accept responsibility for all orders received on this channel.")}
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+      {/* --- END OF NEW CHECKOUT SECTION --- */}
     </div>
   );
 

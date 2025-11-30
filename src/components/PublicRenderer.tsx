@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect, useState, RefObject, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Facebook, Instagram, Youtube, Globe, MessageCircle, Star } from "lucide-react";
+import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Facebook, Instagram, Youtube, Globe, MessageCircle, Star, Send } from "lucide-react";
 import { trackPageView, trackInteraction, trackCheckout, trackSectionOpen, trackSearch, initAnalytics, startTimeTracking } from "@/lib/analytics";
 
 import Image, { ImageLoaderProps } from "next/image";
@@ -680,9 +680,6 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
       setFlyingDots(prev => prev.filter(d => d.id !== dotId));
     }, 600);
   };
-  const [orderModalOpen, setOrderModalOpen] = useState(false);
-
-
 
   const totalAmount = useMemo(() => {
     let sum = 0;
@@ -698,6 +695,142 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
   }, [items, quantities]);
 
   const totalCount = Object.values(quantities).reduce((a, b) => a + b, 0);
+
+  const contact = (meta?.contact || {}) as { type?: string; whatsapp?: string; telegram?: string; email?: string };
+  const contactEmail = (contact.email || "").trim();
+  const contactWhatsapp = (contact.whatsapp || "").replace(/[^\d]/g, "");
+  const contactTelegram = (contact.telegram || "").replace(/^@/, "");
+
+  const resolvedContactType = (() => {
+    const normalized = (contact.type || "").toLowerCase();
+
+    if (normalized === "whatsapp" && contactWhatsapp) return "whatsapp";
+    if (normalized === "telegram" && contactTelegram) return "telegram";
+    if (normalized === "email" && contactEmail) return "email";
+
+    if (contactWhatsapp) return "whatsapp";
+    if (contactTelegram) return "telegram";
+    if (contactEmail) return "email";
+
+    return "";
+  })();
+
+  const handleCheckout = () => {
+    console.log("Checkout Contact:", contact);
+
+    if (!resolvedContactType) {
+      alert("Order destination is not configured yet.");
+      return;
+    }
+
+    const selectedItems = items.filter((it) => (quantities[it.id] || 0) > 0);
+    if (!selectedItems.length) {
+      alert("Add at least one item to your order first.");
+      return;
+    }
+
+    const lines: string[] = [];
+    lines.push(`New order from ${simpleTitle}`);
+    lines.push("");
+    selectedItems.forEach((item) => {
+      const qty = quantities[item.id] || 0;
+      const discount = item.badge === "sale" ? (item.discountPercent || 0) : 0;
+      const price = (item.price || 0) * (1 - discount / 100);
+      lines.push(`${formatQuantityDisplay(qty)} x ${item.label} - ${formatPrice(price * qty)}`);
+    });
+    lines.push("");
+    lines.push(`Total: ${formatPrice(totalAmount)}`);
+
+    const encodedMessage = encodeURIComponent(lines.join("\n"));
+
+    const sendEmail = () => {
+      if (!contactEmail) {
+        alert("Contact email is not available yet.");
+        return;
+      }
+      setCartOpen(false);
+      trackCheckout(pageId, "email");
+      setQuantities({});
+      const subject = encodeURIComponent(`${simpleTitle} order`);
+      window.location.href = `mailto:${contactEmail}?subject=${subject}&body=${encodedMessage}`;
+    };
+
+    const sendWhatsapp = () => {
+      if (!contactWhatsapp) {
+        if (contactTelegram) {
+          sendTelegram();
+          return;
+        }
+        sendEmail();
+        return;
+      }
+      setCartOpen(false);
+      trackCheckout(pageId, "whatsapp");
+      setQuantities({});
+      window.open(`https://wa.me/${contactWhatsapp}?text=${encodedMessage}`, "_blank", "noopener,noreferrer");
+    };
+
+    const sendTelegram = () => {
+      if (!contactTelegram) {
+        sendEmail();
+        return;
+      }
+      setCartOpen(false);
+      trackCheckout(pageId, "telegram");
+      setQuantities({});
+      window.open(`https://t.me/${contactTelegram}?text=${encodedMessage}`, "_blank", "noopener,noreferrer");
+    };
+
+    switch (resolvedContactType) {
+      case "whatsapp":
+        sendWhatsapp();
+        break;
+      case "telegram":
+        sendTelegram();
+        break;
+      default:
+        sendEmail();
+    }
+  };
+
+  // Button styling based on contact preference
+  const getCheckoutButtonStyle = () => {
+    // Priority 1: Custom button text from meta.buttonText or meta.checkoutButtonText
+    const customText = meta.buttonText || meta.checkoutButtonText || "";
+
+    switch (resolvedContactType) {
+      case "whatsapp":
+        return {
+          background: "#25D366",
+          text: customText || "Order via WhatsApp",
+          icon: <MessageCircle className="w-5 h-5" />,
+        };
+      case "telegram":
+        return {
+          background: "#0088cc",
+          text: customText || "Order via Telegram",
+          icon: <Send className="w-5 h-5" />,
+        };
+      case "telegram":
+        return {
+          background: "#0088cc",
+          text: customText || "Order via Telegram",
+          icon: <Send className="w-5 h-5" />,
+        };
+      default:
+        if (!contactEmail) {
+          return null;
+        }
+        return {
+          background: "#1f2937",
+          text: customText || "Send Order via Email",
+          icon: <Mail className="w-5 h-5" />,
+        };
+    }
+  };
+
+  const checkoutButtonConfig = getCheckoutButtonStyle();
+  const canShowCheckoutButton = addCheckout && !!checkoutButtonConfig;
 
   const updateQty = (id: string, delta: number) => {
     setQuantities(prev => {
@@ -1306,18 +1439,19 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                       {cartOpen ? <ChevronDown className="w-6 h-6" /> : <ChevronUp className="w-6 h-6" />}
                     </div>
                     {/* --- FIX: CHECKOUT BUTTON VISIBILITY --- */}
-                    {addCheckout && (
+                    {canShowCheckoutButton && checkoutButtonConfig && (
                       <button
-                        className="px-6 py-3 rounded-xl text-white font-bold text-sm shadow-lg hover:opacity-90 active:scale-95 transition-transform cursor-pointer"
-                        style={{ background: "linear-gradient(90deg,var(--brand-1),var(--brand-2))" }}
+                        className="w-full py-4 rounded-2xl text-white font-bold text-base shadow-lg hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                        style={{ background: checkoutButtonConfig.background }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          trackCheckout(pageId, "custom");
-                          setCartOpen(false);
-                          setOrderModalOpen(true);
+                          handleCheckout();
                         }}
                       >
-                        {checkoutButtonText}
+                        {checkoutButtonConfig.icon}
+                        <span className="truncate block max-w-[200px] sm:max-w-[250px]">
+                          {checkoutButtonConfig.text}
+                        </span>
                       </button>
                     )}
                   </div>
@@ -1340,44 +1474,6 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
           )
         }
 
-        {/* Order/Checkout Modal */}
-        <OrderModal
-          isOpen={orderModalOpen}
-          onClose={() => setOrderModalOpen(false)}
-          items={items}
-          quantities={quantities}
-          formatPrice={formatPrice}
-          formatQuantityDisplay={formatQuantityDisplay}
-          onSubmitOrder={async (orderData: any) => {
-            // API call to submit order
-            const response = await fetch(`/api/orders/submit`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                ...orderData,
-                pageTitle: simpleTitle,
-                accountId: calc.accountId,
-              }),
-            });
-
-            if (!response.ok) {
-              throw new Error('Failed to submit order');
-            }
-
-            const result = await response.json();
-
-            // Show success message (if customSuccessMessage is set)
-            const successMessage = meta.customSuccessMessage || "";
-            if (successMessage.trim()) {
-              alert(successMessage);
-            } else {
-              alert('Order submitted successfully!');
-            }
-
-            // Clear cart
-            setQuantities({});
-          }}
-        />
       </div >
       <style jsx global>{`
         .animate-flyToCart {
@@ -1402,161 +1498,6 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
   );
 }
 
-/* --------------------------------------------------------- */
-/* Component: Order/Checkout Modal                           */
-/* --------------------------------------------------------- */
-function OrderModal({ isOpen, onClose, items, quantities, formatPrice, formatQuantityDisplay, onSubmitOrder }: any) {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [note, setNote] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (!isOpen) return null;
-
-  // Build order items list
-  const orderItems = items
-    .filter((item: any) => quantities[item.id] > 0)
-    .map((item: any) => ({
-      ...item,
-      quantity: quantities[item.id],
-    }));
-
-  const totalAmount = orderItems.reduce((sum: number, item: any) => {
-    const discount = item.badge === 'sale' ? (item.discountPercent || 0) : 0;
-    const price = item.price * (1 - discount / 100);
-    return sum + (price || 0) * item.quantity;
-  }, 0);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phone.trim()) {
-      alert("Phone number is required!");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await onSubmitOrder({ name, phone, note, items: orderItems });
-      // Reset form
-      setName("");
-      setPhone("");
-      setNote("");
-      onClose();
-    } catch (error) {
-      console.error("Order submission error:", error);
-      alert("Failed to submit order. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
-
-      <div className="relative w-full max-w-2xl bg-[var(--card)] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/40 transition-colors cursor-pointer"
-        >
-          <X className="w-6 h-6" />
-        </button>
-
-        {/* Header */}
-        <div className="p-6 sm:p-8 border-b border-[var(--border)] bg-gradient-to-r from-[var(--brand-1)] to-[var(--brand-2)]">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight">Complete Your Order</h2>
-          <p className="text-white/80 text-sm mt-1">Fill in your details to submit the order</p>
-        </div>
-
-        {/* Content */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
-
-          {/* Order Summary */}
-          <div>
-            <h3 className="text-lg font-bold text-[var(--text)] mb-3">Order Summary</h3>
-            <div className="space-y-2 bg-[var(--bg)] rounded-2xl p-4 border border-[var(--border)]">
-              {orderItems.map((item: any) => (
-                <div key={item.id} className="flex justify-between items-center text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-[var(--brand-1)]">{formatQuantityDisplay(item.quantity)}x</span>
-                    <span className="text-[var(--text)]">{item.label}</span>
-                  </div>
-                  <span className="font-semibold text-[var(--text)]">
-                    {formatPrice((item.price * (1 - (item.badge === 'sale' ? (item.discountPercent || 0) : 0) / 100)) * item.quantity)}
-                  </span>
-                </div>
-              ))}
-              <div className="pt-3 mt-3 border-t border-[var(--border)] flex justify-between items-center">
-                <span className="font-bold text-[var(--text)]">Total</span>
-                <span className="text-xl font-black text-[var(--brand-1)]">{formatPrice(totalAmount)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Customer Info Form */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-[var(--text)]">Your Details</h3>
-
-            {/* Name Field */}
-            <div>
-              <label className="block text-sm font-semibold text-[var(--text)] mb-2">Name (Optional)</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] outline-none focus:ring-2 focus:ring-[var(--brand-1)]/50 transition-all placeholder-[var(--muted)]"
-              />
-            </div>
-
-            {/* Phone Field */}
-            <div>
-              <label className="block text-sm font-semibold text-[var(--text)] mb-2">Phone Number <span className="text-red-500">*</span></label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Enter your phone number"
-                required
-                className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] outline-none focus:ring-2 focus:ring-[var(--brand-1)]/50 transition-all placeholder-[var(--muted)]"
-              />
-            </div>
-
-            {/* Note Field */}
-            <div>
-              <label className="block text-sm font-semibold text-[var(--text)] mb-2">Note (Optional)</label>
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Any special requests or comments?"
-                rows={3}
-                className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] outline-none focus:ring-2 focus:ring-[var(--brand-1)]/50 transition-all resize-none placeholder-[var(--muted)]"
-              />
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting || !phone.trim()}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-[var(--brand-1)] to-[var(--brand-2)] text-white font-bold text-lg hover:opacity-90 active:scale-[0.98] transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? "Submitting..." : "Send Order"}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-/* --------------------------------------------------------- */
-/* Component: Item Detail Modal (Popup)                      */
-/* --------------------------------------------------------- */
-/* --------------------------------------------------------- */
-/* Component: Item Detail Modal (Popup)                      */
-/* --------------------------------------------------------- */
 function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, showUnits }: any) {
   if (!item) return null;
 

@@ -6,7 +6,7 @@ import {
   Plus, Trash2, X, Check, Layout, SlidersHorizontal,
   ToggleRight, Calculator, Palette, Settings2, ChevronDown,
   User, Mail, Send, Zap, ListChecks, Layers, Monitor,
-  Eye, MoreHorizontal, Coins, ChevronRight
+  Eye, MoreHorizontal, Coins, ChevronRight, MessageCircle
 } from "lucide-react";
 
 import { useAdvancedState } from "./useAdvancedState";
@@ -134,6 +134,40 @@ export default function AdvancedPanelInner() {
   } = useAdvancedState();
 
   const { calc, updateCalc } = useEditorStore();
+  const contactOverride = (calc?.meta?.contactOverride || {}) as {
+    type?: "email" | "whatsapp" | "telegram";
+    whatsapp?: string;
+    telegram?: string;
+    email?: string;
+  };
+  const selectedContactType = contactOverride.type ?? "inherit";
+  const overrideWhatsapp = contactOverride.whatsapp ?? "";
+  const overrideTelegram = contactOverride.telegram ?? "";
+  const overrideEmail = contactOverride.email ?? "";
+
+  const updateContactOverride = (patch: {
+    type?: "email" | "whatsapp" | "telegram" | null;
+    whatsapp?: string | null;
+    telegram?: string | null;
+    email?: string | null;
+  }) => {
+    updateCalc((draft) => {
+      if (!draft.meta) draft.meta = {};
+      const next = { ...(draft.meta.contactOverride || {}) } as Record<string, string>;
+      Object.entries(patch).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === "") {
+          delete next[key];
+        } else {
+          next[key] = value;
+        }
+      });
+      if (Object.keys(next).length === 0) {
+        delete (draft.meta as any).contactOverride;
+      } else {
+        draft.meta.contactOverride = next as any;
+      }
+    });
+  };
 
   const currency = calc?.i18n?.currency || "€";
   const setCurrency = (c: string) => {
@@ -442,8 +476,8 @@ export default function AdvancedPanelInner() {
                       key={theme}
                       onClick={() => setAdvancedPublicTheme(theme as any)}
                       className={`px-2 py-1.5 text-xs rounded border transition-all ${advancedPublicTheme === theme
-                          ? "bg-[var(--accent)] text-white border-transparent"
-                          : "bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--muted)]"
+                        ? "bg-[var(--accent)] text-white border-transparent"
+                        : "bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--muted)]"
                         }`}
                     >
                       {theme.charAt(0).toUpperCase() + theme.slice(1)}
@@ -463,14 +497,102 @@ export default function AdvancedPanelInner() {
                       key={c}
                       onClick={() => setCurrency(c)}
                       className={`h-7 text-xs rounded border transition-all ${currency === c
-                          ? "bg-[var(--accent)] text-white border-transparent"
-                          : "bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--muted)]"
+                        ? "bg-[var(--accent)] text-white border-transparent"
+                        : "bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--muted)]"
                         }`}
                     >
                       {c}
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Contact Override */}
+              <div className="space-y-2 border-t border-[var(--border)] pt-3">
+                <label className="text-xs font-medium text-[var(--text)] flex items-center gap-2">
+                  <MessageCircle className="w-3.5 h-3.5" /> {t("Contact Override")}
+                </label>
+                <p className="text-[10px] text-[var(--muted)] leading-snug">
+                  {t("Set a dedicated WhatsApp, Telegram, or email for this menu. Leave default to use your account preference.")}
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {["inherit", "whatsapp", "telegram", "email"].map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => {
+                        if (mode === "inherit") {
+                          updateContactOverride({ type: null, whatsapp: null, telegram: null, email: null });
+                        } else if (mode === "whatsapp") {
+                          updateContactOverride({ type: "whatsapp", telegram: null, email: null });
+                        } else if (mode === "telegram") {
+                          updateContactOverride({ type: "telegram", whatsapp: null, email: null });
+                        } else {
+                          updateContactOverride({ type: "email", whatsapp: null, telegram: null });
+                        }
+                      }}
+                      className={`px-2 py-1.5 text-xs rounded border transition-all ${selectedContactType === mode
+                        ? "bg-[var(--accent)] text-white border-transparent"
+                        : "bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--muted)]"
+                        }`}
+                    >
+                      {mode === "inherit" ? t("Default") : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                    </button>
+                  ))}
+                </div>
+
+                {selectedContactType === "whatsapp" && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-[var(--muted)]">{t("WhatsApp number")}</label>
+                    <div className="relative">
+                      <input
+                        type="tel"
+                        value={overrideWhatsapp}
+                        onChange={(e) => updateContactOverride({ whatsapp: e.target.value })}
+                        placeholder="+15551234567"
+                        className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] outline-none pl-9 text-[var(--text)]"
+                      />
+                      <MessageCircle className="absolute left-3 top-2.5 text-[var(--muted)]" size={14} />
+                    </div>
+                    <p className="text-[10px] text-[var(--muted)]">
+                      {t("Enter the full international number without spaces or dashes.")}
+                    </p>
+                  </div>
+                )}
+
+                {selectedContactType === "telegram" && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-[var(--muted)]">{t("Telegram username")}</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={contactOverride.telegram || ""}
+                        onChange={(e) => updateContactOverride({ telegram: e.target.value })}
+                        placeholder="username"
+                        className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] outline-none pl-9 text-[var(--text)]"
+                      />
+                      <Send className="absolute left-3 top-2.5 text-[var(--muted)]" size={14} />
+                    </div>
+                    <p className="text-[10px] text-[var(--muted)]">
+                      {t("Enter your Telegram username without the @ symbol.")}
+                    </p>
+                  </div>
+                )}
+
+                {selectedContactType === "email" && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-[var(--muted)]">{t("Email address")}</label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        value={overrideEmail}
+                        onChange={(e) => updateContactOverride({ email: e.target.value })}
+                        placeholder="orders@example.com"
+                        className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] outline-none pl-9 text-[var(--text)]"
+                      />
+                      <Mail className="absolute left-3 top-2.5 text-[var(--muted)]" size={14} />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Columns */}
@@ -484,8 +606,8 @@ export default function AdvancedPanelInner() {
                       key={n}
                       onClick={() => setAdvancedColumnsDesktop(n)}
                       className={`flex-1 py-1.5 text-xs rounded border transition-all ${columns === n
-                          ? "bg-[var(--accent)] text-white border-transparent"
-                          : "bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--muted)]"
+                        ? "bg-[var(--accent)] text-white border-transparent"
+                        : "bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-[var(--muted)]"
                         }`}
                     >
                       {n}
@@ -654,8 +776,8 @@ export default function AdvancedPanelInner() {
                                 key={c.name}
                                 onClick={() => handleColorSelect(c.hex)}
                                 className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all relative ${isSelected
-                                    ? "border-[var(--text)] scale-110 shadow-sm"
-                                    : "border-transparent opacity-50 hover:opacity-100"
+                                  ? "border-[var(--text)] scale-110 shadow-sm"
+                                  : "border-transparent opacity-50 hover:opacity-100"
                                   }`}
                                 style={{ backgroundColor: c.hex }}
                                 title={c.name}
@@ -697,8 +819,8 @@ export default function AdvancedPanelInner() {
                           <button
                             onClick={() => handleUpdateFeature(selectedId, f.id, { highlighted: !f.highlighted })}
                             className={`p-1.5 rounded-md transition-colors ${f.highlighted
-                                ? "text-amber-500 bg-amber-500/20 ring-1 ring-amber-500/50"
-                                : "text-[var(--muted)] hover:bg-[var(--surface)]"
+                              ? "text-amber-500 bg-amber-500/20 ring-1 ring-amber-500/50"
+                              : "text-[var(--muted)] hover:bg-[var(--surface)]"
                               }`}
                             title={f.highlighted ? "Highlighted" : "Click to highlight"}
                           >

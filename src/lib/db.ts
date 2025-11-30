@@ -55,14 +55,27 @@ export async function ensureUserProfilesTable() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS user_profiles (
         user_id TEXT PRIMARY KEY,
+        email TEXT,
         business_name TEXT,
         phone TEXT,
         website TEXT,
         inquiry_email TEXT,
         currency TEXT DEFAULT 'USD',
+        stripe_customer_id TEXT,
+        whatsapp_number TEXT,
+        telegram_username TEXT,
         order_destination TEXT DEFAULT 'email',
-        whatsapp_number TEXT
+        lemon_customer_id TEXT,
+        lemon_subscription_id TEXT,
+        lemon_status TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
       );
+    `);
+    
+    // Add telegram_username column if it doesn't exist (for existing tables)
+    await client.query(`
+      ALTER TABLE user_profiles 
+      ADD COLUMN IF NOT EXISTS telegram_username TEXT;
     `);
   } finally {
     client.release();

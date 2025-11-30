@@ -113,6 +113,15 @@ export async function GET(
     id: (calc.meta?.id as string) || id || "",
   };
 
+  // DEBUG: Log what we're serving
+  console.log("[PUBLIC API DEBUG] Serving page:", {
+    slug: meta.slug,
+    hasContact: !!meta.contact,
+    contact: meta.contact,
+    simpleAddCheckout: meta.simpleAddCheckout,
+    published: meta.published,
+  });
+
   if (!isPublished(meta)) {
     return jsonNoCache({ ok: false, error: "not_published" }, 404);
   }

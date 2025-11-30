@@ -28,6 +28,9 @@ async function loadAccountSSR() {
     let plan: Plan = "free";
     let renewsOn: string | null = null;
     let cancelAtPeriodEnd = false;
+    let orderDestination = "email";
+    let whatsappNumber = "";
+    
     if (authenticated) {
       const mRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/me/plan`, {
         cache: "no-store",
@@ -41,6 +44,20 @@ async function loadAccountSSR() {
       plan = (mJson?.plan || "free") as Plan;
       renewsOn = typeof mJson?.renewsOn === "string" ? mJson.renewsOn : null;
       cancelAtPeriodEnd = !!mJson?.cancelAtPeriodEnd;
+
+      // 3) whoami for order destination
+      try {
+        const wRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/whoami`, {
+          cache: "no-store",
+          credentials: "same-origin",
+        }).catch(() => fetch("/api/whoami", { cache: "no-store", credentials: "same-origin" }));
+        const wJson = (await wRes?.json().catch(() => ({}))) as {
+          orderDestination?: string;
+          whatsappNumber?: string;
+        };
+        orderDestination = wJson?.orderDestination || "email";
+        whatsappNumber = wJson?.whatsappNumber || "";
+      } catch { /* ignore */ }
     }
 
     return {
@@ -51,6 +68,8 @@ async function loadAccountSSR() {
       entitlements: entitlementsFor(plan),
       renewsOn,
       cancelAtPeriodEnd,
+      orderDestination,
+      whatsappNumber,
     };
   } catch {
     return {
@@ -61,6 +80,8 @@ async function loadAccountSSR() {
       entitlements: entitlementsFor("free"),
       renewsOn: null,
       cancelAtPeriodEnd: false,
+      orderDestination: "email",
+      whatsappNumber: "",
     };
   }
 }

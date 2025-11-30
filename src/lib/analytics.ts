@@ -199,7 +199,7 @@ export function trackInteraction(
   trackEvent("interaction", pageId, { interactionType });
 }
 
-export function trackCheckout(pageId: string, method: "whatsapp" | "email" | "custom") {
+export function trackCheckout(pageId: string, method: "whatsapp" | "telegram" | "email" | "custom") {
   trackEvent("checkout_click", pageId, { method });
 }
 

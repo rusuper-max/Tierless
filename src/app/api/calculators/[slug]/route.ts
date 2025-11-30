@@ -167,6 +167,8 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
   const slug = await extractSlug(req, ctx);
   if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
+  console.log("[EDITOR PUT] userId:", userId, "slug:", slug);
+
   try {
     const body = await req.json();
     if (!body?.meta?.slug || body.meta.slug !== slug) {
@@ -197,6 +199,14 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
       blocks,
       meta: { ...body.meta, slug, id },
     };
+
+    // DEBUG: Log what we're saving
+    console.log("[EDITOR SAVE DEBUG]", {
+      slug,
+      simpleAddCheckout: normalized.meta?.simpleAddCheckout,
+      hasContact: !!normalized.meta?.contact,
+      hasSections: !!(normalized.meta?.simpleSections?.length),
+    });
 
     // FULL persist
     await fullStore.putFull(userId, slug, normalized);

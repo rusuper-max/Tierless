@@ -12,6 +12,8 @@ export type AccountSnapshot = {
   entitlements: string[];
   renewsOn: string | null;
   cancelAtPeriodEnd: boolean;
+  orderDestination: string;
+  whatsappNumber: string;
 };
 
 // ------- Lightweight store (bez React setState u efektima) -------
@@ -28,6 +30,8 @@ let state: AccountSnapshot = {
   entitlements: entitlementsFor("free"),
   renewsOn: null,
   cancelAtPeriodEnd: false,
+  orderDestination: "email",
+  whatsappNumber: "",
 };
 
 async function fetchStatusAndMe() {
@@ -52,6 +56,9 @@ async function fetchStatusAndMe() {
     let plan: Plan = "free";
     let renewsOn: string | null = null;
     let cancelAtPeriodEnd = false;
+    let orderDestination = "email";
+    let whatsappNumber = "";
+
     if (authenticated) {
       const mRes = await fetch("/api/me/plan", {
         cache: "no-store",
@@ -66,6 +73,19 @@ async function fetchStatusAndMe() {
       plan = (mJson?.plan ?? "free") as Plan;
       renewsOn = typeof mJson?.renewsOn === "string" ? mJson.renewsOn : null;
       cancelAtPeriodEnd = !!mJson?.cancelAtPeriodEnd;
+
+      // Fetch whoami for order_destination
+      const whoamiRes = await fetch("/api/whoami", {
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: { "x-no-cache": String(Date.now()) },
+      });
+      const whoamiJson = (await whoamiRes.json().catch(() => ({}))) as {
+        orderDestination?: string;
+        whatsappNumber?: string;
+      };
+      orderDestination = whoamiJson?.orderDestination || "email";
+      whatsappNumber = whoamiJson?.whatsappNumber || "";
     }
 
     state = {
@@ -76,6 +96,8 @@ async function fetchStatusAndMe() {
       entitlements: entitlementsFor(plan),
       renewsOn,
       cancelAtPeriodEnd,
+      orderDestination,
+      whatsappNumber,
     };
     notify();
   } catch {
@@ -87,6 +109,8 @@ async function fetchStatusAndMe() {
       entitlements: entitlementsFor("free"),
       renewsOn: null,
       cancelAtPeriodEnd: false,
+      orderDestination: "email",
+      whatsappNumber: "",
     };
     notify();
   }
@@ -141,6 +165,8 @@ export function injectInitialAccountSnapshot(s: AccountSnapshot) {
       entitlements: Array.isArray(s.entitlements) ? s.entitlements : entitlementsFor(s.plan),
       renewsOn: s.renewsOn ?? null,
       cancelAtPeriodEnd: !!s.cancelAtPeriodEnd,
+      orderDestination: s.orderDestination || "email",
+      whatsappNumber: s.whatsappNumber || "",
     };
     notify();
   }
