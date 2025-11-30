@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import type { CalcJson } from "@/hooks/useEditorStore";
 import PublicPageClient from "./PublicPageClient";
+import * as fullStore from "@/lib/fullStore";
 
 export const runtime = "nodejs";
 
@@ -44,39 +45,32 @@ function getBaseUrl() {
   return `https://${ROOT_DOMAIN}`;
 }
 
-function apiUrl(segment: string) {
-  if (!segment.startsWith("/")) segment = `/${segment}`;
-  const base = getBaseUrl();
-  if (base) return new URL(segment, base).toString();
-  return segment;
-}
-
 /**
- * Fetch public calculator data with ISR caching
+ * Load public calculator directly from database (no API fetch = no extra cache layer)
+ * This ensures revalidatePath() works immediately after editor save
  */
-async function loadPublic(id: string, slug: string) {
-  const attempts: string[] = [];
-  if (id) {
-    attempts.push(slug ? `${id}-${slug}` : id);
-  }
-  if (slug) {
-    attempts.push(slug);
-  }
-  for (const key of attempts) {
-    try {
-      const r = await fetch(apiUrl(`/api/public/${encodeURIComponent(key)}`), {
-        next: { revalidate: 60 }, // ISR: cache for 60 seconds
-        headers: { Accept: "application/json" },
-      });
-      if (r.ok) {
-        const j = await r.json();
-        return j?.data ?? j ?? null;
-      }
-    } catch {
-      // Continue to next attempt
+async function loadPublic(id: string, slug: string): Promise<any | null> {
+  try {
+    // Try by ID first
+    if (id) {
+      const calc = await fullStore.findFullById(id);
+      if (calc) return calc;
     }
+    // Then by slug
+    if (slug) {
+      const calc = await fullStore.findFullBySlug(slug);
+      if (calc) return calc;
+    }
+    // Fallback: treat the whole key as slug
+    if (id && !slug) {
+      const calc = await fullStore.findFullBySlug(id);
+      if (calc) return calc;
+    }
+    return null;
+  } catch (error) {
+    console.error("[PublicPage] loadPublic error:", error);
+    return null;
   }
-  return null;
 }
 
 /* ---------------- SEO Metadata ---------------- */

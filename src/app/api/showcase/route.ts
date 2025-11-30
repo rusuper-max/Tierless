@@ -31,6 +31,12 @@ export async function GET() {
                 const meta = fullCalc?.meta || {};
                 const cover = meta.business?.coverUrl || meta.simpleCoverImage || null;
 
+                // Extract author name from user_id (email)
+                let authorName = meta.business?.name || `user_${row.user_id.slice(0, 8)}`;
+                if (row.user_id && row.user_id.includes('@')) {
+                    authorName = row.user_id.split('@')[0];
+                }
+
                 return {
                     slug: row.slug,
                     title: meta.name || "Untitled",
@@ -38,6 +44,7 @@ export async function GET() {
                     avgRating: Number(row.avg_rating || 0),
                     ratingsCount: Number(row.ratings_count || 0),
                     description: meta.business?.description || null,
+                    author: authorName,
                 };
             })
         );
@@ -67,6 +74,12 @@ export async function GET() {
                 const meta = fullCalc?.meta || {};
                 const cover = meta.business?.coverUrl || meta.simpleCoverImage || null;
 
+                // Extract author name from user_id (email) or business name
+                let authorName = meta.business?.name || `user_${row.user_id.slice(0, 8)}`;
+                if (row.user_id && row.user_id.includes('@')) {
+                    authorName = row.user_id.split('@')[0];
+                }
+
                 return {
                     slug: row.slug,
                     title: meta.name || "Untitled",
@@ -74,6 +87,7 @@ export async function GET() {
                     avgRating: Number(row.avg_rating || 0),
                     ratingsCount: Number(row.ratings_count || 0),
                     description: meta.business?.description || null,
+                    author: authorName,
                 };
             })
         );

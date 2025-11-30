@@ -184,11 +184,39 @@ export async function POST(
 
   if (nextPublish) {
     await injectContactInfo(userId, slug);
+    
+    // Revalidate all possible URL formats
     try {
+      const calc = await fullStore.getFull(userId, slug);
+      const calcId = calc?.meta?.id;
+      
       revalidatePath(`/p/${slug}`);
+      if (calcId) {
+        revalidatePath(`/p/${calcId}-${slug}`); // Canonical format
+        revalidatePath(`/p/${calcId}`);         // ID-only format
+      }
       revalidatePath(`/api/public/${slug}`);
+      if (calcId) {
+        revalidatePath(`/api/public/${calcId}-${slug}`);
+      }
+      
+      console.log(`[PUBLISH] Revalidated paths for slug=${slug}, id=${calcId}`);
     } catch (error) {
       console.error("[PUBLISH] Revalidate failed:", error);
+    }
+  } else {
+    // Unpublish - also revalidate to show 404
+    try {
+      const calc = await fullStore.getFull(userId, slug);
+      const calcId = calc?.meta?.id;
+      
+      revalidatePath(`/p/${slug}`);
+      if (calcId) {
+        revalidatePath(`/p/${calcId}-${slug}`);
+        revalidatePath(`/p/${calcId}`);
+      }
+    } catch (error) {
+      console.error("[UNPUBLISH] Revalidate failed:", error);
     }
   }
 

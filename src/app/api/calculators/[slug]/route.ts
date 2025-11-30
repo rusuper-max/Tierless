@@ -317,12 +317,27 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
       _version: saveResult.version,
     };
 
+    // Revalidate public pages if published
     try {
       const mini = await calcsStore.get(userId, slug);
       const isPublished = !!mini?.meta?.published;
       if (isPublished) {
+        const calcId = normalized.meta?.id as string | undefined;
+        
+        // Revalidate all possible URL formats
         revalidatePath(`/p/${slug}`);
+        if (calcId) {
+          revalidatePath(`/p/${calcId}-${slug}`); // Canonical format
+          revalidatePath(`/p/${calcId}`);         // ID-only format
+        }
+        
+        // Also revalidate the API routes (for any external consumers)
         revalidatePath(`/api/public/${slug}`);
+        if (calcId) {
+          revalidatePath(`/api/public/${calcId}-${slug}`);
+        }
+        
+        console.log(`[EDITOR PUT] Revalidated paths for slug=${slug}, id=${calcId}`);
       }
     } catch (err) {
       console.warn("[EDITOR PUT] revalidate failed:", err);
