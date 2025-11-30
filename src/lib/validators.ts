@@ -11,8 +11,8 @@ import { z } from "zod";
 export const ModeSchema = z.enum(["setup", "simple", "advanced"]);
 
 export const BrandThemeSchema = z.enum([
-  "tierless", "minimal", "luxury", "elegant", "midnight", "cafe", 
-  "ocean", "forest", "sunset", "rosegold", "emerald", "sapphire", 
+  "tierless", "minimal", "luxury", "elegant", "midnight", "cafe",
+  "ocean", "forest", "sunset", "rosegold", "emerald", "sapphire",
   "obsidian", "goldluxury", "classic", "custom", "light", "dark"
 ]);
 
@@ -102,6 +102,7 @@ export const SimpleSectionSchema = z.object({
   description: z.string().optional(),
   imageUrl: z.string().optional(),
   imagePublicId: z.string().optional(),
+  videoUrl: z.string().optional(), // ✅ Added for Pro video feature
   collapsed: z.boolean().optional(),
 });
 
@@ -228,7 +229,7 @@ export const RenameCalcSchema = z.object({
 // VALIDATION HELPER
 // ============================================================================
 
-export type ValidationResult<T> = 
+export type ValidationResult<T> =
   | { success: true; data: T }
   | { success: false; error: string; issues: z.ZodIssue[] };
 
@@ -241,18 +242,18 @@ export function validateBody<T>(
   schema: z.ZodSchema<T>
 ): ValidationResult<T> {
   const result = schema.safeParse(body);
-  
+
   if (result.success) {
     return { success: true, data: result.data };
   }
-  
+
   // Format error message
   const issues = result.error.issues;
   const errorMessages = issues.map((issue) => {
     const path = issue.path.join(".");
     return path ? `${path}: ${issue.message}` : issue.message;
   });
-  
+
   return {
     success: false,
     error: `Validation failed: ${errorMessages.slice(0, 3).join("; ")}`,
@@ -267,7 +268,7 @@ export function validationErrorResponse(result: ValidationResult<unknown>) {
   if (result.success) {
     throw new Error("Cannot create error response for successful validation");
   }
-  
+
   return {
     error: "validation_error",
     message: result.error,

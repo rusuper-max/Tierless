@@ -20,6 +20,7 @@ export type Calc = {
     avgRating?: number;
     ratingsCount?: number;
     isExample?: boolean; // For examples/showcase filtering
+    teamId?: string; // Team ownership
   };
   template?: string;
   config?: any;
@@ -58,6 +59,31 @@ export async function ensureTable() {
   } catch (e) {
     console.warn("Migration add columns failed (ignoring):", e);
   }
+  
+  // Team support migration
+  try {
+    await pool.query(`
+      ALTER TABLE calculators ADD COLUMN IF NOT EXISTS team_id TEXT;
+    `);
+    // Add foreign key constraint if teams table exists
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints 
+          WHERE constraint_name = 'calculators_team_id_fkey'
+        ) THEN
+          ALTER TABLE calculators 
+          ADD CONSTRAINT calculators_team_id_fkey 
+          FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL;
+        END IF;
+      EXCEPTION
+        WHEN undefined_table THEN NULL; -- teams table doesn't exist yet
+      END $$;
+    `);
+  } catch (e) {
+    console.warn("Team migration failed (ignoring):", e);
+  }
 
   // Indexes for efficient queries
   try {
@@ -67,6 +93,7 @@ export async function ensureTable() {
       CREATE INDEX IF NOT EXISTS idx_calculators_rating ON calculators(avg_rating DESC, ratings_count DESC);
       CREATE INDEX IF NOT EXISTS idx_calculators_user_example ON calculators(user_id, is_example);
       CREATE INDEX IF NOT EXISTS idx_calculators_example_published ON calculators(is_example, published) WHERE is_example = TRUE;
+      CREATE INDEX IF NOT EXISTS idx_calculators_team ON calculators(team_id) WHERE team_id IS NOT NULL;
     `);
   } catch (e) {
     console.warn("Index creation failed (ignoring):", e);
@@ -87,6 +114,7 @@ function rowToCalc(r: any): Calc {
       avgRating: Number(r.avg_rating || 0),
       ratingsCount: Number(r.ratings_count || 0),
       isExample: !!r.is_example,
+      teamId: r.team_id || undefined,
     },
     template: r.template ?? undefined,
     config: r.config ?? {},
@@ -571,6 +599,31 @@ export async function setIsExample(userId: string, slug: string, isExample: bool
     [isExample, now, userId, slug]
   );
   return (res.rowCount ?? 0) > 0;
+}
+
+/**
+ * Assign a calculator to a team (or remove from team if teamId is null).
+ */
+export async function setTeam(userId: string, slug: string, teamId: string | null): Promise<boolean> {
+  await ensureTable();
+  const now = Date.now();
+  const res = await pool.query(
+    `UPDATE calculators SET team_id = $1, updated_at = $2 WHERE user_id = $3 AND slug = $4`,
+    [teamId, now, userId, slug]
+  );
+  return (res.rowCount ?? 0) > 0;
+}
+
+/**
+ * List all calculators for a team (across all users).
+ */
+export async function listTeamCalcs(teamId: string): Promise<Calc[]> {
+  await ensureTable();
+  const { rows } = await pool.query(
+    `SELECT * FROM calculators WHERE team_id = $1 ORDER BY name ASC`,
+    [teamId]
+  );
+  return rows.map(rowToCalc);
 }
 
 // ============================================================================
