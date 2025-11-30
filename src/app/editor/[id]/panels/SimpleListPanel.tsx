@@ -22,7 +22,7 @@ type ParsedOcrItem = {
   sectionName?: string | null;
 };
 
-type Tab = "content" | "business" | "design" | "settings";
+type Tab = "content" | "business" | "design" | "checkout" | "settings";
 
 /* ---------------- Configuration ---------------- */
 
@@ -1346,149 +1346,6 @@ export default function SimpleListPanel() {
           ))}
         </div>
       </div>
-      {/* --- START OF NEW CHECKOUT SECTION --- */}
-      <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-6">
-        <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2">
-          <ShoppingBag className="w-4 h-4 text-purple-500" /> {t("Checkout & Ordering")}
-        </h3>
-        <p className="text-xs text-[var(--muted)]">
-          {t("Choose where orders should be sent. Each menu manages its own destination.")}
-        </p>
-
-        {(() => {
-          const override = (meta.contactOverride as any) || {};
-          const currentType: "email" | "whatsapp" | "telegram" = (override.type as any) || "email";
-          const currentValue: string = override.value || "";
-          const isConfirmed = !!override.confirmed;
-
-          const setType = (type: "email" | "whatsapp" | "telegram") => {
-            updateCalc((draft) => {
-              if (!draft.meta) draft.meta = {};
-              const prev = (draft.meta as any).contactOverride || {};
-              (draft.meta as any).contactOverride = {
-                type,
-                value: prev.type === type ? prev.value || "" : "",
-                confirmed: prev.type === type ? prev.confirmed : false,
-              };
-            });
-          };
-
-          const setValue = (val: string) => {
-            updateCalc((draft) => {
-              if (!draft.meta) draft.meta = {};
-              if (!(draft.meta as any).contactOverride) {
-                (draft.meta as any).contactOverride = { type: currentType, value: "", confirmed: false };
-              }
-              (draft.meta as any).contactOverride.value = val;
-              (draft.meta as any).contactOverride.confirmed = false;
-            });
-          };
-
-          const setConfirmed = (checked: boolean) => {
-            updateCalc((draft) => {
-              if (!draft.meta) draft.meta = {};
-              if (!(draft.meta as any).contactOverride) {
-                (draft.meta as any).contactOverride = { type: currentType, value: currentValue, confirmed: checked };
-                return;
-              }
-              (draft.meta as any).contactOverride.confirmed = checked;
-            });
-          };
-
-          return (
-            <div className="space-y-4">
-              <div className="space-y-3">
-                {[
-                  { value: "whatsapp", label: "WhatsApp", icon: <MessageCircle className="w-3.5 h-3.5 text-green-500" /> },
-                  { value: "telegram", label: "Telegram", icon: <Send className="w-3.5 h-3.5 text-blue-400" /> },
-                  { value: "email", label: "Email", icon: <Mail className="w-3.5 h-3.5 text-gray-500" /> },
-                ].map((option) => {
-                  const isSelected = currentType === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      onClick={() => setType(option.value as "email" | "whatsapp" | "telegram")}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all ${isSelected
-                        ? "border-[#22D3EE] bg-[#22D3EE]/5 ring-1 ring-[#22D3EE]"
-                        : "border-[var(--border)] hover:border-[var(--muted)] bg-[var(--bg)]"
-                        }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {option.icon}
-                        <span className="text-sm font-medium text-[var(--text)]">{option.label}</span>
-                      </div>
-                      {isSelected && <Check className="w-4 h-4 text-[#22D3EE]" />}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="pt-4 border-t border-[var(--border)] space-y-4 animate-in slide-in-from-top-2 fade-in">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-[var(--muted)] uppercase tracking-wide">
-                    {currentType === "whatsapp"
-                      ? t("WhatsApp Number (with country code)")
-                      : currentType === "telegram"
-                        ? t("Telegram Username (without @)")
-                        : t("Email Address")}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={currentType === "email" ? "email" : "text"}
-                      value={currentValue}
-                      onChange={(e) => setValue(e.target.value)}
-                      placeholder={
-                        currentType === "whatsapp"
-                          ? "+381 60 1234567"
-                          : currentType === "telegram"
-                            ? "moj_restoran"
-                            : "orders@restoran.com"
-                      }
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] transition-all"
-                    />
-                    <div className="absolute left-3 top-2.5 pointer-events-none">
-                      {currentType === "whatsapp" ? (
-                        <MessageCircle className="w-4 h-4 text-green-500" />
-                      ) : currentType === "telegram" ? (
-                        <Send className="w-4 h-4 text-blue-400" />
-                      ) : (
-                        <Mail className="w-4 h-4 text-gray-500" />
-                      )}
-                    </div>
-                  </div>
-                  {currentType === "whatsapp" && (
-                    <p className="text-[10px] text-[var(--muted)]">
-                      {t("Must include country code (e.g., +381 for Serbia).")}
-                    </p>
-                  )}
-                </div>
-
-                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isConfirmed
-                  ? "bg-green-500/5 border-green-500/30"
-                  : "bg-red-500/5 border-red-500/20"
-                  }`}>
-                  <input
-                    type="checkbox"
-                    checked={isConfirmed}
-                    onChange={(e) => setConfirmed(e.target.checked)}
-                    className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
-                  />
-                  <div className="space-y-0.5">
-                    <span className={`text-sm font-medium ${isConfirmed ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
-                      }`}>
-                      {t("I confirm this account belongs to me")}
-                    </span>
-                    <p className="text-[10px] text-[var(--muted)]">
-                      {t("I accept responsibility for all orders received on this channel.")}
-                    </p>
-                  </div>
-                </label>
-              </div>
-            </div>
-          );
-        })()}
-      </div>
-      {/* --- END OF NEW CHECKOUT SECTION --- */}
     </div>
   );
 
@@ -1570,6 +1427,243 @@ export default function SimpleListPanel() {
       </div>
     </div>
   );
+
+  const renderCheckoutTab = () => {
+    const override = (meta.contactOverride as any) || {};
+    const currentType: "email" | "whatsapp" | "telegram" = (override.type as any) || "email";
+    const currentValue: string = override.value || "";
+    const isConfirmed = !!override.confirmed;
+    const checkoutEnabled = !!meta.simpleAddCheckout;
+    const calculationsEnabled = !!meta.simpleEnableCalculations;
+
+    const setType = (type: "email" | "whatsapp" | "telegram") => {
+      updateCalc((draft) => {
+        if (!draft.meta) draft.meta = {};
+        const prev = (draft.meta as any).contactOverride || {};
+        (draft.meta as any).contactOverride = {
+          type,
+          value: prev.type === type ? prev.value || "" : "",
+          confirmed: prev.type === type ? prev.confirmed : false,
+        };
+      });
+    };
+
+    const setValue = (val: string) => {
+      updateCalc((draft) => {
+        if (!draft.meta) draft.meta = {};
+        if (!(draft.meta as any).contactOverride) {
+          (draft.meta as any).contactOverride = { type: currentType, value: "", confirmed: false };
+        }
+        (draft.meta as any).contactOverride.value = val;
+        (draft.meta as any).contactOverride.confirmed = false;
+      });
+    };
+
+    const setConfirmed = (checked: boolean) => {
+      updateCalc((draft) => {
+        if (!draft.meta) draft.meta = {};
+        if (!(draft.meta as any).contactOverride) {
+          (draft.meta as any).contactOverride = { type: currentType, value: currentValue, confirmed: checked };
+          return;
+        }
+        (draft.meta as any).contactOverride.confirmed = checked;
+      });
+    };
+
+    const handleCheckoutToggle = (enabled: boolean) => {
+      if (enabled && !calculationsEnabled) {
+        // Auto-enable calculations when checkout is enabled
+        setMeta({ simpleAddCheckout: true, simpleEnableCalculations: true });
+      } else {
+        setMeta({ simpleAddCheckout: enabled });
+      }
+    };
+
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        {/* Section 1: Activation */}
+        <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-5">
+          <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4 text-[#4F46E5]" /> {t("Ordering & Checkout")}
+          </h3>
+
+          {/* Enable Calculations */}
+          <label
+            className="flex items-center justify-between p-3 rounded-xl cursor-default hover:bg-[var(--surface)] transition-colors border border-[var(--border)]"
+            data-help="Enable price display and quantity selection for items."
+          >
+            <div className="space-y-0.5">
+              <span className="text-sm text-[var(--text)] font-bold block">{t("Enable Calculations")}</span>
+              <span className="text-[10px] text-[var(--muted)] block">{t("Shows prices and allows quantity selection")}</span>
+            </div>
+            <div className="relative inline-flex items-center cursor-default">
+              <input
+                type="checkbox"
+                checked={calculationsEnabled}
+                onChange={e => setMeta({ simpleEnableCalculations: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${calculationsEnabled ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
+            </div>
+          </label>
+
+          {/* Enable Checkout Button */}
+          <label
+            className="flex items-center justify-between p-3 rounded-xl cursor-default hover:bg-[var(--surface)] transition-colors border border-[var(--border)]"
+            data-help="Add a checkout/order button that lets customers easily send their selections."
+          >
+            <div className="space-y-0.5">
+              <span className="text-sm text-[var(--text)] font-bold block">{t("Enable Checkout Button")}</span>
+              <span className="text-[10px] text-[var(--muted)] block">{t("Adds button for customers to send their order")}</span>
+            </div>
+            <div className="relative inline-flex items-center cursor-default">
+              <input
+                type="checkbox"
+                checked={checkoutEnabled}
+                onChange={e => handleCheckoutToggle(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${checkoutEnabled ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
+            </div>
+          </label>
+        </div>
+
+        {/* Section 2 & 3: Only visible when checkout is enabled */}
+        {checkoutEnabled && (
+          <>
+            {/* Section 2: Customization */}
+            <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4 animate-in slide-in-from-top-2 duration-200">
+              <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2">
+                <Tag className="w-4 h-4 text-[#22D3EE]" /> {t("Button Customization")}
+              </h3>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[var(--muted)] uppercase tracking-wide">
+                  {t("Button Text")}
+                </label>
+                <BufferedInput
+                  type="text"
+                  value={meta.checkoutButtonText || ""}
+                  onCommit={(val: string) => setMeta({ checkoutButtonText: val || undefined })}
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-sm rounded-xl px-3 py-2.5 outline-none focus:border-[#22D3EE] transition-colors placeholder-[var(--muted)]"
+                  placeholder="Checkout"
+                  data-help="Custom text for the checkout button"
+                />
+                <p className="text-[10px] text-[var(--muted)]/70 italic">{t("Examples: 'Send Order', 'Book Now', 'Submit Inquiry'")}</p>
+              </div>
+            </div>
+
+            {/* Section 3: Destination */}
+            <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4 animate-in slide-in-from-top-2 duration-200">
+              <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2">
+                <Send className="w-4 h-4 text-purple-500" /> {t("Order Destination")}
+              </h3>
+              <p className="text-xs text-[var(--muted)]">
+                {t("Choose where orders for this page should be sent.")}
+              </p>
+
+              {/* Channel Selection */}
+              <div className="space-y-2">
+                {[
+                  { value: "whatsapp", label: "WhatsApp", icon: <MessageCircle className="w-4 h-4 text-green-500" /> },
+                  { value: "telegram", label: "Telegram", icon: <Send className="w-4 h-4 text-blue-400" /> },
+                  { value: "email", label: "Email", icon: <Mail className="w-4 h-4 text-gray-500" /> },
+                ].map((option) => {
+                  const isSelected = currentType === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => setType(option.value as "email" | "whatsapp" | "telegram")}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${isSelected
+                        ? "border-[#22D3EE] bg-[#22D3EE]/5 ring-1 ring-[#22D3EE]"
+                        : "border-[var(--border)] hover:border-[var(--muted)] bg-[var(--bg)]"
+                        }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {option.icon}
+                        <span className="text-sm font-medium text-[var(--text)]">{option.label}</span>
+                      </div>
+                      {isSelected && <Check className="w-4 h-4 text-[#22D3EE]" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Value Input */}
+              <div className="pt-4 border-t border-[var(--border)] space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-[var(--muted)] uppercase tracking-wide">
+                    {currentType === "whatsapp"
+                      ? t("WhatsApp Number (with country code)")
+                      : currentType === "telegram"
+                        ? t("Telegram Username (without @)")
+                        : t("Email Address")}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={currentType === "email" ? "email" : "text"}
+                      value={currentValue}
+                      onChange={(e) => setValue(e.target.value)}
+                      placeholder={
+                        currentType === "whatsapp"
+                          ? "+381 60 1234567"
+                          : currentType === "telegram"
+                            ? "my_business"
+                            : "orders@example.com"
+                      }
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] transition-all"
+                    />
+                    <div className="absolute left-3 top-2.5 pointer-events-none">
+                      {currentType === "whatsapp" ? (
+                        <MessageCircle className="w-4 h-4 text-green-500" />
+                      ) : currentType === "telegram" ? (
+                        <Send className="w-4 h-4 text-blue-400" />
+                      ) : (
+                        <Mail className="w-4 h-4 text-gray-500" />
+                      )}
+                    </div>
+                  </div>
+                  {currentType === "whatsapp" && (
+                    <p className="text-[10px] text-[var(--muted)]">
+                      {t("Must include country code (e.g., +381 for Serbia, +1 for USA).")}
+                    </p>
+                  )}
+                </div>
+
+                {/* Confirmation Checkbox */}
+                <label className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${isConfirmed
+                  ? "bg-green-500/5 border-green-500/30"
+                  : "bg-amber-500/5 border-amber-500/20"
+                  }`}>
+                  <input
+                    type="checkbox"
+                    checked={isConfirmed}
+                    onChange={(e) => setConfirmed(e.target.checked)}
+                    className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer mt-0.5"
+                  />
+                  <div className="space-y-0.5">
+                    <span className={`text-sm font-bold ${isConfirmed ? "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"}`}>
+                      {t("I confirm this account belongs to me")}
+                    </span>
+                    <p className="text-[10px] text-[var(--muted)]">
+                      {t("I accept responsibility for all orders received on this channel.")}
+                    </p>
+                  </div>
+                </label>
+
+                {!isConfirmed && currentValue && (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="text-xs font-medium">{t("Please confirm ownership to enable checkout.")}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
 
   const renderSettingsTab = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -1693,60 +1787,6 @@ export default function SimpleListPanel() {
             <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${meta.simpleShowBadge !== false ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
           </div>
         </label>
-
-        {/* Enable Calculations */}
-        <label
-          className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors"
-          data-help="Enable or disable price display and quantity selection for items."
-        >
-          <div className="space-y-0.5">
-            <span className="text-sm text-[var(--text)] font-medium block">{t("Enable Calculations")}</span>
-            <span className="text-[10px] text-[var(--muted)] block">{t("Shows prices and allows quantity selection")}</span>
-          </div>
-          <div className="relative inline-flex items-center cursor-default">
-            <input type="checkbox" checked={meta.simpleEnableCalculations || false} onChange={e => setMeta({ simpleEnableCalculations: e.target.checked })} className="sr-only peer" />
-            <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${meta.simpleEnableCalculations ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
-          </div>
-        </label>
-
-        {/* Add Checkout Button */}
-        {meta.simpleEnableCalculations && (
-          <div className="space-y-3">
-            <label
-              className="flex items-center justify-between p-2 rounded-lg cursor-default hover:bg-[var(--bg)] transition-colors border-l-2 border-[#22D3EE]/30 ml-2 pl-3"
-              data-help="Add a checkout/order button that lets customers easily send their selections via WhatsApp or Email."
-            >
-              <div className="space-y-0.5">
-                <span className="text-sm text-[var(--text)] font-medium block">{t("Add Checkout Button")}</span>
-                <span className="text-[10px] text-[var(--muted)] block">{t("Adds a button for customers to send their order via WhatsApp or Email.")}</span>
-                <span className="text-[9px] text-[var(--muted)]/70 block italic">{t("Configure delivery method in Account Settings")}</span>
-              </div>
-              <div className="relative inline-flex items-center cursor-default">
-                <input type="checkbox" checked={meta.simpleAddCheckout || false} onChange={e => setMeta({ simpleAddCheckout: e.target.checked })} className="sr-only peer" />
-                <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${meta.simpleAddCheckout ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-200"}`}></div>
-              </div>
-            </label>
-
-            {/* Custom Checkout Button Text - only show when checkout is enabled */}
-            {meta.simpleAddCheckout && (
-              <div className="ml-2 pl-3 border-l-2 border-[#22D3EE]/30 space-y-1.5">
-                <label className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wide flex items-center gap-1">
-                  <Tag className="w-3 h-3" />
-                  {t("Button Text")}
-                </label>
-                <BufferedInput
-                  type="text"
-                  value={meta.checkoutButtonText || ""}
-                  onCommit={(val: string) => setMeta({ checkoutButtonText: val || undefined })}
-                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-xs rounded-lg px-2.5 py-1.5 outline-none focus:border-[#22D3EE] transition-colors placeholder-[var(--muted)]"
-                  placeholder="Checkout"
-                  data-help="Custom text for the checkout button (default: Checkout)"
-                />
-                <p className="text-[9px] text-[var(--muted)]/70 italic">{t("Examples: 'Send Order', 'Book Now', 'Submit Inquiry'")}</p>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Show Unit in Public View */}
         <label
@@ -1890,7 +1930,7 @@ export default function SimpleListPanel() {
 
         {/* Navigation */}
         <div className="flex border-b border-transparent" data-tour="editor-tabs">
-          {(["content", "business", "design", "settings"] as const).map(tKey => (
+          {(["content", "business", "design", "checkout", "settings"] as const).map(tKey => (
             <TabButton
               key={tKey}
               id={tKey}
@@ -1898,7 +1938,8 @@ export default function SimpleListPanel() {
               icon={
                 tKey === "content" ? List :
                   tKey === "business" ? Store :
-                    tKey === "design" ? Sparkles : Settings
+                    tKey === "design" ? Sparkles :
+                      tKey === "checkout" ? ShoppingBag : Settings
               }
             />
           ))}
@@ -1924,6 +1965,7 @@ export default function SimpleListPanel() {
         {activeTab === "content" && renderContentTab()}
         {activeTab === "business" && renderBusinessTab()}
         {activeTab === "design" && renderDesignTab()}
+        {activeTab === "checkout" && renderCheckoutTab()}
         {activeTab === "settings" && renderSettingsTab()}
       </div>
 

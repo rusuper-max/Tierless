@@ -2,6 +2,7 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getUserIdFromRequest } from "@/lib/auth";
 import * as fullStore from "@/lib/fullStore";
 import * as calcsStore from "@/lib/calcsStore";
@@ -53,6 +54,53 @@ async function extractSlug(
 /** YouTube-ish ID (URL safe) */
 function genId(): string {
   return randomBytes(9).toString("base64url"); // ~12 chars
+}
+
+function normalizeWhatsapp(input?: string | null) {
+  if (!input) return "";
+  return String(input).trim().replace(/[^\d]/g, "");
+}
+
+function normalizeTelegram(input?: string | null) {
+  if (!input) return "";
+  return String(input).trim().replace(/^@/, "");
+}
+
+function normalizeEmail(input?: string | null) {
+  if (!input) return "";
+  return String(input).trim();
+}
+
+type ContactOverride = {
+  type?: string;
+  value?: string;
+  whatsapp?: string;
+  telegram?: string;
+  email?: string;
+};
+
+function resolveContact(override: ContactOverride | undefined, fallbackEmail: string) {
+  const normalizedType = (override?.type || "").toLowerCase();
+  const value = normalizeEmail(override?.value);
+  const whatsappValue = normalizeWhatsapp(override?.whatsapp || (normalizedType === "whatsapp" ? value : ""));
+  const telegramValue = normalizeTelegram(override?.telegram || (normalizedType === "telegram" ? value : ""));
+  const emailValue = normalizeEmail(override?.email || (normalizedType === "email" ? value : ""));
+
+  if (normalizedType === "whatsapp" && whatsappValue) {
+    return { type: "whatsapp" as const, whatsapp: whatsappValue };
+  }
+  if (normalizedType === "telegram" && telegramValue) {
+    return { type: "telegram" as const, telegram: telegramValue };
+  }
+  if (normalizedType === "email" && emailValue) {
+    return { type: "email" as const, email: emailValue };
+  }
+
+  if (whatsappValue) return { type: "whatsapp" as const, whatsapp: whatsappValue };
+  if (telegramValue) return { type: "telegram" as const, telegram: telegramValue };
+  if (emailValue) return { type: "email" as const, email: emailValue };
+
+  return { type: "email" as const, email: fallbackEmail };
 }
 
 /** Ako payload ima blocks -> zadrži; ako nema -> infer iz root polja. */
@@ -200,6 +248,9 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
       meta: { ...body.meta, slug, id },
     };
 
+    const override = normalized.meta?.contactOverride as ContactOverride | undefined;
+    normalized.meta.contact = resolveContact(override, userId);
+
     // DEBUG: Log what we're saving
     console.log("[EDITOR SAVE DEBUG]", {
       slug,
@@ -215,6 +266,17 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
     const newName = String(body?.meta?.name ?? "").trim();
     if (newName) {
       await calcsStore.updateName(userId, slug, newName).catch(() => { });
+    }
+
+    try {
+      const mini = await calcsStore.get(userId, slug);
+      const isPublished = !!mini?.meta?.published;
+      if (isPublished) {
+        revalidatePath(`/p/${slug}`);
+        revalidatePath(`/api/public/${slug}`);
+      }
+    } catch (err) {
+      console.warn("[EDITOR PUT] revalidate failed:", err);
     }
 
     return jsonNoCache(normalized);

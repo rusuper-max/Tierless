@@ -696,7 +696,17 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
   const totalCount = Object.values(quantities).reduce((a, b) => a + b, 0);
 
-  const contact = (meta?.contact || {}) as { type?: string; whatsapp?: string; telegram?: string; email?: string };
+  // Read contact info from meta.contact (injected by Publish) OR meta.contactOverride (Editor Preview)
+  const rawContact = (meta?.contact || meta?.contactOverride || {}) as any;
+
+  // Normalize if it's from override (which uses generic 'value')
+  const contact = { ...rawContact };
+  if (rawContact.value && rawContact.type) {
+    if (rawContact.type === 'whatsapp') contact.whatsapp = rawContact.value;
+    if (rawContact.type === 'telegram') contact.telegram = rawContact.value;
+    if (rawContact.type === 'email') contact.email = rawContact.value;
+  }
+
   const contactEmail = (contact.email || "").trim();
   const contactWhatsapp = (contact.whatsapp || "").replace(/[^\d]/g, "");
   const contactTelegram = (contact.telegram || "").replace(/^@/, "");
@@ -714,6 +724,14 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
 
     return "";
   })();
+
+  // Debug visibility
+  console.log("[PublicRenderer] Checkout Debug:", {
+    addCheckout,
+    resolvedContactType,
+    contactSource: meta?.contact ? "meta.contact" : (meta?.contactOverride ? "meta.contactOverride" : "none"),
+    contact
+  });
 
   const handleCheckout = () => {
     console.log("Checkout Contact:", contact);
@@ -798,33 +816,29 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
     // Priority 1: Custom button text from meta.buttonText or meta.checkoutButtonText
     const customText = meta.buttonText || meta.checkoutButtonText || "";
 
+    const baseClasses = "relative overflow-hidden py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-white font-semibold text-sm shadow-md transition-all duration-200 hover:shadow-lg active:scale-95 group";
+
     switch (resolvedContactType) {
       case "whatsapp":
         return {
-          background: "#25D366",
-          text: customText || "Order via WhatsApp",
-          icon: <MessageCircle className="w-5 h-5" />,
+          className: `${baseClasses} bg-gradient-to-br from-[#11998e] to-[#38ef7d] shadow-[#11998e]/30`,
+          text: customText || "Checkout",
+          icon: <MessageCircle className="w-4 h-4" />,
         };
       case "telegram":
         return {
-          background: "#0088cc",
-          text: customText || "Order via Telegram",
-          icon: <Send className="w-5 h-5" />,
-        };
-      case "telegram":
-        return {
-          background: "#0088cc",
-          text: customText || "Order via Telegram",
-          icon: <Send className="w-5 h-5" />,
+          className: `${baseClasses} bg-gradient-to-br from-[#0088cc] to-[#005f8f] shadow-[#0088cc]/30`,
+          text: customText || "Checkout",
+          icon: <Send className="w-4 h-4" />,
         };
       default:
         if (!contactEmail) {
           return null;
         }
         return {
-          background: "#1f2937",
-          text: customText || "Send Order via Email",
-          icon: <Mail className="w-5 h-5" />,
+          className: `${baseClasses} bg-gradient-to-br from-[#1f2937] to-[#000000] shadow-black/30`,
+          text: customText || "Checkout",
+          icon: <Mail className="w-4 h-4" />,
         };
     }
   };
@@ -1418,43 +1432,45 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
               )}
 
               {/* TOTAL BAR BUTTON */}
-              <div className="w-full max-w-md pointer-events-auto p-4 pb-6">
+              <div className="w-full max-w-md pointer-events-auto px-4 pb-6">
                 <div
                   ref={cartTargetRef}
-                  className="bg-[var(--card)] text-[var(--text)] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.35)] p-3 flex items-center justify-between border border-[var(--brand-1)]/50 cursor-pointer hover:scale-[1.02] transition-all active:scale-95 relative z-50"
+                  className="bg-[var(--card)] text-[var(--text)] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.35)] px-3 py-2.5 flex items-center justify-between gap-2 border border-[var(--brand-1)]/50 cursor-pointer hover:scale-[1.01] transition-all active:scale-[0.99] relative z-50"
                   onClick={() => setCartOpen(!cartOpen)}
                 >
-                  <div className="flex items-center gap-3 pl-2">
-                    <div className="w-11 h-11 rounded-xl bg-[var(--bg)] flex items-center justify-center shadow-inner border border-[var(--border)]">
-                      <span className="font-bold text-lg text-[var(--brand-1)]">{formatQuantityDisplay(totalCount)}</span>
+                  {/* Left: Count + Total (single line) */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-[var(--bg)] flex items-center justify-center shadow-inner border border-[var(--border)]">
+                      <span className="font-bold text-base text-[var(--brand-1)]">{formatQuantityDisplay(totalCount)}</span>
                     </div>
-                    <div>
-                      <div className="text-xs opacity-60 font-medium uppercase tracking-wide">Total</div>
-                      <div className="text-xl font-extrabold leading-none">{formatPrice(totalAmount)}</div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-[10px] opacity-50 font-medium uppercase">Total</span>
+                      <span className="text-lg font-bold whitespace-nowrap">{formatPrice(totalAmount)}</span>
+                    </div>
+                    <div className="text-[var(--brand-1)]">
+                      {cartOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="text-[var(--brand-1)]">
-                      {cartOpen ? <ChevronDown className="w-6 h-6" /> : <ChevronUp className="w-6 h-6" />}
-                    </div>
-                    {/* --- FIX: CHECKOUT BUTTON VISIBILITY --- */}
-                    {canShowCheckoutButton && checkoutButtonConfig && (
-                      <button
-                        className="w-full py-4 rounded-2xl text-white font-bold text-base shadow-lg hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                        style={{ background: checkoutButtonConfig.background }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCheckout();
-                        }}
-                      >
+                  {/* Right: Checkout Button */}
+                  {canShowCheckoutButton && checkoutButtonConfig && (
+                    <button
+                      className={checkoutButtonConfig.className}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCheckout();
+                      }}
+                    >
+                      {/* Icon */}
+                      <div className="relative z-10">
                         {checkoutButtonConfig.icon}
-                        <span className="truncate block max-w-[200px] sm:max-w-[250px]">
-                          {checkoutButtonConfig.text}
-                        </span>
-                      </button>
-                    )}
-                  </div>
+                      </div>
+                      {/* Text */}
+                      <span className="relative z-10 whitespace-nowrap">
+                        {checkoutButtonConfig.text}
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1474,8 +1490,18 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
           )
         }
 
-      </div >
+
+      </div>
       <style jsx global>{`
+        @keyframes shine {
+          0% { left: -100%; opacity: 0; }
+          20% { left: 100%; opacity: 0.6; }
+          100% { left: 100%; opacity: 0; }
+        }
+        .animate-shine {
+          animation: shine 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
         .animate-flyToCart {
           animation: flyToCart 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
