@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import * as fullStore from "@/lib/fullStore";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 function jsonNoCache(data: any, status = 200) {
   const res = NextResponse.json(data, { status });
@@ -40,8 +40,8 @@ async function extractKey(
   req: Request,
   ctx?: {
     params?:
-      | { idOrSlug?: string; slug?: string }
-      | Promise<{ idOrSlug?: string; slug?: string }>;
+    | { idOrSlug?: string; slug?: string }
+    | Promise<{ idOrSlug?: string; slug?: string }>;
   }
 ): Promise<string> {
   let fromCtx: string | undefined;
@@ -49,7 +49,7 @@ async function extractKey(
     const p = (ctx as any)?.params;
     const got = typeof p?.then === "function" ? await p : p;
     fromCtx = got?.idOrSlug ?? got?.slug;
-  } catch {}
+  } catch { }
   if (fromCtx && fromCtx !== "undefined" && fromCtx !== "null") {
     return decodeURIComponent(String(fromCtx));
   }
@@ -60,7 +60,7 @@ async function extractKey(
     if (fromPath && fromPath !== "public") {
       return decodeURIComponent(fromPath);
     }
-  } catch {}
+  } catch { }
   return "";
 }
 
@@ -117,7 +117,8 @@ export async function GET(
     return jsonNoCache({ ok: false, error: "not_published" }, 404);
   }
 
-  return jsonNoCache(
+  // Success - allow caching (ISR)
+  return NextResponse.json(
     {
       ok: true,
       data: {
@@ -125,6 +126,6 @@ export async function GET(
         meta,
       },
     },
-    200
+    { status: 200 }
   );
 }

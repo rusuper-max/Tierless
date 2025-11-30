@@ -1,5 +1,6 @@
 // src/app/api/publish/route.ts
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getPool } from "@/lib/db";
 import { getUserIdFromRequest, coercePlan as coercePlanAuth } from "@/lib/auth";
 import * as calcsStore from "@/lib/calcsStore";
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
   if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   let body: any = {};
-  try { body = await req.json(); } catch {}
+  try { body = await req.json(); } catch { }
 
   const { slug, publish } = body ?? {};
   if (typeof slug !== "string") {
@@ -59,6 +60,16 @@ export async function POST(req: Request) {
   const ok = await calcsStore.setPublished(userId, slug, !!publish);
   if (!ok) {
     return NextResponse.json({ error: "Page not found" }, { status: 404 });
+  }
+
+  // 3) Revalidate public paths (ISR)
+  if (publish) {
+    try {
+      revalidatePath(`/p/${slug}`);
+      revalidatePath(`/api/public/${slug}`);
+    } catch (e) {
+      console.error("Revalidate failed for", slug, e);
+    }
   }
 
   return NextResponse.json({ ok: true, slug, publish: !!publish }, { headers: { "Cache-Control": "no-store" } });

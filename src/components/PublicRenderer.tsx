@@ -517,7 +517,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
   const meta = calc?.meta || {};
   const i18n = calc?.i18n || {};
   const items: ItemRow[] = calc?.items || [];
-  
+
   // Analytics page ID
   const pageId = meta.slug || calc?.id || "unknown";
 
@@ -600,12 +600,12 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => {
       const wasOpen = prev.has(sectionId);
-      
+
       // Track section open (only when opening, not closing)
       if (!wasOpen) {
         trackSectionOpen(pageId, sectionId);
       }
-      
+
       if (accordionSolo) {
         // Solo mode: if clicking already open, close it (empty set). If clicking closed, open ONLY it.
         if (wasOpen) return new Set();
@@ -737,6 +737,34 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
     trackPageView(pageId);
     startTimeTracking(pageId);
   }, [pageId]);
+
+  // Embed Resize Protocol
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const sendHeight = () => {
+      const height = document.body.scrollHeight;
+      // Send to parent window (if embedded)
+      window.parent.postMessage({ type: 'tierless-resize', height }, '*');
+    };
+
+    // Send initial height
+    sendHeight();
+
+    // Observe resizing of the body
+    const observer = new ResizeObserver(() => {
+      sendHeight();
+    });
+    observer.observe(document.body);
+
+    // Also listen for image loads which might change height
+    window.addEventListener('load', sendHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('load', sendHeight);
+    };
+  }, []);
 
   useEffect(() => {
     const root = scrollContainer?.current || null;

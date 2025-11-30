@@ -1,6 +1,5 @@
 // src/app/api/calculators/[slug]/route.ts
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "@/lib/auth";
@@ -30,14 +29,14 @@ async function extractSlug(
     const anyParams: any = (ctx as any)?.params;
     const p = typeof anyParams?.then === "function" ? await anyParams : anyParams;
     if (p?.slug && p.slug !== "undefined" && p.slug !== "null") return String(p.slug);
-  } catch {}
+  } catch { }
 
   // 2) query param ?slug=
   try {
     const url = new URL(req.url);
     const q = url.searchParams.get("slug");
     if (q && q !== "undefined" && q !== "null") return q;
-  } catch {}
+  } catch { }
 
   // 3) poslednji segment posle /calculators/
   try {
@@ -46,7 +45,7 @@ async function extractSlug(
     const i = parts.lastIndexOf("calculators");
     const candidate = i >= 0 ? parts[i + 1] : parts[parts.length - 1];
     if (candidate && candidate !== "undefined" && candidate !== "null") return candidate;
-  } catch {}
+  } catch { }
 
   return "";
 }
@@ -205,7 +204,7 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
     // mini ime (dashboard)
     const newName = String(body?.meta?.name ?? "").trim();
     if (newName) {
-      await calcsStore.updateName(userId, slug, newName).catch(() => {});
+      await calcsStore.updateName(userId, slug, newName).catch(() => { });
     }
 
     return jsonNoCache(normalized);
