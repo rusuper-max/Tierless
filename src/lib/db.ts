@@ -142,3 +142,392 @@ export async function verifyAndConsumeToken(token: string) {
     client.release();
   }
 }
+
+// ============================================================================
+// TEAMS SCHEMA (Phase 4 - Preparation for team collaboration)
+// ============================================================================
+
+/**
+ * Team member roles with hierarchical permissions:
+ * - owner: Full control, can delete team, transfer ownership
+ * - admin: Can manage members, edit all pages, publish
+ * - editor: Can edit pages, cannot manage members
+ * - viewer: Read-only access to pages
+ */
+export type TeamRole = "owner" | "admin" | "editor" | "viewer";
+
+export interface Team {
+  id: string;
+  name: string;
+  slug: string;
+  owner_id: string;
+  logo_url?: string;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface TeamMember {
+  team_id: string;
+  user_id: string;
+  role: TeamRole;
+  joined_at: number;
+}
+
+export interface TeamInvite {
+  id: string;
+  team_id: string;
+  email: string;
+  role: TeamRole;
+  invited_by: string;
+  expires_at: number;
+  created_at: number;
+}
+
+/**
+ * Creates all team-related tables if they don't exist.
+ * Call this during app initialization or first team creation.
+ */
+export async function ensureTeamsTables() {
+  const pool = getPool();
+  const client = await pool.connect();
+  
+  try {
+    // 1. Teams table - Core team information
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS teams (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        owner_id TEXT NOT NULL,
+        logo_url TEXT,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT NOT NULL
+      );
+    `);
+
+    // 2. Team members table - User-team relationships
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS team_members (
+        team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        user_id TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'viewer',
+        joined_at BIGINT NOT NULL,
+        PRIMARY KEY (team_id, user_id)
+      );
+    `);
+
+    // 3. Team invites table - Pending invitations
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS team_invites (
+        id TEXT PRIMARY KEY,
+        team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        email TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'viewer',
+        invited_by TEXT NOT NULL,
+        expires_at BIGINT NOT NULL,
+        created_at BIGINT NOT NULL
+      );
+    `);
+
+    // 4. Add team_id to calculators table (optional foreign key)
+    await client.query(`
+      ALTER TABLE calculators 
+      ADD COLUMN IF NOT EXISTS team_id TEXT REFERENCES teams(id) ON DELETE SET NULL;
+    `);
+
+    // 5. Create indexes for efficient queries
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_teams_owner ON teams(owner_id);
+      CREATE INDEX IF NOT EXISTS idx_teams_slug ON teams(slug);
+      CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);
+      CREATE INDEX IF NOT EXISTS idx_team_members_team ON team_members(team_id);
+      CREATE INDEX IF NOT EXISTS idx_team_invites_email ON team_invites(email);
+      CREATE INDEX IF NOT EXISTS idx_team_invites_team ON team_invites(team_id);
+      CREATE INDEX IF NOT EXISTS idx_calculators_team ON calculators(team_id) WHERE team_id IS NOT NULL;
+    `);
+
+    console.log("✅ Teams tables ensured successfully");
+  } catch (e) {
+    console.error("❌ Failed to ensure teams tables:", e);
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+// ============================================================================
+// TEAMS HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Check if a user has at least the required role in a team.
+ * Role hierarchy: owner > admin > editor > viewer
+ */
+export function hasTeamPermission(userRole: TeamRole, requiredRole: TeamRole): boolean {
+  const hierarchy: Record<TeamRole, number> = {
+    owner: 4,
+    admin: 3,
+    editor: 2,
+    viewer: 1,
+  };
+  return hierarchy[userRole] >= hierarchy[requiredRole];
+}
+
+/**
+ * Get all teams a user belongs to.
+ */
+export async function getUserTeams(userId: string): Promise<(Team & { role: TeamRole })[]> {
+  const pool = getPool();
+  const { rows } = await pool.query(
+    `SELECT t.*, tm.role 
+     FROM teams t
+     JOIN team_members tm ON t.id = tm.team_id
+     WHERE tm.user_id = $1
+     ORDER BY t.name ASC`,
+    [userId]
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    owner_id: r.owner_id,
+    logo_url: r.logo_url,
+    created_at: Number(r.created_at),
+    updated_at: Number(r.updated_at),
+    role: r.role as TeamRole,
+  }));
+}
+
+/**
+ * Get a user's role in a specific team.
+ * Returns null if user is not a member.
+ */
+export async function getUserTeamRole(userId: string, teamId: string): Promise<TeamRole | null> {
+  const pool = getPool();
+  const { rows } = await pool.query(
+    `SELECT role FROM team_members WHERE user_id = $1 AND team_id = $2`,
+    [userId, teamId]
+  );
+  return rows[0]?.role as TeamRole | null;
+}
+
+/**
+ * Get all members of a team.
+ */
+export async function getTeamMembers(teamId: string): Promise<TeamMember[]> {
+  const pool = getPool();
+  const { rows } = await pool.query(
+    `SELECT * FROM team_members WHERE team_id = $1 ORDER BY joined_at ASC`,
+    [teamId]
+  );
+  return rows.map((r) => ({
+    team_id: r.team_id,
+    user_id: r.user_id,
+    role: r.role as TeamRole,
+    joined_at: Number(r.joined_at),
+  }));
+}
+
+/**
+ * Create a new team with the creator as owner.
+ */
+export async function createTeam(
+  name: string,
+  slug: string,
+  ownerId: string,
+  logoUrl?: string
+): Promise<Team> {
+  const pool = getPool();
+  const client = await pool.connect();
+  const id = crypto.randomUUID();
+  const now = Date.now();
+
+  try {
+    await client.query("BEGIN");
+
+    // Create team
+    await client.query(
+      `INSERT INTO teams (id, name, slug, owner_id, logo_url, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [id, name, slug, ownerId, logoUrl || null, now, now]
+    );
+
+    // Add owner as member
+    await client.query(
+      `INSERT INTO team_members (team_id, user_id, role, joined_at)
+       VALUES ($1, $2, 'owner', $3)`,
+      [id, ownerId, now]
+    );
+
+    await client.query("COMMIT");
+
+    return { id, name, slug, owner_id: ownerId, logo_url: logoUrl, created_at: now, updated_at: now };
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Add a member to a team.
+ */
+export async function addTeamMember(
+  teamId: string,
+  userId: string,
+  role: TeamRole = "viewer"
+): Promise<void> {
+  const pool = getPool();
+  const now = Date.now();
+  await pool.query(
+    `INSERT INTO team_members (team_id, user_id, role, joined_at)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (team_id, user_id) DO UPDATE SET role = $3`,
+    [teamId, userId, role, now]
+  );
+}
+
+/**
+ * Remove a member from a team.
+ */
+export async function removeTeamMember(teamId: string, userId: string): Promise<void> {
+  const pool = getPool();
+  await pool.query(
+    `DELETE FROM team_members WHERE team_id = $1 AND user_id = $2`,
+    [teamId, userId]
+  );
+}
+
+/**
+ * Update a member's role in a team.
+ */
+export async function updateTeamMemberRole(
+  teamId: string,
+  userId: string,
+  newRole: TeamRole
+): Promise<void> {
+  const pool = getPool();
+  await pool.query(
+    `UPDATE team_members SET role = $1 WHERE team_id = $2 AND user_id = $3`,
+    [newRole, teamId, userId]
+  );
+}
+
+/**
+ * Create a team invite.
+ */
+export async function createTeamInvite(
+  teamId: string,
+  email: string,
+  role: TeamRole,
+  invitedBy: string,
+  expiresInDays = 7
+): Promise<TeamInvite> {
+  const pool = getPool();
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  const expiresAt = now + expiresInDays * 24 * 60 * 60 * 1000;
+
+  await pool.query(
+    `INSERT INTO team_invites (id, team_id, email, role, invited_by, expires_at, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [id, teamId, email.toLowerCase(), role, invitedBy, expiresAt, now]
+  );
+
+  return { id, team_id: teamId, email, role, invited_by: invitedBy, expires_at: expiresAt, created_at: now };
+}
+
+/**
+ * Get pending invites for an email.
+ */
+export async function getInvitesForEmail(email: string): Promise<TeamInvite[]> {
+  const pool = getPool();
+  const now = Date.now();
+  const { rows } = await pool.query(
+    `SELECT * FROM team_invites WHERE email = $1 AND expires_at > $2`,
+    [email.toLowerCase(), now]
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    team_id: r.team_id,
+    email: r.email,
+    role: r.role as TeamRole,
+    invited_by: r.invited_by,
+    expires_at: Number(r.expires_at),
+    created_at: Number(r.created_at),
+  }));
+}
+
+/**
+ * Accept a team invite.
+ */
+export async function acceptTeamInvite(inviteId: string, userId: string): Promise<boolean> {
+  const pool = getPool();
+  const client = await pool.connect();
+  const now = Date.now();
+
+  try {
+    await client.query("BEGIN");
+
+    // Get invite
+    const { rows } = await client.query(
+      `SELECT * FROM team_invites WHERE id = $1 AND expires_at > $2`,
+      [inviteId, now]
+    );
+
+    if (rows.length === 0) {
+      await client.query("ROLLBACK");
+      return false;
+    }
+
+    const invite = rows[0];
+
+    // Add user to team
+    await client.query(
+      `INSERT INTO team_members (team_id, user_id, role, joined_at)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (team_id, user_id) DO UPDATE SET role = $3`,
+      [invite.team_id, userId, invite.role, now]
+    );
+
+    // Delete invite
+    await client.query(`DELETE FROM team_invites WHERE id = $1`, [inviteId]);
+
+    await client.query("COMMIT");
+    return true;
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Assign a calculator to a team.
+ */
+export async function assignCalculatorToTeam(
+  userId: string,
+  slug: string,
+  teamId: string | null
+): Promise<void> {
+  const pool = getPool();
+  const now = Date.now();
+  await pool.query(
+    `UPDATE calculators SET team_id = $1, updated_at = $2 WHERE user_id = $3 AND slug = $4`,
+    [teamId, now, userId, slug]
+  );
+}
+
+/**
+ * Get all calculators for a team.
+ */
+export async function getTeamCalculators(teamId: string): Promise<{ user_id: string; slug: string; name: string }[]> {
+  const pool = getPool();
+  const { rows } = await pool.query(
+    `SELECT user_id, slug, name FROM calculators WHERE team_id = $1 ORDER BY name ASC`,
+    [teamId]
+  );
+  return rows;
+}
