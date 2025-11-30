@@ -67,6 +67,7 @@ export type SimpleSection = {
     description?: string;
     imageUrl?: string;
     imagePublicId?: string;
+    videoUrl?: string; // Pro feature: section video background
     collapsed?: boolean;
 };
 
