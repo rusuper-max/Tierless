@@ -9,6 +9,10 @@ import { genId, clone, ensureShape } from "@/lib/editor-utils";
 // Re-export types za komponente koje ih koriste direktno iz ovog fajla
 export type { CalcJson, Mode, BrandTheme, SimpleSection, ItemRow, Pkg, OptionGroup, Extra, FeatureOption };
 
+// ==================== HISTORY CONFIG ====================
+const MAX_HISTORY_SIZE = 50;
+const DEBOUNCE_MS = 300; // Group rapid changes within this window
+
 type EditorState = {
   slug: string;
   calc: CalcJson | null;
@@ -20,6 +24,18 @@ type EditorState = {
   maxPackages: number;
   lastWarn?: string;
   lastError?: string;
+
+  // ==================== HISTORY STATE ====================
+  past: CalcJson[];
+  future: CalcJson[];
+  _lastHistoryPush: number; // For debouncing
+
+  // History actions
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  clearHistory: () => void;
 
   init: (slug: string, initialCalc: CalcJson) => void;
   setCalc: (calc: CalcJson) => void;
@@ -70,6 +86,33 @@ type EditorState = {
   setError: (msg?: string) => void;
 };
 
+// ==================== HISTORY HELPER ====================
+/**
+ * Push current state to history with debouncing.
+ * Rapid changes (like typing) are grouped together.
+ */
+function pushToHistory(
+  currentCalc: CalcJson | null,
+  past: CalcJson[],
+  lastPush: number
+): { past: CalcJson[]; future: CalcJson[]; _lastHistoryPush: number } {
+  if (!currentCalc) {
+    return { past, future: [], _lastHistoryPush: lastPush };
+  }
+
+  const now = Date.now();
+  const shouldDebounce = now - lastPush < DEBOUNCE_MS;
+
+  // If within debounce window, don't push (merge with last)
+  if (shouldDebounce && past.length > 0) {
+    return { past, future: [], _lastHistoryPush: now };
+  }
+
+  // Push current state to history
+  const newPast = [...past, clone(currentCalc)].slice(-MAX_HISTORY_SIZE);
+  return { past: newPast, future: [], _lastHistoryPush: now };
+}
+
 export const useEditorStore = create<EditorState>((set, get) => ({
   slug: "",
   calc: null,
@@ -81,6 +124,50 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   maxPackages: 6,
   lastWarn: undefined,
   lastError: undefined,
+
+  // History state
+  past: [],
+  future: [],
+  _lastHistoryPush: 0,
+
+  /* --------------------------------------------------------- */
+  /* History Actions                                           */
+  /* --------------------------------------------------------- */
+
+  undo: () => {
+    const { calc, past, future } = get();
+    if (past.length === 0 || !calc) return;
+
+    const previous = past[past.length - 1];
+    const newPast = past.slice(0, -1);
+
+    set({
+      calc: clone(previous),
+      past: newPast,
+      future: [clone(calc), ...future].slice(0, MAX_HISTORY_SIZE),
+      isDirty: true,
+    });
+  },
+
+  redo: () => {
+    const { calc, past, future } = get();
+    if (future.length === 0 || !calc) return;
+
+    const next = future[0];
+    const newFuture = future.slice(1);
+
+    set({
+      calc: clone(next),
+      past: [...past, clone(calc)].slice(-MAX_HISTORY_SIZE),
+      future: newFuture,
+      isDirty: true,
+    });
+  },
+
+  canUndo: () => get().past.length > 0,
+  canRedo: () => get().future.length > 0,
+
+  clearHistory: () => set({ past: [], future: [], _lastHistoryPush: 0 }),
 
   /* --------------------------------------------------------- */
   /* Core Actions                                              */
@@ -100,29 +187,58 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       lastSaved: null,
       lastWarn: undefined,
       lastError: undefined,
+      // Clear history on init
+      past: [],
+      future: [],
+      _lastHistoryPush: 0,
     });
   },
 
   setCalc: (next) => {
     const safe = ensureShape(clone(next));
-    set({ calc: safe, isDirty: false, lastError: undefined, lastWarn: undefined });
+    set({ 
+      calc: safe, 
+      isDirty: false, 
+      lastError: undefined, 
+      lastWarn: undefined,
+      // Clear history when loading new calc
+      past: [],
+      future: [],
+      _lastHistoryPush: 0,
+    });
   },
 
   updateCalc: (fn) =>
     set((state) => {
       if (!state.calc) return {};
+      
+      // Push current state to history before making changes
+      const historyUpdate = pushToHistory(state.calc, state.past, state._lastHistoryPush);
+      
       const next = clone(state.calc);
       fn(next);
-      return { calc: next, isDirty: true };
+      return { 
+        calc: next, 
+        isDirty: true,
+        ...historyUpdate,
+      };
     }),
 
   setMeta: (patch) =>
     set((state) => {
       if (!state.calc) return {};
+      
+      // Push current state to history
+      const historyUpdate = pushToHistory(state.calc, state.past, state._lastHistoryPush);
+      
       const next = clone(state.calc);
       if (!next.meta) next.meta = {};
       Object.assign(next.meta, patch);
-      return { calc: next, isDirty: true };
+      return { 
+        calc: next, 
+        isDirty: true,
+        ...historyUpdate,
+      };
     }),
 
   setEditorMode: (mode) => {
@@ -130,12 +246,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const calc = st.calc;
     if (!calc) return;
 
+    // Push to history before changing mode
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+
     const next = clone(calc);
 
     // 1. Set mode
     if (!mode || mode === "setup") {
       next.meta = { ...(next.meta || {}), editorMode: "setup" };
-      set({ calc: ensureShape(next), isDirty: true });
+      set({ calc: ensureShape(next), isDirty: true, ...historyUpdate });
       return;
     }
     next.meta = { ...(next.meta || {}), editorMode: mode };
@@ -170,7 +289,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       }
     }
 
-    set({ calc: ensureShape(next), isDirty: true });
+    set({ calc: ensureShape(next), isDirty: true, ...historyUpdate });
   },
 
   /* --------------------------------------------------------- */
@@ -185,6 +304,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       set({ lastWarn: `Package limit reached: ${st.maxPackages}.` });
       return;
     }
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const id = genId("pkg");
     const pkg: Pkg = {
       id,
@@ -196,34 +318,46 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     };
     const next = clone(calc);
     next.packages.push(pkg);
-    set({ calc: next, isDirty: true, lastWarn: undefined });
+    set({ calc: next, isDirty: true, lastWarn: undefined, ...historyUpdate });
     return id;
   },
 
   updatePackage: (id, patch) => {
-    const calc = get().calc;
+    const st = get();
+    const calc = st.calc;
     if (!calc) return;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     next.packages = next.packages.map((p) => (p.id === id ? { ...p, ...patch } : p));
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   removePackage: (id) => {
-    const calc = get().calc;
+    const st = get();
+    const calc = st.calc;
     if (!calc) return;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     next.packages = next.packages.filter((p) => p.id !== id);
     next.fields = next.fields.filter(
       (g) => !(g.type === "features" && g.pkgId === id)
     );
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   duplicatePackage: (id) => {
-    const calc = get().calc;
+    const st = get();
+    const calc = st.calc;
     if (!calc) return;
     const idx = calc.packages.findIndex((p) => p.id === id);
     if (idx < 0) return;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     const src = next.packages[idx];
     const newId = genId("pkg");
@@ -246,20 +380,24 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         options: (oldGrp.options || []).map((f) => ({ ...f, id: genId("f") })),
       });
     }
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   reorderPackage: (id, dir) => {
-    const calc = get().calc;
+    const st = get();
+    const calc = st.calc;
     if (!calc) return;
     const idx = calc.packages.findIndex((p) => p.id === id);
     if (idx < 0) return;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     const to = Math.max(0, Math.min(next.packages.length - 1, idx + dir));
     if (to === idx) return;
     const [item] = next.packages.splice(idx, 1);
     next.packages.splice(to, 0, item);
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   /* --------------------------------------------------------- */
@@ -267,20 +405,28 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   /* --------------------------------------------------------- */
 
   ensureFeatureGroup: (pkgId) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
     const existing = calc.fields.find(
       (g) => g.type === "features" && g.pkgId === pkgId
     );
     if (existing) return existing.id;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const id = genId("feat");
     const next = clone(calc);
     next.fields.push({ id, title: "Features", type: "features", pkgId, options: [] });
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
     return id;
   },
 
   addFeature: (pkgId, label) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     let grp = next.fields.find((g) => g.type === "features" && g.pkgId === pkgId);
     if (!grp) {
@@ -299,28 +445,36 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       label: label ?? "New feature",
       highlighted: false,
     });
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
     return id;
   },
 
   updateFeature: (pkgId, featId, patch) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     const grp = next.fields.find((g) => g.type === "features" && g.pkgId === pkgId);
     if (!grp || !grp.options) return;
     grp.options = (grp.options as FeatureOption[]).map((f) =>
       f.id === featId ? { ...f, ...patch } : f
     );
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   removeFeature: (pkgId, featId) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     const grp = next.fields.find((g) => g.type === "features" && g.pkgId === pkgId);
     if (!grp || !grp.options) return;
     grp.options = (grp.options as FeatureOption[]).filter((f) => f.id !== featId);
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   /* --------------------------------------------------------- */
@@ -328,7 +482,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   /* --------------------------------------------------------- */
 
   addExtra: (text) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     const id = genId("x");
     next.addons.push({
@@ -337,22 +495,30 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       price: 0,
       selected: false,
     });
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
     return id;
   },
 
   updateExtra: (id, patch) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     next.addons = next.addons.map((x) => (x.id === id ? { ...x, ...patch } : x));
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   removeExtra: (id) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     next.addons = next.addons.filter((x) => x.id !== id);
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   /* --------------------------------------------------------- */
@@ -360,7 +526,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   /* --------------------------------------------------------- */
 
   addRangeGroup: (title) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     const id = genId("rng");
     next.fields.push({
@@ -374,22 +544,30 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       unit: "",
       pricing: { mode: "linear", deltaPerUnit: 0 },
     });
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
     return id;
   },
 
   updateRangeGroup: (id, patch) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     next.fields = next.fields.map((g) => (g.id === id ? { ...g, ...patch } : g));
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   removeRangeGroup: (id) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     next.fields = next.fields.filter((g) => g.id !== id);
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   /* --------------------------------------------------------- */
@@ -397,7 +575,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   /* --------------------------------------------------------- */
 
   addItem: (label, price) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     const id = genId("it");
     if (!Array.isArray(next.items)) next.items = [];
@@ -406,51 +588,70 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       label: label ?? "Item",
       price: Number.isFinite(price) ? (price as number) : 0,
     });
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
     return id;
   },
 
   updateItem: (id, patch) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     if (!Array.isArray(next.items)) next.items = [];
     next.items = next.items.map((r) => (r.id === id ? { ...r, ...patch } : r));
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   removeItem: (id) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     if (!Array.isArray(next.items)) next.items = [];
     next.items = next.items.filter((r) => r.id !== id);
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   reorderItem: (id, dir) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
     if (!Array.isArray(calc.items)) return;
     const idx = calc.items.findIndex((r) => r.id === id);
     if (idx < 0) return;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     const to = Math.max(0, Math.min(next.items!.length - 1, idx + dir));
     if (to === idx) return;
     const [row] = next.items!.splice(idx, 1);
     next.items!.splice(to, 0, row);
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   moveItem: (fromIndex, toIndex) => {
-    const calc = get().calc!;
+    const st = get();
+    const calc = st.calc!;
     if (!Array.isArray(calc.items)) return;
+    
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
+    
     const next = clone(calc);
     const [item] = next.items!.splice(fromIndex, 1);
     next.items!.splice(toIndex, 0, item);
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   bulkAddItems: (items, mode = "append") => {
-    const calc = get().calc;
+    const st = get();
+    const calc = st.calc;
     if (!calc) return;
+
+    const historyUpdate = pushToHistory(calc, st.past, st._lastHistoryPush);
 
     const next = clone(calc);
     if (!Array.isArray(next.items)) next.items = [];
@@ -484,7 +685,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       next.items = [...(next.items || []), ...prepared];
     }
 
-    set({ calc: next, isDirty: true });
+    set({ calc: next, isDirty: true, ...historyUpdate });
   },
 
   /* --------------------------------------------------------- */

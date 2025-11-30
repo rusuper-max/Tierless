@@ -2,9 +2,10 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState, useRef } from "react";
-import { ChevronLeft, Eye, Sparkles, X, XCircle } from "lucide-react";
+import { ChevronLeft, Eye, Sparkles, X, XCircle, Undo2, Redo2 } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type CalcJson, type Mode } from "@/hooks/useEditorStore";
+import { useUndoRedoShortcuts } from "@/hooks/useUndoRedoShortcuts";
 import { HelpModeProvider, useHelpMode } from "@/hooks/useHelpMode";
 import EditorNavBar from "./components/EditorNavBar";
 import OnboardingIntro from "@/components/editor/OnboardingIntro";
@@ -41,8 +42,11 @@ function normalizeMode(input?: string | null): Mode {
 }
 
 function EditorContent({ slug, initialCalc }: Props) {
-  const { calc, init, isDirty, isSaving, setEditorMode } = useEditorStore();
+  const { calc, init, isDirty, isSaving, setEditorMode, undo, redo, canUndo, canRedo } = useEditorStore();
   const { isActive: isHelpMode, hasSeenIntro, markIntroAsSeen, enableHelpMode, disableHelpMode, toggleHelpMode } = useHelpMode();
+  
+  // Enable keyboard shortcuts for Undo/Redo
+  useUndoRedoShortcuts();
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -548,6 +552,11 @@ function EditorContent({ slug, initialCalc }: Props) {
         onPreview={() => setPreviewOpen(true)}
         onStartWalkthrough={startGuidedTour}
         hasDismissedIntro={hasSeenIntro}
+        // Undo/Redo
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo()}
+        canRedo={canRedo()}
       />
 
       <div className="px-4 lg:px-8 py-5">

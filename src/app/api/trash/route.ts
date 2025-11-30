@@ -1,7 +1,7 @@
 // src/app/api/trash/route.ts
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "@/lib/auth";
-import * as mini from "@/lib/data/calcs";
+import * as calcsStore from "@/lib/calcsStore";
 import * as trash from "@/lib/data/trash";
 import { ENTITLEMENTS, type PlanId } from "@/lib/entitlements";
 
@@ -56,21 +56,10 @@ export async function POST(req: Request) {
     const plan = getPlanFromReq(req);
 const limit = pagesLimit(plan);
 
-// Broj aktivnih – preferiraj countAll, fallback na list().length
+// Broj aktivnih stranica
 let actCount = 0;
 try {
-  const maybeCountAll = (mini as any).countAll;
-  if (typeof maybeCountAll === "function") {
-    actCount = await maybeCountAll(userId);
-  } else {
-    const maybeList = (mini as any).list;
-    if (typeof maybeList === "function") {
-      const rows = await maybeList(userId);
-      actCount = Array.isArray(rows) ? rows.length : 0;
-    } else {
-      actCount = 0;
-    }
-  }
+  actCount = await calcsStore.countAll(userId);
 } catch {
   actCount = 0;
 }

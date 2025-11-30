@@ -1,39 +1,33 @@
 // src/lib/auth.ts — JWT auth (HS256), bez cookies().get/set
 import { SignJWT, jwtVerify } from "jose";
 import { getPool } from "@/lib/db";
+import { 
+  SESSION_SECRET, 
+  SESSION_COOKIE_NAME, 
+  IS_PRODUCTION,
+  IS_DEV 
+} from "@/lib/env";
 
-// === Vaši planovi (ostaju identični logici na projektu) ===
+// === Plan types ===
 export type Plan = "free" | "starter" | "growth" | "pro" | "tierless";
 
 export type SessionUser = {
   email: string;
-  plan?: Plan; // može da izostane u starijim tokenima
+  plan?: Plan;
 };
 
-// Cookie/JWT setup
-export const SESSION_COOKIE = process.env.SESSION_COOKIE_NAME || "tl_sess";
+// Cookie/JWT setup - using centralized env config
+export const SESSION_COOKIE = SESSION_COOKIE_NAME;
 
-// 🚨 CRITICAL: Ensure SESSION_SECRET exists in production
-const SECRET = (() => {
-  const secret = process.env.SESSION_SECRET;
-  
-  if (!secret && process.env.NODE_ENV === "production") {
-    throw new Error(
-      "FATAL: SESSION_SECRET environment variable is required in production! " +
-      "Generate one with: openssl rand -base64 32"
-    );
-  }
-  
-  // Only use fallback in development
-  return secret || "dev_secret_min_32_chars_000000000000000";
-})();
-
+// Secret key for JWT signing
+// Note: env.ts already validates SESSION_SECRET exists in production
+const SECRET = SESSION_SECRET || (IS_DEV ? "dev_secret_min_32_chars_000000000000000" : "");
 const secretKey = new TextEncoder().encode(SECRET);
 
 export const COOKIE_BASE = {
   httpOnly: true as const,
   sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
+  secure: IS_PRODUCTION,
   path: "/" as const,
 };
 

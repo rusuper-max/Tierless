@@ -18,6 +18,7 @@ export type Calc = {
     views7d?: number;
     avgRating?: number;
     ratingsCount?: number;
+    isExample?: boolean; // For examples/showcase filtering
   };
   template?: string;
   config?: any;
@@ -41,24 +42,30 @@ export async function ensureTable() {
       updated_at  BIGINT NOT NULL,
       avg_rating  DECIMAL(3,2) DEFAULT 0,
       ratings_count INTEGER DEFAULT 0,
+      is_example  BOOLEAN DEFAULT FALSE,
       PRIMARY KEY (user_id, slug)
     );
   `);
 
+  // Migrations for new columns
   try {
     await pool.query(`
       ALTER TABLE calculators ADD COLUMN IF NOT EXISTS avg_rating DECIMAL(3,2) DEFAULT 0;
       ALTER TABLE calculators ADD COLUMN IF NOT EXISTS ratings_count INTEGER DEFAULT 0;
+      ALTER TABLE calculators ADD COLUMN IF NOT EXISTS is_example BOOLEAN DEFAULT FALSE;
     `);
   } catch (e) {
     console.warn("Migration add columns failed (ignoring):", e);
   }
 
+  // Indexes for efficient queries
   try {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_calculators_user ON calculators(user_id);
       CREATE INDEX IF NOT EXISTS idx_calculators_user_published ON calculators(user_id, published);
       CREATE INDEX IF NOT EXISTS idx_calculators_rating ON calculators(avg_rating DESC, ratings_count DESC);
+      CREATE INDEX IF NOT EXISTS idx_calculators_user_example ON calculators(user_id, is_example);
+      CREATE INDEX IF NOT EXISTS idx_calculators_example_published ON calculators(is_example, published) WHERE is_example = TRUE;
     `);
   } catch (e) {
     console.warn("Index creation failed (ignoring):", e);
@@ -78,6 +85,7 @@ function rowToCalc(r: any): Calc {
       views7d: typeof (r.views7d ?? r.views7d) === "number" ? (r.views7d ?? r.views7d) : 0,
       avgRating: Number(r.avg_rating || 0),
       ratingsCount: Number(r.ratings_count || 0),
+      isExample: !!r.is_example,
     },
     template: r.template ?? undefined,
     config: r.config ?? {},
@@ -517,35 +525,49 @@ export async function findMiniInAllUsers(slug: string): Promise<Calc | undefined
 
 // =============== Examples listing =================
 
+/**
+ * List examples for the showcase page.
+ * Uses the is_example column for efficient indexed query.
+ */
 export async function listExamples(limit = 50): Promise<Calc[]> {
   await ensureTable();
-  // Fetch published pages that are marked as examples (we need to check config/meta in JSONB)
-  // OR we can rely on a new column if we want to be efficient.
-  // For now, let's assume we filter by `config->meta->listInExamples` or similar if we had it in JSONB.
-  // BUT, `config` column is JSONB. `meta` is NOT in `config` column in DB usually?
-  // `rowToCalc` constructs meta from `r.name`, `r.slug` etc.
-  // `config` column stores the rest.
-  // Wait, `create` inserts `config` as `'{}'`.
-  // `fullStore` has the full JSON.
-  // If we want to filter by `listInExamples`, we should probably index it or extract it.
-  // OR, since we don't have many examples yet, we can fetch all published and filter in memory (not scalable).
-  // Better: Add `is_example` boolean column to `calculators` table?
-  // The user request says: "U admin/editoru dodaj preklopnike: “Allow rating” i “Show in Examples”."
-  // So it's a property of the calculator.
-  // Let's add `is_example` column to `calculators` table for efficient querying.
-
-  // Adding `is_example` column to ensureTable above would be good.
-  // I'll add it now.
-
+  
+  // Use the indexed is_example column for fast filtering
   const { rows } = await pool.query(
     `SELECT * FROM calculators 
-     WHERE published = TRUE AND (config->'meta'->>'listInExamples')::boolean = TRUE
+     WHERE published = TRUE AND is_example = TRUE
      ORDER BY avg_rating DESC, ratings_count DESC, updated_at DESC
      LIMIT $1`,
     [limit]
   );
 
-  // Also fetch seed examples if needed (hardcoded IDs or tag isSeedExample)
-  // For now just return what we find.
   return rows.map(rowToCalc);
+}
+
+/**
+ * List user's calculators excluding examples.
+ * For dashboard - user doesn't need to see demo content.
+ */
+export async function listUserCalcs(userId: string, excludeExamples = true): Promise<Calc[]> {
+  await ensureTable();
+  
+  const query = excludeExamples
+    ? `SELECT * FROM calculators WHERE user_id = $1 AND is_example = FALSE ORDER BY "order" ASC, created_at ASC`
+    : `SELECT * FROM calculators WHERE user_id = $1 ORDER BY "order" ASC, created_at ASC`;
+  
+  const { rows } = await pool.query(query, [userId]);
+  return rows.map(rowToCalc);
+}
+
+/**
+ * Set is_example flag for a calculator.
+ */
+export async function setIsExample(userId: string, slug: string, isExample: boolean): Promise<boolean> {
+  await ensureTable();
+  const now = Date.now();
+  const res = await pool.query(
+    `UPDATE calculators SET is_example = $1, updated_at = $2 WHERE user_id = $3 AND slug = $4`,
+    [isExample, now, userId, slug]
+  );
+  return (res.rowCount ?? 0) > 0;
 }

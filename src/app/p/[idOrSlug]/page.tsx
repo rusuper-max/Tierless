@@ -1,10 +1,13 @@
 // src/app/p/[idOrSlug]/page.tsx
 import { notFound, redirect } from "next/navigation";
+import type { Metadata } from "next";
 import type { CalcJson } from "@/hooks/useEditorStore";
 import PublicPageClient from "./PublicPageClient";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+
+// ISR: Revalidate every 60 seconds, or on-demand via revalidatePath()
+export const revalidate = 60;
 
 /* ---------------- helpers ---------------- */
 
@@ -33,12 +36,24 @@ const ENV_BASE =
   process.env.NEXT_PUBLIC_BASE_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
 
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "tierless.net";
+
+function getBaseUrl() {
+  if (ENV_BASE) return ENV_BASE;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return `https://${ROOT_DOMAIN}`;
+}
+
 function apiUrl(segment: string) {
   if (!segment.startsWith("/")) segment = `/${segment}`;
-  if (ENV_BASE) return new URL(segment, ENV_BASE).toString();
+  const base = getBaseUrl();
+  if (base) return new URL(segment, base).toString();
   return segment;
 }
 
+/**
+ * Fetch public calculator data with ISR caching
+ */
 async function loadPublic(id: string, slug: string) {
   const attempts: string[] = [];
   if (id) {
@@ -48,32 +63,123 @@ async function loadPublic(id: string, slug: string) {
     attempts.push(slug);
   }
   for (const key of attempts) {
-    const r = await fetch(apiUrl(`/api/public/${encodeURIComponent(key)}?v=${Date.now()}`), {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-    });
-    if (r.ok) {
-      const j = await r.json();
-      return j?.data ?? j ?? null;
+    try {
+      const r = await fetch(apiUrl(`/api/public/${encodeURIComponent(key)}`), {
+        next: { revalidate: 60 }, // ISR: cache for 60 seconds
+        headers: { Accept: "application/json" },
+      });
+      if (r.ok) {
+        const j = await r.json();
+        return j?.data ?? j ?? null;
+      }
+    } catch {
+      // Continue to next attempt
     }
   }
   return null;
 }
 
+/* ---------------- SEO Metadata ---------------- */
+
+type PageProps = {
+  params: Promise<{ idOrSlug: string }> | { idOrSlug: string };
+};
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const p = await Promise.resolve(params);
+  const idOrSlug = typeof p === "object" && "idOrSlug" in p ? p.idOrSlug : "";
+  
+  if (!idOrSlug) {
+    return {
+      title: "Page Not Found | Tierless",
+      description: "The requested page could not be found.",
+    };
+  }
+
+  const { id, slug } = parseKey(idOrSlug);
+  const calc = await loadPublic(id, slug || idOrSlug);
+  
+  if (!calc) {
+    return {
+      title: "Page Not Found | Tierless",
+      description: "The requested page could not be found.",
+    };
+  }
+
+  const meta = calc.meta || {};
+  const business = meta.business || {};
+  
+  // Extract metadata from calculator
+  const title = meta.simpleTitle || meta.name || "Untitled Page";
+  const description = business.description || meta.description || `View ${title} on Tierless`;
+  const coverImage = business.coverUrl || meta.simpleCoverImage || null;
+  
+  const baseUrl = getBaseUrl();
+  const pageUrl = `${baseUrl}/p/${idOrSlug}`;
+  
+  // Build OpenGraph metadata
+  const openGraph: Metadata["openGraph"] = {
+    title,
+    description,
+    url: pageUrl,
+    siteName: "Tierless",
+    type: "website",
+    locale: "en_US",
+  };
+
+  // Add cover image if available
+  if (coverImage) {
+    openGraph.images = [
+      {
+        url: coverImage,
+        width: 1200,
+        height: 630,
+        alt: title,
+      },
+    ];
+  }
+
+  // Build Twitter Card metadata
+  const twitter: Metadata["twitter"] = coverImage
+    ? {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [coverImage],
+      }
+    : {
+        card: "summary",
+        title,
+        description,
+      };
+
+  return {
+    title: `${title} | Tierless`,
+    description,
+    openGraph,
+    twitter,
+    alternates: {
+      canonical: pageUrl,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
+}
+
 /* ---------------- page ---------------- */
 
-export default async function PublicPage(
-  props: { params: { idOrSlug: string } } | { params: Promise<{ idOrSlug: string }> }
-) {
-  const p: any = (props as any).params;
-  const { idOrSlug } =
-    typeof p?.then === "function" ? await (p as Promise<{ idOrSlug: string }>) : (p as { idOrSlug: string });
+export default async function PublicPage({ params }: PageProps) {
+  const p = await Promise.resolve(params);
+  const idOrSlug = typeof p === "object" && "idOrSlug" in p ? p.idOrSlug : "";
 
   if (!idOrSlug || typeof idOrSlug !== "string") notFound();
 
   const { id, slug } = parseKey(idOrSlug);
   const calc = await loadPublic(id, slug || idOrSlug);
   if (!calc) notFound();
+  
   const isPublished =
     typeof calc?.meta?.published === "boolean"
       ? calc.meta.published

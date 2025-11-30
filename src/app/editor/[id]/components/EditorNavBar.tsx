@@ -20,6 +20,8 @@ import {
   Eye,
   HelpCircle,
   Sparkles,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import { useMemo, useRef, useState, useEffect } from "react";
 import { t } from "@/i18n";
@@ -176,6 +178,11 @@ export default function EditorNavBar({
   onPreview,
   onStartWalkthrough,
   hasDismissedIntro = false,
+  // Undo/Redo props
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
 }: {
   calcName?: string;
   showBack?: boolean;
@@ -191,6 +198,11 @@ export default function EditorNavBar({
   onPreview?: () => void;
   onStartWalkthrough?: () => void;
   hasDismissedIntro?: boolean;
+  // Undo/Redo props
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }) {
   const [qrOpen, setQrOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -366,6 +378,42 @@ export default function EditorNavBar({
                 )}
               </div>
             </div>
+
+            {/* Undo/Redo Buttons */}
+            {(onUndo || onRedo) && (
+              <div className="hidden sm:flex items-center gap-0.5 border-r border-[var(--border)] pr-2 mr-1">
+                <button
+                  onClick={onUndo}
+                  disabled={!canUndo}
+                  className={`
+                    flex items-center justify-center w-7 h-7 rounded-md transition-all
+                    ${canUndo 
+                      ? "text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/10 dark:hover:bg-white/5 cursor-pointer" 
+                      : "text-[var(--muted)]/30 cursor-not-allowed"
+                    }
+                  `}
+                  title={`${t("Undo")} (Ctrl+Z)`}
+                  data-help="Undo the last change. Keyboard shortcut: Ctrl+Z (Cmd+Z on Mac)"
+                >
+                  <Undo2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={onRedo}
+                  disabled={!canRedo}
+                  className={`
+                    flex items-center justify-center w-7 h-7 rounded-md transition-all
+                    ${canRedo 
+                      ? "text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/10 dark:hover:bg-white/5 cursor-pointer" 
+                      : "text-[var(--muted)]/30 cursor-not-allowed"
+                    }
+                  `}
+                  title={`${t("Redo")} (Ctrl+Shift+Z)`}
+                  data-help="Redo a previously undone change. Keyboard shortcut: Ctrl+Shift+Z (Cmd+Shift+Z on Mac)"
+                >
+                  <Redo2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
             {/* Save Button (enhanced when dirty) */}
             <button
