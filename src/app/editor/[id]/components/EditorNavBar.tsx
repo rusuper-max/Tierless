@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ChevronRight,
+  ChevronDown,
   Save as SaveIcon,
   Check,
   Globe,
@@ -17,6 +18,8 @@ import {
   Loader2,
   Zap,
   Eye,
+  HelpCircle,
+  Sparkles,
 } from "lucide-react";
 import { useMemo, useRef, useState, useEffect } from "react";
 import { t } from "@/i18n";
@@ -171,6 +174,8 @@ export default function EditorNavBar({
   onGuideClick,
   onTogglePublish,
   onPreview,
+  onStartWalkthrough,
+  hasDismissedIntro = false,
 }: {
   calcName?: string;
   showBack?: boolean;
@@ -184,24 +189,68 @@ export default function EditorNavBar({
   onGuideClick?: () => void;
   onTogglePublish?: () => void;
   onPreview?: () => void;
+  onStartWalkthrough?: () => void;
+  hasDismissedIntro?: boolean;
 }) {
   const [qrOpen, setQrOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hasClickedGuide, setHasClickedGuide] = useState(true); // default true to avoid flash
+  const [guideMenuOpen, setGuideMenuOpen] = useState(false);
   const { plan } = useAccount();
+  const guideMenuRef = useClickAway<HTMLDivElement>(guideMenuOpen, () => setGuideMenuOpen(false));
 
   // Check if user has clicked Guide before
   useEffect(() => {
-    const clicked = localStorage.getItem('guide_clicked');
-    setHasClickedGuide(clicked === 'true');
+    try {
+      const clicked = localStorage.getItem('guide_clicked');
+      setHasClickedGuide(clicked === 'true');
+    } catch {
+      setHasClickedGuide(true);
+    }
   }, []);
 
-  const handleGuideClick = () => {
+  useEffect(() => {
+    if (!guideMenuOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setGuideMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [guideMenuOpen]);
+
+  useEffect(() => {
+    if (!hasDismissedIntro) {
+      setGuideMenuOpen(false);
+    }
+  }, [hasDismissedIntro]);
+
+  const canShowGuideMenu = hasDismissedIntro && Boolean(onStartWalkthrough);
+
+  const markGuideClicked = () => {
     if (!hasClickedGuide) {
       localStorage.setItem('guide_clicked', 'true');
       setHasClickedGuide(true);
     }
+  };
+
+  const handleGuideButtonPress = () => {
+    markGuideClicked();
+    if (canShowGuideMenu) {
+      setGuideMenuOpen((prev) => !prev);
+      return;
+    }
     onGuideClick?.();
+  };
+
+  const handleGuideMode = () => {
+    markGuideClicked();
+    setGuideMenuOpen(false);
+    onGuideClick?.();
+  };
+
+  const handleWalkthroughStart = () => {
+    setGuideMenuOpen(false);
+    onStartWalkthrough?.();
   };
 
   const fullPublicUrl = useMemo(() => {
@@ -273,32 +322,56 @@ export default function EditorNavBar({
               <PlanBadge plan={(plan as PlanId) || "free"} />
 
               {/* Theme Toggle (scaled down) */}
-              <div className="scale-90" data-help="Switch between light and dark mode to preview how your calculator looks in different themes.">
+              <div className="scale-90" data-tour="theme-toggle" data-help="Switch between light and dark mode to preview how your calculator looks in different themes.">
                 <ThemeToggle />
               </div>
 
               {/* Guide Button (compact with pulsing animation) */}
-              <button
-                onClick={handleGuideClick}
-                className={`
-                  flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer relative
-                  ${!hasClickedGuide
-                    ? 'text-white bg-gradient-to-r from-[#4F46E5] to-[#22D3EE] shadow-lg animate-pulse-glow'
-                    : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/5 dark:hover:bg-white/5'
-                  }
-                `}
-                title={t("Quick tour")}
-                data-help="Activate Help Mode to learn what each element does. Click on any button or field to see an explanation."
-              >
-                <Zap className="w-3.5 h-3.5" />
-                <span>{t("Guide")}</span>
-              </button>
+              <div className="relative" ref={guideMenuRef}>
+                <button
+                  onClick={handleGuideButtonPress}
+                  data-tour="guide-button"
+                  className={`
+                    flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer relative
+                    ${!hasClickedGuide
+                      ? 'text-white bg-gradient-to-r from-[#4F46E5] to-[#22D3EE] shadow-lg animate-pulse-glow'
+                      : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/5 dark:hover:bg-white/5'
+                    }
+                  `}
+                  title={t("Quick tour")}
+                  data-help="Activate Help Mode to learn what each element does. Click on any button or field to see an explanation."
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>{t("Guide")}</span>
+                  {canShowGuideMenu && <ChevronDown className="w-3 h-3 opacity-70" />}
+                </button>
+
+                {canShowGuideMenu && guideMenuOpen && (
+                  <div className="absolute right-0 top-full z-[80] mt-2 w-48 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl py-1 overflow-hidden">
+                    <button
+                      onClick={handleGuideMode}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--text)] hover:bg-white/5"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                      {t("Guide mode")}
+                    </button>
+                    <button
+                      onClick={handleWalkthroughStart}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--text)] hover:bg-white/5"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      {t("Start walkthrough")}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Save Button (enhanced when dirty) */}
             <button
               onClick={onSave}
               disabled={isSaving}
+              data-tour="save-button"
               className={`
                 relative flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 cursor-pointer
                 ${isDirty
@@ -324,6 +397,7 @@ export default function EditorNavBar({
             {onPreview && (
               <button
                 onClick={onPreview}
+                data-tour="preview-button"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/5 dark:hover:bg-white/5 transition-all cursor-pointer"
                 title={t("Preview")}
                 data-help="Preview how your page looks to visitors. See it exactly as they will!"
@@ -338,6 +412,7 @@ export default function EditorNavBar({
               {/* Main Publish/Draft button */}
               <button
                 onClick={onTogglePublish}
+                data-tour="publish-button"
                 className={`
                   flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all
                   ${isPublished
@@ -470,6 +545,30 @@ export default function EditorNavBar({
                   </button>
 
                   <div className="h-px bg-[var(--border)] my-1" />
+
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-[var(--text)] hover:bg-white/5 text-left"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleGuideMode();
+                    }}
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                    {t("Guide mode")}
+                  </button>
+
+                  {canShowGuideMenu && (
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-[var(--text)] hover:bg-white/5 text-left"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        onStartWalkthrough?.();
+                      }}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {t("Start walkthrough")}
+                    </button>
+                  )}
 
                   <div className="px-4 py-2">
                     <ThemeToggle />

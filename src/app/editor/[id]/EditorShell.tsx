@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState, useRef } from "react";
-import { ChevronLeft, Eye, X, XCircle } from "lucide-react";
+import { ChevronLeft, Eye, Sparkles, X, XCircle } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type CalcJson, type Mode } from "@/hooks/useEditorStore";
 import { HelpModeProvider, useHelpMode } from "@/hooks/useHelpMode";
@@ -10,6 +10,8 @@ import EditorNavBar from "./components/EditorNavBar";
 import OnboardingIntro from "@/components/editor/OnboardingIntro";
 import HelpModeIntro from "@/components/editor/HelpModeIntro";
 import HelpTooltip from "@/components/editor/HelpTooltip";
+import GuidedTour from "@/components/editor/GuidedTour";
+import { editorTourSteps, finalTourMessage } from "@/components/editor/tourSteps";
 
 // Shared renderer
 const PublicRenderer = dynamic(() => import("@/components/PublicRenderer"), {
@@ -44,6 +46,9 @@ function EditorContent({ slug, initialCalc }: Props) {
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+  const [showFinalMessage, setShowFinalMessage] = useState(false);
+  const [pendingHelpIntro, setPendingHelpIntro] = useState(false);
 
   // Help Mode state
   const [showIntro, setShowIntro] = useState(false);
@@ -52,10 +57,64 @@ function EditorContent({ slug, initialCalc }: Props) {
   // Check if user has been onboarded
   useEffect(() => {
     const hasOnboarded = localStorage.getItem('editor_onboarded');
-    if (!hasOnboarded && !inSetup) {
-      setShowOnboarding(true);
+    if (!hasOnboarded) {
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => {
+        setShowOnboarding(true);
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, []);
+
+  const startGuidedTour = () => {
+    try {
+      localStorage.setItem('editor_onboarded', 'true');
+    } catch {
+      // ignore
+    }
+    if (tourStartTimerRef.current) {
+      clearTimeout(tourStartTimerRef.current);
+      tourStartTimerRef.current = null;
+    }
+    disableHelpMode();
+    setHelpTooltip(null);
+    setShowIntro(false);
+    setShowTour(false);
+    setShowFinalMessage(false);
+    setPendingHelpIntro(false);
+    setShowOnboarding(false);
+    tourStartTimerRef.current = setTimeout(() => {
+      setShowTour(true);
+    }, 200);
+  };
+
+  const handleTourComplete = () => {
+    if (tourStartTimerRef.current) {
+      clearTimeout(tourStartTimerRef.current);
+      tourStartTimerRef.current = null;
+    }
+    setShowTour(false);
+    setShowFinalMessage(true);
+    setPendingHelpIntro(!hasSeenIntro);
+  };
+
+  const handleTourSkip = () => {
+    if (tourStartTimerRef.current) {
+      clearTimeout(tourStartTimerRef.current);
+      tourStartTimerRef.current = null;
+    }
+    setShowTour(false);
+    setPendingHelpIntro(false);
+    setShowFinalMessage(true);
+  };
+
+  const handleFinalMessageClose = () => {
+    setShowFinalMessage(false);
+    if (pendingHelpIntro && !hasSeenIntro) {
+      setShowIntro(true);
+    }
+    setPendingHelpIntro(false);
+  };
 
   /* ---------------- Init calc ---------------- */
   useEffect(() => {
@@ -108,6 +167,7 @@ function EditorContent({ slug, initialCalc }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastAutosavedStateRef = useRef<string | null>(null);
+  const tourStartTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const saveNow = async () => {
     if (!calc) return;
@@ -368,6 +428,14 @@ function EditorContent({ slug, initialCalc }: Props) {
     return () => document.removeEventListener("keydown", handleEsc);
   }, [isHelpMode, disableHelpMode]);
 
+  useEffect(() => {
+    return () => {
+      if (tourStartTimerRef.current) {
+        clearTimeout(tourStartTimerRef.current);
+      }
+    };
+  }, []);
+
   return (
     <main className={`tl-editor min-h-screen ${isHelpMode ? "help-mode-active" : ""}`}>
       {toast && (
@@ -376,14 +444,18 @@ function EditorContent({ slug, initialCalc }: Props) {
         </div>
       )}
 
+      {showTour && (
+        <GuidedTour
+          steps={editorTourSteps}
+          onComplete={handleTourComplete}
+          onSkip={handleTourSkip}
+        />
+      )}
+
       {/* Onboarding Modal */}
       {showOnboarding && (
         <OnboardingIntro
-          onStartTour={() => {
-            localStorage.setItem('editor_onboarded', 'true');
-            setShowOnboarding(false);
-            setShowIntro(true);
-          }}
+          onStartTour={startGuidedTour}
           onSkip={() => {
             localStorage.setItem('editor_onboarded', 'true');
             setShowOnboarding(false);
@@ -395,15 +467,54 @@ function EditorContent({ slug, initialCalc }: Props) {
       {showIntro && !hasSeenIntro && (
         <HelpModeIntro
           onClose={() => {
+            // X button - just close without activating
             setShowIntro(false);
-            enableHelpMode(); // Activate Help Mode after closing intro
           }}
           onDontShowAgain={() => {
+            // Don't show again - mark as seen and close without activating
             markIntroAsSeen();
             setShowIntro(false);
-            enableHelpMode(); // Activate Help Mode after closing intro
           }}
+          onActivate={() => {
+            // Got it button - activate help mode
+            enableHelpMode();
+          }}
+          onStartTour={startGuidedTour}
         />
+      )}
+
+      {showFinalMessage && (
+        <div className="fixed inset-0 z-[205] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl relative overflow-hidden">
+            <button
+              onClick={handleFinalMessageClose}
+              type="button"
+              className="absolute top-4 right-4 p-2 rounded-full text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex flex-col items-center text-center gap-4 pt-4 pb-6 px-2">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: BRAND_GRADIENT }}>
+                <Sparkles className="w-7 h-7 text-white" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-[var(--text)]">{finalTourMessage.title}</h3>
+                <p className="text-sm text-[var(--muted)]">{finalTourMessage.content}</p>
+                <p className="text-xs text-[var(--muted)]/80">
+                  {t("Activate the Guide button anytime to enter Help Mode and click on elements for instant explanations.")}
+                </p>
+              </div>
+              <button
+                onClick={handleFinalMessageClose}
+                type="button"
+                className="w-full py-3 rounded-xl text-sm font-bold text-white shadow-lg hover:scale-105 active:scale-95 transition-all"
+                style={{ background: BRAND_GRADIENT }}
+              >
+                {pendingHelpIntro && !hasSeenIntro ? t("Show Guide Mode") : t("Got it")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Help Mode Tooltip */}
@@ -424,8 +535,6 @@ function EditorContent({ slug, initialCalc }: Props) {
         publicHref={publicHref}
         isPublished={isPublished}
         editorMode={uiMode}
-        onTogglePublish={handleTogglePublish}
-        onPreview={() => setPreviewOpen(true)}
         onGuideClick={() => {
           // If seen intro before, toggle Help Mode directly
           // Otherwise show intro first
@@ -435,6 +544,10 @@ function EditorContent({ slug, initialCalc }: Props) {
             setShowIntro(true);
           }
         }}
+        onTogglePublish={handleTogglePublish}
+        onPreview={() => setPreviewOpen(true)}
+        onStartWalkthrough={startGuidedTour}
+        hasDismissedIntro={hasSeenIntro}
       />
 
       <div className="px-4 lg:px-8 py-5">
@@ -514,11 +627,11 @@ function EditorContent({ slug, initialCalc }: Props) {
         </div>
       )}
 
-      {/* Mobile Exit Button for Guide Mode */}
+      {/* Exit Button for Guide Mode */}
       {isHelpMode && (
         <button
           onClick={disableHelpMode}
-          className="md:hidden fixed bottom-6 right-6 z-[150] flex items-center gap-2 px-4 py-3 rounded-full text-sm font-bold text-white shadow-2xl hover:scale-105 active:scale-95 transition-all animate-in slide-in-from-bottom-4 duration-300"
+          className="fixed bottom-6 right-6 z-[150] flex items-center gap-2 px-4 py-3 rounded-full text-sm font-bold text-white shadow-2xl hover:scale-105 active:scale-95 transition-all animate-in slide-in-from-bottom-4 duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/60"
           style={{ background: BRAND_GRADIENT }}
         >
           <XCircle className="w-4 h-4" />

@@ -991,6 +991,7 @@ export default function SimpleListPanel() {
                     }
                     addItem(t("New item"), 0);
                   }}
+                  data-tour="add-item"
                   className={`h-9 cursor-default flex items-center gap-2 px-4 text-xs font-bold rounded-lg shadow-sm transition-all shrink-0 ${items.length >= maxItems
                     ? "bg-[var(--surface)] text-[var(--muted)] opacity-50 cursor-not-allowed"
                     : "bg-[#22D3EE] text-black hover:bg-[#22D3EE]/90 hover:shadow-md"
@@ -1745,7 +1746,7 @@ export default function SimpleListPanel() {
         </div>
 
         {/* Navigation */}
-        <div className="flex border-b border-transparent">
+        <div className="flex border-b border-transparent" data-tour="editor-tabs">
           {(["content", "business", "design", "settings"] as const).map(tKey => (
             <TabButton
               key={tKey}

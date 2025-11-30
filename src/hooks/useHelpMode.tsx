@@ -11,6 +11,7 @@ type HelpModeContextType = {
   disableHelpMode: () => void;
   toggleHelpMode: () => void;
   markIntroAsSeen: () => void;
+  resetIntro: () => void;
 };
 
 const HelpModeContext = createContext<HelpModeContextType | null>(null);
@@ -43,6 +44,15 @@ export function HelpModeProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const resetIntro = () => {
+    setHasSeenIntro(false);
+    try {
+      localStorage.removeItem(INTRO_SEEN_KEY);
+    } catch {
+      // ignore
+    }
+  };
+
   const value = {
     isActive,
     hasSeenIntro,
@@ -50,6 +60,7 @@ export function HelpModeProvider({ children }: { children: ReactNode }) {
     disableHelpMode,
     toggleHelpMode,
     markIntroAsSeen,
+    resetIntro,
   };
 
   return (
