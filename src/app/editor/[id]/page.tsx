@@ -2,6 +2,8 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/auth";
 import ClientBoundary from "./ClientBoundary";
 
 /**
@@ -23,6 +25,12 @@ export default async function EditorPage({
         Invalid or missing slug in URL.
       </div>
     );
+  }
+
+  // Protected route: if user is not authenticated, redirect to signin
+  const user = await getSessionUser();
+  if (!user) {
+    redirect(`/signin?next=/editor/${encodeURIComponent(id)}`);
   }
 
   // ClientBoundary performs the fetch in the browser (cookies/auth intact).

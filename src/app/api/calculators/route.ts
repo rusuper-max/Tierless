@@ -35,9 +35,8 @@ async function getPlanForUser(userId: string): Promise<PlanId> {
   return (isPlan ? raw : "free") as PlanId;
 }
 
-/* -------- ID helpers (isti princip kao u [slug]/route) ------------------ */
 function genId(): string {
-  return randomBytes(9).toString("base64url"); // ~12 chars, URL-safe
+  return randomBytes(9).toString("base64url");
 }
 async function ensureIdOnFull(userId: string, slug: string, full: any) {
   if (full?.meta?.id) return full;
@@ -46,13 +45,14 @@ async function ensureIdOnFull(userId: string, slug: string, full: any) {
   return withId;
 }
 
-/* ======================= GET (list) ======================= */
+// ======================= GET (list) =======================
 export async function GET(req: Request) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) {
+    // Za smoke test i sigurnost: zaštićen endpoint vraća 401 kada nema sesije
     return NextResponse.json(
-      { rows: [], notice: "Not authenticated" },
-      { headers: { "Cache-Control": "no-store" } }
+      { error: "Not authenticated" },
+      { status: 401 },
     );
   }
 
@@ -65,32 +65,26 @@ export async function GET(req: Request) {
 
   const rows = await calcsStore.list(userId);
 
-  // 🚀 PERFORMANCE FIX: Process all rows in parallel instead of sequential loop
-  // This reduces N * latency to just 1 * latency
   const { calcFromMetaConfig } = await import("@/lib/calc-init");
-  
+
   const enriched = await Promise.all(
     rows.map(async (r) => {
       const slug = r?.meta?.slug;
       if (!slug) return r;
-      
+
       try {
         let full = await fullStore.getFull(userId, slug);
-        
-        // If no full file exists, create from mini record
+
         if (!full) {
           full = calcFromMetaConfig(r);
         }
-        
-        // Ensure meta.id exists
+
         if (!full?.meta?.id) {
           full = await ensureIdOnFull(userId, slug, full);
         }
-        
-        // Return enriched row with meta.id
+
         return { ...r, meta: { ...r.meta, id: full.meta.id } };
       } catch {
-        // On error, return original row
         return r;
       }
     })
@@ -110,7 +104,7 @@ export async function GET(req: Request) {
   );
 }
 
-/* ======================= POST (create / duplicate) ======================= */
+// ======================= POST (create / duplicate) =======================
 export async function POST(req: Request) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -151,7 +145,7 @@ export async function POST(req: Request) {
   );
 }
 
-/* ======================= DELETE (remove / move to trash) ======================= */
+// ======================= DELETE (remove / move to trash) =======================
 export async function DELETE(req: Request) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) {
@@ -170,7 +164,6 @@ export async function DELETE(req: Request) {
 
   let slugs: string[] = [];
 
-  // Pokušaj da podržiš više formata koje frontend može da pošalje
   if (body) {
     if (Array.isArray(body.ids)) {
       slugs = body.ids.map((x: any) => String(x));
@@ -194,33 +187,23 @@ export async function DELETE(req: Request) {
 
   for (const slug of slugs) {
     try {
-      // 1) Učitaj mini red pre brisanja
       const row = await calcsStore.get(userId, slug);
+      await calcsStore.remove(userId, slug);
 
-      // 2) Obriši iz active tabele
-      const ok = await calcsStore.remove(userId, slug);
-      if (!ok) continue;
-
-      removed++;
-
-      // 3) Ako imamo row – gurni u Trash (soft delete)
       if (row) {
-        try {
-          await trash.push(userId, row);
-        } catch (e) {
-          console.error("trash.push failed for", slug, e);
-        }
+        await trash.addToTrash(userId, {
+          type: "calc",
+          slug,
+          name: row.meta?.name || slug,
+          deletedAt: new Date().toISOString(),
+        });
       }
 
-      // 4) Pokušaj da obrišeš i FULL verziju iz fs-a (ignoriši greške)
-      await fullStore.deleteFull(userId, slug).catch(() => {});
+      removed++;
     } catch (e) {
-      console.error("DELETE /api/calculators failed:", { userId, slug, error: e });
+      console.error("Failed to delete calc", slug, e);
     }
   }
 
-  return NextResponse.json(
-    { ok: true, removed },
-    { headers: { "Cache-Control": "no-store" } }
-  );
+  return NextResponse.json({ ok: true, removed });
 }

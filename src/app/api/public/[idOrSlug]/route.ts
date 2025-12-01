@@ -9,12 +9,11 @@ function jsonNoCache(data: any, status = 200) {
   const res = NextResponse.json(data, { status });
   res.headers.set(
     "cache-control",
-    "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+    "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
   );
   return res;
 }
 
-/* ---------------- smarter id/slug parse ---------------- */
 const reB64Url = /^[A-Za-z0-9_-]+$/;
 const PUBLIC_ID_LENGTH = 12;
 
@@ -36,23 +35,16 @@ function parseIdOrSlug(key: string): { id: string; slug: string } {
   return { id: "", slug: key };
 }
 
-async function extractKey(
-  req: Request,
-  ctx?: {
-    params?:
-    | { idOrSlug?: string; slug?: string }
-    | Promise<{ idOrSlug?: string; slug?: string }>;
-  }
-): Promise<string> {
-  let fromCtx: string | undefined;
+async function extractKey(req: Request, ctx?: { params?: { idOrSlug?: string } | Promise<{ idOrSlug?: string }> }): Promise<string> {
   try {
-    const p = (ctx as any)?.params;
+    const p = ctx?.params as any;
     const got = typeof p?.then === "function" ? await p : p;
-    fromCtx = got?.idOrSlug ?? got?.slug;
-  } catch { }
-  if (fromCtx && fromCtx !== "undefined" && fromCtx !== "null") {
-    return decodeURIComponent(String(fromCtx));
-  }
+    const fromCtx = got?.idOrSlug;
+    if (fromCtx && fromCtx !== "undefined" && fromCtx !== "null") {
+      return decodeURIComponent(String(fromCtx));
+    }
+  } catch {}
+
   try {
     const url = new URL(req.url);
     const parts = url.pathname.split("/").filter(Boolean);
@@ -60,7 +52,8 @@ async function extractKey(
     if (fromPath && fromPath !== "public") {
       return decodeURIComponent(fromPath);
     }
-  } catch { }
+  } catch {}
+
   return "";
 }
 
@@ -70,10 +63,7 @@ function isPublished(meta: any): boolean {
   return false;
 }
 
-export async function GET(
-  req: Request,
-  ctx: { params?: { idOrSlug?: string } }
-) {
+export async function GET(req: Request, ctx: { params?: { idOrSlug?: string } }) {
   const key = await extractKey(req, ctx);
   if (!key || key === "public") {
     return jsonNoCache({ ok: false, error: "bad_key" }, 400);
@@ -85,22 +75,22 @@ export async function GET(
 
   let calc: any | undefined;
 
-  if (owner && slug) {
-    try {
+  try {
+    if (owner && slug) {
       calc = await fullStore.getFull(owner, slug);
-    } catch {
-      calc = undefined;
     }
-  }
-  if (!calc && id) {
-    calc = await fullStore.findFullById(id);
-  }
-  if (!calc && slug) {
-    calc = await fullStore.findFullBySlug(slug);
-  }
-  if (!calc && !slug && id) {
-    // fallback: treat the entire key as slug if id lookup failed
-    calc = await fullStore.findFullBySlug(key);
+    if (!calc && id) {
+      calc = await fullStore.findFullById(id);
+    }
+    if (!calc && slug) {
+      calc = await fullStore.findFullBySlug(slug);
+    }
+    if (!calc && !slug && id) {
+      calc = await fullStore.findFullBySlug(key);
+    }
+  } catch (e) {
+    console.error("[PUBLIC API] load error", e);
+    return jsonNoCache({ ok: false, error: "not_found" }, 404);
   }
 
   if (!calc) {
@@ -113,20 +103,10 @@ export async function GET(
     id: (calc.meta?.id as string) || id || "",
   };
 
-  // DEBUG: Log what we're serving
-  console.log("[PUBLIC API DEBUG] Serving page:", {
-    slug: meta.slug,
-    hasContact: !!meta.contact,
-    contact: meta.contact,
-    simpleAddCheckout: meta.simpleAddCheckout,
-    published: meta.published,
-  });
-
   if (!isPublished(meta)) {
     return jsonNoCache({ ok: false, error: "not_published" }, 404);
   }
 
-  // Success - allow caching (ISR)
   return NextResponse.json(
     {
       ok: true,
@@ -135,6 +115,6 @@ export async function GET(
         meta,
       },
     },
-    { status: 200 }
+    { status: 200 },
   );
 }

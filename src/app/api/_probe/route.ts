@@ -1,22 +1,24 @@
 // src/app/api/_probe/route.ts
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { sessionOptions } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * Ultra-simple health probe.
+ * Ne zavisi od sesije, baze ili spoljnjih servisa, tako da uvek radi
+ * i u CI i u produkciji.
+ */
 export async function GET() {
-  const c = cookies();
-  const anyC = c as unknown as { get?: (name: string) => { value?: string } | undefined };
-
   const shape = {
-    hasGet: typeof anyC.get === "function",
-    sessionCookieName: sessionOptions.cookieName,
-    cookieValue: typeof anyC.get === "function"
-      ? (anyC.get(sessionOptions.cookieName)?.value ?? null)
-      : null,
+    ok: true,
+    env: process.env.NODE_ENV ?? "unknown",
   };
 
-  return NextResponse.json(shape, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json(shape, {
+    status: 200,
+    headers: {
+      "Cache-Control": "no-store",
+    },
+  });
 }

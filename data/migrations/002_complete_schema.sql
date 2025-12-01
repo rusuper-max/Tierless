@@ -143,3 +143,4 @@ BEGIN
   RAISE NOTICE 'Migration 002: Complete Schema applied successfully';
 END $$;
 
+
