@@ -3,8 +3,11 @@ import { NextResponse } from "next/server";
 import * as fullStore from "@/lib/fullStore";
 
 export const runtime = "nodejs";
+
+// ISR - revalidate every 60 seconds
 export const revalidate = 60;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function jsonNoCache(data: any, status = 200) {
   const res = NextResponse.json(data, { status });
   res.headers.set(
@@ -37,6 +40,7 @@ function parseIdOrSlug(key: string): { id: string; slug: string } {
 
 async function extractKey(req: Request, ctx?: { params?: { idOrSlug?: string } | Promise<{ idOrSlug?: string }> }): Promise<string> {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const p = ctx?.params as any;
     const got = typeof p?.then === "function" ? await p : p;
     const fromCtx = got?.idOrSlug;
@@ -57,6 +61,7 @@ async function extractKey(req: Request, ctx?: { params?: { idOrSlug?: string } |
   return "";
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isPublished(meta: any): boolean {
   if (typeof meta?.published === "boolean") return meta.published;
   if (typeof meta?.online === "boolean") return meta.online;
@@ -73,24 +78,20 @@ export async function GET(req: Request, ctx: { params?: { idOrSlug?: string } })
   const url = new URL(req.url);
   const owner = url.searchParams.get("u") || "";
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let calc: any | undefined;
 
-  try {
-    if (owner && slug) {
-      calc = await fullStore.getFull(owner, slug);
-    }
-    if (!calc && id) {
-      calc = await fullStore.findFullById(id);
-    }
-    if (!calc && slug) {
-      calc = await fullStore.findFullBySlug(slug);
-    }
-    if (!calc && !slug && id) {
-      calc = await fullStore.findFullBySlug(key);
-    }
-  } catch (e) {
-    console.error("[PUBLIC API] load error", e);
-    return jsonNoCache({ ok: false, error: "not_found" }, 404);
+  if (owner && slug) {
+    calc = await fullStore.getFull(owner, slug);
+  }
+  if (!calc && id) {
+    calc = await fullStore.findFullById(id);
+  }
+  if (!calc && slug) {
+    calc = await fullStore.findFullBySlug(slug);
+  }
+  if (!calc && !slug && id) {
+    calc = await fullStore.findFullBySlug(key);
   }
 
   if (!calc) {
@@ -115,6 +116,6 @@ export async function GET(req: Request, ctx: { params?: { idOrSlug?: string } })
         meta,
       },
     },
-    { status: 200 },
+    { status: 200 }
   );
 }

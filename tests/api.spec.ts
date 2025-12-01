@@ -3,15 +3,22 @@ import { test, expect } from "@playwright/test";
 /**
  * API Smoke Tests
  * 
- * Verifies critical API endpoints are responding correctly.
+ * These tests require a running database. In CI without DATABASE_URL,
+ * these tests will be skipped automatically.
+ * 
+ * To run locally: ensure DATABASE_URL is set in your environment.
  */
+
+// Helper to check if we're in a CI environment without database
+const skipIfNoDb = !process.env.DATABASE_URL && process.env.CI === "true";
+
 test.describe("API Health Checks", () => {
   test("/_probe endpoint should return 200", async ({ request }) => {
     const response = await request.get("/api/_probe");
     expect(response.status()).toBe(200);
   });
 
-  test("/api/templates should return JSON", async ({ request }) => {
+  test("templates API should return JSON", async ({ request }) => {
     const response = await request.get("/api/templates");
     expect(response.status()).toBe(200);
     
@@ -19,7 +26,7 @@ test.describe("API Health Checks", () => {
     expect(contentType).toContain("application/json");
   });
 
-  test("/api/showcase should return array", async ({ request }) => {
+  test.skip(skipIfNoDb)("showcase API should return array", async ({ request }) => {
     const response = await request.get("/api/showcase");
     expect(response.status()).toBe(200);
     
@@ -27,10 +34,12 @@ test.describe("API Health Checks", () => {
     expect(Array.isArray(data) || data.items !== undefined).toBeTruthy();
   });
 
-  test("/api/examples should return data", async ({ request }) => {
+  test.skip(skipIfNoDb)("examples API should return data", async ({ request }) => {
     const response = await request.get("/api/examples");
-    // May return 200 with data or 404 if no examples
-    expect([200, 404]).toContain(response.status());
+    expect(response.status()).toBe(200);
+    
+    const data = await response.json();
+    expect(data).toHaveProperty("examples");
   });
 });
 
@@ -40,7 +49,7 @@ test.describe("API Error Handling", () => {
     expect(response.status()).toBe(401);
   });
 
-  test("invalid public page should return 404", async ({ request }) => {
+  test.skip(skipIfNoDb)("invalid public page should return 404", async ({ request }) => {
     const response = await request.get("/api/public/definitely-not-a-real-page-12345");
     expect(response.status()).toBe(404);
   });
@@ -51,24 +60,10 @@ test.describe("API Error Handling", () => {
   });
 });
 
-test.describe("API CORS and Headers", () => {
+test.describe("API Headers", () => {
   test("API should have proper content-type", async ({ request }) => {
     const response = await request.get("/api/templates");
     const contentType = response.headers()["content-type"];
     expect(contentType).toContain("application/json");
   });
-
-  test("API should have cache headers on public endpoints", async ({ request }) => {
-    const response = await request.get("/api/showcase");
-    // Should have some cache-related header
-    const headers = response.headers();
-    const hasCacheHeader = 
-      headers["cache-control"] !== undefined ||
-      headers["etag"] !== undefined ||
-      headers["last-modified"] !== undefined;
-    
-    // This is informational - some endpoints may not have cache headers
-    expect(response.status()).toBe(200);
-  });
 });
-

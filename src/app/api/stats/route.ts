@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { getPool } from "@/lib/db";
+import * as fullStore from "@/lib/fullStore";
 
 // Event types we track
 type EventType =
@@ -26,28 +27,8 @@ interface AnalyticsEvent {
   ts: number;
   sessionId: string;
   clientId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   props?: Record<string, any>;
-}
-
-// Ensure analytics table exists
-async function ensureAnalyticsTable() {
-  const pool = getPool();
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS analytics_events (
-      id SERIAL PRIMARY KEY,
-      event_type TEXT NOT NULL,
-      page_id TEXT NOT NULL,
-      ts BIGINT NOT NULL,
-      session_id TEXT NOT NULL,
-      client_id TEXT NOT NULL,
-      props JSONB,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    
-    CREATE INDEX IF NOT EXISTS idx_analytics_page_ts ON analytics_events(page_id, ts);
-    CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type);
-    CREATE INDEX IF NOT EXISTS idx_analytics_session ON analytics_events(session_id);
-  `);
 }
 
 // Fetch events for specified page IDs from PostgreSQL
@@ -64,6 +45,7 @@ async function getEventsForPages(pageIds: string[], days: number = 7): Promise<A
     [pageIds, cutoff]
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return rows.map((row: any) => ({
     type: row.event_type as EventType,
     pageId: row.page_id,
@@ -129,7 +111,7 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
   const perPage: Record<string, {
     views: number;
     uniqueVisitors: number;
-    engagedSessions: number; // ADDED: New metric
+    engagedSessions: number;
     interactions: number;
     checkouts: number;
     checkoutMethods: Record<string, number>;
@@ -166,7 +148,7 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
       views: pv.length,
       uniqueVisitors: new Set(pv.map(e => e.sessionId)).size,
       engagedSessions: pageEngagedSessions,
-      interactions: pageEngagement.length, // Raw interactions count
+      interactions: pageEngagement.length,
       checkouts: pc.length,
       checkoutMethods: pc.reduce((acc, e) => {
         const m = e.props?.method || "unknown";
@@ -212,8 +194,6 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
       dailyStats[day] = { views: 0, interactions: 0, checkouts: 0 };
     }
     if (e.type === "page_view") dailyStats[day].views++;
-    // Keep showing raw interaction count on graph, but maybe you want engaged sessions here too?
-    // For now, raw interactions is fine for a line chart "volume"
     if (engagementEvents.includes(e)) {
       dailyStats[day].interactions++;
     }
@@ -254,7 +234,6 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
       totalInteractions: engagementEvents.length,
       totalCheckouts: checkouts.length,
       conversionRate: uniqueSessions > 0 ? (checkouts.length / uniqueSessions * 100).toFixed(2) : "0",
-      // FIX: Interaction Rate is now Engaged Sessions / Total Sessions
       interactionRate: uniqueSessions > 0 ? (engagedSessions / uniqueSessions * 100).toFixed(2) : "0",
       engagedSessions,
       avgTimeOnPage: Math.round(avgTimeOnPage),
@@ -284,72 +263,66 @@ function aggregateEvents(events: AnalyticsEvent[], pageIds: string[]) {
 }
 
 export async function GET(req: NextRequest) {
-  try {
-    const user = await getSessionUser(req);
+  const user = await getSessionUser(req);
 
-    if (!user?.email) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const days = parseInt(searchParams.get("days") || "7");
-    const pageIdFilter = searchParams.get("pageId");
-
-    const userId = user.email;
-    const pool = getPool();
-
-    const { rows } = await pool.query(
-      `SELECT slug FROM calculators WHERE user_id = $1`,
-      [userId]
-    );
-
-    const userPages: { slug: string; id: string }[] = [];
-    const fullStore = await import("@/lib/fullStore");
-    for (const row of rows) {
-      const slug = row.slug;
-      try {
-        const full = await fullStore.getFull(userId, slug);
-        userPages.push({ slug, id: full?.meta?.id || "" });
-      } catch {
-        userPages.push({ slug, id: "" });
-      }
-    }
-
-    let targetIdentifiers: string[] = [];
-    if (pageIdFilter) {
-      const page = userPages.find(p => p.slug === pageIdFilter);
-      if (page) {
-        targetIdentifiers.push(page.slug);
-        if (page.id) targetIdentifiers.push(page.id);
-      } else {
-        targetIdentifiers.push(pageIdFilter);
-      }
-    } else {
-      for (const p of userPages) {
-        targetIdentifiers.push(p.slug);
-        if (p.id) targetIdentifiers.push(p.id);
-      }
-    }
-
-    const events = await getEventsForPages(targetIdentifiers, days);
-
-    const normalizedEvents = events.map(e => {
-      const page = userPages.find(p => p.id === e.pageId);
-      return page ? { ...e, pageId: page.slug } : e;
-    });
-
-    const stats = aggregateEvents(normalizedEvents, userPages.map(p => p.slug));
-
-    return NextResponse.json({
-      ok: true,
-      period: { days, from: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString(), to: new Date().toISOString() },
-      pageIds: userPages.map(p => p.slug),
-      ...stats,
-    });
-  } catch (error) {
-    console.error("[stats] GET Error:", error);
-    return NextResponse.json({ error: "internal_error" }, { status: 500 });
+  if (!user?.email) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+
+  const { searchParams } = new URL(req.url);
+  const days = parseInt(searchParams.get("days") || "7");
+  const pageIdFilter = searchParams.get("pageId");
+
+  const userId = user.email;
+  const pool = getPool();
+
+  const { rows } = await pool.query(
+    `SELECT slug FROM calculators WHERE user_id = $1`,
+    [userId]
+  );
+
+  const userPages: { slug: string; id: string }[] = [];
+  for (const row of rows) {
+    const slug = row.slug;
+    try {
+      const full = await fullStore.getFull(userId, slug);
+      userPages.push({ slug, id: full?.meta?.id || "" });
+    } catch {
+      userPages.push({ slug, id: "" });
+    }
+  }
+
+  let targetIdentifiers: string[] = [];
+  if (pageIdFilter) {
+    const page = userPages.find(p => p.slug === pageIdFilter);
+    if (page) {
+      targetIdentifiers.push(page.slug);
+      if (page.id) targetIdentifiers.push(page.id);
+    } else {
+      targetIdentifiers.push(pageIdFilter);
+    }
+  } else {
+    for (const p of userPages) {
+      targetIdentifiers.push(p.slug);
+      if (p.id) targetIdentifiers.push(p.id);
+    }
+  }
+
+  const events = await getEventsForPages(targetIdentifiers, days);
+
+  const normalizedEvents = events.map(e => {
+    const page = userPages.find(p => p.id === e.pageId);
+    return page ? { ...e, pageId: page.slug } : e;
+  });
+
+  const stats = aggregateEvents(normalizedEvents, userPages.map(p => p.slug));
+
+  return NextResponse.json({
+    ok: true,
+    period: { days, from: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString(), to: new Date().toISOString() },
+    pageIds: userPages.map(p => p.slug),
+    ...stats,
+  });
 }
 
 // Record new events
@@ -381,7 +354,6 @@ export async function POST(req: NextRequest) {
     const pool = getPool();
 
     // Bulk insert using UNNEST for efficiency
-    // We construct arrays for each column to pass to UNNEST
     const types = events.map(e => e.type);
     const pageIds = events.map(e => e.pageId);
     const timestamps = events.map(e => e.ts);

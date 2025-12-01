@@ -49,44 +49,38 @@ function getBaseUrl() {
  * Load public calculator directly from database (no API fetch = no extra cache layer)
  * This ensures revalidatePath() works immediately after editor save
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function loadPublic(id: string, slug: string): Promise<any | null> {
-  try {
-    let calc: any = null;
-    let method = "";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let calc: any = null;
+  let method = "";
 
-    // Try by ID first
-    if (id) {
-      calc = await fullStore.findFullById(id);
-      if (calc) method = "id";
-    }
-    // Then by slug
-    if (!calc && slug) {
-      calc = await fullStore.findFullBySlug(slug);
-      if (calc) method = "slug";
-    }
-    // Fallback: treat the whole key as slug
-    if (!calc && id && !slug) {
-      calc = await fullStore.findFullBySlug(id);
-      if (calc) method = "id-as-slug";
-    }
-
-    if (calc) {
-      // Debug log (same as API route had)
-      console.log("[PublicPage] Loaded:", {
-        method,
-        slug: calc.meta?.slug,
-        id: calc.meta?.id,
-        hasContact: !!calc.meta?.contact,
-        simpleAddCheckout: calc.meta?.simpleAddCheckout,
-        published: calc.meta?.published,
-      });
-    }
-
-    return calc;
-  } catch (error) {
-    console.error("[PublicPage] loadPublic error:", error);
-    return null;
+  // Try by ID first
+  if (id) {
+    calc = await fullStore.findFullById(id);
+    if (calc) method = "id";
   }
+  // Then by slug
+  if (!calc && slug) {
+    calc = await fullStore.findFullBySlug(slug);
+    if (calc) method = "slug";
+  }
+  // Fallback: treat the whole key as slug
+  if (!calc && id && !slug) {
+    calc = await fullStore.findFullBySlug(id);
+    if (calc) method = "id-as-slug";
+  }
+
+  if (calc) {
+    console.log("[PublicPage] Loaded:", {
+      method,
+      slug: calc.meta?.slug,
+      id: calc.meta?.id,
+      published: calc.meta?.published,
+    });
+  }
+
+  return calc;
 }
 
 /* ---------------- SEO Metadata ---------------- */

@@ -1,71 +1,42 @@
 // src/app/api/calculators/route.ts
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "@/lib/auth";
-import * as calcsStore from "@/lib/calcsStore";
-import { ENTITLEMENTS, type PlanId } from "@/lib/entitlements";
 import { getPool } from "@/lib/db";
+import * as calcsStore from "@/lib/calcsStore";
 import * as fullStore from "@/lib/fullStore";
+import { ENTITLEMENTS } from "@/lib/entitlements";
+import { calcFromMetaConfig } from "@/lib/calc-init";
 import { randomBytes } from "crypto";
-import * as trash from "@/lib/data/trash";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-/** Ensure plans table exists (safe on cold start). */
-async function ensurePlansTable() {
-  const pool = getPool();
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS user_plans (
-      user_id TEXT PRIMARY KEY,
-      plan TEXT NOT NULL
-    )
-  `);
-}
-
-/** Read normalized plan for a user from DB (fallback "free"). */
-async function getPlanForUser(userId: string): Promise<PlanId> {
-  const pool = getPool();
-  const { rows } = await pool.query(
-    "SELECT plan FROM user_plans WHERE user_id = $1 LIMIT 1",
-    [userId]
-  );
-  const raw = rows[0]?.plan as string | undefined;
-  const isPlan =
-    raw === "free" || raw === "starter" || raw === "growth" || raw === "pro" || raw === "tierless";
-  return (isPlan ? raw : "free") as PlanId;
-}
-
-function genId(): string {
-  return randomBytes(9).toString("base64url");
-}
-async function ensureIdOnFull(userId: string, slug: string, full: any) {
-  if (full?.meta?.id) return full;
-  const withId = { ...full, meta: { ...(full?.meta || {}), id: genId() } };
-  await fullStore.putFull(userId, slug, withId);
-  return withId;
-}
 
 // ======================= GET (list) =======================
 export async function GET(req: Request) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) {
-    // Za smoke test i sigurnost: zaštićen endpoint vraća 401 kada nema sesije
     return NextResponse.json(
       { error: "Not authenticated" },
-      { status: 401 },
+      { status: 401 }
     );
   }
 
-  const plan = await getPlanForUser(userId);
-  const limits = ENTITLEMENTS[plan]?.limits;
+  const pool = getPool();
+
+  // Get user plan
+  const { rows: planRows } = await pool.query(
+    "SELECT plan FROM user_plans WHERE user_id = $1 LIMIT 1",
+    [userId]
+  );
+  const rawPlan = planRows[0]?.plan;
+  const plan = ["free", "starter", "growth", "pro", "tierless"].includes(rawPlan) 
+    ? rawPlan 
+    : "free";
+
+  const limits = ENTITLEMENTS[plan as keyof typeof ENTITLEMENTS]?.limits;
   const pagesAllow = limits?.pages ?? "unlimited";
-  const publishedAllow =
-    (limits as any)?.maxPublicPages ??
-    (typeof pagesAllow === "number" ? pagesAllow : Infinity);
 
   const rows = await calcsStore.list(userId);
-
-  const { calcFromMetaConfig } = await import("@/lib/calc-init");
 
   const enriched = await Promise.all(
     rows.map(async (r) => {
@@ -80,7 +51,9 @@ export async function GET(req: Request) {
         }
 
         if (!full?.meta?.id) {
-          full = await ensureIdOnFull(userId, slug, full);
+          const newId = randomBytes(9).toString("base64url");
+          full = { ...full, meta: { ...(full?.meta || {}), id: newId } };
+          await fullStore.putFull(userId, slug, full);
         }
 
         return { ...r, meta: { ...r.meta, id: full.meta.id } };
@@ -90,16 +63,8 @@ export async function GET(req: Request) {
     })
   );
 
-  const __debug = {
-    userId,
-    plan,
-    allowPages: pagesAllow,
-    allowPublished: publishedAllow,
-    file: "(fs) /data/users/<uid>/calculators.json",
-  };
-
   return NextResponse.json(
-    { rows: enriched, __debug },
+    { rows: enriched, __debug: { userId, plan, allowPages: pagesAllow } },
     { headers: { "Cache-Control": "no-store" } }
   );
 }
@@ -107,12 +72,26 @@ export async function GET(req: Request) {
 // ======================= POST (create / duplicate) =======================
 export async function POST(req: Request) {
   const userId = await getUserIdFromRequest(req);
-  if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  if (!userId) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
 
-  const plan = await getPlanForUser(userId);
-  const limits = ENTITLEMENTS[plan]?.limits;
+  const pool = getPool();
+
+  // Get user plan
+  const { rows: planRows } = await pool.query(
+    "SELECT plan FROM user_plans WHERE user_id = $1 LIMIT 1",
+    [userId]
+  );
+  const rawPlan = planRows[0]?.plan;
+  const plan = ["free", "starter", "growth", "pro", "tierless"].includes(rawPlan) 
+    ? rawPlan 
+    : "free";
+
+  const limits = ENTITLEMENTS[plan as keyof typeof ENTITLEMENTS]?.limits;
   const pagesAllow = limits?.pages ?? "unlimited";
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let body: any = null;
   try {
     body = await req.json();
@@ -149,12 +128,12 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) {
-    return NextResponse.json(
-      { error: "Not authenticated" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  const trash = await import("@/lib/data/trash");
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let body: any = null;
   try {
     body = await req.json();
@@ -166,8 +145,10 @@ export async function DELETE(req: Request) {
 
   if (body) {
     if (Array.isArray(body.ids)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       slugs = body.ids.map((x: any) => String(x));
     } else if (Array.isArray(body.slugs)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       slugs = body.slugs.map((x: any) => String(x));
     } else if (typeof body.slug === "string") {
       slugs = [body.slug];
@@ -177,10 +158,7 @@ export async function DELETE(req: Request) {
   }
 
   if (!slugs.length) {
-    return NextResponse.json(
-      { error: "Missing slugs" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Missing slugs" }, { status: 400 });
   }
 
   let removed = 0;

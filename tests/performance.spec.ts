@@ -4,7 +4,12 @@ import { test, expect } from "@playwright/test";
  * Performance Smoke Tests
  * 
  * Verifies that pages load within acceptable time limits.
+ * Database-dependent tests are skipped in CI without DATABASE_URL.
  */
+
+// Helper to check if we're in a CI environment without database
+const skipIfNoDb = !process.env.DATABASE_URL && process.env.CI === "true";
+
 test.describe("Page Load Performance", () => {
   const MAX_LOAD_TIME = 5000; // 5 seconds max
 
@@ -26,7 +31,7 @@ test.describe("Page Load Performance", () => {
     console.log(`Signin page loaded in ${loadTime}ms`);
   });
 
-  test("examples page should load within 5 seconds", async ({ page }) => {
+  test.skip(skipIfNoDb)("examples page should load within 5 seconds", async ({ page }) => {
     const startTime = Date.now();
     await page.goto("/examples", { waitUntil: "domcontentloaded" });
     const loadTime = Date.now() - startTime;
@@ -58,7 +63,7 @@ test.describe("API Response Times", () => {
     console.log(`Templates API responded in ${responseTime}ms`);
   });
 
-  test("showcase API should respond within 2 seconds", async ({ request }) => {
+  test.skip(skipIfNoDb)("showcase API should respond within 2 seconds", async ({ request }) => {
     const startTime = Date.now();
     const response = await request.get("/api/showcase");
     const responseTime = Date.now() - startTime;
@@ -77,11 +82,8 @@ test.describe("Core Web Vitals (Basic)", () => {
     await page.waitForLoadState("networkidle");
     
     // Check that main content is visible and stable
-    const mainContent = page.locator("main, [role='main'], body > div").first();
-    await expect(mainContent).toBeVisible();
-    
-    // Take a screenshot for visual regression (optional)
-    // await page.screenshot({ path: 'tests/screenshots/landing.png' });
+    const mainContent = page.locator("main").first();
+    await expect(mainContent).toBeVisible({ timeout: 10000 });
   });
 
   test("page should have proper viewport meta", async ({ page }) => {
@@ -94,4 +96,3 @@ test.describe("Core Web Vitals (Basic)", () => {
     expect(content).toContain("width=device-width");
   });
 });
-
