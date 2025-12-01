@@ -72,25 +72,25 @@ export async function POST(req: Request) {
   const variantIdStr = String(variantId);
 
   // Build attributes according to LemonSqueezy API spec
+  // Using minimal required fields first
   const attributes: Record<string, any> = {
-    checkout_options: {
-      embed: false,
-      media: true,
-      logo: true,
-    },
     checkout_data: {
       custom: {
         user_id: userId,
       },
     },
-    product_options: {
-      enabled_variants: [variantIdStr],
-    },
   };
 
-  // Add optional URLs to checkout_options
-  if (body.successUrl) attributes.checkout_options.success_url = body.successUrl;
-  if (body.cancelUrl) attributes.checkout_options.cancel_url = body.cancelUrl;
+  // Add optional URLs if provided
+  if (body.successUrl || body.cancelUrl) {
+    attributes.checkout_options = {
+      embed: false,
+      media: false,
+      logo: false,
+    };
+    if (body.successUrl) attributes.checkout_options.redirect_url = body.successUrl;
+    if (body.cancelUrl) attributes.checkout_options.button_color = "#6366f1";
+  }
 
   // Add email to checkout_data
   if (body.email) {
@@ -119,13 +119,19 @@ export async function POST(req: Request) {
   };
 
   try {
-    console.log("[Checkout] Calling LemonSqueezy API:", {
+    console.log("[Checkout] ========================================");
+    console.log("[Checkout] Creating LemonSqueezy checkout session");
+    console.log("[Checkout] ========================================");
+    console.log("[Checkout] Input data:", {
       variantId: variantIdStr,
       storeId: storeIdStr,
+      userId,
       hasApiKey: !!apiKey,
-      apiKeyPrefix: apiKey ? apiKey.substring(0, 10) : "missing",
-      payload: JSON.stringify(payload, null, 2),
+      apiKeyLength: apiKey?.length,
     });
+    console.log("[Checkout] Full payload being sent:");
+    console.log(JSON.stringify(payload, null, 2));
+    console.log("[Checkout] ========================================");
 
     const response = await fetch(LEMON_API_URL, {
       method: "POST",
@@ -144,6 +150,10 @@ export async function POST(req: Request) {
     } catch {
       // Not JSON
     }
+
+    console.log("[Checkout] Response received:");
+    console.log("[Checkout] Status:", response.status, response.statusText);
+    console.log("[Checkout] Response body:", responseJson || responseText);
 
     if (!response.ok) {
       // Log full error details
