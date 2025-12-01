@@ -57,6 +57,7 @@ export async function POST(req: Request) {
     );
   }
 
+  // Build attributes according to LemonSqueezy API spec
   const attributes: Record<string, any> = {
     checkout_data: {
       custom: {
@@ -65,9 +66,17 @@ export async function POST(req: Request) {
     },
   };
 
+  // Add optional URLs
   if (body.successUrl) attributes.success_url = body.successUrl;
   if (body.cancelUrl) attributes.cancel_url = body.cancelUrl;
-  if (body.email) attributes.checkout_data.email = body.email;
+  if (body.email) {
+    if (!attributes.checkout_data) attributes.checkout_data = {};
+    attributes.checkout_data.email = body.email;
+  }
+
+  // Ensure Store ID and Variant ID are strings (LemonSqueezy requires strings)
+  const storeIdStr = String(storeId);
+  const variantIdStr = String(variantId);
 
   const payload = {
     data: {
@@ -75,10 +84,16 @@ export async function POST(req: Request) {
       attributes,
       relationships: {
         store: {
-          data: { type: "stores", id: storeId },
+          data: { 
+            type: "stores", 
+            id: storeIdStr 
+          },
         },
         variant: {
-          data: { type: "variants", id: variantId },
+          data: { 
+            type: "variants", 
+            id: variantIdStr 
+          },
         },
       },
     },
@@ -86,10 +101,11 @@ export async function POST(req: Request) {
 
   try {
     console.log("[Checkout] Calling LemonSqueezy API:", {
-      variantId,
-      storeId,
+      variantId: variantIdStr,
+      storeId: storeIdStr,
       hasApiKey: !!apiKey,
       apiKeyPrefix: apiKey ? apiKey.substring(0, 10) : "missing",
+      payload: JSON.stringify(payload, null, 2),
     });
 
     const response = await fetch(LEMON_API_URL, {
@@ -111,17 +127,27 @@ export async function POST(req: Request) {
     }
 
     if (!response.ok) {
+      // Log full error details
+      const allErrors = responseJson?.errors || [];
+      const errorMessages = allErrors.map((e: any) => ({
+        detail: e.detail,
+        title: e.title,
+        source: e.source,
+        status: e.status,
+      }));
+      
       console.error("[Checkout] LemonSqueezy API error:", {
         status: response.status,
         statusText: response.statusText,
-        error: responseJson || responseText,
-        variantId,
-        storeId,
+        errors: errorMessages,
+        fullResponse: responseJson,
+        variantId: variantIdStr,
+        storeId: storeIdStr,
       });
       
       // Return detailed error
-      const errorDetail = responseJson?.errors?.[0]?.detail || 
-                          responseJson?.errors?.[0]?.title ||
+      const errorDetail = errorMessages[0]?.detail || 
+                          errorMessages[0]?.title ||
                           responseJson?.error || 
                           responseText || 
                           response.statusText;
@@ -131,7 +157,7 @@ export async function POST(req: Request) {
           error: "Failed to create checkout session",
           details: errorDetail,
           status: response.status,
-          lemonError: responseJson,
+          lemonErrors: errorMessages,
         },
         { status: 502 }
       );
