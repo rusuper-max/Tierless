@@ -57,6 +57,10 @@ export async function POST(req: Request) {
     );
   }
 
+  // Ensure Store ID and Variant ID are strings (LemonSqueezy requires strings)
+  const storeIdStr = String(storeId);
+  const variantIdStr = String(variantId);
+
   // Build attributes according to LemonSqueezy API spec
   const attributes: Record<string, any> = {
     checkout_options: {
@@ -82,10 +86,6 @@ export async function POST(req: Request) {
   if (body.email) {
     attributes.checkout_data.email = body.email;
   }
-
-  // Ensure Store ID and Variant ID are strings (LemonSqueezy requires strings)
-  const storeIdStr = String(storeId);
-  const variantIdStr = String(variantId);
 
   const payload = {
     data: {
