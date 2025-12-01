@@ -23,6 +23,10 @@ CREATE TABLE IF NOT EXISTS calculators (
   PRIMARY KEY (user_id, slug)
 );
 
+-- Backwards‑compat: ako postoji starija verzija tabele bez team_id kolone,
+-- dodaj je sada da indexi/FK-ovi ispod ne pucaju.
+ALTER TABLE calculators ADD COLUMN IF NOT EXISTS team_id TEXT;
+
 -- Indexes for calculators
 CREATE INDEX IF NOT EXISTS idx_calculators_user ON calculators(user_id);
 CREATE INDEX IF NOT EXISTS idx_calculators_user_published ON calculators(user_id, published);
@@ -43,6 +47,9 @@ CREATE TABLE IF NOT EXISTS calc_full (
   team_id    TEXT,
   PRIMARY KEY (user_id, slug)
 );
+
+-- Backwards‑compat: isto za calc_full.team_id
+ALTER TABLE calc_full ADD COLUMN IF NOT EXISTS team_id TEXT;
 
 -- Indexes for calc_full
 CREATE INDEX IF NOT EXISTS idx_calc_full_slug ON calc_full(slug);

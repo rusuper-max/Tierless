@@ -25,6 +25,16 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug?: string }
   const { slug } = await ctx.params;              // ← AWAIT params
   if (!slug) return NextResponse.json({ ok:false, error:"bad_slug" }, { status: 400 });
 
+  // Special-case health probes so they don't fall through to the dynamic slug lookup.
+  // When Playwright hits /api/_probe we still get routed here first (due to the
+  // dynamic [slug] segment), so respond inline with a simple 200 JSON payload.
+  if (slug === "_probe") {
+    return NextResponse.json({ ok: true, env: process.env.NODE_ENV ?? "unknown" }, {
+      status: 200,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+
   const url = new URL(req.url);
   const owner = url.searchParams.get("u"); // npr. "dev:ru@example.com"
   const USERS_ROOT = path.join(process.cwd(), "data", "users");
