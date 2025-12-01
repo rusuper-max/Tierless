@@ -32,10 +32,28 @@ export async function POST(req: Request) {
   const fallbackVariant = process.env.LEMON_VARIANT_ID;
   const variantId = body.variantId || body.priceId || fallbackVariant;
 
-  if (!apiKey || !storeId || !variantId) {
+  // Better error messages for debugging
+  if (!apiKey) {
+    console.error("[Checkout] LEMON_API_KEY is not set");
     return NextResponse.json(
-      { error: "Lemon Squeezy is not configured" },
+      { error: "Lemon Squeezy API key is not configured" },
       { status: 500 }
+    );
+  }
+
+  if (!storeId) {
+    console.error("[Checkout] LEMON_STORE_ID is not set");
+    return NextResponse.json(
+      { error: "Lemon Squeezy Store ID is not configured" },
+      { status: 500 }
+    );
+  }
+
+  if (!variantId) {
+    console.error("[Checkout] Variant ID is missing", { body, fallbackVariant });
+    return NextResponse.json(
+      { error: "Variant ID is required" },
+      { status: 400 }
     );
   }
 
@@ -78,9 +96,28 @@ export async function POST(req: Request) {
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => null);
-    console.error("Lemon Squeezy checkout error:", errorText || response.statusText);
+    let errorJson: any = null;
+    try {
+      errorJson = errorText ? JSON.parse(errorText) : null;
+    } catch {
+      // Not JSON, use as text
+    }
+    
+    console.error("[Checkout] LemonSqueezy API error:", {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorJson || errorText,
+      variantId,
+      storeId: storeId ? `${storeId.substring(0, 3)}...` : "missing",
+    });
+    
+    // Return more detailed error for debugging
     return NextResponse.json(
-      { error: "Failed to create checkout session" },
+      { 
+        error: "Failed to create checkout session",
+        details: errorJson?.errors?.[0]?.detail || errorJson?.error || errorText || response.statusText,
+        status: response.status,
+      },
       { status: 502 }
     );
   }

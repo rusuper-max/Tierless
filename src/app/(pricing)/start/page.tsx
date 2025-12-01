@@ -299,7 +299,14 @@ export default function StartPage() {
       if (!res.ok) {
         const error = await res.json().catch(() => ({}));
         console.error("Checkout error:", error);
-        alert(t("Failed to start checkout. Please try again."));
+        // Show more detailed error in console for debugging
+        if (error.error) {
+          console.error("Error details:", error.error);
+          if (error.details) {
+            console.error("LemonSqueezy error:", error.details);
+          }
+        }
+        alert(t("Failed to start checkout. Please try again.") + (error.error ? `\n\nError: ${error.error}` : ""));
         return false;
       }
       
