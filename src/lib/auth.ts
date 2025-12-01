@@ -1,15 +1,15 @@
 // src/lib/auth.ts — JWT auth (HS256), bez cookies().get/set
 import { SignJWT, jwtVerify } from "jose";
 import { getPool } from "@/lib/db";
-import { 
-  SESSION_SECRET, 
-  SESSION_COOKIE_NAME, 
+import {
+  SESSION_SECRET,
+  SESSION_COOKIE_NAME,
   IS_PRODUCTION,
-  IS_DEV 
+  IS_DEV
 } from "@/lib/env";
 
 // === Plan types ===
-export type Plan = "free" | "starter" | "growth" | "pro";
+export type Plan = "free" | "starter" | "growth" | "pro" | "tierless";
 
 export type SessionUser = {
   email: string;
@@ -34,9 +34,17 @@ export const COOKIE_BASE = {
   path: "/" as const,
 };
 
+// ---------- Founder helpers ----------
+const FOUNDER_EMAILS = process.env.FOUNDER_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
+
+export function isFounder(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return FOUNDER_EMAILS.includes(email.toLowerCase());
+}
+
 // ---------- Plan helpers (validacija/normalizacija) ----------
 export function isPlan(x: unknown): x is Plan {
-  return x === "free" || x === "starter" || x === "growth" || x === "pro";
+  return x === "free" || x === "starter" || x === "growth" || x === "pro" || x === "tierless";
 }
 export function coercePlan(x: unknown): Plan {
   return isPlan(x) ? x : "free";
@@ -53,9 +61,23 @@ async function ensureUserPlansTable() {
   `);
 }
 
-/** Authoritative plan lookup from DB (fallback to "free"). */
+/** Authoritative plan lookup from DB (fallback to "free"). Auto-upgrades founders to "tierless". */
 export async function getUserPlan(userId: string): Promise<Plan> {
   try {
+    // Check if this is a founder email
+    if (isFounder(userId)) {
+      // Auto-upgrade to tierless plan if not already set
+      const pool = getPool();
+      await ensureUserPlansTable();
+      await pool.query(
+        `INSERT INTO user_plans (user_id, plan) VALUES ($1, $2)
+         ON CONFLICT (user_id) DO UPDATE SET plan = $2`,
+        [userId, "tierless"]
+      );
+      return "tierless";
+    }
+
+    // Regular user lookup
     const pool = getPool();
     const { rows } = await pool.query(
       "SELECT plan FROM user_plans WHERE user_id = $1 LIMIT 1",
