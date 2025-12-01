@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserIdFromRequest } from "@/lib/auth";
+import { getVariantIdByKey } from "@/lib/lemon-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,6 +10,7 @@ const LEMON_API_URL = "https://api.lemonsqueezy.com/v1/checkouts";
 type CheckoutPayload = {
   variantId?: string;
   priceId?: string; // alias for variantId
+  planKey?: string; // e.g., "growth_monthly", "pro_yearly"
   successUrl?: string;
   cancelUrl?: string;
   email?: string;
@@ -30,7 +32,15 @@ export async function POST(req: Request) {
   const apiKey = process.env.LEMON_API_KEY;
   const storeId = process.env.LEMON_STORE_ID;
   const fallbackVariant = process.env.LEMON_VARIANT_ID;
-  const variantId = body.variantId || body.priceId || fallbackVariant;
+
+  // Priority: explicit variantId > planKey lookup > fallback
+  let variantId = body.variantId || body.priceId;
+  if (!variantId && body.planKey) {
+    variantId = getVariantIdByKey(body.planKey) || undefined;
+  }
+  if (!variantId) {
+    variantId = fallbackVariant;
+  }
 
   // Better error messages for debugging
   if (!apiKey) {
@@ -153,6 +163,26 @@ export async function POST(req: Request) {
         variantId: variantIdStr,
         storeId: storeIdStr,
       });
+
+      // Special handling for 404 errors (missing store or variant)
+      if (response.status === 404) {
+        const has404 = errorMessages.some((e: any) =>
+          e.detail?.includes("related resource does not exist")
+        );
+
+        if (has404) {
+          return NextResponse.json(
+            {
+              error: "Store or Variant not found in LemonSqueezy",
+              details: `Please verify in your LemonSqueezy dashboard:\n1. Store ID ${storeIdStr} exists at https://app.lemonsqueezy.com/settings/stores\n2. Variant ID ${variantIdStr} exists and belongs to this store\n3. Update LEMON_STORE_ID and LEMON_VARIANT_ID in your environment variables`,
+              lemonErrors: errorMessages,
+              storeId: storeIdStr,
+              variantId: variantIdStr,
+            },
+            { status: 404 }
+          );
+        }
+      }
 
       // Return detailed error
       const errorDetail = errorMessages[0]?.detail ||
