@@ -141,6 +141,8 @@ export interface AdvancedNode {
   badgeColor?: string | null;
 
   iconEmoji?: string | null;
+  imageUrl?: string | null;
+  imagePublicId?: string | null;
 
   /* ------------------------ Kartica – vizuelni stil ---------------------- */
   cardVariant?: CardVariant | null; // solid | outline | ghost
@@ -162,6 +164,12 @@ export interface AdvancedNode {
    * Ako je false, outline se vraća na neutralan.
    */
   useAccentOutline?: boolean;
+
+  /**
+   * Da li kartica uvek ima akcent boju (i kad nije selektovana).
+   * Ako je true, kartica će uvek biti obojena u accentColor.
+   */
+  alwaysColored?: boolean;
 
   /* ------------------------ Cena / billing / unit ------------------------ */
 

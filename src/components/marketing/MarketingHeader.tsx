@@ -5,8 +5,8 @@ import { useState, useEffect, useRef } from "react";
 import { useAuthStatus } from "@/hooks/useAuthStatus";
 import TierlessLogo from "@/components/marketing/TierlessLogo";
 import ShinyButton from "@/components/marketing/ShinyButton";
-import { useTranslation } from "@/i18n/useTranslation";
-import { useLanguage, Locale } from "@/i18n/LanguageContext";
+import { useT } from "@/i18n/t";
+import { useLocale, type Locale } from "@/i18n/LanguageProvider";
 import { Globe, ChevronDown, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -20,7 +20,7 @@ const LANGUAGES: { code: Locale; label: string; flag: string }[] = [
 ];
 
 function LanguageSwitcher() {
-  const { locale, setLocale } = useLanguage();
+  const { locale, setLocale } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -84,7 +84,7 @@ function LanguageSwitcher() {
 
 export default function MarketingHeader() {
   const { authenticated } = useAuthStatus();
-  const { t } = useTranslation();
+  const t = useT();
 
   // --- SCROLL PROGRESS BAR ---
   const [progress, setProgress] = useState(0);

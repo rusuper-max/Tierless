@@ -11,7 +11,6 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    await ensureUserProfilesTable();
     const pool = getPool();
 
     try {
@@ -44,7 +43,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
-    await ensureUserProfilesTable();
     const pool = getPool();
 
     const {

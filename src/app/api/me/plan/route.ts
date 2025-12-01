@@ -38,7 +38,6 @@ function getDefaultRenewalDate() {
 }
 
 export async function GET() {
-  await ensureTable();
   const pool = getPool();
 
   // Jedinstven način dobijanja user-a (CF Access -> session fallback)
@@ -70,7 +69,6 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
-  await ensureTable();
   const db = getPool();
 
   // Jedinstven izvor identiteta (CF Access -> session fallback)

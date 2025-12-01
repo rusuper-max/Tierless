@@ -1,18 +1,24 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef, ChangeEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Trash2, X, Check, Layout, SlidersHorizontal,
   ToggleRight, Calculator, Palette, Settings2, ChevronDown,
   User, Mail, Send, Zap, ListChecks, Layers, Monitor,
-  Eye, MoreHorizontal, Coins, ChevronRight, MessageCircle
+  Eye, MoreHorizontal, Coins, ChevronRight, MessageCircle,
+  Image as ImageIcon, Upload, GripVertical
 } from "lucide-react";
 
 import { useAdvancedState } from "./useAdvancedState";
 import { useEditorStore } from "../../../../../hooks/useEditorStore";
 import AnimatedCheckbox from "../../../../../components/ui/AnimatedCheckbox";
 import type { AdvancedNode, BillingPeriod } from "./types";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useAccount } from "@/hooks/useAccount";
+import { ENTITLEMENTS } from "@/lib/entitlements";
 
 /* -----------------------------------------------------------------------------
    Constants & Helpers
@@ -105,6 +111,30 @@ const InlineTextarea = ({ value, onChange, className, placeholder }: any) => (
   />
 );
 
+function SortableItem({ id, children, disabled }: { id: string, children: React.ReactNode, disabled?: boolean }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id, disabled });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : "auto",
+    position: isDragging ? "relative" as const : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="h-full">
+      {children}
+    </div>
+  );
+}
+
 /* -----------------------------------------------------------------------------
    Main Component
 ----------------------------------------------------------------------------- */
@@ -131,6 +161,7 @@ export default function AdvancedPanelInner() {
     setAdvancedPublicSubtitle,
     setAdvancedPublicTheme,
     setAdvancedColumnsDesktop,
+    reorderNodes,
   } = useAdvancedState();
 
   const { calc, updateCalc } = useEditorStore();
@@ -177,11 +208,87 @@ export default function AdvancedPanelInner() {
     });
   };
 
+  const { plan } = useAccount();
+
   // Local UI State
   const [showSettings, setShowSettings] = useState(false);
   const [previewInquiry, setPreviewInquiry] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showColors, setShowColors] = useState(false);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingUploadNodeId = useRef<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      const oldIndex = nodes.findIndex((n) => n.id === active.id);
+      const newIndex = nodes.findIndex((n) => n.id === over?.id);
+      reorderNodes(oldIndex, newIndex);
+    }
+  };
+
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>, targetId: string) => {
+    const file = e.target.files?.[0] ?? null;
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Only image files are allowed.");
+      return;
+    }
+
+    const maxBytes = (ENTITLEMENTS[plan]?.limits as any)?.uploadSize || 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      alert(`Image is too large (max ${Math.round(maxBytes / 1024 / 1024)}MB).`);
+      return;
+    }
+
+    try {
+      setUploadingId(targetId);
+
+      const signRes = await fetch("/api/upload-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "sign" })
+      });
+
+      if (!signRes.ok) throw new Error("Failed to get upload signature");
+      const signData = await signRes.json();
+      if (signData.error) throw new Error(signData.error);
+
+      const { signature, timestamp, folder, apiKey, cloudName } = signData;
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("api_key", apiKey);
+      formData.append("timestamp", String(timestamp));
+      formData.append("folder", folder);
+      formData.append("signature", signature);
+
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+      const uploadRes = await fetch(cloudinaryUrl, { method: "POST", body: formData });
+
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const data = await uploadRes.json();
+
+      handleUpdateNode(targetId, {
+        imageUrl: data.secure_url || data.url,
+        imagePublicId: data.public_id
+      });
+
+    } catch (err) {
+      console.error(err);
+      alert("Upload failed. Please try again.");
+    } finally {
+      setUploadingId(null);
+    }
+  };
 
   // Interactive Slider State (Preview only)
   const [sliderValues, setSliderValues] = useState<Record<string, number>>({});
@@ -265,6 +372,7 @@ export default function AdvancedPanelInner() {
     const isSelected = node.id === selectedId;
     const accent = node.accentColor || COLORS[0].hex;
     const isGradient = accent.includes("gradient");
+    const shouldShowColor = isSelected || node.alwaysColored;
 
     return (
       <div
@@ -273,23 +381,30 @@ export default function AdvancedPanelInner() {
         onClick={(e) => { e.stopPropagation(); setSelectedId(node.id); }}
         className={`
           relative flex flex-col h-full p-5 rounded-2xl border-2 transition-all cursor-pointer group
-          ${isSelected
+          ${shouldShowColor
             ? "shadow-lg ring-1 ring-[var(--local-accent)]"
             : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--muted)] hover:shadow-md"
           }
         `}
         style={{
           "--local-accent": isGradient ? COLORS[0].hex : accent,
-          background: isSelected && isGradient ? `linear-gradient(${isDark ? '#111827' : '#ffffff'}, ${isDark ? '#111827' : '#ffffff'}) padding-box, ${accent} border-box` : undefined,
-          borderColor: isSelected ? (isGradient ? "transparent" : accent) : undefined,
+          background: shouldShowColor && isGradient ? `linear-gradient(${isDark ? '#111827' : '#ffffff'}, ${isDark ? '#111827' : '#ffffff'}) padding-box, ${accent} border-box` : undefined,
+          borderColor: shouldShowColor ? (isGradient ? "transparent" : accent) : undefined,
         } as React.CSSProperties}
       >
-        {/* Header: Icon + Label */}
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex items-center gap-2 min-w-0">
+        {/* Image */}
+        {node.imageUrl && (
+          <div className="w-full h-32 mb-3 rounded-lg overflow-hidden bg-[var(--surface)] relative group">
+            <img src={node.imageUrl} alt={node.label || ""} className="w-full h-full object-cover" />
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <div className="flex items-center gap-2 overflow-hidden">
             <div
-              className={`p-1.5 rounded-lg shrink-0 ${isDark ? "bg-white/10" : "bg-slate-100"}`}
-              style={{ background: accent, color: "white" }}
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white shadow-sm"
+              style={{ background: isGradient ? accent : accent }}
             >
               {node.kind === "tier" && <Layers className="w-4 h-4" />}
               {node.kind === "addon" && <ToggleRight className="w-4 h-4" />}
@@ -383,13 +498,13 @@ export default function AdvancedPanelInner() {
           </div>
         )}
 
-        {/* Featured Badge */}
-        {node.emphasis === "featured" && (
+        {/* Badge (Featured or Custom) */}
+        {(node.emphasis === "featured" || node.badgeText) && (
           <div
             className="absolute -top-2 -right-2 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm"
-            style={{ background: accent }}
+            style={{ background: node.badgeColor || accent }}
           >
-            FEATURED
+            {node.badgeText || "FEATURED"}
           </div>
         )}
       </div>
@@ -504,6 +619,16 @@ export default function AdvancedPanelInner() {
                       {c}
                     </button>
                   ))}
+                </div>
+                {/* Custom Currency Input */}
+                <div className="pt-2">
+                  <input
+                    type="text"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    placeholder={t("Custom currency...")}
+                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)] text-[var(--text)]"
+                  />
                 </div>
               </div>
 
@@ -650,21 +775,27 @@ export default function AdvancedPanelInner() {
 
             {/* Grid */}
             {nodes.length > 0 ? (
-              <div
-                className="grid gap-6 items-start"
-                style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-              >
-                {nodes.map(node => (
-                  <motion.div
-                    layoutId={node.id}
-                    key={node.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={nodes.map(n => n.id)} strategy={rectSortingStrategy}>
+                  <div
+                    className="grid gap-6 items-start"
+                    style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
                   >
-                    {renderNodeCard(node)}
-                  </motion.div>
-                ))}
-              </div>
+                    {nodes.map(node => (
+                      <SortableItem key={node.id} id={node.id}>
+                        <motion.div
+                          layoutId={node.id}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="h-full"
+                        >
+                          {renderNodeCard(node)}
+                        </motion.div>
+                      </SortableItem>
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             ) : (
               <div className="text-center py-20 border-2 border-dashed border-[var(--border)] rounded-3xl bg-[var(--surface)]/30">
                 <div className="w-16 h-16 rounded-2xl bg-[var(--surface)] flex items-center justify-center mx-auto mb-4 text-[var(--muted)]">
@@ -728,8 +859,11 @@ export default function AdvancedPanelInner() {
                         <input
                           type="number"
                           value={selectedNode.price ?? ""}
-                          onChange={(e) => handleUpdateNode(selectedId, { price: parseFloat(e.target.value) || 0 })}
-                          className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] outline-none pl-8 text-[var(--text)]"
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            handleUpdateNode(selectedId, { price: val === "" ? null : parseFloat(val) });
+                          }}
+                          className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] outline-none pl-12 text-[var(--text)]"
                         />
                       </div>
                     </div>
@@ -744,6 +878,40 @@ export default function AdvancedPanelInner() {
                       className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] outline-none resize-none text-[var(--text)]"
                       placeholder={t("Brief description...")}
                     />
+                  </div>
+
+                  {/* Image Upload */}
+                  <div className="space-y-1 pt-2">
+                    <label className="text-[10px] font-bold uppercase text-[var(--muted)]">{t("Image")}</label>
+                    {selectedNode.imageUrl ? (
+                      <div className="relative group rounded-lg overflow-hidden border border-[var(--border)]">
+                        <img src={selectedNode.imageUrl} alt="" className="w-full h-32 object-cover" />
+                        <button
+                          onClick={() => handleUpdateNode(selectedId, { imageUrl: null, imagePublicId: null })}
+                          className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-md transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          pendingUploadNodeId.current = selectedId;
+                          fileInputRef.current?.click();
+                        }}
+                        disabled={!!uploadingId}
+                        className="w-full h-24 border-2 border-dashed border-[var(--border)] rounded-lg flex flex-col items-center justify-center gap-2 text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {uploadingId === selectedId ? (
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[var(--accent)]" />
+                        ) : (
+                          <>
+                            <ImageIcon className="w-6 h-6" />
+                            <span className="text-xs font-medium">{t("Upload Image")}</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </section>
 
@@ -791,12 +959,28 @@ export default function AdvancedPanelInner() {
                             );
                           })}
                         </div>
+                        <div className="pt-2 border-t border-[var(--border)]">
+                          <AnimatedCheckbox
+                            label={t("Always show accent color")}
+                            checked={selectedNode.alwaysColored ?? false}
+                            onChange={(e) => handleUpdateNode(selectedId, { alwaysColored: e.target.checked })}
+                          />
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
 
                   {selectedNode.kind === "tier" && (
-                    <div className="mt-4">
+                    <div className="mt-4 space-y-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-[var(--muted)]">{t("Badge Text")}</label>
+                        <input
+                          value={selectedNode.badgeText || ""}
+                          onChange={(e) => handleUpdateNode(selectedId, { badgeText: e.target.value })}
+                          className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] outline-none text-[var(--text)]"
+                          placeholder={t("e.g. Popular, Best Value")}
+                        />
+                      </div>
                       <AnimatedCheckbox
                         label={t("Highlight as Featured")}
                         checked={selectedNode.emphasis === "featured"}
@@ -1000,6 +1184,21 @@ export default function AdvancedPanelInner() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Hidden file input for image uploads */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const targetId = pendingUploadNodeId.current;
+          if (targetId) {
+            handleImageUpload(e, targetId);
+            pendingUploadNodeId.current = null;
+          }
+        }}
+      />
 
     </div>
   );

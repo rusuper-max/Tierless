@@ -24,7 +24,6 @@ async function ensurePlansTable() {
 
 /** Read normalized plan for a user from DB (fallback "free"). */
 async function getPlanForUser(userId: string): Promise<PlanId> {
-  await ensurePlansTable();
   const pool = getPool();
   const { rows } = await pool.query(
     "SELECT plan FROM user_plans WHERE user_id = $1 LIMIT 1",

@@ -53,7 +53,15 @@ const envSchema = z.object({
 
 type EnvSchema = z.infer<typeof envSchema>;
 
+// Skip validation in CI builds (for build checks without real env)
+const SKIP_ENV_VALIDATION = process.env.SKIP_ENV_VALIDATION === "1";
+
 function parseEnv(): EnvSchema {
+  if (SKIP_ENV_VALIDATION) {
+    console.log("⚠️ Skipping env validation (SKIP_ENV_VALIDATION=1)");
+    return envSchema.parse(process.env);
+  }
+  
   const parsed = envSchema.safeParse(process.env);
   
   if (!parsed.success) {
@@ -82,6 +90,8 @@ const env = parseEnv();
 // === Production Validation ===
 
 function validateProduction() {
+  // Skip validation in CI builds
+  if (SKIP_ENV_VALIDATION) return;
   if (env.NODE_ENV !== "production") return;
   
   const errors: string[] = [];

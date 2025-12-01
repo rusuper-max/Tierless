@@ -606,6 +606,17 @@ export function useAdvancedState() {
     [nodes, commitNodes]
   );
 
+  const reorderNodes = useCallback(
+    (oldIndex: number, newIndex: number) => {
+      if (oldIndex === newIndex) return;
+      const next = [...nodes];
+      const [item] = next.splice(oldIndex, 1);
+      next.splice(newIndex, 0, item);
+      commitNodes(next);
+    },
+    [nodes, commitNodes]
+  );
+
   /* ------------------------- Features on tier ----------------------------- */
 
   const handleAddFeature = useCallback(
@@ -685,6 +696,7 @@ export function useAdvancedState() {
     handleUpdateNode,
     handleRemoveNode,
     handleMoveNode,
+    reorderNodes,
     handleAddFeature,
     handleUpdateFeature,
     handleRemoveFeature,

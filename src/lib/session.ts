@@ -4,20 +4,30 @@ import { getIronSession, type SessionOptions } from "iron-session";
 
 export type SessionData = { user?: { email: string } };
 
-// >=32 char fallback u dev; u produkciji OBAVEZNO .env
-const DEV_FALLBACK_PASSWORD = "dev_password_please_change_me_0123456789_ABCDEFGH_xyz";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
-// Izdvoji cookie name da ga koriste i drugi delovi app-a (npr. /api/_probe)
+// Get password from environment
+const IRON_SESSION_PASSWORD = process.env.IRON_SESSION_PASSWORD;
+
+// SECURITY: In production, IRON_SESSION_PASSWORD must be set
+if (IS_PRODUCTION && (!IRON_SESSION_PASSWORD || IRON_SESSION_PASSWORD.length < 32)) {
+  throw new Error(
+    "FATAL: IRON_SESSION_PASSWORD must be at least 32 characters in production! " +
+    "Set this in your Vercel Environment Variables."
+  );
+}
+
+// In development, use a fallback (this will never run in production due to check above)
+const sessionPassword = IRON_SESSION_PASSWORD || "dev_password_please_change_me_0123456789_ABCDEFGH_xyz";
+
+// Cookie name (can be customized via env)
 export const SESSION_COOKIE_NAME = process.env.IRON_SESSION_COOKIE_NAME || "calckit_session";
 
 export const sessionOptions: SessionOptions = {
-  password:
-    (process.env.IRON_SESSION_PASSWORD && process.env.IRON_SESSION_PASSWORD.length >= 32)
-      ? process.env.IRON_SESSION_PASSWORD
-      : DEV_FALLBACK_PASSWORD,
+  password: sessionPassword,
   cookieName: SESSION_COOKIE_NAME,
   cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
+    secure: IS_PRODUCTION,
     sameSite: "lax",
     path: "/",
   },

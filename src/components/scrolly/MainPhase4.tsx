@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { useTranslation } from "@/i18n/useTranslation";
 import ShinyButton from "@/components/marketing/ShinyButton";
 
-export default function MainPhase3() {
+export default function MainPhase4() {
     const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement>(null);
 

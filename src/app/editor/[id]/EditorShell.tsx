@@ -44,7 +44,7 @@ function normalizeMode(input?: string | null): Mode {
 function EditorContent({ slug, initialCalc }: Props) {
   const { calc, init, isDirty, isSaving, setEditorMode, undo, redo, canUndo, canRedo } = useEditorStore();
   const { isActive: isHelpMode, hasSeenIntro, markIntroAsSeen, enableHelpMode, disableHelpMode, toggleHelpMode } = useHelpMode();
-  
+
   // Enable keyboard shortcuts for Undo/Redo
   useUndoRedoShortcuts();
 
@@ -53,6 +53,7 @@ function EditorContent({ slug, initialCalc }: Props) {
   const [showTour, setShowTour] = useState(false);
   const [showFinalMessage, setShowFinalMessage] = useState(false);
   const [pendingHelpIntro, setPendingHelpIntro] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Help Mode state
   const [showIntro, setShowIntro] = useState(false);
@@ -323,6 +324,7 @@ function EditorContent({ slug, initialCalc }: Props) {
     const nextState = !isPublished;
 
     try {
+      setIsPublishing(true);
       const r = await fetch(`/api/calculators/${encodeURIComponent(slug)}/publish`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -360,6 +362,8 @@ function EditorContent({ slug, initialCalc }: Props) {
       console.error("Publish error:", e);
       setToast(t("Network error"));
       setTimeout(() => setToast(null), 2000);
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -538,6 +542,7 @@ function EditorContent({ slug, initialCalc }: Props) {
         isDirty={isDirty}
         publicHref={publicHref}
         isPublished={isPublished}
+        isPublishing={isPublishing}
         editorMode={uiMode}
         onGuideClick={() => {
           // If seen intro before, toggle Help Mode directly

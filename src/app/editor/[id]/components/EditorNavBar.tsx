@@ -172,6 +172,7 @@ export default function EditorNavBar({
   isDirty = false,
   publicHref,
   isPublished = false,
+  isPublishing = false,
   editorMode,
   onGuideClick,
   onTogglePublish,
@@ -192,6 +193,7 @@ export default function EditorNavBar({
   isDirty?: boolean;
   publicHref: string;
   isPublished?: boolean;
+  isPublishing?: boolean;
   editorMode: Mode;
   onGuideClick?: () => void;
   onTogglePublish?: () => void;
@@ -387,8 +389,8 @@ export default function EditorNavBar({
                   disabled={!canUndo}
                   className={`
                     flex items-center justify-center w-7 h-7 rounded-md transition-all
-                    ${canUndo 
-                      ? "text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/10 dark:hover:bg-white/5 cursor-pointer" 
+                    ${canUndo
+                      ? "text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/10 dark:hover:bg-white/5 cursor-pointer"
                       : "text-[var(--muted)]/30 cursor-not-allowed"
                     }
                   `}
@@ -402,8 +404,8 @@ export default function EditorNavBar({
                   disabled={!canRedo}
                   className={`
                     flex items-center justify-center w-7 h-7 rounded-md transition-all
-                    ${canRedo 
-                      ? "text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/10 dark:hover:bg-white/5 cursor-pointer" 
+                    ${canRedo
+                      ? "text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/10 dark:hover:bg-white/5 cursor-pointer"
                       : "text-[var(--muted)]/30 cursor-not-allowed"
                     }
                   `}
@@ -460,19 +462,25 @@ export default function EditorNavBar({
               {/* Main Publish/Draft button */}
               <button
                 onClick={onTogglePublish}
+                disabled={isPublishing}
                 data-tour="publish-button"
                 className={`
-                  flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all
+                  flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer
                   ${isPublished
                     ? "bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
                     : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                   }
+                  ${isPublishing ? "opacity-50 cursor-not-allowed" : ""}
                 `}
                 title={isPublished ? t("Page is Online") : t("Page is Offline (Draft)")}
                 data-help={isPublished ? "Your page is live! Click to unpublish." : "Click to publish your page and make it publicly accessible."}
               >
-                <div className={`w-2 h-2 rounded-full ${isPublished ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
-                <span>{isPublished ? t("Online") : t("Draft")}</span>
+                {isPublishing ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <div className={`w-2 h-2 rounded-full ${isPublished ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+                )}
+                <span>{isPublishing ? t("Publishing...") : isPublished ? t("Online") : t("Draft")}</span>
               </button>
 
               {/* Separator + External Link (only if published) */}

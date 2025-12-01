@@ -82,7 +82,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="hidden md:flex md:flex-col md:w-64 lg:w-72 h-screen bg-[var(--card)] border-r border-[var(--border)] text-[var(--text)] transition-colors duration-300"
+      className="hidden md:flex md:flex-col md:w-64 lg:w-72 h-screen bg-[var(--sidebar)] border-r border-[var(--border)] text-[var(--text)] transition-colors duration-300"
       aria-label={t("Dashboard sidebar")}
     >
       {/* Defined Brand Gradient for SVG Strokes - Referenced by ID */}

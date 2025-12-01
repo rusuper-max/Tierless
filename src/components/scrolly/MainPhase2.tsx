@@ -20,28 +20,8 @@ export default function MainPhase2() {
   const [activeCaseIndex, setActiveCaseIndex] = useState(0);
   const [isInView, setIsInView] = useState(false);
 
-  // --- USE CASES (Podaci) ---
+  // --- USE CASES (Podaci) - Salon FIRST to shift focus from restaurants ---
   const USE_CASES = useMemo(() => [
-    {
-      id: "restaurant",
-      themeColor: "#f97316", // Orange
-      accentColor: "text-orange-400",
-      bgGradient: "from-orange-500/20 to-transparent",
-      title: t("phase2.cases.restaurant.title"),
-      subtitle: t("phase2.cases.restaurant.subtitle"),
-      icon: Utensils,
-      info: ["08:00 - 23:00", "Free WiFi", "069/555-333"],
-      categories: [
-        t("phase2.cases.restaurant.categories.0"),
-        t("phase2.cases.restaurant.categories.1"),
-        t("phase2.cases.restaurant.categories.2")
-      ],
-      config: { type: "menu", layout: "list", style: "bistro" },
-      items: [
-        { name: t("phase2.cases.restaurant.items.0.name"), desc: t("phase2.cases.restaurant.items.0.desc"), price: "$18.00" },
-        { name: t("phase2.cases.restaurant.items.1.name"), desc: t("phase2.cases.restaurant.items.1.desc"), price: "$12.50" },
-      ]
-    },
     {
       id: "salon",
       themeColor: "#ec4899", // Pink
@@ -80,6 +60,26 @@ export default function MainPhase2() {
       items: [
         { name: t("phase2.cases.dentist.items.0.name"), desc: t("phase2.cases.dentist.items.0.desc"), price: "$90.00" },
         { name: t("phase2.cases.dentist.items.1.name"), desc: t("phase2.cases.dentist.items.1.desc"), price: "$250.00" },
+      ]
+    },
+    {
+      id: "restaurant",
+      themeColor: "#f97316", // Orange
+      accentColor: "text-orange-400",
+      bgGradient: "from-orange-500/20 to-transparent",
+      title: t("phase2.cases.restaurant.title"),
+      subtitle: t("phase2.cases.restaurant.subtitle"),
+      icon: Utensils,
+      info: ["08:00 - 23:00", "Free WiFi", "069/555-333"],
+      categories: [
+        t("phase2.cases.restaurant.categories.0"),
+        t("phase2.cases.restaurant.categories.1"),
+        t("phase2.cases.restaurant.categories.2")
+      ],
+      config: { type: "menu", layout: "list", style: "bistro" },
+      items: [
+        { name: t("phase2.cases.restaurant.items.0.name"), desc: t("phase2.cases.restaurant.items.0.desc"), price: "$18.00" },
+        { name: t("phase2.cases.restaurant.items.1.name"), desc: t("phase2.cases.restaurant.items.1.desc"), price: "$12.50" },
       ]
     }
   ], [t]);

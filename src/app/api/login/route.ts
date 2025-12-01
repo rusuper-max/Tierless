@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
-import { createAuthToken, ensureAuthTables } from "@/lib/db";
+import { createAuthToken } from "@/lib/db";
 import { Resend } from "resend";
+
+// NOTE: Auth tables are created by migration script (data/migrations/001_init_schema.sql)
+// Do NOT call ensureAuthTables at runtime - it causes performance issues
 
 export async function POST(req: Request) {
   try {
@@ -19,8 +22,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
-    // 2. Priprema baze i tokena
-    await ensureAuthTables();
+    // 2. Create auth token (table created by migration)
     const token = await createAuthToken(email);
 
     // 3. URL Logika

@@ -20,8 +20,11 @@ export type SessionUser = {
 export const SESSION_COOKIE = SESSION_COOKIE_NAME;
 
 // Secret key for JWT signing
-// Note: env.ts already validates SESSION_SECRET exists in production
-const SECRET = SESSION_SECRET || (IS_DEV ? "dev_secret_min_32_chars_000000000000000" : "");
+// SECURITY: env.ts validates SESSION_SECRET exists in production
+// In development, use a fallback that will never work in production
+const SECRET = SESSION_SECRET || (IS_DEV ? "dev_secret_min_32_chars_000000000000000" : (() => {
+  throw new Error("FATAL: SESSION_SECRET is required!");
+})());
 const secretKey = new TextEncoder().encode(SECRET);
 
 export const COOKIE_BASE = {
@@ -52,7 +55,6 @@ async function ensureUserPlansTable() {
 
 /** Authoritative plan lookup from DB (fallback to "free"). */
 export async function getUserPlan(userId: string): Promise<Plan> {
-  await ensureUserPlansTable();
   try {
     const pool = getPool();
     const { rows } = await pool.query(

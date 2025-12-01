@@ -14,6 +14,19 @@ type PlanId = "free" | "starter" | "growth" | "pro";
 // Definišemo gradient ovde da bude konzistentan (ili koristi var(--brand-gradient) iz CSS-a)
 const BRAND_GRADIENT = "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%, #ec4899 100%))";
 
+// ============================================
+// 🍋 LEMON SQUEEZY VARIANT IDS
+// ============================================
+// Map each plan to its LemonSqueezy variant ID
+// Format: { [planId]: { monthly: "variant_id", yearly: "variant_id" } }
+// Get these from: LemonSqueezy Dashboard → Products → Variants
+const LEMON_VARIANTS: Record<string, { monthly?: string; yearly?: string }> = {
+  // REPLACE WITH YOUR ACTUAL VARIANT IDs:
+  // starter: { monthly: "123456", yearly: "123457" },
+  // growth:  { monthly: "234567", yearly: "234568" },
+  // pro:     { monthly: "345678", yearly: "345679" },
+};
+
 type SpecialItem = {
   id: string;
   label: string;
@@ -227,20 +240,64 @@ export default function StartPage() {
       href: item.href,
     });
 
-  const handlePlanChange = async (planId: PlanId) => {
+  const handlePlanChange = async (planId: PlanId): Promise<boolean | "redirect"> => {
     if (!authed) return false;
+    
+    // FREE plan - direct API update (no payment needed)
+    if (planId === "free") {
+      try {
+        const res = await fetch("/api/me/plan", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan: planId, renewsOn: null }),
+        });
+        if (!res.ok) return false;
+        setCurrentPlan(planId);
+        window.dispatchEvent(new Event("TL_AUTH_CHANGED"));
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    
+    // PAID plans - redirect to LemonSqueezy checkout
+    const variantConfig = LEMON_VARIANTS[planId];
+    const variantId = interval === "yearly" ? variantConfig?.yearly : variantConfig?.monthly;
+    
+    if (!variantId) {
+      // Variant not configured - show error or fallback
+      console.error(`No LemonSqueezy variant configured for ${planId} (${interval})`);
+      alert(t("Payment not configured. Please contact support."));
+      return false;
+    }
+    
     try {
-      const renewsOn = getNextRenewalISO(interval, planId);
-      const res = await fetch("/api/me/plan", {
-        method: "PUT",
+      const res = await fetch("/api/integrations/lemon/checkout", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planId, renewsOn }),
+        body: JSON.stringify({
+          variantId,
+          successUrl: `${window.location.origin}/dashboard?upgraded=true`,
+          cancelUrl: `${window.location.origin}/start`,
+        }),
       });
-      if (!res.ok) return false;
-      setCurrentPlan(planId);
-      window.dispatchEvent(new Event("TL_AUTH_CHANGED"));
-      return true;
-    } catch {
+      
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        console.error("Checkout error:", error);
+        alert(t("Failed to start checkout. Please try again."));
+        return false;
+      }
+      
+      const { url } = await res.json();
+      if (url) {
+        window.location.href = url;
+        return "redirect";
+      }
+      return false;
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert(t("Failed to start checkout. Please try again."));
       return false;
     }
   };
@@ -341,7 +398,7 @@ function PlanCard({
   authed: boolean;
   currentPlan: PlanId | null;
   onOpenInfo: (item: SpecialItem) => void;
-  onPlanChange: (id: PlanId) => Promise<boolean>;
+  onPlanChange: (id: PlanId) => Promise<boolean | "redirect">;
   isDark: boolean;
 }) {
   const [busy, setBusy] = useState(false);
@@ -376,8 +433,13 @@ function PlanCard({
     if (authed) {
       e.preventDefault();
       setBusy(true);
-      const ok = await onPlanChange(plan.id);
-      if (!ok) window.location.href = ctaHref;
+      const result = await onPlanChange(plan.id);
+      // If redirecting to checkout, don't reset busy state
+      if (result === "redirect") return;
+      if (!result) {
+        // Only redirect to signup if not authenticated (edge case)
+        if (!authed) window.location.href = ctaHref;
+      }
       setBusy(false);
     }
   };

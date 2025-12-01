@@ -18,7 +18,7 @@ async function ensureTable() {
     CREATE INDEX IF NOT EXISTS idx_calc_full_slug ON calc_full(slug);
     CREATE INDEX IF NOT EXISTS idx_calc_full_meta_id ON calc_full((calc->'meta'->>'id'));
   `);
-  
+
   // Migration: add version column if it doesn't exist
   try {
     await pool.query(`
@@ -27,7 +27,7 @@ async function ensureTable() {
   } catch (e) {
     console.warn("Migration (version column) failed:", e);
   }
-  
+
   // Add team_id column for future Teams support
   try {
     await pool.query(`
@@ -49,7 +49,6 @@ export type FullRecord = {
  * Vrati FULL kalkulator za datog usera i slug, ili undefined ako ne postoji.
  */
 export async function getFull(userId: string, slug: string): Promise<any | undefined> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT calc FROM calc_full WHERE user_id = $1 AND slug = $2 LIMIT 1`,
     [userId, slug]
@@ -61,7 +60,6 @@ export async function getFull(userId: string, slug: string): Promise<any | undef
  * Get full record WITH version for optimistic locking.
  */
 export async function getFullWithVersion(userId: string, slug: string): Promise<FullRecord | undefined> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT calc, version, updated_at FROM calc_full WHERE user_id = $1 AND slug = $2 LIMIT 1`,
     [userId, slug]
@@ -86,7 +84,7 @@ function withMetaIds(calc: any, slug: string) {
   return { ...(calc || {}), meta };
 }
 
-export type PutFullResult = 
+export type PutFullResult =
   | { success: true; newVersion: number }
   | { success: false; error: "VERSION_CONFLICT"; currentVersion: number };
 
@@ -101,10 +99,9 @@ export async function putFull(
   calc: any,
   expectedVersion?: number
 ): Promise<void> {
-  await ensureTable();
   const now = Date.now();
   const normalized = withMetaIds(calc, slug);
-  
+
   if (expectedVersion !== undefined) {
     // Optimistic locking: only update if version matches
     const result = await pool.query(
@@ -116,19 +113,19 @@ export async function putFull(
       `,
       [userId, slug, normalized, now, expectedVersion]
     );
-    
+
     if (result.rowCount === 0) {
       // Check if record exists with different version
       const existing = await pool.query(
         `SELECT version FROM calc_full WHERE user_id = $1 AND slug = $2`,
         [userId, slug]
       );
-      
+
       if (existing.rows[0]) {
         const currentVersion = Number(existing.rows[0].version);
         throw new VersionConflictError(expectedVersion, currentVersion);
       }
-      
+
       // Record doesn't exist, create it
       await pool.query(
         `
@@ -166,7 +163,7 @@ export async function putFullWithClient(
 ): Promise<number> {
   const now = Date.now();
   const normalized = withMetaIds(calc, slug);
-  
+
   const result = await client.query(
     `
     INSERT INTO calc_full (user_id, slug, calc, updated_at, version)
@@ -180,7 +177,7 @@ export async function putFullWithClient(
     `,
     [userId, slug, normalized, now]
   );
-  
+
   return Number(result.rows[0]?.version) || 1;
 }
 
@@ -190,7 +187,7 @@ export async function putFullWithClient(
 export class VersionConflictError extends Error {
   public readonly expectedVersion: number;
   public readonly currentVersion: number;
-  
+
   constructor(expected: number, current: number) {
     super(`Version conflict: expected ${expected}, but current is ${current}`);
     this.name = "VersionConflictError";
@@ -203,8 +200,17 @@ export class VersionConflictError extends Error {
  * Obriši FULL zapis za datog usera i slug (ako postoji).
  */
 export async function deleteFull(userId: string, slug: string): Promise<void> {
-  await ensureTable();
   await pool.query(
+    `DELETE FROM calc_full WHERE user_id = $1 AND slug = $2`,
+    [userId, slug]
+  );
+}
+
+/**
+ * Delete full with transaction support.
+ */
+export async function deleteFullWithClient(client: PoolClient, userId: string, slug: string): Promise<void> {
+  await client.query(
     `DELETE FROM calc_full WHERE user_id = $1 AND slug = $2`,
     [userId, slug]
   );
@@ -215,7 +221,6 @@ export async function deleteFull(userId: string, slug: string): Promise<void> {
  * (Za public /p/ linkove, ako ti tako treba.)
  */
 export async function findFullBySlug(slug: string): Promise<any | undefined> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT calc FROM calc_full WHERE slug = $1 LIMIT 1`,
     [slug]
@@ -227,7 +232,6 @@ export async function findFullBySlug(slug: string): Promise<any | undefined> {
  * Cross-user finder: prvi FULL kalkulator sa datim public ID-jem.
  */
 export async function findFullById(id: string): Promise<any | undefined> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT calc FROM calc_full WHERE calc->'meta'->>'id' = $1 LIMIT 1`,
     [id]

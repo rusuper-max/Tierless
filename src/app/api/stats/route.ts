@@ -53,7 +53,6 @@ async function ensureAnalyticsTable() {
 // Fetch events for specified page IDs from PostgreSQL
 async function getEventsForPages(pageIds: string[], days: number = 7): Promise<AnalyticsEvent[]> {
   const pool = getPool();
-  await ensureAnalyticsTable();
 
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
 
@@ -380,22 +379,28 @@ export async function POST(req: NextRequest) {
     // -----------------------
 
     const pool = getPool();
-    await ensureAnalyticsTable();
 
-    for (const event of events) {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, page_id, ts, session_id, client_id, props)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          event.type,
-          event.pageId,
-          event.ts,
-          event.sessionId,
-          event.clientId,
-          JSON.stringify(event.props || {})
-        ]
-      );
-    }
+    // Bulk insert using UNNEST for efficiency
+    // We construct arrays for each column to pass to UNNEST
+    const types = events.map(e => e.type);
+    const pageIds = events.map(e => e.pageId);
+    const timestamps = events.map(e => e.ts);
+    const sessionIds = events.map(e => e.sessionId);
+    const clientIds = events.map(e => e.clientId);
+    const propsList = events.map(e => JSON.stringify(e.props || {}));
+
+    await pool.query(
+      `INSERT INTO analytics_events (event_type, page_id, ts, session_id, client_id, props)
+       SELECT * FROM UNNEST(
+         $1::text[], 
+         $2::text[], 
+         $3::bigint[], 
+         $4::text[], 
+         $5::text[], 
+         $6::jsonb[]
+       )`,
+      [types, pageIds, timestamps, sessionIds, clientIds, propsList]
+    );
 
     return NextResponse.json({ ok: true, recorded: events.length });
   } catch (error) {

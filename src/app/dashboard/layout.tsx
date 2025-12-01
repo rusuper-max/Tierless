@@ -103,16 +103,19 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       </div>
 
       {/* Sve dashboard varijable i stilovi pod .tl-dashboard */}
-      <div className="tl-dashboard min-h-screen w-full flex flex-col md:flex-row">
+      <div className="tl-dashboard min-h-screen w-full flex flex-col md:flex-row bg-[var(--bg)]">
         <Sidebar />
 
+        {/* Brand gradient separator line */}
         <div
           aria-hidden
           className="hidden md:block w-[2px] shrink-0"
           style={{ backgroundImage: "linear-gradient(180deg, var(--brand-1,#4F46E5), var(--brand-2,#22D3EE))" }}
         />
 
-        <div className="flex-1 min-w-0 w-full md:w-auto">{children}</div>
+        <main className="flex-1 min-w-0 w-full md:w-auto bg-[var(--bg)] p-0">
+          {children}
+        </main>
       </div>
     </LanguageProvider>
   );

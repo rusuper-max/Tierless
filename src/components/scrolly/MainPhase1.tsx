@@ -119,11 +119,11 @@ export default function MainPhase1() {
               transition={{ delay: 1, duration: 1 }}
               className="mt-3 sm:mt-4 flex flex-wrap justify-center gap-x-4 sm:gap-x-6 gap-y-2 sm:gap-y-3 text-slate-400 text-xs sm:text-sm font-medium"
             >
-              <span className="flex items-center gap-2"><Coffee size={16} className="text-cyan-400" /> {t("phase1.useCases.cafes")}</span>
+              <span className="flex items-center gap-2"><Scissors size={16} className="text-pink-400" /> {t("phase1.useCases.salons")}</span>
               <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
               <span className="flex items-center gap-2"><Camera size={16} className="text-indigo-400" /> {t("phase1.useCases.freelancers")}</span>
               <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
-              <span className="flex items-center gap-2"><Scissors size={16} className="text-pink-400" /> {t("phase1.useCases.salons")}</span>
+              <span className="flex items-center gap-2"><Coffee size={16} className="text-cyan-400" /> {t("phase1.useCases.cafes")}</span>
               <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-800 self-center" />
               <span className="flex items-center gap-2"><Rocket size={16} className="text-emerald-400" /> {t("phase1.useCases.startups")}</span>
             </motion.div>

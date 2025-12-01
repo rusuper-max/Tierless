@@ -14,7 +14,7 @@
   },
   "hero": {
     "title": "Skip the website. Give your prices a page and QR code",
-    "subtitle": "For cafés, restaurants, salons and small businesses that just need a clean price page. Add your items and prices, get a link and QR code, and let customers see your prices on their device.",
+    "subtitle": "For salons, freelancers, cafés and small businesses that just need a clean price page. Add your services and prices, get a link and QR code, and let clients see your prices on their device.",
     "ctaPrimary": "Start free",
     "ctaSecondary": "See live demo"
   },
@@ -50,35 +50,35 @@
     "title1": "Your prices.",
     "title2": "Online.",
     "title3": "Beautiful.",
-    "subtitle": "Create menus, rate cards, and price calculators in minutes. Share via Link or QR code. Update anytime, instantly.",
+    "subtitle": "Create price lists, service catalogs, and calculators in minutes. Share via Link or QR code. Update anytime, instantly.",
     "ctaPrimary": "Create My Page Free",
     "ctaSecondary": "See Examples",
     "perfectFor": "Perfect for",
     "useCases": {
-      "cafes": "Cafes & Menus",
+      "salons": "Salons & Spas",
       "freelancers": "Freelancers",
-      "salons": "Salons",
+      "cafes": "Cafes & Restaurants",
       "startups": "Startups"
     }
   },
   "phase2": {
     "step1": {
-      "label": "Core Engine",
-      "title": "One structure.",
-      "subtitle": "Infinite layouts.",
-      "desc": "Drop in your items once. Our engine automatically organizes them into a conversion-optimized layout. No drag-and-drop chaos."
+      "label": "Simple Setup",
+      "title": "Add your services.",
+      "subtitle": "We handle the rest.",
+      "desc": "Just type in your services and prices. We'll automatically create a beautiful, mobile-friendly page that works for you."
     },
     "step2": {
-      "label": "Visual DNA",
-      "title": "Instant branding.",
-      "subtitle": "Zero design skills.",
-      "desc": "Select a vibe. The Tierless Engine repaints every component, button, and font to match your brand identity instantly."
+      "label": "Your Style",
+      "title": "Pick a theme.",
+      "subtitle": "Look professional instantly.",
+      "desc": "Choose a style that fits your brand. Colors, fonts, and layout adapt automatically. No design skills needed."
     },
     "step3": {
-      "label": "Deployment",
-      "title": "Always accessible.",
-      "subtitle": "Blazingly fast.",
-      "desc": "Your Tierless page is a high-performance PWA. It loads instantly on any device, scan after scan."
+      "label": "Go Live",
+      "title": "Share anywhere.",
+      "subtitle": "Works on any phone.",
+      "desc": "Your page loads instantly on any device. Share via link, QR code, or add to your social bio. Update anytime."
     },
     "cases": {
       "restaurant": {
@@ -140,11 +140,50 @@
       }
     }
   },
+  "phase3benefits": {
+    "badge": "Why Tierless?",
+    "title": "Everything you need. Nothing you don't.",
+    "subtitle": "Simple tools that just work. No tech skills required.",
+    "benefits": {
+      "noWebsite": {
+        "title": "No Website Needed",
+        "desc": "Skip the expensive website. Get a professional page in minutes, not months."
+      },
+      "anyPhone": {
+        "title": "Works on Any Phone",
+        "desc": "Clients just scan and see your prices. No app download, no registration."
+      },
+      "updateAnytime": {
+        "title": "Update Anytime",
+        "desc": "Change prices, add items, update photos. Instantly. No extra cost."
+      },
+      "shareEverywhere": {
+        "title": "Share Everywhere",
+        "desc": "Link, QR code, Instagram bio, WhatsApp status. Your choice."
+      },
+      "calculator": {
+        "title": "Built-in Calculator",
+        "desc": "Clients pick services and see the total automatically. Perfect for quotes."
+      },
+      "multiLanguage": {
+        "title": "Any Language",
+        "desc": "Create your page in the language your clients actually use."
+      }
+    },
+    "bottomFeatures": {
+      "instant": "Ready in 5 minutes",
+      "noCoding": "Zero coding needed",
+      "freeStart": "Start free forever"
+    },
+    "cta": {
+      "subtext": ""
+    }
+  },
   "phase3": {
     "step1": {
       "badge": "Step 1",
       "title": "Scan the QR.",
-      "desc": "Put it on tables. No app download needed."
+      "desc": "Put it anywhere. No app download needed."
     },
     "step2": {
       "badge": "Step 2",
@@ -153,40 +192,40 @@
     },
     "step3": {
       "badge": "Step 3",
-      "title": "Order & Enjoy.",
-      "desc": "Beautiful menu. Happy customers."
+      "title": "Select & Book.",
+      "desc": "Beautiful page. Happy clients."
     },
     "demo": {
-      "scanLabel": "Scan for Menu",
+      "scanLabel": "Scan for Prices",
       "scanning": "Scanning code...",
-      "loading": "Loading Menu...",
-      "restaurantName": "Burger & Co.",
+      "loading": "Loading Page...",
+      "restaurantName": "Luxe Studio",
       "open": "OPEN",
       "popular": "Popular",
-      "mains": "Mains",
-      "cta": "Create My QR Menu",
+      "mains": "Services",
+      "cta": "Create My QR Page",
       "items": [
         {
-          "name": "Truffle Smash",
-          "desc": "Double patty, truffle mayo, swiss"
+          "name": "Haircut & Style",
+          "desc": "Wash, cut, blowdry & styling"
         },
         {
-          "name": "Spicy Chicken",
-          "desc": "Crispy thigh, slaw, pickles"
+          "name": "Color Treatment",
+          "desc": "Full color, highlights included"
         },
         {
-          "name": "Loaded Fries",
-          "desc": "Bacon bits, cheddar sauce"
+          "name": "Gel Manicure",
+          "desc": "Premium gel polish, 30min"
         },
         {
-          "name": "Craft Lemonade",
-          "desc": "Fresh mint & ginger"
+          "name": "Relaxing Massage",
+          "desc": "60min full body treatment"
         }
       ]
     }
   },
   "footer": {
-    "desc": "Create beautiful pricing pages and menus without code.",
+    "desc": "Create beautiful pricing pages and service catalogs without code.",
     "product": "Product",
     "pricing": "Pricing",
     "templates": "Templates",

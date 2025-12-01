@@ -35,7 +35,6 @@ type ProfileRow = {
 };
 
 async function fetchUserProfile(userId: string): Promise<ProfileRow> {
-  await ensureUserProfilesTable();
   const pool = getPool();
   const { rows } = await pool.query(
     `SELECT whatsapp_number, telegram_username, order_destination, inquiry_email 

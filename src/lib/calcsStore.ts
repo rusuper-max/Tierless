@@ -59,7 +59,7 @@ export async function ensureTable() {
   } catch (e) {
     console.warn("Migration add columns failed (ignoring):", e);
   }
-  
+
   // Team support migration
   try {
     await pool.query(`
@@ -197,7 +197,6 @@ async function seedFullFromSource(
 // =============== Public API (list/get/basic CRUD) ==================
 
 export async function list(userId: string): Promise<Calc[]> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT * FROM calculators WHERE user_id=$1 ORDER BY "order" ASC, created_at ASC`,
     [userId]
@@ -206,7 +205,6 @@ export async function list(userId: string): Promise<Calc[]> {
 }
 
 export async function get(userId: string, slug: string): Promise<Calc | undefined> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT * FROM calculators WHERE user_id=$1 AND slug=$2 LIMIT 1`,
     [userId, slug]
@@ -215,7 +213,6 @@ export async function get(userId: string, slug: string): Promise<Calc | undefine
 }
 
 export async function create(userId: string, name = "Untitled Page"): Promise<Calc> {
-  await ensureTable();
   const slug = await uniqueSlug(userId, name);
   const now = Date.now();
   await pool.query(
@@ -238,7 +235,6 @@ export async function createWithSlug(
   cfg?: any,
   template?: string
 ): Promise<Calc> {
-  await ensureTable();
   let slug = desiredSlug
     ? slugBase(desiredSlug)
     : await uniqueSlug(userId, name || "page");
@@ -278,7 +274,6 @@ export async function createWithSlug(
 }
 
 export async function createFromTemplate(userId: string, templateSlug: string, name?: string) {
-  await ensureTable();
   const baseName = (name?.trim() || templateSlug || "New Page");
   const slug = await uniqueSlug(userId, baseName);
   const now = Date.now();
@@ -296,55 +291,101 @@ export async function createFromTemplate(userId: string, templateSlug: string, n
 }
 
 export async function duplicate(userId: string, fromSlug: string, newName: string) {
-  await ensureTable();
-  const { rows: srcRows } = await pool.query(
-    `SELECT * FROM calculators WHERE user_id=$1 AND slug=$2 LIMIT 1`,
-    [userId, fromSlug]
-  );
-  if (!srcRows[0]) return undefined;
-  const src = srcRows[0];
-  const friendlyName = sanitizeCopyName(newName || src.name || "Untitled Page");
-  const slug = await uniqueSlug(userId, friendlyName);
-  const now = Date.now();
-  await pool.query(
-    `INSERT INTO calculators (user_id, slug, name, template, config, published, favorite, "order", views7d, created_at, updated_at)
-     VALUES ($1,$2,$3,$4,$5,FALSE,FALSE,0,0,$6,$6)`,
-    [userId, slug, friendlyName, src.template ?? null, src.config ?? {}, now]
-  );
+  const client = await pool.connect();
   try {
-    let sourceFull = await fullStore.getFull(userId, fromSlug);
+    await client.query("BEGIN");
+
+    // 1. Get source
+    const { rows: srcRows } = await client.query(
+      `SELECT * FROM calculators WHERE user_id=$1 AND slug=$2 LIMIT 1`,
+      [userId, fromSlug]
+    );
+    if (!srcRows[0]) {
+      await client.query("ROLLBACK");
+      return undefined;
+    }
+    const src = srcRows[0];
+
+    const friendlyName = sanitizeCopyName(newName || src.name || "Untitled Page");
+    const slug = await uniqueSlug(userId, friendlyName);
+    const now = Date.now();
+
+    // 2. Insert new calculator
+    await client.query(
+      `INSERT INTO calculators (user_id, slug, name, template, config, published, favorite, "order", views7d, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,FALSE,FALSE,0,0,$6,$6)`,
+      [userId, slug, friendlyName, src.template ?? null, src.config ?? {}, now]
+    );
+
+    // 3. Handle full store
+    let sourceFull;
+    try {
+      const { rows } = await client.query(
+        `SELECT calc FROM calc_full WHERE user_id=$1 AND slug=$2`,
+        [userId, fromSlug]
+      );
+      sourceFull = rows[0]?.calc;
+    } catch { }
+
     if (sourceFull) {
       sourceFull = {
         ...sourceFull,
         meta: { ...(sourceFull.meta || {}), name: friendlyName },
       };
     }
-    await seedFullFromSource(
-      userId,
-      slug,
-      sourceFull,
-      {
-        meta: { name: friendlyName, slug },
-        config: src.config ?? {},
-      }
-    );
+
+    // Seed logic inline
+    const payload = sourceFull ?? calcFromMetaConfig({
+      meta: { name: friendlyName, slug },
+      config: src.config ?? {},
+    });
+
+    // Ensure IDs
+    const withIds = {
+      ...payload,
+      meta: { ...(payload.meta || {}), id: randomBytes(9).toString("base64url"), slug }
+    };
+
+    await fullStore.putFullWithClient(client, userId, slug, withIds);
+
+    await client.query("COMMIT");
+    return slug;
   } catch (err) {
-    console.error("duplicate seed full failed", { userId, fromSlug, slug, err });
+    await client.query("ROLLBACK");
+    console.error("duplicate failed", { userId, fromSlug, err });
+    throw err;
+  } finally {
+    client.release();
   }
-  return slug;
 }
 
 export async function remove(userId: string, slug: string) {
-  await ensureTable();
-  const res = await pool.query(
-    `DELETE FROM calculators WHERE user_id=$1 AND slug=$2`,
-    [userId, slug]
-  );
-  return (res.rowCount ?? 0) > 0;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Delete from calculators (meta)
+    const res = await client.query(
+      `DELETE FROM calculators WHERE user_id=$1 AND slug=$2`,
+      [userId, slug]
+    );
+
+    // Delete from calc_full (content) - ensure cleanup
+    if ((res.rowCount ?? 0) > 0) {
+      await fullStore.deleteFullWithClient(client, userId, slug);
+    }
+
+    await client.query("COMMIT");
+    return (res.rowCount ?? 0) > 0;
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
 export async function updateName(userId: string, slug: string, newName: string) {
-  await ensureTable();
   const now = Date.now();
   const res = await pool.query(
     `UPDATE calculators SET name=$1, updated_at=$2 WHERE user_id=$3 AND slug=$4`,
@@ -358,47 +399,77 @@ export async function renameWithSlug(
   slug: string,
   newName: string
 ): Promise<{ slug: string } | null> {
-  await ensureTable();
-  const existing = await get(userId, slug);
-  if (!existing) return null;
-  const nextSlug = await uniqueSlug(userId, newName || "page", {
-    ignoreSlug: slug,
-  });
-  const now = Date.now();
-  await pool.query(
-    `UPDATE calculators SET name=$1, slug=$2, updated_at=$3 WHERE user_id=$4 AND slug=$5`,
-    [newName, nextSlug, now, userId, slug]
-  );
-
-  let full: any | null = null;
+  const client = await pool.connect();
   try {
-    full = await fullStore.getFull(userId, slug);
-  } catch { }
+    await client.query("BEGIN");
 
-  if (full) {
-    const patched = {
-      ...full,
-      meta: { ...(full.meta || {}), name: newName, slug: nextSlug },
-    };
-    await fullStore.putFull(userId, nextSlug, patched);
-    if (nextSlug !== slug) {
-      try {
-        await fullStore.deleteFull(userId, slug);
-      } catch { }
+    // 1. Get existing meta
+    const { rows: existingRows } = await client.query(
+      `SELECT * FROM calculators WHERE user_id=$1 AND slug=$2 LIMIT 1`,
+      [userId, slug]
+    );
+    const existing = existingRows[0] ? rowToCalc(existingRows[0]) : undefined;
+
+    if (!existing) {
+      await client.query("ROLLBACK");
+      return null;
     }
-  } else {
-    await seedFullFromSource(
-      userId,
-      nextSlug,
-      null,
-      {
+
+    // 2. Calculate next slug
+    // Note: uniqueSlug uses its own pool connection, which is fine for checking uniqueness
+    // against committed data.
+    const nextSlug = await uniqueSlug(userId, newName || "page", {
+      ignoreSlug: slug,
+    });
+
+    const now = Date.now();
+
+    // 3. Update calculators
+    await client.query(
+      `UPDATE calculators SET name=$1, slug=$2, updated_at=$3 WHERE user_id=$4 AND slug=$5`,
+      [newName, nextSlug, now, userId, slug]
+    );
+
+    // 4. Update calc_full
+    const { rows: fullRows } = await client.query(
+      `SELECT calc FROM calc_full WHERE user_id = $1 AND slug = $2`,
+      [userId, slug]
+    );
+    const full = fullRows[0]?.calc;
+
+    if (full) {
+      const patched = {
+        ...full,
+        meta: { ...(full.meta || {}), name: newName, slug: nextSlug },
+      };
+      await fullStore.putFullWithClient(client, userId, nextSlug, patched);
+
+      if (nextSlug !== slug) {
+        await fullStore.deleteFullWithClient(client, userId, slug);
+      }
+    } else {
+      // Seed new if missing
+      const seeded = calcFromMetaConfig({
         meta: { ...existing.meta, name: newName, slug: nextSlug },
         config: existing.config ?? {},
-      }
-    );
-  }
+      });
+      // Ensure IDs
+      const withIds = {
+        ...seeded,
+        meta: { ...(seeded.meta || {}), id: randomBytes(9).toString("base64url"), slug: nextSlug }
+      };
+      await fullStore.putFullWithClient(client, userId, nextSlug, withIds);
+    }
 
-  return { slug: nextSlug };
+    await client.query("COMMIT");
+    return { slug: nextSlug };
+
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
 // =============== Meta helpers (publish/favorite/order/etc) ===============
@@ -423,36 +494,63 @@ export async function setPublished(
   slug: string,
   next: boolean
 ): Promise<boolean> {
-  await ensureTable();
-  const now = Date.now();
-  const res = await pool.query(
-    `UPDATE calculators SET published=$1, updated_at=$2 WHERE user_id=$3 AND slug=$4`,
-    [!!next, now, userId, slug]
-  );
-  const ok = (res.rowCount ?? 0) > 0;
-  if (ok) {
-    let override: any | undefined;
-    if (next) {
-      override = await fullStore.getFull(userId, slug);
-      if (!override) {
-        const row = await get(userId, slug);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const now = Date.now();
+
+    // 1. Update calculators
+    const res = await client.query(
+      `UPDATE calculators SET published=$1, updated_at=$2 WHERE user_id=$3 AND slug=$4`,
+      [!!next, now, userId, slug]
+    );
+    const ok = (res.rowCount ?? 0) > 0;
+
+    if (ok) {
+      // 2. Sync full store
+      let full;
+      const { rows } = await client.query(
+        `SELECT calc FROM calc_full WHERE user_id=$1 AND slug=$2`,
+        [userId, slug]
+      );
+      full = rows[0]?.calc;
+
+      if (!full && next) {
+        // If publishing and no full exists, try to seed from meta
+        const { rows: metaRows } = await client.query(
+          `SELECT * FROM calculators WHERE user_id=$1 AND slug=$2`,
+          [userId, slug]
+        );
+        const row = metaRows[0] ? rowToCalc(metaRows[0]) : undefined;
         if (row) {
           const seeded = calcFromMetaConfig({
             meta: row.meta,
             config: row.config,
           });
-          override = attachMetaIds(seeded, row.meta.slug);
-          await fullStore.putFull(userId, slug, override);
+          full = attachMetaIds(seeded, row.meta.slug);
         }
       }
+
+      if (full) {
+        const updated = {
+          ...full,
+          meta: { ...(full.meta || {}), slug: full.meta?.slug || slug, published: !!next },
+        };
+        await fullStore.putFullWithClient(client, userId, slug, updated);
+      }
     }
-    await syncPublicationState(userId, slug, !!next, override);
+
+    await client.query("COMMIT");
+    return ok;
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
   }
-  return ok;
 }
 
 export async function setFavorite(userId: string, slug: string, next: boolean): Promise<boolean> {
-  await ensureTable();
   const now = Date.now();
   const res = await pool.query(
     `UPDATE calculators SET favorite=$1, updated_at=$2 WHERE user_id=$3 AND slug=$4`,
@@ -462,7 +560,6 @@ export async function setFavorite(userId: string, slug: string, next: boolean): 
 }
 
 export async function setOrder(userId: string, slugsInOrder: string[]): Promise<void> {
-  await ensureTable();
   if (!slugsInOrder || slugsInOrder.length === 0) return;
 
   // Build VALUES table for (slug, order)
@@ -480,7 +577,6 @@ export async function setOrder(userId: string, slugsInOrder: string[]): Promise<
 // =============== Counting & batch unpublish ======================
 
 export async function countAll(userId: string): Promise<number> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT COUNT(*)::int AS n FROM calculators WHERE user_id=$1`,
     [userId]
@@ -489,7 +585,6 @@ export async function countAll(userId: string): Promise<number> {
 }
 
 export async function countPublished(userId: string): Promise<number> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT COUNT(*)::int AS n FROM calculators WHERE user_id=$1 AND published=TRUE`,
     [userId]
@@ -503,7 +598,6 @@ export async function countPublished(userId: string): Promise<number> {
  * @returns broj stranica koje su ugašene
  */
 export async function bulkUnpublishAboveLimit(userId: string, keep: number): Promise<number> {
-  await ensureTable();
   if (!Number.isFinite(keep) || keep < 0) keep = 0;
 
   // Nađi sve online, sort po novini
@@ -544,7 +638,6 @@ export async function bulkUnpublishAboveLimit(userId: string, keep: number): Pro
 // =============== Cross-user finder (koristi PG) =================
 
 export async function findMiniInAllUsers(slug: string): Promise<Calc | undefined> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT * FROM calculators WHERE slug=$1 LIMIT 1`,
     [slug]
@@ -559,8 +652,7 @@ export async function findMiniInAllUsers(slug: string): Promise<Calc | undefined
  * Uses the is_example column for efficient indexed query.
  */
 export async function listExamples(limit = 50): Promise<Calc[]> {
-  await ensureTable();
-  
+
   // Use the indexed is_example column for fast filtering
   const { rows } = await pool.query(
     `SELECT * FROM calculators 
@@ -578,12 +670,11 @@ export async function listExamples(limit = 50): Promise<Calc[]> {
  * For dashboard - user doesn't need to see demo content.
  */
 export async function listUserCalcs(userId: string, excludeExamples = true): Promise<Calc[]> {
-  await ensureTable();
-  
+
   const query = excludeExamples
     ? `SELECT * FROM calculators WHERE user_id = $1 AND is_example = FALSE ORDER BY "order" ASC, created_at ASC`
     : `SELECT * FROM calculators WHERE user_id = $1 ORDER BY "order" ASC, created_at ASC`;
-  
+
   const { rows } = await pool.query(query, [userId]);
   return rows.map(rowToCalc);
 }
@@ -592,7 +683,6 @@ export async function listUserCalcs(userId: string, excludeExamples = true): Pro
  * Set is_example flag for a calculator.
  */
 export async function setIsExample(userId: string, slug: string, isExample: boolean): Promise<boolean> {
-  await ensureTable();
   const now = Date.now();
   const res = await pool.query(
     `UPDATE calculators SET is_example = $1, updated_at = $2 WHERE user_id = $3 AND slug = $4`,
@@ -605,7 +695,6 @@ export async function setIsExample(userId: string, slug: string, isExample: bool
  * Assign a calculator to a team (or remove from team if teamId is null).
  */
 export async function setTeam(userId: string, slug: string, teamId: string | null): Promise<boolean> {
-  await ensureTable();
   const now = Date.now();
   const res = await pool.query(
     `UPDATE calculators SET team_id = $1, updated_at = $2 WHERE user_id = $3 AND slug = $4`,
@@ -618,7 +707,6 @@ export async function setTeam(userId: string, slug: string, teamId: string | nul
  * List all calculators for a team (across all users).
  */
 export async function listTeamCalcs(teamId: string): Promise<Calc[]> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT * FROM calculators WHERE team_id = $1 ORDER BY name ASC`,
     [teamId]
@@ -668,7 +756,7 @@ export async function setPublishedWithClient(
 // ATOMIC OPERATIONS (Meta + Full in one transaction)
 // ============================================================================
 
-export type SaveResult = 
+export type SaveResult =
   | { success: true; version: number }
   | { success: false; error: "VERSION_CONFLICT"; currentVersion: number }
   | { success: false; error: "NOT_FOUND" };
@@ -690,20 +778,19 @@ export async function saveAtomic(
   metaUpdate?: { name?: string },
   expectedVersion?: number
 ): Promise<SaveResult> {
-  await ensureTable();
   const client = await pool.connect();
   const now = Date.now();
-  
+
   try {
     await client.query("BEGIN");
-    
+
     // 1) If version check is required, verify it first
     if (expectedVersion !== undefined) {
       const versionCheck = await client.query(
         `SELECT version FROM calc_full WHERE user_id = $1 AND slug = $2`,
         [userId, slug]
       );
-      
+
       if (versionCheck.rows[0]) {
         const currentVersion = Number(versionCheck.rows[0].version);
         if (currentVersion !== expectedVersion) {
@@ -712,7 +799,7 @@ export async function saveAtomic(
         }
       }
     }
-    
+
     // 2) Update calculators table (meta)
     if (metaUpdate?.name) {
       await client.query(
@@ -720,12 +807,12 @@ export async function saveAtomic(
         [metaUpdate.name, now, userId, slug]
       );
     }
-    
+
     // 3) Update calc_full table
     const newVersion = await fullStore.putFullWithClient(client, userId, slug, fullCalc);
-    
+
     await client.query("COMMIT");
-    
+
     return { success: true, version: newVersion };
   } catch (err) {
     await client.query("ROLLBACK");
@@ -743,33 +830,32 @@ export async function publishAtomic(
   userId: string,
   slug: string,
   isPublished: boolean,
-  contactInfo?: { type: string; [key: string]: any }
+  contactInfo?: { type: string;[key: string]: any }
 ): Promise<boolean> {
-  await ensureTable();
   const client = await pool.connect();
   const now = Date.now();
-  
+
   try {
     await client.query("BEGIN");
-    
+
     // 1) Update calculators table
     const metaResult = await client.query(
       `UPDATE calculators SET published = $1, updated_at = $2 WHERE user_id = $3 AND slug = $4`,
       [isPublished, now, userId, slug]
     );
-    
+
     if ((metaResult.rowCount ?? 0) === 0) {
       await client.query("ROLLBACK");
       return false;
     }
-    
+
     // 2) If publishing and contact info provided, update calc_full
     if (isPublished && contactInfo) {
       const existing = await client.query(
         `SELECT calc FROM calc_full WHERE user_id = $1 AND slug = $2`,
         [userId, slug]
       );
-      
+
       if (existing.rows[0]) {
         const calc = existing.rows[0].calc;
         const updated = {
@@ -780,14 +866,14 @@ export async function publishAtomic(
             published: true,
           },
         };
-        
+
         await client.query(
           `UPDATE calc_full SET calc = $1, updated_at = $2, version = version + 1 WHERE user_id = $3 AND slug = $4`,
           [updated, now, userId, slug]
         );
       }
     }
-    
+
     await client.query("COMMIT");
     return true;
   } catch (err) {

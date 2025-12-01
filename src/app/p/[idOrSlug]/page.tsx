@@ -51,22 +51,38 @@ function getBaseUrl() {
  */
 async function loadPublic(id: string, slug: string): Promise<any | null> {
   try {
+    let calc: any = null;
+    let method = "";
+    
     // Try by ID first
     if (id) {
-      const calc = await fullStore.findFullById(id);
-      if (calc) return calc;
+      calc = await fullStore.findFullById(id);
+      if (calc) method = "id";
     }
     // Then by slug
-    if (slug) {
-      const calc = await fullStore.findFullBySlug(slug);
-      if (calc) return calc;
+    if (!calc && slug) {
+      calc = await fullStore.findFullBySlug(slug);
+      if (calc) method = "slug";
     }
     // Fallback: treat the whole key as slug
-    if (id && !slug) {
-      const calc = await fullStore.findFullBySlug(id);
-      if (calc) return calc;
+    if (!calc && id && !slug) {
+      calc = await fullStore.findFullBySlug(id);
+      if (calc) method = "id-as-slug";
     }
-    return null;
+    
+    if (calc) {
+      // Debug log (same as API route had)
+      console.log("[PublicPage] Loaded:", {
+        method,
+        slug: calc.meta?.slug,
+        id: calc.meta?.id,
+        hasContact: !!calc.meta?.contact,
+        simpleAddCheckout: calc.meta?.simpleAddCheckout,
+        published: calc.meta?.published,
+      });
+    }
+    
+    return calc;
   } catch (error) {
     console.error("[PublicPage] loadPublic error:", error);
     return null;

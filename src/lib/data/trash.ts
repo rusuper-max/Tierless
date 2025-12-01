@@ -106,7 +106,6 @@ function rowToItem(r: any): TrashItem {
 
 /** Ubaci u Trash (soft delete). */
 export async function push(userId: string, row: Calc) {
-  await ensureTable();
   const now = Date.now();
   const desiredSlug = row.meta.slug || "deleted";
   const uniqueSlug = await uniqueTrashSlug(userId, desiredSlug);
@@ -127,7 +126,6 @@ export async function push(userId: string, row: Calc) {
 
 /** Lista Trash (najnovije prvo). */
 export async function list(userId: string): Promise<TrashItem[]> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT * FROM trash_items WHERE user_id=$1 ORDER BY deleted_at DESC`,
     [userId]
@@ -137,7 +135,6 @@ export async function list(userId: string): Promise<TrashItem[]> {
 
 /** Broj u Trash. */
 export async function count(userId: string): Promise<number> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT COUNT(*)::int AS n FROM trash_items WHERE user_id=$1`,
     [userId]
@@ -150,7 +147,6 @@ export async function count(userId: string): Promise<number> {
  * Pravila: zadržava name/template/config; published=false.
  */
 export async function restore(userId: string, slug: string): Promise<string | undefined> {
-  await ensureTable();
   const { rows } = await pool.query(
     `SELECT * FROM trash_items WHERE user_id=$1 AND slug=$2 LIMIT 1`,
     [userId, slug]
@@ -178,7 +174,6 @@ export async function restore(userId: string, slug: string): Promise<string | un
 
 /** Trajno obriši 1 iz Trash. */
 export async function remove(userId: string, slug: string): Promise<boolean> {
-  await ensureTable();
   const res = await pool.query(
     `DELETE FROM trash_items WHERE user_id=$1 AND slug=$2`,
     [userId, slug]
@@ -188,7 +183,6 @@ export async function remove(userId: string, slug: string): Promise<boolean> {
 
 /** Garbage collector — briše sve starije od TTL dana. */
 export async function gc(userId: string, days = DEFAULT_TTL_DAYS): Promise<number> {
-  await ensureTable();
   const ttlMs = Math.max(0, days) * 24 * 60 * 60 * 1000;
   const threshold = Date.now() - ttlMs;
   const res = await pool.query(

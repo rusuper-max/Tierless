@@ -14,7 +14,6 @@ export async function GET(req: Request) {
 
   try {
     // Fetch profile data
-    await ensureUserProfilesTable();
     const pool = getPool();
     const { rows } = await pool.query(
       "SELECT order_destination, whatsapp_number FROM user_profiles WHERE user_id = $1 LIMIT 1",

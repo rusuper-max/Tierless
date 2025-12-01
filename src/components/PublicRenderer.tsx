@@ -98,133 +98,251 @@ type PublicRendererProps = {
 };
 
 // --- THEME DEFINITIONS ---
+// Each theme needs: bg, surface, card, text, muted, border, brand colors
+// PLUS: glass (for glassmorphism), alternate (for section zebra), overlay (for modals)
 const THEMES: Record<string, any> = {
   tierless: {
-    "--bg": "#020617",
-    "--card": "#0B0C15",
-    "--text": "#f8fafc",
-    "--muted": "#94a3b8",
-    "--border": "#1e293b",
-    "--brand-1": "#4F46E5", // Indigo
-    "--brand-2": "#22D3EE", // Cyan
+    "--bg": "#020617",           // Slate 950 - Canvas (darkest)
+    "--surface": "#0f172a",      // Slate 900 - Surface layer
+    "--card": "#1e293b",         // Slate 800 - Card layer (lightest)
+    "--text": "#f8fafc",         // Almost white
+    "--muted": "#94a3b8",        // Slate 400
+    "--border": "rgba(255, 255, 255, 0.08)",
+    "--glass": "rgba(255, 255, 255, 0.1)",    // For glassmorphism buttons
+    "--glass-hover": "rgba(255, 255, 255, 0.15)",
+    "--alternate": "rgba(255, 255, 255, 0.03)", // Section zebra
+    "--overlay": "rgba(0, 0, 0, 0.6)",         // Modal backdrop
+    "--brand-1": "#4F46E5",
+    "--brand-2": "#22D3EE",
+    "--isDark": "1",
   },
   minimal: {
-    "--bg": "#ffffff",
-    "--card": "#ffffff",
-    "--text": "#111827",
-    "--muted": "#6b7280",
-    "--border": "#e5e7eb",
-    "--brand-1": "#111827",
-    "--brand-2": "#374151",
+    "--bg": "#f1f5f9",           // Slate 100 - Gray canvas (NOT white!)
+    "--surface": "#f8fafc",      // Slate 50 - Lighter surface
+    "--card": "#ffffff",         // Pure white cards "float"
+    "--text": "#0f172a",         // Slate 900
+    "--muted": "#64748b",        // Slate 500
+    "--border": "#e2e8f0",       // Slate 200
+    "--glass": "rgba(0, 0, 0, 0.04)",
+    "--glass-hover": "rgba(0, 0, 0, 0.08)",
+    "--alternate": "rgba(0, 0, 0, 0.02)",
+    "--overlay": "rgba(0, 0, 0, 0.5)",
+    "--brand-1": "#0f172a",
+    "--brand-2": "#334155",
+    "--isDark": "0",
   },
   midnight: {
-    "--bg": "#000000",
-    "--card": "#111111",
-    "--text": "#ededed",
-    "--muted": "#a1a1a1",
-    "--border": "#333333",
-    "--brand-1": "#ffffff",
-    "--brand-2": "#cccccc",
+    "--bg": "#09090b",           // Zinc 950 - Warm near-black
+    "--surface": "#18181b",      // Zinc 900
+    "--card": "#27272a",         // Zinc 800
+    "--text": "#fafafa",
+    "--muted": "#a1a1aa",
+    "--border": "rgba(255, 255, 255, 0.08)",
+    "--glass": "rgba(255, 255, 255, 0.08)",
+    "--glass-hover": "rgba(255, 255, 255, 0.12)",
+    "--alternate": "rgba(255, 255, 255, 0.02)",
+    "--overlay": "rgba(0, 0, 0, 0.7)",
+    "--brand-1": "#fafafa",
+    "--brand-2": "#d4d4d8",
+    "--isDark": "1",
   },
   luxury: {
-    "--bg": "#0f0f0f",
-    "--card": "#1a1a1a",
-    "--text": "#d4af37",
-    "--muted": "#8a7e57",
-    "--border": "#332f1e",
+    "--bg": "#0a0a0a",           // Near black with warmth
+    "--surface": "#171717",
+    "--card": "#262626",
+    "--text": "#d4af37",         // Gold
+    "--muted": "#a3a3a3",
+    "--border": "rgba(212, 175, 55, 0.2)",
+    "--glass": "rgba(212, 175, 55, 0.1)",
+    "--glass-hover": "rgba(212, 175, 55, 0.15)",
+    "--alternate": "rgba(212, 175, 55, 0.03)",
+    "--overlay": "rgba(0, 0, 0, 0.8)",
     "--brand-1": "#d4af37",
-    "--brand-2": "#fcf6ba",
+    "--brand-2": "#f5d77a",
+    "--isDark": "1",
   },
   elegant: {
-    "--bg": "#fdfbf7",
+    "--bg": "#faf8f5",           // Warm off-white
+    "--surface": "#f5f3f0",
     "--card": "#ffffff",
-    "--text": "#2c2c2c",
-    "--muted": "#858585",
-    "--border": "#e6dfc8",
-    "--brand-1": "#c5a059",
-    "--brand-2": "#d4af37",
+    "--text": "#292524",         // Stone 800
+    "--muted": "#78716c",        // Stone 500
+    "--border": "#e7e5e4",
+    "--glass": "rgba(0, 0, 0, 0.03)",
+    "--glass-hover": "rgba(0, 0, 0, 0.06)",
+    "--alternate": "rgba(0, 0, 0, 0.015)",
+    "--overlay": "rgba(0, 0, 0, 0.5)",
+    "--brand-1": "#b8860b",      // Dark goldenrod
+    "--brand-2": "#d4a84b",
+    "--isDark": "0",
   },
   cafe: {
-    "--bg": "#f5f5f0",
-    "--card": "#ffffff",
-    "--text": "#4a3b32",
-    "--muted": "#8c7b70",
-    "--border": "#e6e6e0",
-    "--brand-1": "#d97706",
+    "--bg": "#f5f5f0",           // Warm cream
+    "--surface": "#edebe5",
+    "--card": "#fefefe",
+    "--text": "#3f3f3f",
+    "--muted": "#737373",
+    "--border": "#e5e3dc",
+    "--glass": "rgba(0, 0, 0, 0.03)",
+    "--glass-hover": "rgba(0, 0, 0, 0.06)",
+    "--alternate": "rgba(139, 69, 19, 0.03)",
+    "--overlay": "rgba(0, 0, 0, 0.5)",
+    "--brand-1": "#92400e",
     "--brand-2": "#b45309",
+    "--isDark": "0",
   },
   ocean: {
-    "--bg": "#f0f9ff",
+    "--bg": "#f0f9ff",           // Sky 50
+    "--surface": "#e0f2fe",      // Sky 100
     "--card": "#ffffff",
-    "--text": "#0c4a6e",
+    "--text": "#0c4a6e",         // Sky 900
     "--muted": "#64748b",
     "--border": "#bae6fd",
-    "--brand-1": "#0ea5e9",
-    "--brand-2": "#0284c7",
+    "--glass": "rgba(14, 165, 233, 0.08)",
+    "--glass-hover": "rgba(14, 165, 233, 0.12)",
+    "--alternate": "rgba(14, 165, 233, 0.04)",
+    "--overlay": "rgba(0, 0, 0, 0.5)",
+    "--brand-1": "#0284c7",
+    "--brand-2": "#0ea5e9",
+    "--isDark": "0",
   },
   forest: {
-    "--bg": "#f2f8f5",
+    "--bg": "#f0fdf4",           // Green 50
+    "--surface": "#dcfce7",      // Green 100
     "--card": "#ffffff",
-    "--text": "#064e3b",
-    "--muted": "#6b7280",
-    "--border": "#d1fae5",
-    "--brand-1": "#059669",
-    "--brand-2": "#10b981",
+    "--text": "#14532d",         // Green 900
+    "--muted": "#4b5563",
+    "--border": "#bbf7d0",
+    "--glass": "rgba(34, 197, 94, 0.08)",
+    "--glass-hover": "rgba(34, 197, 94, 0.12)",
+    "--alternate": "rgba(34, 197, 94, 0.04)",
+    "--overlay": "rgba(0, 0, 0, 0.5)",
+    "--brand-1": "#15803d",
+    "--brand-2": "#22c55e",
+    "--isDark": "0",
   },
   sunset: {
-    "--bg": "#fff1f2",
+    "--bg": "#fff1f2",           // Rose 50
+    "--surface": "#ffe4e6",
     "--card": "#ffffff",
     "--text": "#881337",
     "--muted": "#9f1239",
     "--border": "#fecdd3",
+    "--glass": "rgba(244, 63, 94, 0.08)",
+    "--glass-hover": "rgba(244, 63, 94, 0.12)",
+    "--alternate": "rgba(244, 63, 94, 0.04)",
+    "--overlay": "rgba(0, 0, 0, 0.5)",
     "--brand-1": "#e11d48",
     "--brand-2": "#f43f5e",
+    "--isDark": "0",
   },
   rosegold: {
     "--bg": "#fef3f2",
+    "--surface": "#fee2e2",
     "--card": "#ffffff",
-    "--text": "#9f1239",
-    "--muted": "#be123c",
-    "--border": "#fecdd3",
+    "--text": "#7f1d1d",
+    "--muted": "#b91c1c",
+    "--border": "#fecaca",
+    "--glass": "rgba(225, 29, 72, 0.06)",
+    "--glass-hover": "rgba(225, 29, 72, 0.1)",
+    "--alternate": "rgba(225, 29, 72, 0.03)",
+    "--overlay": "rgba(0, 0, 0, 0.5)",
     "--brand-1": "#e0a899",
     "--brand-2": "#d4af37",
+    "--isDark": "0",
   },
   emerald: {
-    "--bg": "#0a1f1a",
-    "--card": "#0f2922",
-    "--text": "#d4af37",
-    "--muted": "#a89968",
-    "--border": "#2d5a45",
+    "--bg": "#052e16",           // Green 950
+    "--surface": "#14532d",      // Green 900
+    "--card": "#166534",         // Green 800
+    "--text": "#d4af37",         // Gold accent
+    "--muted": "#86efac",        // Green 300
+    "--border": "rgba(212, 175, 55, 0.15)",
+    "--glass": "rgba(212, 175, 55, 0.1)",
+    "--glass-hover": "rgba(212, 175, 55, 0.15)",
+    "--alternate": "rgba(212, 175, 55, 0.03)",
+    "--overlay": "rgba(0, 0, 0, 0.7)",
     "--brand-1": "#d4af37",
-    "--brand-2": "#10b981",
+    "--brand-2": "#22c55e",
+    "--isDark": "1",
   },
   sapphire: {
-    "--bg": "#0f1729",
-    "--card": "#1e293b",
-    "--text": "#cbd5e1",
+    "--bg": "#0c1222",           // Deep blue-black
+    "--surface": "#1e293b",      // Slate 800
+    "--card": "#334155",         // Slate 700
+    "--text": "#e2e8f0",         // Slate 200
     "--muted": "#94a3b8",
-    "--border": "#475569",
+    "--border": "rgba(96, 165, 250, 0.15)",
+    "--glass": "rgba(96, 165, 250, 0.1)",
+    "--glass-hover": "rgba(96, 165, 250, 0.15)",
+    "--alternate": "rgba(96, 165, 250, 0.03)",
+    "--overlay": "rgba(0, 0, 0, 0.7)",
     "--brand-1": "#60a5fa",
-    "--brand-2": "#cbd5e1",
+    "--brand-2": "#93c5fd",
+    "--isDark": "1",
   },
   obsidian: {
-    "--bg": "#000000",
-    "--card": "#0a0a0a",
-    "--text": "#ffffff",
-    "--muted": "#a3a3a3",
-    "--border": "#1a1a1a",
-    "--brand-1": "#ffffff",
-    "--brand-2": "#d4d4d4",
+    "--bg": "#09090b",           // Zinc 950 - NOT pure black
+    "--surface": "#18181b",      // Zinc 900
+    "--card": "#27272a",         // Zinc 800
+    "--text": "#fafafa",
+    "--muted": "#a1a1aa",
+    "--border": "rgba(255, 255, 255, 0.06)",
+    "--glass": "rgba(255, 255, 255, 0.06)",
+    "--glass-hover": "rgba(255, 255, 255, 0.1)",
+    "--alternate": "rgba(255, 255, 255, 0.02)",
+    "--overlay": "rgba(0, 0, 0, 0.75)",
+    "--brand-1": "#fafafa",
+    "--brand-2": "#d4d4d8",
+    "--isDark": "1",
   },
   goldluxury: {
-    "--bg": "#0a0a0a",
-    "--card": "#141414",
-    "--text": "#d4af37",
-    "--muted": "#8b7355",
-    "--border": "#2a2520",
+    "--bg": "#0a0a0a",           // Rich black
+    "--surface": "#141414",
+    "--card": "#1f1f1f",
+    "--text": "#d4af37",         // Gold
+    "--muted": "#a3a3a3",
+    "--border": "rgba(212, 175, 55, 0.15)",
+    "--glass": "rgba(212, 175, 55, 0.08)",
+    "--glass-hover": "rgba(212, 175, 55, 0.12)",
+    "--alternate": "rgba(212, 175, 55, 0.02)",
+    "--overlay": "rgba(0, 0, 0, 0.8)",
     "--brand-1": "#f4d03f",
     "--brand-2": "#d4af37",
-  }
+    "--isDark": "1",
+  },
+  // Light mode alias
+  light: {
+    "--bg": "#f1f5f9",
+    "--surface": "#f8fafc",
+    "--card": "#ffffff",
+    "--text": "#0f172a",
+    "--muted": "#64748b",
+    "--border": "#e2e8f0",
+    "--glass": "rgba(0, 0, 0, 0.04)",
+    "--glass-hover": "rgba(0, 0, 0, 0.08)",
+    "--alternate": "rgba(0, 0, 0, 0.02)",
+    "--overlay": "rgba(0, 0, 0, 0.5)",
+    "--brand-1": "#0f172a",
+    "--brand-2": "#334155",
+    "--isDark": "0",
+  },
+  // Dark mode alias
+  dark: {
+    "--bg": "#09090b",
+    "--surface": "#18181b",
+    "--card": "#27272a",
+    "--text": "#fafafa",
+    "--muted": "#a1a1aa",
+    "--border": "rgba(255, 255, 255, 0.06)",
+    "--glass": "rgba(255, 255, 255, 0.06)",
+    "--glass-hover": "rgba(255, 255, 255, 0.1)",
+    "--alternate": "rgba(255, 255, 255, 0.02)",
+    "--overlay": "rgba(0, 0, 0, 0.75)",
+    "--brand-1": "#fafafa",
+    "--brand-2": "#d4d4d8",
+    "--isDark": "1",
+  },
 };
 
 const BADGE_LABELS: Record<string, string> = {
@@ -252,7 +370,7 @@ function WifiDisplay({ ssid, password }: { ssid: string; password?: string }) {
   const [showPassword, setShowPassword] = useState(false);
   if (!password) {
     return (
-      <span className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+      <span className="flex items-center gap-1.5 bg-[var(--glass)] backdrop-blur-md px-3 py-1 rounded-full border border-[var(--border)]">
         <Wifi className="w-3.5 h-3.5" />
         <span>{ssid}</span>
       </span>
@@ -261,7 +379,7 @@ function WifiDisplay({ ssid, password }: { ssid: string; password?: string }) {
   return (
     <button
       onClick={() => setShowPassword(!showPassword)}
-      className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 hover:bg-white/30 transition cursor-pointer group"
+      className="flex items-center gap-1.5 bg-[var(--glass)] backdrop-blur-md px-3 py-1 rounded-full border border-[var(--border)] hover:bg-[var(--glass-hover)] transition cursor-pointer group"
     >
       <Wifi className="w-3.5 h-3.5" />
       <span className="flex items-center gap-1.5">
@@ -378,7 +496,7 @@ function RatingWidget({ pageId, initialAvg, initialCount, initialUserScore, allo
 
   return (
     <div className="flex items-center gap-2 mt-3 group/rating">
-      <div className="flex items-center gap-0.5 bg-black/20 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 transition-colors hover:bg-black/30">
+      <div className="flex items-center gap-0.5 bg-[var(--glass)] backdrop-blur-md px-2 py-1 rounded-lg border border-[var(--border)] transition-colors hover:bg-[var(--glass-hover)]">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
@@ -954,7 +1072,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
         }}
       >
         {/* 1. HERO / COVER */}
-        <div className="relative w-full bg-black/5 group">
+        <div className="relative w-full bg-[var(--alternate)] group">
           {showBadge && (
             <div className="absolute top-6 left-0 right-0 flex justify-center z-30 pointer-events-none">
               <a href="/" className="pointer-events-auto group/badge relative inline-flex items-center justify-center p-[1px] overflow-hidden rounded-full shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer">
@@ -1006,22 +1124,22 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                   </p>
                 )}
                 <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm font-medium opacity-90">
-                  {business.hours && <span className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10"><Clock className="w-3.5 h-3.5" /> <span>{business.hours}</span></span>}
-                  {business.location && <a href={business.location} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 hover:bg-white/30 transition cursor-pointer"><MapPin className="w-3.5 h-3.5" /> <span>Location</span></a>}
-                  {business.phone && <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 hover:bg-white/30 transition cursor-pointer"><Phone className="w-3.5 h-3.5" /> <span>Call</span></a>}
-                  {business.email && <a href={`mailto:${business.email}`} className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 hover:bg-white/30 transition cursor-pointer"><Mail className="w-3.5 h-3.5" /> <span>Email</span></a>}
+                  {business.hours && <span className="flex items-center gap-1.5 bg-[var(--glass)] backdrop-blur-md px-3 py-1 rounded-full border border-[var(--border)]"><Clock className="w-3.5 h-3.5" /> <span>{business.hours}</span></span>}
+                  {business.location && <a href={business.location} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 bg-[var(--glass)] backdrop-blur-md px-3 py-1 rounded-full border border-[var(--border)] hover:bg-[var(--glass-hover)] transition cursor-pointer"><MapPin className="w-3.5 h-3.5" /> <span>Location</span></a>}
+                  {business.phone && <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 bg-[var(--glass)] backdrop-blur-md px-3 py-1 rounded-full border border-[var(--border)] hover:bg-[var(--glass-hover)] transition cursor-pointer"><Phone className="w-3.5 h-3.5" /> <span>Call</span></a>}
+                  {business.email && <a href={`mailto:${business.email}`} className="flex items-center gap-1.5 bg-[var(--glass)] backdrop-blur-md px-3 py-1 rounded-full border border-[var(--border)] hover:bg-[var(--glass-hover)] transition cursor-pointer"><Mail className="w-3.5 h-3.5" /> <span>Email</span></a>}
                   {business.wifiSsid && <WifiDisplay ssid={business.wifiSsid} password={business.wifiPass} />}
 
                   {/* Social Icons (Hero) */}
                   {business.social && (
                     <div className="flex items-center gap-2 ml-2 pl-2 border-l border-white/20">
-                      {business.social.instagram && <a href={business.social.instagram} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><Instagram className="w-3.5 h-3.5" /></a>}
-                      {business.social.facebook && <a href={business.social.facebook} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><Facebook className="w-3.5 h-3.5" /></a>}
-                      {business.social.tiktok && <a href={business.social.tiktok} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><span className="font-bold text-[10px]">Tk</span></a>}
-                      {business.social.youtube && <a href={business.social.youtube} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><Youtube className="w-3.5 h-3.5" /></a>}
-                      {business.social.whatsapp && <a href={business.social.whatsapp} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><MessageCircle className="w-3.5 h-3.5" /></a>}
-                      {business.social.telegram && <a href={business.social.telegram} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><MessageCircle className="w-3.5 h-3.5" /></a>}
-                      {business.social.website && <a href={business.social.website} target="_blank" rel="noreferrer" className="p-1.5 bg-white/20 rounded-full hover:bg-white/40 transition"><Globe className="w-3.5 h-3.5" /></a>}
+                      {business.social.instagram && <a href={business.social.instagram} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><Instagram className="w-3.5 h-3.5" /></a>}
+                      {business.social.facebook && <a href={business.social.facebook} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><Facebook className="w-3.5 h-3.5" /></a>}
+                      {business.social.tiktok && <a href={business.social.tiktok} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><span className="font-bold text-[10px]">Tk</span></a>}
+                      {business.social.youtube && <a href={business.social.youtube} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><Youtube className="w-3.5 h-3.5" /></a>}
+                      {business.social.whatsapp && <a href={business.social.whatsapp} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><MessageCircle className="w-3.5 h-3.5" /></a>}
+                      {business.social.telegram && <a href={business.social.telegram} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><MessageCircle className="w-3.5 h-3.5" /></a>}
+                      {business.social.website && <a href={business.social.website} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><Globe className="w-3.5 h-3.5" /></a>}
                     </div>
                   )}
                 </div>
@@ -1099,7 +1217,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                     "px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 border cursor-pointer",
                     activeSection === "sec-uncategorized"
                       ? "bg-[var(--brand-1)] text-[var(--bg)] border-transparent shadow-md transform scale-105"
-                      : "bg-black/5 border-transparent hover:bg-black/10 text-inherit opacity-70 hover:opacity-100"
+                      : "bg-[var(--glass)] border-transparent hover:bg-[var(--glass-hover)] text-inherit opacity-70 hover:opacity-100"
                   )}
                 >
                   Popular
@@ -1116,7 +1234,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                       "px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 border cursor-pointer",
                       activeSection === `sec-${s.id}`
                         ? "bg-[var(--brand-1)] text-[var(--bg)] border-transparent shadow-md transform scale-105"
-                        : "bg-black/5 border-transparent hover:bg-black/10 text-inherit opacity-70 hover:opacity-100"
+                        : "bg-[var(--glass)] border-transparent hover:bg-[var(--glass-hover)] text-inherit opacity-70 hover:opacity-100"
                     )}
                   >
                     {s.label}
@@ -1224,7 +1342,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                             <h2 className="text-3xl sm:text-4xl font-extrabold text-white drop-shadow-lg mb-2">{section.label}</h2>
                             {section.description && <p className="text-white/90 text-sm sm:text-base max-w-xl line-clamp-2">{section.description}</p>}
                           </div>
-                          <div className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                          <div className={`w-10 h-10 rounded-full bg-[var(--glass)] backdrop-blur-md flex items-center justify-center transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
                             <ChevronDown className="w-6 h-6" />
                           </div>
                         </div>
@@ -1245,7 +1363,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                             <h2 className="text-3xl sm:text-4xl font-extrabold text-white drop-shadow-lg mb-2">{section.label}</h2>
                             {section.description && <p className="text-white/90 text-sm sm:text-base max-w-xl line-clamp-2">{section.description}</p>}
                           </div>
-                          <div className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                          <div className={`w-10 h-10 rounded-full bg-[var(--glass)] backdrop-blur-md flex items-center justify-center transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
                             <ChevronDown className="w-6 h-6" />
                           </div>
                         </div>
@@ -1297,8 +1415,16 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
             }
 
             // SCROLL MODE (Default)
+            // Add alternating background for visual breathing room
+            const sectionIndex = simpleSections.indexOf(section);
+            const isAlternate = sectionIndex % 2 === 1;
+
             return (
-              <div key={section.id} id={`sec-${section.id}`} className="scroll-mt-32 section-observer">
+              <div
+                key={section.id}
+                id={`sec-${section.id}`}
+                className={`scroll-mt-32 section-observer -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-6 ${isAlternate ? 'bg-[var(--alternate)]' : ''}`}
+              >
                 <div className="mb-6">
                   {(section as any).videoUrl ? (
                     <div className="w-full h-36 sm:h-48 rounded-3xl overflow-hidden mb-4 shadow-sm relative group" style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 256px' }}>
@@ -1540,14 +1666,14 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-sm transition-opacity" onClick={onClose} />
 
       <div className="relative w-full max-w-lg bg-[var(--card)] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
 
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/40 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-[var(--glass)] backdrop-blur-md flex items-center justify-center hover:bg-[var(--glass-hover)] transition-colors cursor-pointer"
         >
           <X className="w-6 h-6" />
         </button>
@@ -1567,7 +1693,7 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
 
             {/* Sold Out Badge in Modal */}
             {isSoldOut && (
-              <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
+              <div className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
                 <span className="px-6 py-2 bg-red-500/20 text-red-500 text-lg font-bold uppercase tracking-widest rounded-xl border border-red-500/30 shadow-2xl transform -rotate-6 backdrop-blur-md">
                   Sold Out
                 </span>
@@ -1710,7 +1836,7 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
     return (
       <div
         onClick={canInteract ? onClick : undefined}
-        className={`group relative flex items-center gap-3 md:gap-4 ${rowPadding} px-1 transition-all duration-200 ${minRowHeight} ${canInteract ? 'cursor-pointer hover:bg-[var(--bg)]/50' : ''} ${item.soldOut ? 'opacity-50' : ''}`}
+        className={`group relative flex items-center gap-3 md:gap-4 ${rowPadding} px-1 transition-all duration-200 ${minRowHeight} ${canInteract ? 'cursor-pointer hover:bg-[var(--surface)]' : ''} ${item.soldOut ? 'opacity-50' : ''}`}
       >
         {/* Left: Thumbnail Image (only if exists) */}
         {hasImage && (
@@ -1724,7 +1850,7 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
               className={`object-cover transition-transform duration-300 ${canInteract ? 'group-hover:scale-105' : ''}`}
             />
             {item.soldOut && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+              <div className="absolute inset-0 bg-[var(--overlay)] flex items-center justify-center">
                 <span className="text-[8px] font-bold text-white uppercase tracking-wider">Sold Out</span>
               </div>
             )}
@@ -1826,7 +1952,7 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
     return (
       <div
         onClick={canInteract ? onClick : undefined}
-        className={`group relative flex flex-col justify-between p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)] transition-all duration-300 min-h-[140px] ${canInteract ? 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5' : ''}`}
+        className={`group relative flex flex-col justify-between p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)] transition-all duration-300 min-h-[140px] ${canInteract ? 'cursor-pointer hover:shadow-lg hover:border-[var(--brand-1)]/30 hover:-translate-y-0.5' : ''}`}
       >
         <div>
           <div className="flex justify-between items-start gap-2 mb-2">
@@ -1898,7 +2024,7 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
   return (
     <div
       onClick={canInteract ? onClick : undefined}
-      className={`group relative flex flex-col overflow-hidden rounded-3xl transition-all duration-300 bg-[var(--card)] border border-[var(--border)] ${canInteract ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1' : ''}`}
+      className={`group relative flex flex-col overflow-hidden rounded-3xl transition-all duration-300 bg-[var(--card)] border border-[var(--border)] ${canInteract ? 'cursor-pointer hover:shadow-xl hover:border-[var(--brand-1)]/30 hover:-translate-y-1' : ''}`}
       style={{
         minHeight: "280px",
       }}
@@ -1927,7 +2053,7 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
 
         {/* Sold Out Overlay */}
         {item.soldOut && (
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10 flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-[2px] z-10 flex items-center justify-center pointer-events-none">
             <span className="px-4 py-2 bg-red-500/20 text-red-500 text-sm font-bold uppercase tracking-widest rounded-xl border border-red-500/30 shadow-2xl transform -rotate-6 backdrop-blur-md">
               Sold Out
             </span>

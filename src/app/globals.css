@@ -4,6 +4,19 @@
 /* Use class-based dark mode controlled via .dark on <html> */
 @custom-variant dark (&:is(.dark &));
 
+/* Override Tailwind's pure white/black with softer variants */
+@theme {
+  --color-white: #f8fafc;
+  /* Slate 50 - soft white */
+  --color-black: #09090b;
+  /* Zinc 950 - warm near-black */
+  --color-true-white: #ffffff;
+  /* Keep pure white available */
+  --color-true-black: #000000;
+  /* Keep pure black available */
+}
+
+
 /* =========================================
    Design tokens / brand
 ========================================= */
@@ -36,9 +49,12 @@
 
   /* Površine */
   --border-light: #e5e7eb;
-  --border-dark: #26262b;
-  --card-light: #fafafa;
-  --card-dark: #111113;
+  --border-dark: #27272a;
+  /* Zinc 800 */
+  --card-light: #ffffff;
+  /* White cards float on Slate 50 bg */
+  --card-dark: #27272a;
+  /* Zinc 800 */
 
   /* Dugmad */
   --btn-outline-w: 2px;
@@ -50,56 +66,111 @@
   /* mekoća glowa */
 }
 
-/* Global surface (next-themes dodaje .dark na <html>) */
+/* =========================================
+   LIGHT MODE - Layered Design System
+   
+   Hierarchy:
+   --bg         → Main content area (subtle gray)
+   --sidebar    → Sidebar (clean white for contrast)
+   --surface    → Interactive states (slightly tinted)
+   --card       → Cards/panels (white with shadow)
+   
+   Visual: Sidebar WHITE | Content GRAY | Cards WHITE (floating)
+========================================= */
 html {
-  background: #ffffff;
-  color: #111827;
+  background: #f1f5f9;
+  /* Slate 100 - Soft gray canvas */
+  color: #0f172a;
   color-scheme: light;
 }
 
-/* Theme tokens used across the dashboard/components */
 html:not(.dark) {
-  --text: #111827;
-  --muted: #6b7280;
-  --surface: rgba(0, 0, 0, .04);
-  --track: #f3f4f6;
-  /* NOTE: do NOT reassign --brand-* to themselves; it creates a self-reference cycle and clears the value */
-}
-
-html.dark {
-  background: #0b0b0c;
-  color: #f5f5f6;
-  color-scheme: dark;
-}
-
-html.dark {
-  --text: #e5e7eb;
-  --muted: #9ca3af;
-  --surface: rgba(255, 255, 255, .06);
-  --track: rgba(255, 255, 255, .08);
-}
-
-/* Mapiranje po temi + neutral outline za "plain" varijante */
-html:not(.dark) {
-  --border: var(--border-light);
-  --card: var(--card-light);
-  --btn-outline: #cbd5e1;
-
+  /* Canvas: Soft gray - NOT white, creates depth */
+  --bg: #f1f5f9;          /* Slate 100 */
+  
+  /* Sidebar: Clean white - clear contrast with gray content */
+  --sidebar: #ffffff;
+  
+  /* Surface: For hover states, inputs */
+  --surface: #e2e8f0;     /* Slate 200 - slightly darker for interaction */
+  
+  /* Card: Pure white - "floats" above gray bg */
+  --card: #ffffff;
+  
+  /* Text colors */
+  --text: #0f172a;        /* Slate 900 */
+  --muted: #64748b;       /* Slate 500 */
+  
+  /* Borders: Subtle but visible */
+  --border: #e2e8f0;      /* Slate 200 */
+  --border-subtle: #f1f5f9; /* Slate 100 */
+  
+  /* Track/input backgrounds */
+  --track: #f8fafc;       /* Slate 50 */
+  
+  /* Shadows for elevation - cards "float" */
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  
   /* Button theming */
+  --btn-outline: #cbd5e1;
   --btn-bg-dark: #ffffff;
   --btn-bg-lighter: #f8fafc;
   --btn-text: #0f172a;
 }
 
+/* =========================================
+   DARK MODE - Layered Design System
+   
+   Hierarchy (darkest to lightest):
+   --bg         → Main canvas (deepest)
+   --sidebar    → Sidebar (elevated)
+   --surface    → Interactive states
+   --card       → Cards/panels (most elevated)
+   
+   Visual: Content DARKEST | Sidebar DARK | Cards LIGHTER (elevated)
+========================================= */
 html.dark {
-  --border: var(--border-dark);
-  --card: var(--card-dark);
-  --btn-outline: #3b3f46;
+  background: #09090b;
+  /* Zinc 950 - Deep canvas */
+  color: #f4f4f5;
+  /* Zinc 100 */
+  color-scheme: dark;
+}
 
+html.dark {
+  /* Canvas: Deepest dark - workspace */
+  --bg: #0a0a0b;          /* Near Zinc 950 */
+  
+  /* Sidebar: Slightly elevated, visible separation */
+  --sidebar: #141417;     /* Between 950 and 900 */
+  
+  /* Surface: For hover states, inputs */
+  --surface: #1f1f23;     /* Between Zinc 900 and 800 */
+  
+  /* Card: Elevated, clearly visible */
+  --card: #1c1c20;        /* Slightly lighter than sidebar */
+  
+  /* Text colors */
+  --text: #f4f4f5;        /* Zinc 100 */
+  --muted: #a1a1aa;       /* Zinc 400 */
+  
+  /* Borders: Subtle separation */
+  --border: #2a2a2e;      /* Custom - visible but not harsh */
+  --border-subtle: #1f1f23;
+  
+  /* Track/input backgrounds */
+  --track: rgba(255, 255, 255, 0.05);
+  
+  /* Shadows - subtle glow in dark mode */
+  --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --card-shadow-hover: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 4px 16px rgba(0, 0, 0, 0.4);
+  
   /* Button theming */
-  --btn-bg-dark: #020617;
-  --btn-bg-lighter: #0f172a;
-  --btn-text: #ffffff;
+  --btn-outline: #3f3f46;
+  --btn-bg-dark: #09090b;
+  --btn-bg-lighter: #18181b;
+  --btn-text: #f4f4f5;
 }
 
 /* =========================================
@@ -108,13 +179,25 @@ html.dark {
 .container-page {
   margin: 0 auto;
   max-width: 80rem;
-  padding: 1.5rem;
+  padding: 1.5rem 2rem;
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* Sidebar specific styling */
+.sidebar {
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
 }
 
 .field {
@@ -163,31 +246,37 @@ html.dark {
 }
 
 html.dark .table {
-  background: #0f1012;
-  border-color: #2b2f36;
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: var(--card-shadow);
 }
 
 html.dark .table thead th {
-  background: #16181c;
-  color: #e7e7ea;
+  background: var(--surface);
+  color: var(--text);
 }
 
 html.dark .table tbody td {
-  color: #e2e2e6;
+  color: var(--text);
 }
 
 html.dark .table tbody tr:hover td {
-  background: #16181c;
+  background: var(--surface);
 }
 
 html:not(.dark) .table {
-  background: #ffffff;
-  border-color: #e5e7eb;
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: var(--card-shadow);
 }
 
 html:not(.dark) .table thead th {
-  background: #fafafa;
-  color: #111827;
+  background: var(--track);
+  color: var(--text);
+}
+
+html:not(.dark) .table tbody tr:hover td {
+  background: var(--surface);
 }
 
 /* =========================================
@@ -329,7 +418,8 @@ html.dark .neon-surface::before {
   font-size: 12px;
   line-height: 1;
   font-weight: 600;
-  background: #fff;
+  background: var(--card);
+  /* Theme-aware instead of #fff */
   cursor: pointer;
   user-select: none;
 }

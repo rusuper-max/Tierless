@@ -1,36 +1,9 @@
 import { getPool } from "@/lib/db";
-import { ensureTable as ensureCalcsTable } from "@/lib/calcsStore";
 
 const pool = getPool();
 
-export async function ensureRatingsTables() {
-    await pool.query(`
-    CREATE TABLE IF NOT EXISTS ratings (
-      id BIGSERIAL PRIMARY KEY,
-      page_id TEXT NOT NULL,
-      voter_key TEXT NOT NULL,
-      score INTEGER NOT NULL CHECK (score >= 1 AND score <= 5),
-      ip_hash TEXT NOT NULL,
-      user_id TEXT,
-      created_at BIGINT NOT NULL,
-      updated_at BIGINT NOT NULL,
-      UNIQUE (page_id, voter_key)
-    );
-    CREATE INDEX IF NOT EXISTS idx_ratings_page ON ratings(page_id);
-    CREATE INDEX IF NOT EXISTS idx_ratings_voter ON ratings(voter_key);
-
-    CREATE TABLE IF NOT EXISTS rating_events (
-      id BIGSERIAL PRIMARY KEY,
-      page_id TEXT NOT NULL,
-      voter_key TEXT NOT NULL,
-      score INTEGER NOT NULL,
-      ip_hash TEXT NOT NULL,
-      user_id TEXT,
-      created_at BIGINT NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_rating_events_page ON rating_events(page_id);
-  `);
-}
+// NOTE: Tables are created by migration script (data/migrations/002_complete_schema.sql)
+// Do NOT call ensureRatingsTables at runtime - it causes performance issues
 
 export type RatingResult = {
     avg: number;
@@ -45,8 +18,6 @@ export async function upsertRating(
     ipHash: string,
     userId: string | null
 ): Promise<RatingResult> {
-    await ensureRatingsTables();
-    await ensureCalcsTable();
     const now = Date.now();
 
     const client = await pool.connect();
@@ -100,7 +71,6 @@ export async function upsertRating(
 }
 
 export async function getRatingStatus(pageId: string, voterKey: string): Promise<RatingResult> {
-    await ensureRatingsTables();
     const client = await pool.connect();
     try {
         // Get user score
