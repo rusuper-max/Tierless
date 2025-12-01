@@ -46,7 +46,9 @@ test.describe("Landing Page", () => {
     await expect(page).toHaveTitle(/Tierless/i);
     
     // Content should be visible
-    const mainContent = page.locator("main, [role='main'], body > div").first();
+    const mainContent = page
+      .locator("main:not([hidden]), [role='main']:not([hidden]), body > div:not([hidden])")
+      .first();
     await expect(mainContent).toBeVisible();
   });
 });
@@ -71,4 +73,3 @@ test.describe("Static Pages", () => {
     await expect(emailInput).toBeVisible();
   });
 });
-

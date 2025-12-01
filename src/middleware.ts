@@ -41,7 +41,8 @@ export default async function middleware(req: NextRequest) {
     const isPrivate =
       url.pathname.startsWith("/dashboard") ||
       url.pathname.startsWith("/account") ||
-      url.pathname.startsWith("/billing");
+      url.pathname.startsWith("/billing") ||
+      url.pathname.startsWith("/editor");
 
     if (isPrivate) {
       const hasSession = !!req.cookies.get(SESSION_COOKIE);

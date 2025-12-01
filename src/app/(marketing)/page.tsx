@@ -11,10 +11,16 @@ export default function LandingPage() {
   return (
     <>
       <StartHeader />
-      <MainPhase1 />       {/* Hero: Your prices. Online. Beautiful. */}
-      <MainPhase2 />       {/* Examples: Salon → Dentist → Restaurant */}
-      <MainPhase3Benefits /> {/* Why Tierless? Benefits grid */}
-      <MainPhase4 />       {/* QR Demo: Scan → Detect → Book */}
+      <main
+        id="main"
+        role="main"
+        className="relative flex min-h-screen flex-col bg-[var(--bg)] text-[var(--text)]"
+      >
+        <MainPhase1 /> {/* Hero: Your prices. Online. Beautiful. */}
+        <MainPhase2 /> {/* Examples: Salon → Dentist → Restaurant */}
+        <MainPhase3Benefits /> {/* Why Tierless? Benefits grid */}
+        <MainPhase4 /> {/* QR Demo: Scan → Detect → Book */}
+      </main>
       <Footer />
     </>
   );
