@@ -53,7 +53,7 @@ async function loadPublic(id: string, slug: string): Promise<any | null> {
   try {
     let calc: any = null;
     let method = "";
-    
+
     // Try by ID first
     if (id) {
       calc = await fullStore.findFullById(id);
@@ -69,7 +69,7 @@ async function loadPublic(id: string, slug: string): Promise<any | null> {
       calc = await fullStore.findFullBySlug(id);
       if (calc) method = "id-as-slug";
     }
-    
+
     if (calc) {
       // Debug log (same as API route had)
       console.log("[PublicPage] Loaded:", {
@@ -81,7 +81,7 @@ async function loadPublic(id: string, slug: string): Promise<any | null> {
         published: calc.meta?.published,
       });
     }
-    
+
     return calc;
   } catch (error) {
     console.error("[PublicPage] loadPublic error:", error);
@@ -98,7 +98,7 @@ type PageProps = {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const p = await Promise.resolve(params);
   const idOrSlug = typeof p === "object" && "idOrSlug" in p ? p.idOrSlug : "";
-  
+
   if (!idOrSlug) {
     return {
       title: "Page Not Found | Tierless",
@@ -108,7 +108,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const { id, slug } = parseKey(idOrSlug);
   const calc = await loadPublic(id, slug || idOrSlug);
-  
+
   if (!calc) {
     return {
       title: "Page Not Found | Tierless",
@@ -118,15 +118,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const meta = calc.meta || {};
   const business = meta.business || {};
-  
+
   // Extract metadata from calculator
   const title = meta.simpleTitle || meta.name || "Untitled Page";
   const description = business.description || meta.description || `View ${title} on Tierless`;
   const coverImage = business.coverUrl || meta.simpleCoverImage || null;
-  
+
   const baseUrl = getBaseUrl();
   const pageUrl = `${baseUrl}/p/${idOrSlug}`;
-  
+
   // Build OpenGraph metadata
   const openGraph: Metadata["openGraph"] = {
     title,
@@ -152,16 +152,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Build Twitter Card metadata
   const twitter: Metadata["twitter"] = coverImage
     ? {
-        card: "summary_large_image",
-        title,
-        description,
-        images: [coverImage],
-      }
+      card: "summary_large_image",
+      title,
+      description,
+      images: [coverImage],
+    }
     : {
-        card: "summary",
-        title,
-        description,
-      };
+      card: "summary",
+      title,
+      description,
+    };
 
   return {
     title: `${title} | Tierless`,
@@ -189,7 +189,7 @@ export default async function PublicPage({ params }: PageProps) {
   const { id, slug } = parseKey(idOrSlug);
   const calc = await loadPublic(id, slug || idOrSlug);
   if (!calc) notFound();
-  
+
   const isPublished =
     typeof calc?.meta?.published === "boolean"
       ? calc.meta.published
@@ -207,9 +207,12 @@ export default async function PublicPage({ params }: PageProps) {
     }
   }
 
+  const editorMode = (calc.meta as any)?.editorMode;
+  const isAdvanced = editorMode === "advanced";
+
   return (
     <main className="min-h-screen bg-[#f8fafc] text-[#020617] dark:bg-[#05010d] dark:text-white">
-      <div className="mx-auto w-full max-w-5xl px-0 py-6 sm:px-6 lg:px-8">
+      <div className={`mx-auto w-full px-0 py-6 sm:px-6 lg:px-8 ${isAdvanced ? "max-w-[1400px]" : "max-w-5xl"}`}>
         <div className="rounded-none border-0 bg-transparent p-0 shadow-none sm:rounded-3xl sm:border sm:border-[color:var(--border,#e5e7eb)] sm:bg-[color:var(--card,#ffffff)] sm:p-4 sm:shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
           <PublicPageClient calc={calc as CalcJson} />
         </div>

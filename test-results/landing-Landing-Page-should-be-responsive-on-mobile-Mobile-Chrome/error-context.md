@@ -1,0 +1,283 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - generic "Main header" [ref=e4]:
+      - generic [ref=e5]:
+        - link "Tierless Home" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "Tierless Logo" [ref=e8]
+          - generic [ref=e12]: Tierless
+        - navigation [ref=e13]:
+          - button "🇬🇧" [ref=e15]:
+            - img [ref=e16]
+            - generic [ref=e19]: 🇬🇧
+            - img [ref=e20]
+          - link "Log in" [ref=e22] [cursor=pointer]:
+            - /url: /signin
+    - region "Hero Phase" [ref=e23]:
+      - generic [ref=e29]:
+        - generic [ref=e34]: No website required
+        - heading "Your prices. Online. Beautiful." [level=1] [ref=e35]:
+          - generic [ref=e36]: Your prices.
+          - generic [ref=e37]: Online.
+          - text: Beautiful.
+        - paragraph [ref=e38]: Create price lists, service catalogs, and calculators in minutes. Share via Link or QR code. Update anytime, instantly.
+        - generic [ref=e39]:
+          - link "Create My Page Free" [ref=e40] [cursor=pointer]:
+            - /url: /start
+            - generic [ref=e45]:
+              - text: Create My Page Free
+              - img [ref=e46]
+          - link "See Examples" [ref=e48] [cursor=pointer]:
+            - /url: /examples
+        - paragraph [ref=e49]: Perfect for
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - img [ref=e52]
+            - text: Salons & Spas
+          - generic [ref=e58]:
+            - img [ref=e59]
+            - text: Freelancers
+          - generic [ref=e62]:
+            - img [ref=e63]
+            - text: Cafes & Restaurants
+          - generic [ref=e65]:
+            - img [ref=e66]
+            - text: Startups
+    - generic [ref=e75]:
+      - generic [ref=e77]:
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - img [ref=e81]
+            - generic [ref=e84]: Simple Setup
+          - heading "Add your services. We handle the rest." [level=2] [ref=e85]:
+            - text: Add your services.
+            - text: We handle the rest.
+          - paragraph [ref=e86]: Just type in your services and prices. We'll automatically create a beautiful, mobile-friendly page that works for you.
+        - generic [ref=e87]:
+          - generic [ref=e88]:
+            - img [ref=e90]
+            - generic [ref=e96]: Your Style
+          - heading "Pick a theme. Look professional instantly." [level=2] [ref=e97]:
+            - text: Pick a theme.
+            - text: Look professional instantly.
+          - paragraph [ref=e98]: Choose a style that fits your brand. Colors, fonts, and layout adapt automatically. No design skills needed.
+        - generic [ref=e99]:
+          - generic [ref=e100]:
+            - img [ref=e102]
+            - generic [ref=e104]: Go Live
+          - heading "Share anywhere. Works on any phone." [level=2] [ref=e105]:
+            - text: Share anywhere.
+            - text: Works on any phone.
+          - paragraph [ref=e106]: Your page loads instantly on any device. Share via link, QR code, or add to your social bio. Update anytime.
+      - generic [ref=e109]:
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - generic [ref=e117]:
+              - heading "Luxe Salon" [level=3] [ref=e118]
+              - paragraph [ref=e119]: Beauty & Spa • 4.9 Stars
+            - img [ref=e121]
+          - generic [ref=e127]:
+            - generic [ref=e128]:
+              - generic [ref=e129]: 09:00 - 20:00
+              - generic [ref=e130]: Parking
+              - generic [ref=e131]: Book Online
+            - img [ref=e133]
+            - generic [ref=e137]:
+              - generic [ref=e138]:
+                - generic [ref=e139]:
+                  - generic [ref=e140]:
+                    - generic [ref=e141]: Haircut & Style
+                    - generic [ref=e142]: $65.00
+                  - paragraph [ref=e143]: Wash, cut, blowdry & styling.
+                - img [ref=e145]
+              - generic [ref=e146]:
+                - generic [ref=e147]:
+                  - generic [ref=e148]:
+                    - generic [ref=e149]: Gel Manicure
+                    - generic [ref=e150]: $35.00
+                  - paragraph [ref=e151]: Premium gel polish, 30min.
+                - img [ref=e153]
+          - img [ref=e156]
+        - progressbar "Use case transition progress" [ref=e158]
+    - generic [ref=e163]:
+      - generic [ref=e164]:
+        - generic [ref=e165]: Why Tierless?
+        - heading "Everything you need. Nothing you don't." [level=2] [ref=e167]
+        - paragraph [ref=e168]: Simple tools that just work. No tech skills required.
+      - generic [ref=e169]:
+        - generic [ref=e170]:
+          - img [ref=e172]
+          - heading "No Website Needed" [level=3] [ref=e175]
+          - paragraph [ref=e176]: Skip the expensive website. Get a professional page in minutes, not months.
+        - generic [ref=e177]:
+          - img [ref=e179]
+          - heading "Works on Any Phone" [level=3] [ref=e181]
+          - paragraph [ref=e182]: Clients just scan and see your prices. No app download, no registration.
+        - generic [ref=e183]:
+          - img [ref=e185]
+          - heading "Update Anytime" [level=3] [ref=e190]
+          - paragraph [ref=e191]: Change prices, add items, update photos. Instantly. No extra cost.
+        - generic [ref=e192]:
+          - img [ref=e194]
+          - heading "Share Everywhere" [level=3] [ref=e200]
+          - paragraph [ref=e201]: Link, QR code, Instagram bio, WhatsApp status. Your choice.
+        - generic [ref=e202]:
+          - img [ref=e204]
+          - heading "Built-in Calculator" [level=3] [ref=e206]
+          - paragraph [ref=e207]: Clients pick services and see the total automatically. Perfect for quotes.
+        - generic [ref=e208]:
+          - img [ref=e210]
+          - heading "Any Language" [level=3] [ref=e214]
+          - paragraph [ref=e215]: Create your page in the language your clients actually use.
+      - generic [ref=e216]:
+        - generic [ref=e217]:
+          - img [ref=e218]
+          - generic [ref=e220]: Ready in 5 minutes
+        - generic [ref=e221]:
+          - img [ref=e222]
+          - generic [ref=e224]: Zero coding needed
+        - generic [ref=e225]:
+          - img [ref=e226]
+          - generic [ref=e229]: Start free forever
+      - generic:
+        - paragraph
+    - generic [ref=e231]:
+      - generic:
+        - generic:
+          - generic: Step 1
+          - heading "Scan the QR." [level=2]
+          - paragraph: Put it anywhere. No app download needed.
+        - generic:
+          - generic: Step 2
+          - heading "Instant Detect." [level=2]
+          - paragraph: Lightning fast loading experience.
+        - generic:
+          - generic: Step 3
+          - heading "Select & Book." [level=2]
+          - paragraph: Beautiful page. Happy clients.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img
+            - paragraph: Scan for Prices
+        - generic [ref=e237]:
+          - paragraph [ref=e246]: Scanning code...
+          - paragraph [ref=e249]: Loading Page...
+          - generic [ref=e250]:
+            - generic [ref=e254]:
+              - generic [ref=e255]:
+                - heading "Luxe Studio" [level=3] [ref=e256]
+                - generic [ref=e257]:
+                  - generic [ref=e258]: ★★★★★
+                  - generic [ref=e259]: (124)
+              - generic [ref=e260]: OPEN
+            - generic [ref=e261]:
+              - generic [ref=e262]: Popular
+              - generic [ref=e263]: Services
+            - generic [ref=e264]:
+              - generic [ref=e265]:
+                - generic [ref=e266]:
+                  - heading "Haircut & Style" [level=4] [ref=e267]
+                  - paragraph [ref=e268]: Wash, cut, blowdry & styling
+                  - paragraph [ref=e269]: $14
+                - img [ref=e273]
+              - generic [ref=e275]:
+                - generic [ref=e276]:
+                  - heading "Color Treatment" [level=4] [ref=e277]
+                  - paragraph [ref=e278]: Full color, highlights included
+                  - paragraph [ref=e279]: $12
+                - img [ref=e283]
+              - generic [ref=e285]:
+                - generic [ref=e286]:
+                  - heading "Gel Manicure" [level=4] [ref=e287]
+                  - paragraph [ref=e288]: Premium gel polish, 30min
+                  - paragraph [ref=e289]: $8
+                - img [ref=e293]
+              - generic [ref=e295]:
+                - generic [ref=e296]:
+                  - heading "Relaxing Massage" [level=4] [ref=e297]
+                  - paragraph [ref=e298]: 60min full body treatment
+                  - paragraph [ref=e299]: $5
+                - img [ref=e303]
+            - link "Create My QR Page" [ref=e306] [cursor=pointer]:
+              - /url: /start
+              - generic [ref=e311]:
+                - text: Create My QR Page
+                - img [ref=e312]
+    - generic [ref=e315]:
+      - generic [ref=e316]:
+        - generic [ref=e317]:
+          - link "Tierless Logo Tierless" [ref=e318] [cursor=pointer]:
+            - /url: /
+            - img "Tierless Logo" [ref=e319]
+            - generic [ref=e322]: Tierless
+          - paragraph [ref=e323]: Create beautiful pricing pages and service catalogs without code.
+        - generic [ref=e324]:
+          - heading "Product" [level=4] [ref=e325]
+          - list [ref=e326]:
+            - listitem [ref=e327]:
+              - link "Pricing" [ref=e328] [cursor=pointer]:
+                - /url: /pricing
+            - listitem [ref=e329]:
+              - link "Templates" [ref=e330] [cursor=pointer]:
+                - /url: /templates
+            - listitem [ref=e331]:
+              - link "Builder" [ref=e332] [cursor=pointer]:
+                - /url: /start
+        - generic [ref=e333]:
+          - heading "Legal" [level=4] [ref=e334]
+          - list [ref=e335]:
+            - listitem [ref=e336]:
+              - link "Privacy" [ref=e337] [cursor=pointer]:
+                - /url: /privacy
+            - listitem [ref=e338]:
+              - link "Terms" [ref=e339] [cursor=pointer]:
+                - /url: /terms
+        - generic [ref=e340]:
+          - heading "Support" [level=4] [ref=e341]
+          - list [ref=e342]:
+            - listitem [ref=e343]:
+              - link "Contact Us" [ref=e344] [cursor=pointer]:
+                - /url: mailto:support@tierless.net
+      - generic [ref=e345]:
+        - paragraph [ref=e346]: © 2025 Tierless. All rights reserved.
+        - paragraph [ref=e347]: Made with ❤️ for builders.
+  - dialog "Upgrade" [ref=e348]:
+    - generic [ref=e349]:
+      - generic [ref=e350]:
+        - generic [ref=e351]:
+          - heading "Unlock Full Power 🚀" [level=2] [ref=e352]
+          - paragraph [ref=e353]: You've reached the limits of your current plan.
+        - button "Close" [ref=e354]:
+          - img [ref=e355]
+      - generic [ref=e358]:
+        - generic [ref=e359]:
+          - heading "Limit Reached" [level=3] [ref=e361]
+          - paragraph [ref=e362]: Upgrade to pro to use this feature without restrictions.
+        - generic [ref=e363]:
+          - heading "Recommended Upgrade" [level=4] [ref=e364]
+          - generic [ref=e365]:
+            - generic [ref=e366]: Best Choice
+            - generic [ref=e367]:
+              - generic [ref=e368]:
+                - heading "pro Plan" [level=3] [ref=e369]
+                - paragraph [ref=e370]: Everything you need to grow.
+              - generic [ref=e371]:
+                - generic [ref=e372]: $29.99
+                - generic [ref=e373]: /mo
+            - generic [ref=e374]:
+              - button "Upgrade Now" [ref=e375] [cursor=pointer]:
+                - generic [ref=e377]: Upgrade Now
+              - link "Compare All Plans" [ref=e378] [cursor=pointer]:
+                - /url: /start?highlight=pro&interval=yearly
+                - button "Compare All Plans" [ref=e379]:
+                  - generic [ref=e381]: Compare All Plans
+  - button "Open Next.js Dev Tools" [ref=e387] [cursor=pointer]:
+    - img [ref=e388]
+  - alert [ref=e391]
+  - status
+```

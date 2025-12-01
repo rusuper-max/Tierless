@@ -1,7 +1,4 @@
-import React from "react";
-import { t } from "@/i18n";
-import { ArrowRight } from "lucide-react";
-import { BRAND_GRADIENT, type AdvancedTheme } from "@/app/editor/[id]/panels/advanced/types";
+import ShinyButton from "@/components/marketing/ShinyButton";
 
 export type SummaryProps = {
     total: number;
@@ -29,11 +26,31 @@ export function Summary({
 
     return (
         <section
-            className={`rounded-2xl border border-[var(--border)] px-5 py-5 sm:px-6 sm:py-6 flex flex-col gap-4 transition-all ${theme === "tierless" ? "bg-[var(--glass)] backdrop-blur-xl" : "bg-[var(--card)]"
+            className={`rounded-2xl border border-[var(--border)] px-5 py-5 sm:px-6 sm:py-6 flex flex-col gap-6 transition-all ${theme === "tierless" ? "bg-[var(--glass)] backdrop-blur-xl" : "bg-[var(--card)]"
                 }`}
             style={{ boxShadow: summaryShadow }}
         >
-            <div className="space-y-1">
+            {showInquiry && (
+                <div className="w-full">
+                    {theme === "tierless" ? (
+                        <ShinyButton className="w-full" rounded="rounded-xl">
+                            {t("Send inquiry")}
+                        </ShinyButton>
+                    ) : (
+                        <button
+                            type="button"
+                            className="group relative w-full inline-flex items-center justify-center rounded-xl bg-[var(--brand-1)] px-5 py-3 text-sm sm:text-base font-semibold text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all duration-200"
+                        >
+                            <span className="relative z-[1] inline-flex items-center gap-2">
+                                {t("Send inquiry")}
+                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                            </span>
+                        </button>
+                    )}
+                </div>
+            )}
+
+            <div className="space-y-1 mt-auto pt-4 border-t border-[var(--border)]">
                 <div className="text-sm font-medium text-[var(--muted)] uppercase tracking-wider text-[10px]">
                     {t("Estimated total")}
                 </div>
@@ -46,18 +63,6 @@ export function Summary({
                     )}
                 </p>
             </div>
-
-            {showInquiry && (
-                <button
-                    type="button"
-                    className="group relative inline-flex items-center justify-center rounded-xl bg-[var(--brand-1)] px-5 py-3 text-sm sm:text-base font-semibold text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all duration-200 mt-2"
-                >
-                    <span className="relative z-[1] inline-flex items-center gap-2">
-                        {t("Send inquiry")}
-                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </span>
-                </button>
-            )}
         </section>
     );
 }
