@@ -95,7 +95,7 @@ function splitNameAndDescription(raw: string): { name: string; description?: str
  * Ako bilo šta krene po zlu, baci error pa ćemo fallback-ovati na regex parser.
  */
 async function parseWithChatGpt(ocrText: string): Promise<ParsedMenu> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!openai) {
     throw new Error("OPENAI_API_KEY is missing");
   }
 
@@ -160,7 +160,7 @@ async function parseWithChatGpt(ocrText: string): Promise<ParsedMenu> {
   '\"\"\"',
 ].join("\n");
 
-  const completion = await openai.chat.completions.create({
+  const completion = await openai!.chat.completions.create({
     model: "gpt-4.1-mini",
     response_format: { type: "json_object" },
     messages: [
