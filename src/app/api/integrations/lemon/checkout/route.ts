@@ -75,9 +75,12 @@ export async function POST(req: Request) {
   // Using minimal required fields first
   const attributes: Record<string, any> = {
     checkout_data: {
-      custom: {
-        user_id: userId,
-      },
+      custom: [
+        {
+          key: "user_id",
+          value: userId,
+        },
+      ],
     },
   };
 
