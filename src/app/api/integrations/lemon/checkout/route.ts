@@ -71,11 +71,31 @@ export async function POST(req: Request) {
   const storeIdStr = String(storeId);
   const variantIdStr = String(variantId);
 
-  // Build payload with ABSOLUTE bare minimum
-  // No custom fields, no checkout options, nothing
+  // Build attributes according to LemonSqueezy API spec
+  const attributes: Record<string, any> = {
+    checkout_data: {
+      custom: {
+        user_id: String(userId),
+      },
+    },
+  };
+
+  // Add product options for redirect URL
+  if (body.successUrl) {
+    attributes.product_options = {
+      redirect_url: body.successUrl,
+    };
+  }
+
+  // Add email if provided
+  if (body.email) {
+    attributes.checkout_data.email = body.email;
+  }
+
   const payload = {
     data: {
       type: "checkouts",
+      attributes,
       relationships: {
         store: {
           data: {
