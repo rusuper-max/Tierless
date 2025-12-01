@@ -72,31 +72,24 @@ export async function POST(req: Request) {
   const variantIdStr = String(variantId);
 
   // Build attributes according to LemonSqueezy API spec
-  // Using minimal required fields first
-  const attributes: Record<string, any> = {
-    checkout_data: {
+  // Using ABSOLUTE minimum required fields
+  const attributes: Record<string, any> = {};
+
+  // Only add custom data if needed
+  if (userId) {
+    attributes.checkout_data = {
       custom: [
         {
           key: "user_id",
-          value: userId,
+          value: String(userId), // Ensure it's a string
         },
       ],
-    },
-  };
-
-  // Add optional URLs if provided
-  if (body.successUrl || body.cancelUrl) {
-    attributes.checkout_options = {
-      embed: false,
-      media: false,
-      logo: false,
     };
-    if (body.successUrl) attributes.checkout_options.redirect_url = body.successUrl;
-    if (body.cancelUrl) attributes.checkout_options.button_color = "#6366f1";
   }
 
-  // Add email to checkout_data
+  // Add email if provided
   if (body.email) {
+    if (!attributes.checkout_data) attributes.checkout_data = {};
     attributes.checkout_data.email = body.email;
   }
 
