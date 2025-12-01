@@ -9,10 +9,11 @@ export const revalidate = 0;
 
 async function resolveSlug(
   req: Request,
-  ctx: { params?: { slug?: string } } | { params?: Promise<{ slug?: string }> } | undefined
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ctx: any
 ): Promise<string> {
   try {
-    const raw = (ctx as any)?.params;
+    const raw = ctx?.params;
     const params = typeof raw?.then === "function" ? await raw : raw;
     if (params?.slug && params.slug !== "undefined" && params.slug !== "null") {
       return decodeURIComponent(String(params.slug));
@@ -34,13 +35,14 @@ export async function POST(req: Request, ctx: { params?: { slug?: string } }) {
   const userId = await getUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  let body: any = {};
+  let body: Record<string, unknown> = {};
   try {
     body = await req.json();
   } catch {
     body = {};
   }
-  const metaPatch = body?.meta && typeof body.meta === "object" ? body.meta : {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const metaPatch: Record<string, any> = body?.meta && typeof body.meta === "object" ? (body.meta as Record<string, unknown>) : {};
 
   const existing = await calcsStore.get(userId, slug);
   if (!existing) return NextResponse.json({ error: "not_found" }, { status: 404 });

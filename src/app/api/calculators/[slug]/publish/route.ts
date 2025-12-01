@@ -93,12 +93,11 @@ async function injectContactInfo(userId: string, slug: string) {
 
 async function resolveSlug(
   req: Request,
-  ctx?:
-    | { params?: { slug?: string } }
-    | { params?: Promise<{ slug?: string }> }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ctx?: any
 ): Promise<string> {
   try {
-    const raw = (ctx as any)?.params;
+    const raw = ctx?.params;
     const params = typeof raw?.then === "function" ? await raw : raw;
     if (params?.slug && params.slug !== "undefined" && params.slug !== "null") {
       return decodeURIComponent(String(params.slug));

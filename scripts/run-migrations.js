@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires */
 /**
  * Database Migration Runner
  * 
@@ -9,9 +10,9 @@
  *   node scripts/run-migrations.js
  */
 
-const { Pool } = require('pg');
-const fs = require('fs');
-const path = require('path');
+const { Pool } = require('pg'); // eslint-disable-line
+const fs = require('fs'); // eslint-disable-line
+const path = require('path'); // eslint-disable-line
 
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'data', 'migrations');
 
@@ -40,59 +41,76 @@ async function runMigrations() {
 
     const pool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+        ssl: process.env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false }
     });
 
     try {
-        // Test connection
-        await pool.query('SELECT NOW()');
-        console.log('✅ Database connection successful');
+        // Create migrations tracking table if it doesn't exist
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS _migrations (
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                applied_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        `);
 
-        // Read migration files
+        // Get list of applied migrations
+        const { rows: applied } = await pool.query('SELECT name FROM _migrations ORDER BY name');
+        const appliedSet = new Set(applied.map(r => r.name));
+
+        // Get all migration files
+        if (!fs.existsSync(MIGRATIONS_DIR)) {
+            console.log('📁 Creating migrations directory...');
+            fs.mkdirSync(MIGRATIONS_DIR, { recursive: true });
+        }
+
         const files = fs.readdirSync(MIGRATIONS_DIR)
             .filter(f => f.endsWith('.sql'))
-            .sort(); // Run in alphabetical order (001_*, 002_*, etc.)
+            .sort();
 
         if (files.length === 0) {
-            console.log('⚠️  No migration files found');
+            console.log('ℹ️  No migration files found');
             return;
         }
 
-        console.log(`📝 Found ${files.length} migration file(s)`);
+        console.log(`📋 Found ${files.length} migration file(s)`);
 
-        // Run each migration
+        let appliedCount = 0;
         for (const file of files) {
-            const filePath = path.join(MIGRATIONS_DIR, file);
-            const sql = fs.readFileSync(filePath, 'utf8');
+            if (appliedSet.has(file)) {
+                console.log(`⏭️  Skipping ${file} (already applied)`);
+                continue;
+            }
 
-            console.log(`\n🔄 Running migration: ${file}`);
+            console.log(`🔄 Applying ${file}...`);
+            const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8');
 
             try {
+                await pool.query('BEGIN');
                 await pool.query(sql);
-                console.log(`✅ Migration completed: ${file}`);
-            } catch (error) {
-                console.error(`❌ Migration failed: ${file}`);
-                console.error('   Error:', error.message);
-
-                // Don't exit on error - some migrations might be idempotent
-                // and fail if already applied (e.g., CREATE TABLE IF NOT EXISTS)
-                console.log('   Continuing with next migration...');
+                await pool.query('INSERT INTO _migrations (name) VALUES ($1)', [file]);
+                await pool.query('COMMIT');
+                console.log(`✅ Applied ${file}`);
+                appliedCount++;
+            } catch (err) {
+                await pool.query('ROLLBACK');
+                console.error(`❌ Failed to apply ${file}:`, err.message);
+                throw err;
             }
         }
 
-        console.log('\n✨ All migrations processed successfully');
+        if (appliedCount === 0) {
+            console.log('✅ Database is up to date');
+        } else {
+            console.log(`✅ Applied ${appliedCount} migration(s)`);
+        }
 
-    } catch (error) {
-        console.error('❌ Fatal error during migration:');
-        console.error(error);
-        process.exit(1);
     } finally {
         await pool.end();
     }
 }
 
-// Run migrations
 runMigrations().catch(err => {
-    console.error('Unhandled error:', err);
+    console.error('Migration failed:', err);
     process.exit(1);
 });

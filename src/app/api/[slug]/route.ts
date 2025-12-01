@@ -49,6 +49,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug?: string }
     const miniFile = path.join(USERS_ROOT, uid, "calculators.json");
     const arr = await readJson(miniFile);
     if (Array.isArray(arr)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const row = arr.find((r: any) => r?.meta?.slug === slug);
       if (row) {
         const seeded = calcFromMetaConfig(row);

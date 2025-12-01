@@ -228,7 +228,9 @@ export default function StartPage() {
       }
     };
     fetchAuth();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     window.addEventListener("TL_AUTH_CHANGED", fetchAuth as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return () => window.removeEventListener("TL_AUTH_CHANGED", fetchAuth as any);
   }, []);
 

@@ -191,12 +191,7 @@ export async function DELETE(req: Request) {
       await calcsStore.remove(userId, slug);
 
       if (row) {
-        await trash.addToTrash(userId, {
-          type: "calc",
-          slug,
-          name: row.meta?.name || slug,
-          deletedAt: new Date().toISOString(),
-        });
+        await trash.push(userId, row);
       }
 
       removed++;
