@@ -49,7 +49,7 @@ export default function PublishGuardButton({
     if (!limitsOk) {
       setOpen(true);
       info(t("Upgrade required"), t("You have reached your current plan limits."));
-      track("publish_blocked", { needs, plan: plan ?? null, suggestPlan: suggestPlan ?? "tierless" });
+      track("publish_blocked", { needs, plan: plan ?? null, suggestPlan: suggestPlan ?? "pro" });
       return;
     }
 
@@ -63,7 +63,7 @@ export default function PublishGuardButton({
     }
   };
 
-  const target = suggestPlan ?? "tierless";
+  const target = suggestPlan ?? "pro";
   const isUpgrade = rankOf(target) > rankOf(plan);
 
   return (

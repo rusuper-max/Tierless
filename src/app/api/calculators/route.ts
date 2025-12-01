@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     [userId]
   );
   const rawPlan = planRows[0]?.plan;
-  const plan = ["free", "starter", "growth", "pro", "tierless"].includes(rawPlan) 
+  const plan = ["free", "starter", "growth", "pro"].includes(rawPlan) 
     ? rawPlan 
     : "free";
 
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
     [userId]
   );
   const rawPlan = planRows[0]?.plan;
-  const plan = ["free", "starter", "growth", "pro", "tierless"].includes(rawPlan) 
+  const plan = ["free", "starter", "growth", "pro"].includes(rawPlan) 
     ? rawPlan 
     : "free";
 

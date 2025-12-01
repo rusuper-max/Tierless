@@ -39,7 +39,7 @@ export function useUserPlan(): UseUserPlanState {
           .then((r) => (r.ok ? r.json() : null))
           .catch(() => null);
         const p = me?.plan as PlanId | undefined;
-        if (mounted) setPlan(p && ["free","starter","growth","pro","tierless"].includes(p) ? p : "free");
+        if (mounted) setPlan(p && ["free","starter","growth","pro"].includes(p) ? p : "free");
       } catch {
         if (mounted) setPlan("free");
       } finally {

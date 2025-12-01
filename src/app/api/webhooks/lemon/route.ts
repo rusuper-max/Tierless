@@ -12,12 +12,14 @@ export const dynamic = "force-dynamic";
 // ============================================
 // Add your LemonSqueezy variant IDs here
 // Find them in: LemonSqueezy Dashboard → Products → [Product] → Variants → ID
+// IMPORTANT: Use the SAME plan ID for both monthly and yearly variants of the same plan
 const VARIANT_TO_PLAN: Record<string, PlanId> = {
-  // Example mappings (REPLACE WITH YOUR ACTUAL VARIANT IDs):
-  // "123456": "starter",
-  // "234567": "growth",
-  // "345678": "pro",
-  // "456789": "tierless",
+  "712914": "starter",  // Tierless Starter Monthly
+  "713624": "starter",  // Tierless Starter Yearly
+  "713622": "growth",  // Tierless Growth Monthly
+  "713625": "growth",  // Tierless Growth Yearly
+  "713623": "pro",     // Tierless Pro Monthly
+  "713626": "pro",     // Tierless Pro Yearly
 };
 
 // Fallback plan when variant is not mapped

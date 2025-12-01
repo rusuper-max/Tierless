@@ -19,12 +19,19 @@ const BRAND_GRADIENT = "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%
 // ============================================
 // Map each plan to its LemonSqueezy variant ID
 // Format: { [planId]: { monthly: "variant_id", yearly: "variant_id" } }
-// Get these from: LemonSqueezy Dashboard → Products → Variants
+// 
+// SETUP INSTRUCTIONS:
+// 1. Go to LemonSqueezy Dashboard → Products → Variants
+// 2. Create 6 variants (3 plans × 2 intervals)
+// 3. Copy the Variant IDs and paste them below
+// 4. See LEMON_SQUEEZY_SETUP.md for detailed instructions
+//
+// IMPORTANT: After creating variants in LemonSqueezy, also update
+// VARIANT_TO_PLAN mapping in src/app/api/webhooks/lemon/route.ts
 const LEMON_VARIANTS: Record<string, { monthly?: string; yearly?: string }> = {
-  // REPLACE WITH YOUR ACTUAL VARIANT IDs:
-  // starter: { monthly: "123456", yearly: "123457" },
-  // growth:  { monthly: "234567", yearly: "234568" },
-  // pro:     { monthly: "345678", yearly: "345679" },
+  starter: { monthly: "712914", yearly: "713624" },  // Tierless Starter
+  growth:  { monthly: "713622", yearly: "713625" },  // Tierless Growth
+  pro:     { monthly: "713623", yearly: "713626" },  // Tierless Pro
 };
 
 type SpecialItem = {
@@ -79,8 +86,8 @@ const PLANS: Plan[] = [
   {
     id: "starter",
     name: "Starter",
-    monthly: 6.99,
-    description: t("For cafes, bars, and small menus."),
+    monthly: 9,
+    description: t("Perfect for freelancers and side projects."),
     theme: {
       text: "text-teal-500 group-hover:text-teal-600 dark:group-hover:text-teal-400",
       borderHover: "hover:border-teal-400 dark:hover:border-teal-500",
@@ -100,6 +107,7 @@ const PLANS: Plan[] = [
     perks: [
       t("AI Menu Scan (OCR)"),
       t("Premium Fonts & Colors"),
+      t("Analytics Dashboard"),
       t("50 Items limit"),
     ],
     caps: [t("3 Published Pages"), t("5MB image limit"), t("Badge visible")],
@@ -107,9 +115,9 @@ const PLANS: Plan[] = [
   {
     id: "growth",
     name: "Growth",
-    monthly: 14.99,
+    monthly: 19,
     badge: t("Best Value"),
-    description: t("For serious restaurants & integration."),
+    description: t("For small businesses and professionals."),
     theme: {
       text: "text-red-500 group-hover:text-red-600 dark:group-hover:text-red-400",
       borderHover: "hover:border-red-400 dark:hover:border-red-500",
@@ -130,6 +138,7 @@ const PLANS: Plan[] = [
       t("Website Integration (Embed)"),
       t("Remove Tierless badge"),
       t("All Premium Themes"),
+      t("Background Video"),
       t("100 Items limit"),
     ],
     caps: [t("5 Published Pages"), t("8MB image limit"), t("Priority Support")],
@@ -137,9 +146,9 @@ const PLANS: Plan[] = [
   {
     id: "pro",
     name: "Pro",
-    monthly: 29.99,
+    monthly: 39,
     isPro: true,
-    description: t("For franchises & power users."),
+    description: t("For serious businesses and agencies."),
     theme: {
       text: "text-indigo-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-300",
       borderHover: "",
@@ -160,8 +169,10 @@ const PLANS: Plan[] = [
       t("3 Custom Domains (SSL)"),
       t("Unlimited Items"),
       t("10 Published Pages"),
+      t("Team Collaboration (10 seats)"),
+      t("Advanced Analytics"),
     ],
-    caps: [t("No reselling allowed"), t("15MB image limit"), t("Dedicated Support")],
+    caps: [t("50 Total Pages"), t("15MB image limit"), t("Dedicated Support")],
   },
 ];
 
@@ -184,8 +195,9 @@ function getNextRenewalISO(interval: Interval, plan: PlanId) {
 }
 
 function getYearlyPricing(monthly: number) {
-  const effMonthly = Math.round(monthly * 0.8 * 100) / 100;
-  const perYear = Math.round(monthly * 12 * 0.8);
+  // 30% discount for yearly (equivalent to 2.4 months free)
+  const effMonthly = Math.round(monthly * 0.7 * 100) / 100;
+  const perYear = Math.round(monthly * 12 * 0.7);
   return {
     effMonthlyLabel: `$${effMonthly.toFixed(2)}`,
     perYearLabel: `$${perYear}/yr`,
@@ -356,7 +368,7 @@ export default function StartPage() {
                 >
                   {t("Yearly")}
                   <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-1 sm:px-1.5 py-0.5 rounded">
-                    -20%
+                    -30%
                   </span>
                 </button>
               </div>

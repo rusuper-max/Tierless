@@ -524,7 +524,7 @@ export default function DashboardPageClient() {
     (limits as any)?.maxPublicPages ??
     (typeof pagesLimit === "number" ? pagesLimit : Infinity);
   const publishedLimitNum = Number.isFinite(_publishedLimit) ? (_publishedLimit as number) : Infinity;
-  const canUpgradePlan = plan !== "pro" && plan !== "tierless";
+  const canUpgradePlan = plan !== "pro";
 
   const canCreate = useMemo(() => {
     if (pagesLimit === "unlimited") return true;
@@ -783,9 +783,6 @@ export default function DashboardPageClient() {
   }
 
   function publishLimitMsg(planName: string) {
-    if (planName === "tierless") {
-      return "You've reached the maximum number of online pages for Tierless.";
-    }
     return "Online limit reached for your plan. Upgrade your plan to publish more pages.";
   }
 

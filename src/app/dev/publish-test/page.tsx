@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { PlanId, UsageNeeds } from "@/lib/entitlements";
 import PublishGuardButton from "@/components/publish/PublishGuardButton";
 
-const PLAN_OPTS: PlanId[] = ["free", "starter", "growth", "pro", "tierless"];
+const PLAN_OPTS: PlanId[] = ["free", "starter", "growth", "pro"];
 
 // Koercija na number za prikaz u inputima (UsageNeeds može biti number | "unlimited" | undefined)
 function n(v: UsageNeeds[keyof UsageNeeds] | undefined, fallback = 0): number {

@@ -71,7 +71,7 @@ export default function Gate({
   }
 
   // Fallback: zaključano
-  const target = suggestPlan ?? "tierless";
+  const target = suggestPlan ?? "pro";
   const isUpgrade = indexOfPlan(target) > indexOfPlan(currentPlan);
 
   const Wrapper = inlineFallback ? "div" : (props: any) => (

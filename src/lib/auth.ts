@@ -9,7 +9,7 @@ import {
 } from "@/lib/env";
 
 // === Plan types ===
-export type Plan = "free" | "starter" | "growth" | "pro" | "tierless";
+export type Plan = "free" | "starter" | "growth" | "pro";
 
 export type SessionUser = {
   email: string;
@@ -36,7 +36,7 @@ export const COOKIE_BASE = {
 
 // ---------- Plan helpers (validacija/normalizacija) ----------
 export function isPlan(x: unknown): x is Plan {
-  return x === "free" || x === "starter" || x === "growth" || x === "pro" || x === "tierless";
+  return x === "free" || x === "starter" || x === "growth" || x === "pro";
 }
 export function coercePlan(x: unknown): Plan {
   return isPlan(x) ? x : "free";

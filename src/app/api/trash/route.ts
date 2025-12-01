@@ -19,7 +19,7 @@ function getPlanFromReq(req: Request): PlanId {
   const cookie = req.headers.get("cookie") || "";
   const m = cookie.match(/(?:^|;\s*)tl_plan=([^;]+)/);
   const raw = decodeURIComponent(m?.[1] || "").toLowerCase();
-  const ok: PlanId[] = ["free","starter","growth","pro","tierless"];
+  const ok: PlanId[] = ["free","starter","growth","pro"];
   return (ok.includes(raw as PlanId) ? (raw as PlanId) : "free");
 }
 function pagesLimit(plan: PlanId): number | "unlimited" {

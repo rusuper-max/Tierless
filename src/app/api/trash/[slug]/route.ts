@@ -39,8 +39,6 @@ function normalizePlan(p?: string): PlanId {
       return "growth";
     case "pro":
       return "pro";
-    case "tierless":
-      return "tierless";
     case "free":
     default:
       return "free";

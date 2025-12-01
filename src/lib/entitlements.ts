@@ -1,6 +1,6 @@
 // src/lib/entitlements.ts
 
-export type PlanId = "free" | "starter" | "growth" | "pro" | "tierless";
+export type PlanId = "free" | "starter" | "growth" | "pro";
 
 export type FeatureKey =
   | "customColors"       // Edit brand colors
@@ -40,10 +40,9 @@ export const PLAN_RANK: Record<PlanId, number> = {
   starter: 1,
   growth: 2,
   pro: 3,
-  tierless: 4,
 };
 
-export const PLAN_ORDER: PlanId[] = ["free", "starter", "growth", "pro", "tierless"];
+export const PLAN_ORDER: PlanId[] = ["free", "starter", "growth", "pro"];
 export const DEFAULT_PLAN: PlanId = "free";
 
 export const isPlanId = (v: unknown): v is PlanId =>
@@ -150,38 +149,12 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
     },
     limits: {
       pages: 50,
-      maxPublicPages: 10,    // 10 Live pages (Small franchise limit)
+      maxPublicPages: 10,    // 10 Live pages
       tiersPerPage: "unlimited",
       items: "unlimited",
       teamSeats: 10,
       customDomains: 3,      // Key feature: 3 Custom Domains
       uploadSize: 15 * 1024 * 1024, // 15 MB
-    },
-  },
-  tierless: {
-    features: {
-      customColors: true,
-      removeBadge: true,
-      templates: true,
-      backgroundVideo: true,
-      eventsAnalytics: true,
-      advancedFormulas: true,
-      webhooks: true,
-      aiAgent: true,
-      whiteLabel: true,
-      ocrImport: true,
-      canEmbed: true,
-      premiumFonts: true,
-      premiumThemes: true,
-    },
-    limits: {
-      pages: "unlimited",
-      maxPublicPages: 100,
-      tiersPerPage: "unlimited",
-      items: 1000,
-      teamSeats: 20,
-      customDomains: 20,
-      uploadSize: 50 * 1024 * 1024,
     },
   },
 };
