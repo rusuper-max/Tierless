@@ -29,9 +29,9 @@ const BRAND_GRADIENT = "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%
 // IMPORTANT: After creating variants in LemonSqueezy, also update
 // VARIANT_TO_PLAN mapping in src/app/api/webhooks/lemon/route.ts
 const LEMON_VARIANTS: Record<string, { monthly?: string; yearly?: string }> = {
-  starter: { monthly: "712914", yearly: "713624" },  // Tierless Starter
-  growth:  { monthly: "713622", yearly: "713625" },  // Tierless Growth
-  pro:     { monthly: "713623", yearly: "713626" },  // Tierless Pro
+  starter: { monthly: "1122011", yearly: "1123106" },  // TSM, TSY - Scale/Starter
+  growth: { monthly: "1123104", yearly: "1123107" },  // TGM, TGY - Growth
+  pro: { monthly: "1123105", yearly: "1123108" },  // TPM, TPY - Pro
 };
 
 type SpecialItem = {
@@ -256,7 +256,7 @@ export default function StartPage() {
 
   const handlePlanChange = async (planId: PlanId): Promise<boolean | "redirect"> => {
     if (!authed) return false;
-    
+
     // FREE plan - direct API update (no payment needed)
     if (planId === "free") {
       try {
@@ -273,18 +273,18 @@ export default function StartPage() {
         return false;
       }
     }
-    
+
     // PAID plans - redirect to LemonSqueezy checkout
     const variantConfig = LEMON_VARIANTS[planId];
     const variantId = interval === "yearly" ? variantConfig?.yearly : variantConfig?.monthly;
-    
+
     if (!variantId) {
       // Variant not configured - show error or fallback
       console.error(`No LemonSqueezy variant configured for ${planId} (${interval})`);
       alert(t("Payment not configured. Please contact support."));
       return false;
     }
-    
+
     try {
       const res = await fetch("/api/integrations/lemon/checkout", {
         method: "POST",
@@ -295,7 +295,7 @@ export default function StartPage() {
           cancelUrl: `${window.location.origin}/start`,
         }),
       });
-      
+
       if (!res.ok) {
         const error = await res.json().catch(() => ({}));
         console.error("Checkout error:", error);
@@ -309,7 +309,7 @@ export default function StartPage() {
         alert(t("Failed to start checkout. Please try again.") + (error.error ? `\n\nError: ${error.error}` : ""));
         return false;
       }
-      
+
       const { url } = await res.json();
       if (url) {
         window.location.href = url;
