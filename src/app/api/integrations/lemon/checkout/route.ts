@@ -59,18 +59,27 @@ export async function POST(req: Request) {
 
   // Build attributes according to LemonSqueezy API spec
   const attributes: Record<string, any> = {
+    checkout_options: {
+      embed: false,
+      media: true,
+      logo: true,
+    },
     checkout_data: {
       custom: {
         user_id: userId,
       },
     },
+    product_options: {
+      enabled_variants: [variantIdStr],
+    },
   };
 
-  // Add optional URLs
-  if (body.successUrl) attributes.success_url = body.successUrl;
-  if (body.cancelUrl) attributes.cancel_url = body.cancelUrl;
+  // Add optional URLs to checkout_options
+  if (body.successUrl) attributes.checkout_options.success_url = body.successUrl;
+  if (body.cancelUrl) attributes.checkout_options.cancel_url = body.cancelUrl;
+
+  // Add email to checkout_data
   if (body.email) {
-    if (!attributes.checkout_data) attributes.checkout_data = {};
     attributes.checkout_data.email = body.email;
   }
 
@@ -84,15 +93,15 @@ export async function POST(req: Request) {
       attributes,
       relationships: {
         store: {
-          data: { 
-            type: "stores", 
-            id: storeIdStr 
+          data: {
+            type: "stores",
+            id: storeIdStr
           },
         },
         variant: {
-          data: { 
-            type: "variants", 
-            id: variantIdStr 
+          data: {
+            type: "variants",
+            id: variantIdStr
           },
         },
       },
@@ -135,7 +144,7 @@ export async function POST(req: Request) {
         source: e.source,
         status: e.status,
       }));
-      
+
       console.error("[Checkout] LemonSqueezy API error:", {
         status: response.status,
         statusText: response.statusText,
@@ -144,16 +153,16 @@ export async function POST(req: Request) {
         variantId: variantIdStr,
         storeId: storeIdStr,
       });
-      
+
       // Return detailed error
-      const errorDetail = errorMessages[0]?.detail || 
-                          errorMessages[0]?.title ||
-                          responseJson?.error || 
-                          responseText || 
-                          response.statusText;
-      
+      const errorDetail = errorMessages[0]?.detail ||
+        errorMessages[0]?.title ||
+        responseJson?.error ||
+        responseText ||
+        response.statusText;
+
       return NextResponse.json(
-        { 
+        {
           error: "Failed to create checkout session",
           details: errorDetail,
           status: response.status,
@@ -181,7 +190,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("[Checkout] Unexpected error:", error);
     return NextResponse.json(
-      { 
+      {
         error: "Internal server error",
         details: error?.message || String(error),
       },
