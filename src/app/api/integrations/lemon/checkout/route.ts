@@ -84,49 +84,82 @@ export async function POST(req: Request) {
     },
   };
 
-  const response = await fetch(LEMON_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      Accept: "application/vnd.api+json",
-      "Content-Type": "application/vnd.api+json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => null);
-    let errorJson: any = null;
-    try {
-      errorJson = errorText ? JSON.parse(errorText) : null;
-    } catch {
-      // Not JSON, use as text
-    }
-    
-    console.error("[Checkout] LemonSqueezy API error:", {
-      status: response.status,
-      statusText: response.statusText,
-      error: errorJson || errorText,
+  try {
+    console.log("[Checkout] Calling LemonSqueezy API:", {
       variantId,
-      storeId: storeId ? `${storeId.substring(0, 3)}...` : "missing",
+      storeId,
+      hasApiKey: !!apiKey,
+      apiKeyPrefix: apiKey ? apiKey.substring(0, 10) : "missing",
     });
-    
-    // Return more detailed error for debugging
+
+    const response = await fetch(LEMON_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Accept: "application/vnd.api+json",
+        "Content-Type": "application/vnd.api+json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await response.text().catch(() => "Failed to read response");
+    let responseJson: any = null;
+    try {
+      responseJson = responseText ? JSON.parse(responseText) : null;
+    } catch {
+      // Not JSON
+    }
+
+    if (!response.ok) {
+      console.error("[Checkout] LemonSqueezy API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        error: responseJson || responseText,
+        variantId,
+        storeId,
+      });
+      
+      // Return detailed error
+      const errorDetail = responseJson?.errors?.[0]?.detail || 
+                          responseJson?.errors?.[0]?.title ||
+                          responseJson?.error || 
+                          responseText || 
+                          response.statusText;
+      
+      return NextResponse.json(
+        { 
+          error: "Failed to create checkout session",
+          details: errorDetail,
+          status: response.status,
+          lemonError: responseJson,
+        },
+        { status: 502 }
+      );
+    }
+
+    const json = responseJson || JSON.parse(responseText);
+    const checkoutUrl = json?.data?.attributes?.url;
+
+    if (!checkoutUrl) {
+      console.error("[Checkout] No checkout URL in response:", json);
+      return NextResponse.json(
+        { error: "Invalid response from LemonSqueezy", details: json },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({
+      url: checkoutUrl,
+      data: json?.data,
+    });
+  } catch (error: any) {
+    console.error("[Checkout] Unexpected error:", error);
     return NextResponse.json(
       { 
-        error: "Failed to create checkout session",
-        details: errorJson?.errors?.[0]?.detail || errorJson?.error || errorText || response.statusText,
-        status: response.status,
+        error: "Internal server error",
+        details: error?.message || String(error),
       },
-      { status: 502 }
+      { status: 500 }
     );
   }
-
-  const json = await response.json();
-  const checkoutUrl = json?.data?.attributes?.url;
-
-  return NextResponse.json({
-    url: checkoutUrl,
-    data: json?.data,
-  });
 }
