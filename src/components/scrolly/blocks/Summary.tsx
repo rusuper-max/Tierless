@@ -29,17 +29,18 @@ export function Summary({
 
     return (
         <section
-            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 sm:px-5 sm:py-4 flex flex-col gap-3"
+            className={`rounded-2xl border border-[var(--border)] px-5 py-5 sm:px-6 sm:py-6 flex flex-col gap-4 transition-all ${theme === "tierless" ? "bg-[var(--glass)] backdrop-blur-xl" : "bg-[var(--card)]"
+                }`}
             style={{ boxShadow: summaryShadow }}
         >
-            <div className="space-y-0.5">
-                <div className="text-xs sm:text-sm text-[var(--muted)]">
+            <div className="space-y-1">
+                <div className="text-sm font-medium text-[var(--muted)] uppercase tracking-wider text-[10px]">
                     {t("Estimated total")}
                 </div>
-                <div className="text-xl sm:text-2xl font-semibold text-[var(--text)]">
+                <div className="text-3xl sm:text-4xl font-bold text-[var(--text)] tracking-tight">
                     {formatPrice(total)}
                 </div>
-                <p className="text-[11px] sm:text-xs text-[var(--muted)]">
+                <p className="text-xs text-[var(--muted)] opacity-80">
                     {t(
                         "This is a rough estimate based on selected packages and extras."
                     )}
@@ -49,23 +50,11 @@ export function Summary({
             {showInquiry && (
                 <button
                     type="button"
-                    className="relative inline-flex items-center justify-center rounded-full bg-[var(--card)] px-4 py-2 text-sm sm:text-base text-[var(--text)] mt-1"
+                    className="group relative inline-flex items-center justify-center rounded-xl bg-[var(--brand-1)] px-5 py-3 text-sm sm:text-base font-semibold text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all duration-200 mt-2"
                 >
-                    <span
-                        aria-hidden
-                        className="pointer-events-none absolute inset-0 rounded-full"
-                        style={{
-                            padding: 1.5,
-                            background: BRAND_GRADIENT,
-                            WebkitMask:
-                                "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                            WebkitMaskComposite: "xor" as any,
-                            maskComposite: "exclude",
-                        }}
-                    />
-                    <span className="relative z-[1] font-medium inline-flex items-center gap-1.5">
+                    <span className="relative z-[1] inline-flex items-center gap-2">
                         {t("Send inquiry")}
-                        <ArrowRight className="h-3.5 w-3.5" />
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </span>
                 </button>
             )}

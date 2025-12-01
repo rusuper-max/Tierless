@@ -559,15 +559,17 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
   const themeVars: CSSProperties =
     publicTheme === "tierless"
       ? {
-        ["--bg" as any]: "#020617",
-        ["--card" as any]: "rgba(8,11,34,0.92)",
-        ["--border" as any]: "rgba(99,102,241,0.45)",
+        ["--bg" as any]: "#020410", // Deeper, richer black/blue
+        ["--card" as any]: "rgba(13, 16, 35, 0.7)", // More transparent for glass effect
+        ["--border" as any]: "rgba(99, 102, 241, 0.2)", // Subtler border
         ["--text" as any]: "#e0e7ff",
-        ["--muted" as any]: "rgba(203,213,255,0.8)",
-        ["--surface" as any]: "rgba(79,70,229,0.25)",
-        ["--track" as any]: "rgba(79,70,229,0.4)",
-        ["--brand-1" as any]: "#4F46E5",
-        ["--brand-2" as any]: "#22D3EE",
+        ["--muted" as any]: "#94a3b8",
+        ["--surface" as any]: "rgba(255, 255, 255, 0.03)",
+        ["--track" as any]: "rgba(30, 41, 59, 0.5)",
+        ["--brand-1" as any]: "#6366f1", // Indigo 500
+        ["--brand-2" as any]: "#06b6d4", // Cyan 500
+        ["--glass" as any]: "rgba(13, 16, 35, 0.6)",
+        ["--glass-hover" as any]: "rgba(13, 16, 35, 0.8)",
       }
       : publicTheme === "dark"
         ? {
@@ -598,8 +600,8 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
       ? {
         ...themeVars,
         backgroundImage:
-          "radial-gradient(circle at 5% 0%, rgba(79,70,229,0.25), transparent 45%), radial-gradient(circle at 95% 0%, rgba(34,211,238,0.22), transparent 55%)",
-        backgroundColor: "#020617",
+          "radial-gradient(circle at 15% 0%, rgba(99, 102, 241, 0.15), transparent 40%), radial-gradient(circle at 85% 0%, rgba(6, 182, 212, 0.15), transparent 40%)",
+        backgroundColor: "var(--bg)",
       }
       : themeVars;
 
