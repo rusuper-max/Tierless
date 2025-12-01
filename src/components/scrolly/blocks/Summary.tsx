@@ -1,8 +1,16 @@
 import ShinyButton from "@/components/marketing/ShinyButton";
+import { ArrowRight } from "lucide-react";
+
+// Theme type (matches PublicRenderer)
+type AdvancedTheme = "light" | "dark" | "tierless";
+
+// Simple passthrough for translation (no i18n in this component)
+const t = (s: string) => s;
 
 export type SummaryProps = {
     total: number;
     hasAnyBlocks: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     formatPrice: (v: number | null | undefined, o?: any) => string;
     showInquiry: boolean;
     theme: AdvancedTheme;
