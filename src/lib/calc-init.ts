@@ -10,76 +10,76 @@ export function calcFromMetaConfig(mini: any): Calculator {
 
   const fields = Array.isArray(cfg.fields)
     ? cfg.fields.map((f: any) => {
-        const key = String(f?.key ?? f?.name ?? "field").trim();
-        const label = String(f?.label ?? f?.name ?? key).trim();
+      const key = String(f?.key ?? f?.name ?? "field").trim();
+      const label = String(f?.label ?? f?.name ?? key).trim();
 
-        if ((f?.type ?? "").toLowerCase() === "number") {
-          const def = Number.isFinite(f?.default) ? Number(f.default) : 0;
-          const max = Number.isFinite(f?.max) ? Number(f.max) : Math.max(10, def * 2 || 100);
-          const step = Number.isFinite(f?.step) ? Number(f.step) : 1;
-          const deltaPerUnit = Number.isFinite(f?.deltaPerUnit) ? Number(f.deltaPerUnit) : 0;
-          return {
-            key,
-            type: "slider",
-            label,
-            min: Number.isFinite(f?.min) ? Number(f.min) : 0,
-            max,
-            step,
-            default: def,
-            deltaPerUnit,
-          };
-        }
+      if ((f?.type ?? "").toLowerCase() === "number") {
+        const def = Number.isFinite(f?.default) ? Number(f.default) : 0;
+        const max = Number.isFinite(f?.max) ? Number(f.max) : Math.max(10, def * 2 || 100);
+        const step = Number.isFinite(f?.step) ? Number(f.step) : 1;
+        const deltaPerUnit = Number.isFinite(f?.deltaPerUnit) ? Number(f.deltaPerUnit) : 0;
+        return {
+          key,
+          type: "slider",
+          label,
+          min: Number.isFinite(f?.min) ? Number(f.min) : 0,
+          max,
+          step,
+          default: def,
+          deltaPerUnit,
+        };
+      }
 
-        if (Array.isArray(f?.options) && f.options.length > 0) {
-          return {
-            key,
-            type: "select",
-            label,
-            options: f.options.map((o: any) => ({
-              value: String(o?.value ?? o?.id ?? o?.label ?? "opt").trim(),
-              label: String(o?.label ?? o?.value ?? "Option").trim(),
-              delta: Number.isFinite(o?.delta) ? Number(o.delta) : 0,
-            })),
-            default: String(f?.default ?? f?.options?.[0]?.value ?? "").trim(),
-          };
-        }
-
+      if (Array.isArray(f?.options) && f.options.length > 0) {
         return {
           key,
           type: "select",
           label,
-          options: [{ value: "n/a", label: "N/A", delta: 0 }],
-          default: "n/a",
+          options: f.options.map((o: any) => ({
+            value: String(o?.value ?? o?.id ?? o?.label ?? "opt").trim(),
+            label: String(o?.label ?? o?.value ?? "Option").trim(),
+            delta: Number.isFinite(o?.delta) ? Number(o.delta) : 0,
+          })),
+          default: String(f?.default ?? f?.options?.[0]?.value ?? "").trim(),
         };
-      })
+      }
+
+      return {
+        key,
+        type: "select",
+        label,
+        options: [{ value: "n/a", label: "N/A", delta: 0 }],
+        default: "n/a",
+      };
+    })
     : [];
 
   const packages: Package[] =
     Array.isArray(cfg.packages) && cfg.packages.length
       ? cfg.packages.map((p: any, i: number) => ({
-          id: String(p?.id ?? `pkg${i + 1}`),
-          label: String(p?.label ?? p?.name ?? `Package ${i + 1}`),
-          description: String(p?.description ?? ""),
-          basePrice: Number.isFinite(p?.basePrice) ? Number(p.basePrice) : 0,
-          featured: Boolean(p?.featured ?? i === 0),
-          covers: Array.isArray(p?.covers)
-            ? p.covers.map((c: any) => ({
-                text: String(c?.text ?? ""),
-                premium: Boolean(c?.premium),
-              }))
-            : undefined,
-        }))
+        id: String(p?.id ?? `pkg${i + 1}`),
+        label: String(p?.label ?? p?.name ?? `Package ${i + 1}`),
+        description: String(p?.description ?? ""),
+        basePrice: Number.isFinite(p?.basePrice) ? Number(p.basePrice) : 0,
+        featured: Boolean(p?.featured ?? i === 0),
+        covers: Array.isArray(p?.covers)
+          ? p.covers.map((c: any) => ({
+            text: String(c?.text ?? ""),
+            premium: Boolean(c?.premium),
+          }))
+          : undefined,
+      }))
       : [{ id: "basic", label: "Basic", description: cfg?.description ?? "", basePrice: 0, featured: true }];
 
   const items: Item[] = Array.isArray(cfg.items)
     ? cfg.items.map((it: any, i: number) => ({
-        id: String(it?.id ?? `item${i + 1}`),
-        label: String(it?.label ?? it?.name ?? `Item ${i + 1}`),
-        unit: it?.unit ? String(it.unit) : undefined,
-        price: Number.isFinite(it?.price) ? Number(it.price) : undefined,
-        qty: Number.isFinite(it?.qty) ? Number(it.qty) : undefined,
-        note: it?.note ? String(it.note) : undefined,
-      }))
+      id: String(it?.id ?? `item${i + 1}`),
+      label: String(it?.label ?? it?.name ?? `Item ${i + 1}`),
+      unit: it?.unit ? String(it.unit) : undefined,
+      price: Number.isFinite(it?.price) ? Number(it.price) : undefined,
+      qty: Number.isFinite(it?.qty) ? Number(it.qty) : undefined,
+      note: it?.note ? String(it.note) : undefined,
+    }))
     : [];
 
   // --- Blocks (auto) ---
@@ -98,13 +98,14 @@ export function calcFromMetaConfig(mini: any): Calculator {
     meta: {
       name: String(meta?.name ?? "Untitled Page"),
       slug: String(meta?.slug ?? "untitled"),
-    // ... u oba export-a gde se setuje branding:
-branding: {
-  theme: "dark",
-  accent: "#7c3aed",  // ← purple
-  layout: "cards",
-  hideBadge: false,
-},
+      branding: {
+        theme: "dark",
+        accent: "#7c3aed",
+        layout: "cards",
+        hideBadge: false,
+      },
+      // Pass through advanced configuration if present
+      ...(cfg?.advanced || {}),
     },
     i18n: {
       locale: String(cfg?.i18n?.locale ?? "en"),

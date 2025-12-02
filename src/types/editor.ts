@@ -1,5 +1,5 @@
 export type Mode = "setup" | "simple" | "advanced";
-export type BrandTheme = "tierless" | "minimal" | "luxury" | "elegant" | "midnight" | "cafe" | "ocean" | "forest" | "sunset" | "rosegold" | "emerald" | "sapphire" | "obsidian" | "goldluxury" | "classic" | "custom" | "light" | "dark";
+export type BrandTheme = "tierless" | "minimal" | "luxury" | "elegant" | "midnight" | "cafe" | "ocean" | "forest" | "sunset" | "rosegold" | "emerald" | "sapphire" | "obsidian" | "goldluxury" | "classic" | "custom" | "light" | "dark" | "editorial";
 
 export type FeatureOption = { id: string; label: string; highlighted?: boolean };
 export type Extra = { id: string; text: string; price?: number; selected?: boolean };

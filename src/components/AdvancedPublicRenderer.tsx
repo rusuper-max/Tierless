@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect, type CSSProperties } from "react";
+import { Sparkles } from "lucide-react";
 import type { CalcJson } from "@/hooks/useEditorStore";
 import { t } from "@/i18n";
 
@@ -179,7 +180,9 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
       ? "tierless"
       : metaRaw.theme === "dark" || metaRaw.publicTheme === "dark"
         ? "dark"
-        : "light";
+        : metaRaw.publicTheme === "editorial"
+          ? "editorial"
+          : "light";
 
   const showPoweredBy: boolean =
     metaRaw.showPoweredBy ?? true;
@@ -583,17 +586,29 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
           ["--brand-1" as any]: "#818cf8",
           ["--brand-2" as any]: "#22D3EE",
         }
-        : {
-          ["--bg" as any]: "#f8fafc",
-          ["--card" as any]: "#ffffff",
-          ["--border" as any]: "#e2e8f0",
-          ["--text" as any]: "#0f172a",
-          ["--muted" as any]: "#64748b",
-          ["--surface" as any]: "rgba(15,23,42,0.05)",
-          ["--track" as any]: "rgba(15,23,42,0.12)",
-          ["--brand-1" as any]: "#4F46E5",
-          ["--brand-2" as any]: "#22D3EE",
-        };
+        : publicTheme === "editorial"
+          ? {
+            ["--bg" as any]: "#0a0a0a",
+            ["--card" as any]: "rgba(28, 25, 23, 0.6)", // stone-900/60
+            ["--border" as any]: "rgba(231, 229, 228, 0.1)", // stone-200/10
+            ["--text" as any]: "#e7e5e4", // stone-200
+            ["--muted" as any]: "#a8a29e", // stone-400
+            ["--surface" as any]: "rgba(255, 255, 255, 0.03)",
+            ["--track" as any]: "rgba(255, 255, 255, 0.1)",
+            ["--brand-1" as any]: "#fed7aa", // orange-200
+            ["--brand-2" as any]: "#fdba74", // orange-300
+          }
+          : {
+            ["--bg" as any]: "#f8fafc",
+            ["--card" as any]: "#ffffff",
+            ["--border" as any]: "#e2e8f0",
+            ["--text" as any]: "#0f172a",
+            ["--muted" as any]: "#64748b",
+            ["--surface" as any]: "rgba(15,23,42,0.05)",
+            ["--track" as any]: "rgba(15,23,42,0.12)",
+            ["--brand-1" as any]: "#4F46E5",
+            ["--brand-2" as any]: "#22D3EE",
+          };
 
   const wrapperStyle: CSSProperties =
     publicTheme === "tierless"
@@ -603,7 +618,13 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
           "radial-gradient(circle at 15% 0%, rgba(99, 102, 241, 0.15), transparent 40%), radial-gradient(circle at 85% 0%, rgba(6, 182, 212, 0.15), transparent 40%)",
         backgroundColor: "var(--bg)",
       }
-      : themeVars;
+      : publicTheme === "editorial"
+        ? {
+          ...themeVars,
+          backgroundColor: "var(--bg)",
+          fontFamily: "var(--font-sans)", // We'll use serif for headers specifically
+        }
+        : themeVars;
 
   return (
     <div
@@ -614,14 +635,29 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
       {poweredBy}
 
       {(title || description) && (
-        <header className="space-y-1">
+        <header className={`space-y-4 ${publicTheme === "editorial" ? "text-center mb-12 relative z-10" : "space-y-1"}`}>
+          {publicTheme === "editorial" && (
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] backdrop-blur-md mb-6">
+              <Sparkles size={12} className="text-[var(--brand-1)]" />
+              <span className="text-xs tracking-widest uppercase text-[var(--muted)] font-medium">Pricing Calculator 2025</span>
+            </div>
+          )}
+
           {title && (
-            <h1 className="text-xl font-semibold text-[var(--text)]">
+            <h1 className={`font-semibold text-[var(--text)] ${publicTheme === "editorial"
+              ? "text-4xl md:text-6xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-stone-100 to-stone-400 tracking-tight mb-6"
+              : "text-xl"
+              }`}>
               {title}
             </h1>
           )}
           {description && (
-            <p className="text-sm text-[var(--muted)]">{description}</p>
+            <p className={`text-[var(--muted)] ${publicTheme === "editorial"
+              ? "text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed"
+              : "text-sm"
+              }`}>
+              {description}
+            </p>
           )}
           {supportNote && (
             <p className="text-[11px] sm:text-xs text-[var(--muted)] mt-1">
@@ -629,6 +665,13 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
             </p>
           )}
         </header>
+      )}
+
+      {publicTheme === "editorial" && (
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-orange-900/10 blur-[120px] rounded-full mix-blend-screen" />
+          <div className="absolute top-[20%] right-[0%] w-[40%] h-[60%] bg-blue-900/10 blur-[120px] rounded-full mix-blend-screen" />
+        </div>
       )}
 
       {mainContent}

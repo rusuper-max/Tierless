@@ -17,7 +17,7 @@ import { t } from "@/i18n";
 const NAV = [
   { href: "/dashboard", label: t("Pages"), icon: LayoutDashboard, exact: true },
   { href: "/dashboard/stats", label: t("Stats"), icon: BarChart3 },
-  { href: "/templates", label: t("Templates"), icon: LayoutGrid },
+  { href: "/dashboard/templates", label: t("Templates"), icon: LayoutGrid },
   { href: "/dashboard/integrations", label: t("Integrations"), icon: Puzzle },
   { href: "/dashboard/settings", label: t("Settings"), icon: Settings },
   { href: "/dashboard/trash", label: t("Trash"), icon: Trash2 },

@@ -1124,7 +1124,7 @@ export default function DashboardPageClient() {
                   <Link
                     className="block px-3 py-2 rounded-lg hover:bg-neutral-100 cursor-pointer text-black !text-black dark:!text-black"
                     style={{ color: "#000" }}
-                    href="/templates"
+                    href="/dashboard/templates"
                     onClick={() => setNewMenuOpen(false)}
                   >
                     New from template
@@ -1256,7 +1256,7 @@ export default function DashboardPageClient() {
             </button>
 
             <Link
-              href="/templates"
+              href="/dashboard/templates"
               className="tl-empty-card tl-empty-card--click tl-empty-card--secondary block text-left no-underline"
             >
               <div className="flex flex-col gap-2">

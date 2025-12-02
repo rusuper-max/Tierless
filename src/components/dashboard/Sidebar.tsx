@@ -67,7 +67,7 @@ export default function Sidebar() {
   const NAV: Item[] = useMemo(() => [
     { href: "/dashboard", label: t("Pages"), icon: LayoutDashboard, exact: true, navKey: "pages" },
     { href: "/dashboard/stats", label: t("Stats"), icon: BarChart3, navKey: "stats" },
-    { href: "/templates", label: t("Templates"), icon: LayoutGrid, navKey: "templates" },
+    { href: "/dashboard/templates", label: t("Templates"), icon: LayoutGrid, navKey: "templates" },
     { href: "/dashboard/integrations", label: t("Integrations"), icon: Puzzle, navKey: "integrations" },
     { href: "/dashboard/settings", label: t("Settings"), icon: Settings, navKey: "settings" },
     { href: "/dashboard/trash", label: t("Trash"), icon: Trash2, badge: trashCount, navKey: "trash" },
@@ -238,6 +238,39 @@ const NavItem = ({
 
 function PlanPill({ plan }: { plan: string }) {
   const key = (plan || "free").toLowerCase();
+
+  // Special treatment for Tierless (Dev/Founder) plan - animated spinning gradient
+  if (key === "tierless") {
+    return (
+      <div className="group relative inline-flex items-center justify-center p-[1px] rounded-full overflow-hidden">
+        {/* Spinning gradient border */}
+        <span
+          className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] opacity-70 group-hover:opacity-100 transition-opacity"
+          style={{
+            background: "conic-gradient(from 90deg at 50% 50%, #020617 0%, #4F46E5 50%, #22D3EE 100%)"
+          }}
+          aria-hidden
+        />
+
+        {/* Inner content */}
+        <span className="relative inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] bg-[var(--card)]">
+          <span className="inline-block h-2 w-2 rounded-full" style={{ background: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))" }} aria-hidden />
+          <b
+            className="uppercase font-medium tracking-wider"
+            style={{
+              backgroundImage: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            Dev
+          </b>
+        </span>
+      </div>
+    );
+  }
 
   // Special treatment for Pro plan (gradient like old Tierless)
   if (key === "pro") {

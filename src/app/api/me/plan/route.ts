@@ -1,7 +1,7 @@
 // src/app/api/me/plan/route.ts
 import { NextResponse } from "next/server";
 import type { Plan } from "@/lib/auth";
-import { coercePlan, getUserIdFromRequest } from "@/lib/auth";
+import { coercePlan, getUserIdFromRequest, getUserPlan } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import { getPublishedCap, type PlanId } from "@/lib/entitlements";
 import * as calcsStore from "@/lib/calcsStore";
@@ -49,12 +49,14 @@ export async function GET() {
     );
   }
 
-  // Čitanje plana iz tabele + normalizacija
+  // Use the centralized getUserPlan which handles founder auto-upgrades
+  const plan = await getUserPlan(id);
+
+  // Get additional details if needed (renews_on, etc)
   const { rows } = await pool.query(
-    "SELECT plan, renews_on, cancel_at_period_end FROM user_plans WHERE user_id = $1 LIMIT 1",
+    "SELECT renews_on, cancel_at_period_end FROM user_plans WHERE user_id = $1 LIMIT 1",
     [id]
   );
-  const plan = coercePlan(rows[0]?.plan as Plan | undefined) as PlanId;
 
   return NextResponse.json(
     {

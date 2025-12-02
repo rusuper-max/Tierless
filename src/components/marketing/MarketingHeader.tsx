@@ -125,12 +125,7 @@ export default function MarketingHeader() {
 
         {/* --- NAVIGATION (visible on all screens) --- */}
         <nav className="flex items-center gap-2 sm:gap-4">
-          <Link
-            href="/examples"
-            className="inline-flex items-center rounded-full border border-white/10 px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-200 transition hover:border-white/40 hover:text-white"
-          >
-            {t("nav.examples") ?? "Examples"}
-          </Link>
+          {/* Examples link removed as requested */}
 
           <LanguageSwitcher />
 

@@ -1,8 +1,7 @@
 import ShinyButton from "@/components/marketing/ShinyButton";
 import { ArrowRight } from "lucide-react";
 
-// Theme type (matches PublicRenderer)
-type AdvancedTheme = "light" | "dark" | "tierless";
+import type { AdvancedTheme } from "@/app/editor/[id]/panels/advanced/types";
 
 // Simple passthrough for translation (no i18n in this component)
 const t = (s: string) => s;

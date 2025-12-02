@@ -206,37 +206,54 @@ export default function ExamplesPage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {topPages.slice(0, 100).map((page) => (
-                                            <Link
-                                                key={`${page.rank}-${page.slug}`}
-                                                href={page.slug.startsWith('empty-') ? '#' : `/p/${page.slug}`}
-                                                className={`flex items-start gap-3 group hover:bg-white/5 p-2 rounded-lg transition-colors ${page.slug.startsWith('empty-') ? 'pointer-events-none opacity-50' : ''
-                                                    }`}
-                                                title={`${page.avgRating.toFixed(2)} (${page.ratingsCount} ratings)`}
-                                            >
-                                                <div className={`w-7 h-7 shrink-0 rounded flex items-center justify-center text-xs font-bold
-                            ${page.rank === 1 ? "bg-yellow-500 text-black"
-                                                        : page.rank === 2 ? "bg-slate-300 text-black"
-                                                            : page.rank === 3 ? "bg-orange-700 text-white"
-                                                                : "bg-slate-800 text-slate-400"}`}>
-                                                    {page.rank}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="text-sm text-slate-200 font-medium group-hover:text-cyan-400 truncate transition-colors">
-                                                        {page.title}
+                                        {/* Fill up to 100 spots */}
+                                        {(() => {
+                                            const filled = [...topPages];
+                                            while (filled.length < 100) {
+                                                filled.push({
+                                                    rank: filled.length + 1,
+                                                    slug: `empty-${filled.length + 1}`,
+                                                    title: "Empty Spot",
+                                                    author: "-",
+                                                    avgRating: 0,
+                                                    ratingsCount: 0,
+                                                    totalViews: 0
+                                                });
+                                            }
+                                            return filled.map((page) => (
+                                                <Link
+                                                    key={`${page.rank}-${page.slug}`}
+                                                    href={page.slug.startsWith('empty-') ? '#' : `/p/${page.slug}`}
+                                                    className={`flex items-start gap-3 group hover:bg-white/5 p-2 rounded-lg transition-colors ${page.slug.startsWith('empty-') ? 'pointer-events-none opacity-30 grayscale' : ''
+                                                        }`}
+                                                    title={page.slug.startsWith('empty-') ? "Available Spot" : `${page.avgRating.toFixed(2)} (${page.ratingsCount} ratings)`}
+                                                >
+                                                    <div className={`w-7 h-7 shrink-0 rounded flex items-center justify-center text-xs font-bold
+                                ${page.rank === 1 ? "bg-yellow-500 text-black"
+                                                            : page.rank === 2 ? "bg-slate-300 text-black"
+                                                                : page.rank === 3 ? "bg-orange-700 text-white"
+                                                                    : "bg-slate-800 text-slate-400"}`}>
+                                                        {page.rank}
                                                     </div>
-                                                    {page.author && (
-                                                        <div className="text-[10px] text-slate-500 truncate">
-                                                            by {page.author}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-sm text-slate-200 font-medium group-hover:text-cyan-400 truncate transition-colors">
+                                                            {page.title}
+                                                        </div>
+                                                        {page.author && (
+                                                            <div className="text-[10px] text-slate-500 truncate">
+                                                                {page.slug.startsWith('empty-') ? "Waiting for you" : `by ${page.author}`}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {!page.slug.startsWith('empty-') && (
+                                                        <div className="flex items-center gap-1 text-xs text-slate-500 shrink-0">
+                                                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                                            <span className="text-slate-300">{page.avgRating.toFixed(2)}</span>
                                                         </div>
                                                     )}
-                                                </div>
-                                                <div className="flex items-center gap-1 text-xs text-slate-500 shrink-0">
-                                                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                                                    <span className="text-slate-300">{page.avgRating.toFixed(2)}</span>
-                                                </div>
-                                            </Link>
-                                        ))}
+                                                </Link>
+                                            ));
+                                        })()}
                                     </div>
                                 )}
                             </div>

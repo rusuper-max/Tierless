@@ -66,27 +66,35 @@ export function TierCard({
             ? "rgba(255, 255, 255, 0.03)" // Glassy base
             : theme === "dark"
                 ? "rgba(10,13,24,0.96)"
-                : "var(--card)";
+                : theme === "editorial"
+                    ? "rgba(28, 25, 23, 0.4)" // stone-900/40
+                    : "var(--card)";
 
     let borderColor =
         theme === "light"
             ? "var(--border)"
             : theme === "tierless"
                 ? "rgba(255, 255, 255, 0.08)"
-                : "rgba(148,163,184,.35)";
+                : theme === "editorial"
+                    ? "rgba(255, 255, 255, 0.05)"
+                    : "rgba(148,163,184,.35)";
     let bg: string | undefined = baseBg;
     let boxShadow =
         theme === "light"
             ? "0 12px 28px rgba(15,23,42,.18)"
             : theme === "tierless"
                 ? "0 8px 32px rgba(0, 0, 0, 0.4)" // Deep shadow
-                : "0 20px 35px rgba(2,6,23,.55)";
+                : theme === "editorial"
+                    ? "0 0 40px -10px rgba(251,146,60,0.1)" // Orange glow
+                    : "0 20px 35px rgba(2,6,23,.55)";
     const restingShadow =
         theme === "light"
             ? "0 6px 16px rgba(15,23,42,.18)"
             : theme === "tierless"
                 ? "0 4px 20px rgba(0, 0, 0, 0.2)"
-                : "0 10px 24px rgba(4,6,20,.65)";
+                : theme === "editorial"
+                    ? "none"
+                    : "0 10px 24px rgba(4,6,20,.65)";
 
     if (variant === "outline") {
         borderColor = useAccentOutline ? accent : borderColor;
@@ -95,7 +103,9 @@ export function TierCard({
                 ? "var(--bg)"
                 : theme === "tierless"
                     ? "transparent"
-                    : "rgba(6,9,18,0.6)";
+                    : theme === "editorial"
+                        ? "rgba(28, 25, 23, 0.2)"
+                        : "rgba(6,9,18,0.6)";
     } else if (variant === "ghost") {
         borderColor = "transparent";
         bg = "transparent";
@@ -108,7 +118,9 @@ export function TierCard({
                 ? "0 18px 40px rgba(15,23,42,.35)"
                 : theme === "tierless"
                     ? "0 20px 50px rgba(0, 0, 0, 0.6)"
-                    : "0 25px 60px rgba(2,6,23,.75)";
+                    : theme === "editorial"
+                        ? "0 0 60px -10px rgba(251,146,60,0.15)"
+                        : "0 25px 60px rgba(2,6,23,.75)";
     }
 
     const { price, billingForLabel } = getTierEffectivePrice(
@@ -141,12 +153,16 @@ export function TierCard({
                 background: isActive
                     ? theme === "tierless"
                         ? `linear-gradient(to bottom right, ${accent}20, transparent), ${bg}`
-                        : `radial-gradient(circle at 0 0, rgba(79,70,229,.18), transparent 55%), radial-gradient(circle at 100% 0, rgba(34,211,238,.18), transparent 55%), ${bg}`
+                        : theme === "editorial"
+                            ? `linear-gradient(to bottom, rgba(255,255,255,0.05), transparent), ${bg}`
+                            : `radial-gradient(circle at 0 0, rgba(79,70,229,.18), transparent 55%), radial-gradient(circle at 100% 0, rgba(34,211,238,.18), transparent 55%), ${bg}`
                     : bg,
                 boxShadow: isActive
                     ? theme === "tierless"
                         ? `0 0 0 1px ${accent}, 0 0 40px ${accent}30, ${boxShadow}`
-                        : boxShadow
+                        : theme === "editorial"
+                            ? `0 0 0 1px rgba(251,146,60,0.3), ${boxShadow}`
+                            : boxShadow
                     : restingShadow,
             }}
         >
@@ -169,7 +185,7 @@ export function TierCard({
                             </span>
                             <div className="min-w-0">
                                 <div
-                                    className="text-base sm:text-lg font-bold truncate tracking-tight"
+                                    className={`text-base sm:text-lg font-bold truncate tracking-tight ${theme === "editorial" ? "font-serif" : ""}`}
                                     style={{ color: textColor }}
                                 >
                                     {node.label || t("Untitled tier")}
@@ -200,7 +216,7 @@ export function TierCard({
 
                 {priceStr && (
                     <div className="mt-2">
-                        <div className="text-2xl sm:text-3xl font-bold text-[var(--text)] tracking-tight">
+                        <div className={`text-2xl sm:text-3xl font-bold text-[var(--text)] tracking-tight ${theme === "editorial" ? "font-serif font-light" : ""}`}>
                             {priceStr}
                         </div>
                         <div className="text-xs text-[var(--muted)] font-medium mt-1">

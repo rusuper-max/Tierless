@@ -15,7 +15,7 @@ export type Emphasis = "normal" | "featured" | "subtle";
 
 export type BillingPeriod = "once" | "month" | "year";
 
-export type AdvancedTheme = "light" | "dark" | "tierless";
+export type AdvancedTheme = "light" | "dark" | "tierless" | "editorial";
 
 /**
  * Layout varijante za public page:
