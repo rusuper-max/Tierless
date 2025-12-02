@@ -100,9 +100,9 @@ export default function MainPhase3Benefits() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#020617] to-[#020617]" />
       </div>
 
-      {/* Glowing Orbs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
+      {/* Subtle ambient glow - SMIRENO */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-[150px] pointer-events-none" />
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
         
@@ -144,15 +144,14 @@ export default function MainPhase3Benefits() {
                 className={`
                   group relative p-6 rounded-2xl border backdrop-blur-sm
                   ${benefit.bgColor} ${benefit.borderColor}
-                  hover:scale-[1.02] hover:shadow-lg hover:shadow-black/20
-                  transition-all duration-300 cursor-default
+                  hover:border-slate-600/50
+                  transition-colors duration-300 cursor-default
                 `}
               >
                 {/* Icon */}
                 <div className={`
                   w-12 h-12 rounded-xl flex items-center justify-center mb-4
                   bg-slate-900/50 border border-slate-700/50
-                  group-hover:scale-110 transition-transform duration-300
                 `}>
                   <Icon className={`w-6 h-6 ${benefit.color}`} />
                 </div>
@@ -166,13 +165,6 @@ export default function MainPhase3Benefits() {
                 <p className="text-sm text-slate-400 leading-relaxed">
                   {t(`phase3benefits.benefits.${benefit.key}.desc`)}
                 </p>
-
-                {/* Hover Glow Effect */}
-                <div className={`
-                  absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100
-                  transition-opacity duration-300 pointer-events-none
-                  bg-gradient-to-br ${benefit.bgColor}
-                `} />
               </motion.div>
             );
           })}

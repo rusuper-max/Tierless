@@ -186,6 +186,85 @@
             ]
         }
     },
+    "landing": {
+        "hero": {
+            "badge": "Sajt nije potreban",
+            "title_run": "Bez obzira da li vodite",
+            "rotating_salon": "salon",
+            "rotating_cafe": "kafić",
+            "rotating_agency": "agenciju",
+            "rotating_startup": "startup",
+            "title_suffix_prefix": "Vaše cene zaslužuju da budu",
+            "title_suffix": "online.",
+            "subtitle": "Kreirajte interaktivne cenovnike i kalkulatore za nekoliko minuta. Podelite putem linka ili QR koda. Ažurirajte bilo kada, trenutno.",
+            "cta_start": "Počni besplatno",
+            "cta_pricing": "Vidi cene",
+            "trust_no_coding": "Bez programiranja",
+            "trust_free": "Besplatan početak",
+            "trust_works": "Radi na svim uređajima",
+            "scroll_hint": "Skroluj da istražiš"
+        },
+        "calculator": {
+            "live_preview": "Uživo Pregled",
+            "title": "Bela Frizerski Salon",
+            "subtitle": "Izaberite vaše usluge",
+            "service_haircut": "Šišanje i Feniranje",
+            "service_color": "Farbanje kose",
+            "service_treatment": "Dubinska Nega",
+            "service_blowout": "Feniranje",
+            "total": "Ukupno",
+            "cta": "Zakaži termin"
+        },
+        "why": {
+            "title": "Zašto biznisi biraju Tierless",
+            "subtitle": "Preskoči sajt. Dobij profesionalnu stranicu sa cenama za nekoliko minuta.",
+            "no_website_title": "Sajt nije potreban",
+            "no_website_desc": "Dobijte profesionalno online prisustvo bez pravljenja kompletnog sajta.",
+            "mobile_title": "Radi na svim uređajima",
+            "mobile_desc": "Vaše stranice izgledaju sjajno na svim telefonima, tabletima i računarima.",
+            "update_title": "Ažuriraj trenutno",
+            "update_desc": "Promenite cene bilo kada. Vaša stranica se ažurira u realnom vremenu.",
+            "qr_title": "Podelite putem QR koda",
+            "qr_desc": "Odštampajte QR kod na flajere, menije ili vizitkarte.",
+            "calculator_title": "Interaktivni kalkulatori",
+            "calculator_desc": "Napravite dinamično određivanje cena koje vodi klijente do pravog izbora.",
+            "analytics_title": "Pratite angažman",
+            "analytics_desc": "Vidite ko je pogledao vaše cene i koje usluge su popularne."
+        },
+        "showcase": {
+            "editor_badge": "VIZUELNI EDITOR",
+            "editor_title": "Jednostavnost prevlačenja",
+            "editor_desc": "Nije potreban kod. Samo dodajte usluge i cene, izaberite stil i spremni ste.",
+            "embed_title": "Lako ugrađivanje",
+            "embed_desc": "Radi sa WordPress-om, Webflow-om, Shopify-em ili bilo kojim sajtom.",
+            "brand_title": "100% vaš brend",
+            "brand_desc": "Prilagodite boje, fontove i stil da se savršeno uklapa u vaš biznis."
+        },
+        "qr": {
+            "badge": "Kako funkcioniše",
+            "title": "Skeniraj. Vidi. Gotovo.",
+            "subtitle": "Vaši klijenti skeniraju QR kod i odmah vide vaše cene na svom telefonu.",
+            "step1_title": "Odštampajte QR kod",
+            "step1_desc": "Stavite ga na meni, flajere, vizitkarte ili izlog.",
+            "step2_title": "Klijent skenira",
+            "step2_desc": "Uperavaju kameru telefona na kod. Nije potrebna aplikacija.",
+            "step3_title": "Cene se pojavljuju odmah",
+            "step3_desc": "Vaša prelepa stranica sa cenama se učitava u njihovom pretraživaču. Spremno za rezervaciju.",
+            "bella_studio": "Bela Salon",
+            "haircut": "Šišanje",
+            "coloring": "Farbanje",
+            "treatment": "Nega",
+            "blowout": "Feniranje",
+            "book_now": "Zakaži sada"
+        },
+        "final_cta": {
+            "title": "Spremni da stavite svoje cene online?",
+            "subtitle": "Pridružite se biznisima koji koriste Tierless da dele svoje usluge profesionalno.",
+            "cta": "Kreirajte vašu stranicu sa cenama",
+            "pricing": "Vidi cene",
+            "trust": "Besplatan početak • Nije potrebna kreditna kartica"
+        }
+    },
     "footer": {
         "desc": "Kreiraj prelepe stranice sa cenama i menije bez kodiranja.",
         "product": "Proizvod",

@@ -50,8 +50,8 @@
     "title1": "Your prices.",
     "title2": "Online.",
     "title3": "Beautiful.",
-    "subtitle": "Create price lists, service catalogs, and calculators in minutes. Share via Link or QR code. Update anytime, instantly.",
-    "ctaPrimary": "Create My Page Free",
+    "subtitle": "Create price lists and service catalogs in minutes. Share via link or QR code. Update anytime.",
+    "ctaPrimary": "Start Free",
     "ctaSecondary": "See Examples",
     "perfectFor": "Perfect for",
     "useCases": {
@@ -222,6 +222,85 @@
           "desc": "60min full body treatment"
         }
       ]
+    }
+  },
+  "landing": {
+    "hero": {
+      "badge": "No website required",
+      "title_run": "Whether you run",
+      "rotating_salon": "a salon",
+      "rotating_cafe": "a café",
+      "rotating_agency": "an agency",
+      "rotating_startup": "a startup",
+      "title_suffix_prefix": "Your prices deserve to be",
+      "title_suffix": "online.",
+      "subtitle": "Create interactive price lists and calculators in minutes. Share via link or QR code. Update anytime, instantly.",
+      "cta_start": "Start Free",
+      "cta_pricing": "View Pricing",
+      "trust_no_coding": "No coding required",
+      "trust_free": "Free to start",
+      "trust_works": "Works on any device",
+      "scroll_hint": "Scroll to explore"
+    },
+    "calculator": {
+      "live_preview": "Live Preview",
+      "title": "Bella's Hair Studio",
+      "subtitle": "Select your services",
+      "service_haircut": "Haircut & Style",
+      "service_color": "Hair Coloring",
+      "service_treatment": "Deep Treatment",
+      "service_blowout": "Blowout",
+      "total": "Total",
+      "cta": "Book Appointment"
+    },
+    "why": {
+      "title": "Why businesses choose Tierless",
+      "subtitle": "Skip the website. Get a professional price page in minutes.",
+      "no_website_title": "No website needed",
+      "no_website_desc": "Get a professional online presence without building a full website.",
+      "mobile_title": "Works on any device",
+      "mobile_desc": "Your pages look great on all phones, tablets, and desktops.",
+      "update_title": "Update instantly",
+      "update_desc": "Change prices anytime. Your page updates in real-time.",
+      "qr_title": "Share via QR code",
+      "qr_desc": "Print your QR code on flyers, menus, or business cards.",
+      "calculator_title": "Interactive calculators",
+      "calculator_desc": "Build dynamic pricing that guides customers to the right choice.",
+      "analytics_title": "Track engagement",
+      "analytics_desc": "See who viewed your prices and which services are popular."
+    },
+    "showcase": {
+      "editor_badge": "VISUAL EDITOR",
+      "editor_title": "Drag & drop simplicity",
+      "editor_desc": "No code required. Just add your services and prices, pick a style, and you're live.",
+      "embed_title": "Easy embed",
+      "embed_desc": "Works with WordPress, Webflow, Shopify, or any website.",
+      "brand_title": "100% your brand",
+      "brand_desc": "Customize colors, fonts, and style to match your business perfectly."
+    },
+    "qr": {
+      "badge": "How it works",
+      "title": "Scan. View. Done.",
+      "subtitle": "Your customers scan a QR code and instantly see your prices on their phone.",
+      "step1_title": "Print your QR code",
+      "step1_desc": "Put it on your menu, flyer, business card, or storefront window.",
+      "step2_title": "Customer scans",
+      "step2_desc": "They point their phone camera at the code. No app needed.",
+      "step3_title": "Prices appear instantly",
+      "step3_desc": "Your beautiful price page loads in their browser. Ready to book.",
+      "bella_studio": "Bella's Studio",
+      "haircut": "Haircut",
+      "coloring": "Coloring",
+      "treatment": "Treatment",
+      "blowout": "Blowout",
+      "book_now": "Book Now"
+    },
+    "final_cta": {
+      "title": "Ready to put your prices online?",
+      "subtitle": "Join businesses that use Tierless to share their services professionally.",
+      "cta": "Create Your Price Page",
+      "pricing": "View Pricing",
+      "trust": "Free to start • No credit card required"
     }
   },
   "footer": {

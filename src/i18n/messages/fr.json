@@ -186,6 +186,85 @@
             ]
         }
     },
+    "landing": {
+        "hero": {
+            "badge": "Pas besoin de site web",
+            "title_run": "Que vous dirigiez",
+            "rotating_salon": "un salon",
+            "rotating_cafe": "un café",
+            "rotating_agency": "une agence",
+            "rotating_startup": "une start-up",
+            "title_suffix_prefix": "Vos tarifs méritent d'être",
+            "title_suffix": "en ligne.",
+            "subtitle": "Créez des listes de prix interactives et des calculateurs en quelques minutes. Partagez-les via un lien ou un QR code. Mettez-les à jour instantanément.",
+            "cta_start": "Commencer gratuitement",
+            "cta_pricing": "Voir les tarifs",
+            "trust_no_coding": "Sans code",
+            "trust_free": "Démarrage gratuit",
+            "trust_works": "Compatible tous appareils",
+            "scroll_hint": "Faites défiler pour explorer"
+        },
+        "calculator": {
+            "live_preview": "Aperçu en direct",
+            "title": "Studio Coiffure Bella",
+            "subtitle": "Choisissez vos services",
+            "service_haircut": "Coupe & brushing",
+            "service_color": "Coloration",
+            "service_treatment": "Soin profond",
+            "service_blowout": "Brushing",
+            "total": "Total",
+            "cta": "Réserver un rendez-vous"
+        },
+        "why": {
+            "title": "Pourquoi les entreprises choisissent Tierless",
+            "subtitle": "Pas besoin d'un site complet. Une page de tarifs professionnelle en minutes.",
+            "no_website_title": "Pas de site web",
+            "no_website_desc": "Obtenez une présence en ligne sans développer un site entier.",
+            "mobile_title": "Fonctionne partout",
+            "mobile_desc": "Vos pages restent parfaites sur mobile, tablette et desktop.",
+            "update_title": "Mises à jour instantanées",
+            "update_desc": "Modifiez vos prix quand vous le souhaitez, tout se rafraîchit en temps réel.",
+            "qr_title": "Partage par QR code",
+            "qr_desc": "Imprimez-le sur menus, affiches ou cartes de visite.",
+            "calculator_title": "Calculateurs interactifs",
+            "calculator_desc": "Aidez vos clients avec des totaux automatiques.",
+            "analytics_title": "Statistiques",
+            "analytics_desc": "Voyez quels services attirent le plus d'attention."
+        },
+        "showcase": {
+            "editor_badge": "ÉDITEUR VISUEL",
+            "editor_title": "Glisser-déposer simple",
+            "editor_desc": "Aucun code. Ajoutez vos services, fixez vos prix et choisissez un style.",
+            "embed_title": "Intégration facile",
+            "embed_desc": "Compatible avec WordPress, Webflow, Shopify, etc.",
+            "brand_title": "100 % votre marque",
+            "brand_desc": "Personnalisez couleurs, polices et styles."
+        },
+        "qr": {
+            "badge": "Comment ça marche",
+            "title": "Scanner. Voir. Terminé.",
+            "subtitle": "Vos clients scannent un QR code et consultent vos tarifs sur leur téléphone.",
+            "step1_title": "Imprimez votre QR",
+            "step1_desc": "Placez-le sur votre menu, vos flyers ou votre vitrine.",
+            "step2_title": "Le client scanne",
+            "step2_desc": "Il utilise simplement l'appareil photo. Aucun téléchargement requis.",
+            "step3_title": "Les prix s'affichent",
+            "step3_desc": "Votre belle page se charge et ils peuvent réserver.",
+            "bella_studio": "Studio Bella",
+            "haircut": "Coupe",
+            "coloring": "Coloration",
+            "treatment": "Soin",
+            "blowout": "Brushing",
+            "book_now": "Réserver maintenant"
+        },
+        "final_cta": {
+            "title": "Prêt à mettre vos tarifs en ligne ?",
+            "subtitle": "Rejoignez les entreprises qui utilisent Tierless pour présenter leurs services.",
+            "cta": "Créer ma page de prix",
+            "pricing": "Voir les tarifs",
+            "trust": "Gratuit au départ • Sans carte bancaire"
+        }
+    },
     "footer": {
         "desc": "Créez de belles pages de prix et des menus sans code.",
         "product": "Produit",

@@ -137,8 +137,11 @@ export default function MarketingHeader() {
               {t("nav.signin")}
             </Link>
           ) : (
-            <div className="scale-90 sm:scale-100 origin-right">
-              <ShinyButton href="/dashboard">
+            <div className="origin-right">
+              <ShinyButton
+                href="/dashboard"
+                className="!h-10 !px-5 !text-sm !font-medium"
+              >
                 {t("nav.dashboard")}
               </ShinyButton>
             </div>

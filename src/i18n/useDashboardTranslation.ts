@@ -1,4 +1,4 @@
-import { useLanguage, Locale } from "./LanguageContext";
+import { useLocale, type Locale } from "./LanguageProvider";
 import enDashboard from "./messages/dashboard-en.json";
 import srDashboard from "./messages/dashboard-sr.json";
 import esDashboard from "./messages/dashboard-es.json";
@@ -16,7 +16,7 @@ const DASHBOARD_MESSAGES: Record<Locale, any> = {
 };
 
 export function useDashboardTranslation() {
-    const { locale } = useLanguage();
+    const { locale } = useLocale();
     const messages = DASHBOARD_MESSAGES[locale] || DASHBOARD_MESSAGES["en"];
 
     function t(key: string, vars?: Record<string, string | number>): string {

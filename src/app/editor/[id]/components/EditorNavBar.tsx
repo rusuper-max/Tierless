@@ -42,6 +42,39 @@ function PlanBadge({ plan }: { plan: PlanId }) {
   const key = (plan || "free").toLowerCase();
 
   // Pro plan: Gradient style
+  if (key === "tierless" || key === "dev" || key === "founder") {
+    return (
+      <div className="hidden xl:inline-flex group relative items-center justify-center p-[1px] rounded-full overflow-hidden">
+        {/* Spinning gradient border */}
+        <span
+          className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] opacity-70 group-hover:opacity-100 transition-opacity"
+          style={{
+            background: "conic-gradient(from 90deg at 50% 50%, #020617 0%, #4F46E5 50%, #22D3EE 100%)"
+          }}
+          aria-hidden
+        />
+
+        {/* Inner content */}
+        <span className="relative inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] bg-[var(--card)]">
+          <span className="inline-block h-2 w-2 rounded-full" style={{ background: BRAND_GRADIENT }} aria-hidden />
+          <b
+            className="uppercase font-medium tracking-wider"
+            style={{
+              backgroundImage: BRAND_GRADIENT,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            Dev
+          </b>
+        </span>
+      </div>
+    );
+  }
+
+  // Pro plan: Gradient style
   if (key === "pro") {
     return (
       <div className="hidden xl:inline-flex relative items-center gap-2 rounded-full px-2.5 py-1 text-[11px] bg-[var(--card)]">

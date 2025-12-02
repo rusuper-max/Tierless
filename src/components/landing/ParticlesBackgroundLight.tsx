@@ -3,7 +3,15 @@
 import { useEffect, useRef } from "react";
 import { Renderer, Camera, Geometry, Program, Mesh, Vec2, GPGPU, Texture } from "ogl";
 
-export default function ParticlesBackground() {
+/**
+ * ParticlesBackgroundLight
+ * 
+ * Light mode version with hover-reveal effect:
+ * - Prices are nearly invisible by default (2-3% opacity)
+ * - On mouse hover, prices "light up" in brand gradient colors
+ * - Creates a subtle, interactive "easter egg" effect
+ */
+export default function ParticlesBackgroundLight() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,7 +50,7 @@ export default function ParticlesBackground() {
     resize();
 
     // ==========================================
-    // 0. GENERISANJE CENA (SMART ATLAS)
+    // PRICE ATLAS - Dark text for light background
     // ==========================================
     const makePriceAtlas = () => {
       const size = 1024;
@@ -57,7 +65,6 @@ export default function ParticlesBackground() {
       const cellW = size / cols;
       const cellH = size / rows;
 
-      // GLOBAL MIX LISTA
       const prices = [
         "$9.99", "€15", "£20", "¥1500",
         "CHF 10", "$49", "€9.50", "£5/mo",
@@ -77,7 +84,7 @@ export default function ParticlesBackground() {
       ctx.clearRect(0, 0, size, size);
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = "white";
+      ctx.fillStyle = "white"; // White text, we'll color it in shader
 
       for (let i = 0; i < (cols * rows); i++) {
         const col = i % cols;
@@ -86,14 +93,10 @@ export default function ParticlesBackground() {
         const y = row * cellH + cellH / 2;
         const text = prices[i % prices.length];
 
-        // --- SMART SCALING (FIX ZA CUT-OFF) ---
-        let fontSize = cellH * 0.35; // Startuj sa velikim fontom
+        let fontSize = cellH * 0.35;
         ctx.font = `bold ${fontSize}px Inter, system-ui, sans-serif`;
 
-        // Meri širinu teksta
         let textWidth = ctx.measureText(text).width;
-
-        // Ako je šire od ćelije (minus padding), smanjuj dok ne stane
         const maxWidth = cellW * 0.9;
         while (textWidth > maxWidth && fontSize > 10) {
           fontSize -= 2;
@@ -116,7 +119,7 @@ export default function ParticlesBackground() {
     const textureAtlas = makePriceAtlas();
 
     // ==========================================
-    // SHADERS
+    // SHADERS - Light mode with hover reveal
     // ==========================================
 
     const vertex = /* glsl */ `
@@ -141,11 +144,11 @@ export default function ParticlesBackground() {
         distVec.x *= uAspect; 
         float dist = length(distVec);
 
-        // Mouse reaction radius
-        vHover = 1.0 - smoothstep(0.0, 0.45, dist);
+        // Hover radius - LARGER for better reveal effect
+        vHover = 1.0 - smoothstep(0.0, 0.6, dist);
 
-        // Veličina
-        float baseSize = mix(40.0, 90.0, vRandom.x);
+        // Size - LARGER particles
+        float baseSize = mix(50.0, 100.0, vRandom.x);
         float hoverSize = baseSize * (1.0 + vHover * 0.3);
         
         gl_PointSize = hoverSize;
@@ -155,6 +158,7 @@ export default function ParticlesBackground() {
     const fragment = /* glsl */ `
       precision highp float;
       uniform sampler2D uAtlas;
+      uniform float uTime;
       varying vec4 vRandom;
       varying float vHover;
       
@@ -176,32 +180,37 @@ export default function ParticlesBackground() {
         
         if (texColor.a < 0.1) discard;
 
-        vec3 colorDeep = vec3(0.31, 0.275, 0.898); 
-        vec3 colorLight = vec3(0.133, 0.827, 0.933); 
-        vec3 colorWhite = vec3(1.0, 1.0, 1.0);
+        // Brand gradient colors (indigo -> cyan -> teal)
+        vec3 colorIndigo = vec3(0.392, 0.361, 0.945);  // #6366f1
+        vec3 colorCyan = vec3(0.220, 0.741, 0.973);    // #38bdf8
+        vec3 colorTeal = vec3(0.078, 0.722, 0.651);    // #14b8a6
+        
+        // Subtle gray for non-hovered state (more visible now)
+        vec3 colorGray = vec3(0.75, 0.78, 0.82);
+        
+        // Mix between gradient colors based on random
+        vec3 gradientColor = mix(colorIndigo, colorCyan, vRandom.w);
+        gradientColor = mix(gradientColor, colorTeal, vRandom.y * 0.5);
+        
+        // Final color: gray when not hovered, gradient when hovered
+        vec3 finalColor = mix(colorGray, gradientColor, vHover);
 
-        vec3 finalColor = mix(colorDeep, colorLight, vRandom.w);
-        finalColor = mix(finalColor, colorWhite, vHover);
-
-        // SMIRENO: Mnogo niži opacity (5-12% umesto 30-50%)
-        float baseAlpha = 0.05 + 0.07 * sin(vRandom.y * 10.0 + 1.0);
-        float finalAlpha = mix(baseAlpha, 0.6, vHover);
+        // MORE VISIBLE: Higher base opacity, much higher hover opacity
+        float baseAlpha = 0.12; // Visible but subtle
+        float hoverAlpha = 0.85; // Very visible on hover
+        float finalAlpha = mix(baseAlpha, hoverAlpha, vHover);
 
         gl_FragColor = vec4(finalColor, finalAlpha * texColor.a);
       }
     `;
 
-    // --- PHYSICS (SIMPLIFIED ROBUST LOOP) ---
-    // Nema više velocity shadera koji može da zabaguje. 
-    // Brzina se računa direktno ovde.
-
+    // Position shader - slow floating movement
     const positionFragment = /* glsl */ `
       precision highp float;
       uniform float uTime;
-      uniform sampler2D tMap; // Stara pozicija
+      uniform sampler2D tMap;
       varying vec2 vUv;
       
-      // Random generator na osnovu koordinata
       float rand(vec2 co){
           return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
       }
@@ -209,17 +218,13 @@ export default function ParticlesBackground() {
       void main() {
         vec4 position = texture2D(tMap, vUv);
         
-        // Generišemo unikatnu brzinu za svaku česticu na osnovu njene UV adrese
-        // SMIRENO: 3-4x sporije nego pre
-        float speed = 0.00015 + rand(vUv) * 0.0004; 
-        
-        // Pomeraj na gore
+        // Very slow upward drift
+        float speed = 0.0001 + rand(vUv) * 0.00025; 
         position.y += speed;
         
-        // Reset kad ode gore (Infinite loop)
+        // Reset when off screen
         if (position.y > 1.15) {
             position.y = -1.15;
-            // Random X kad se respawn-uje
             position.x = rand(vec2(position.x, uTime)) * 2.0 - 1.0;
         }
 
@@ -228,9 +233,7 @@ export default function ParticlesBackground() {
     `;
 
     // --- INIT ---
-
-    // SMIRENO: Manje čestica za čistiji izgled
-    const numParticles = 300;
+    const numParticles = 250; // Slightly fewer for cleaner look
 
     const initialPositionData = new Float32Array(numParticles * 4);
     const randomData = new Float32Array(numParticles * 4);
@@ -248,7 +251,6 @@ export default function ParticlesBackground() {
 
     const position = new GPGPU(gl, { data: initialPositionData });
 
-    // Samo jedan pass (pozicija), velocity je integrisan
     position.addPass({
       fragment: positionFragment,
       uniforms: { uTime: { value: 0 } }
@@ -275,9 +277,9 @@ export default function ParticlesBackground() {
 
     const points = new Mesh(gl, { geometry, program, mode: gl.POINTS });
 
-    // --- EVENTS ---
-
+    // --- MOUSE TRACKING ---
     const mouse = new Vec2(9999, 9999);
+    
     function updateMouse(e: MouseEvent | TouchEvent) {
       let x, y;
       if ("touches" in e) {
@@ -293,8 +295,14 @@ export default function ParticlesBackground() {
       );
     }
 
+    // Reset mouse when leaving window
+    function resetMouse() {
+      mouse.set(9999, 9999);
+    }
+
     window.addEventListener("mousemove", updateMouse);
     window.addEventListener("touchmove", updateMouse);
+    window.addEventListener("mouseleave", resetMouse);
 
     let reqId: number;
     function update(t: number) {
@@ -316,6 +324,7 @@ export default function ParticlesBackground() {
       window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", updateMouse);
       window.removeEventListener("touchmove", updateMouse);
+      window.removeEventListener("mouseleave", resetMouse);
       cancelAnimationFrame(reqId);
       if (container && container.contains(gl.canvas)) {
         container.removeChild(gl.canvas);
@@ -326,8 +335,8 @@ export default function ParticlesBackground() {
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 w-full h-full"
-      style={{ background: 'radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 100%)' }}
+      className="absolute inset-0 w-full h-full pointer-events-none"
     />
   );
 }
+

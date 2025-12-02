@@ -86,37 +86,47 @@ html {
 
 html:not(.dark) {
   /* Canvas: Soft gray - NOT white, creates depth */
-  --bg: #f1f5f9;          /* Slate 100 */
-  
+  --bg: #f1f5f9;
+  /* Slate 100 */
+
   /* Sidebar: Clean white - clear contrast with gray content */
   --sidebar: #ffffff;
-  
+
   /* Surface: For hover states, inputs */
-  --surface: #e2e8f0;     /* Slate 200 - slightly darker for interaction */
-  
+  --surface: #e2e8f0;
+  /* Slate 200 - slightly darker for interaction */
+
   /* Card: Pure white - "floats" above gray bg */
   --card: #ffffff;
-  
+
   /* Text colors */
-  --text: #0f172a;        /* Slate 900 */
-  --muted: #64748b;       /* Slate 500 */
-  
+  --text: #0f172a;
+  /* Slate 900 */
+  --muted: #64748b;
+  /* Slate 500 */
+
   /* Borders: Subtle but visible */
-  --border: #e2e8f0;      /* Slate 200 */
-  --border-subtle: #f1f5f9; /* Slate 100 */
-  
+  --border: #e2e8f0;
+  /* Slate 200 */
+  --border-subtle: #f1f5f9;
+  /* Slate 100 */
+
   /* Track/input backgrounds */
-  --track: #f8fafc;       /* Slate 50 */
-  
+  --track: #f8fafc;
+  /* Slate 50 */
+
   /* Shadows for elevation - cards "float" */
   --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.04);
   --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
-  
+
   /* Button theming */
   --btn-outline: #cbd5e1;
   --btn-bg-dark: #ffffff;
   --btn-bg-lighter: #f8fafc;
   --btn-text: #0f172a;
+
+  /* Override browser default accent color with solid cyan */
+  accent-color: #06b6d4;
 }
 
 /* =========================================
@@ -140,37 +150,47 @@ html.dark {
 
 html.dark {
   /* Canvas: Deepest dark - workspace */
-  --bg: #0a0a0b;          /* Near Zinc 950 */
-  
+  --bg: #0a0a0b;
+  /* Near Zinc 950 */
+
   /* Sidebar: Slightly elevated, visible separation */
-  --sidebar: #141417;     /* Between 950 and 900 */
-  
+  --sidebar: #141417;
+  /* Between 950 and 900 */
+
   /* Surface: For hover states, inputs */
-  --surface: #1f1f23;     /* Between Zinc 900 and 800 */
-  
+  --surface: #1f1f23;
+  /* Between Zinc 900 and 800 */
+
   /* Card: Elevated, clearly visible */
-  --card: #1c1c20;        /* Slightly lighter than sidebar */
-  
+  --card: #1c1c20;
+  /* Slightly lighter than sidebar */
+
   /* Text colors */
-  --text: #f4f4f5;        /* Zinc 100 */
-  --muted: #a1a1aa;       /* Zinc 400 */
-  
+  --text: #f4f4f5;
+  /* Zinc 100 */
+  --muted: #a1a1aa;
+  /* Zinc 400 */
+
   /* Borders: Subtle separation */
-  --border: #2a2a2e;      /* Custom - visible but not harsh */
+  --border: #2a2a2e;
+  /* Custom - visible but not harsh */
   --border-subtle: #1f1f23;
-  
+
   /* Track/input backgrounds */
   --track: rgba(255, 255, 255, 0.05);
-  
+
   /* Shadows - subtle glow in dark mode */
   --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03), 0 2px 8px rgba(0, 0, 0, 0.3);
   --card-shadow-hover: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 4px 16px rgba(0, 0, 0, 0.4);
-  
+
   /* Button theming */
   --btn-outline: #3f3f46;
   --btn-bg-dark: #09090b;
   --btn-bg-lighter: #18181b;
   --btn-text: #f4f4f5;
+
+  /* Override browser default accent color with solid cyan */
+  accent-color: #06b6d4;
 }
 
 /* =========================================

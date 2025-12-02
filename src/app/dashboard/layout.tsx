@@ -5,7 +5,6 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardTabs from "@/components/dashboard/DashboardTabs";
 import AccountHydrator from "@/components/providers/AccountHydrator";
 import { entitlementsFor, type Plan } from "@/lib/entitlements.adapter";
-import { LanguageProvider } from "@/i18n/LanguageContext";
 
 export const metadata = { title: "Tierless — Dashboard" };
 
@@ -90,7 +89,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const initialAccount = await loadAccountSSR();
 
   return (
-    <LanguageProvider>
+    <>
       {/* Nav (client, sticky) */}
       <Nav />
 
@@ -117,6 +116,6 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           {children}
         </main>
       </div>
-    </LanguageProvider>
+    </>
   );
 }

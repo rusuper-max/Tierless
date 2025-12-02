@@ -18,7 +18,7 @@ import {
   Coins,
   MessageCircle
 } from 'lucide-react';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useLocale } from '@/i18n/LanguageProvider';
 import { useDashboardTranslation } from '@/i18n/useDashboardTranslation';
 import { useAccount } from '@/hooks/useAccount';
 import { ENTITLEMENTS } from '@/lib/entitlements';
@@ -37,7 +37,7 @@ const USER_MOCK = {
 export default function AccountSettings() {
   const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(false);
-  const { locale, setLocale } = useLanguage();
+  const { locale, setLocale } = useLocale();
   const { t } = useDashboardTranslation();
   const { plan, renewsOn, cancelAtPeriodEnd } = useAccount();
 

@@ -186,6 +186,85 @@
             ]
         }
     },
+    "landing": {
+        "hero": {
+            "badge": "Keine Website nötig",
+            "title_run": "Egal ob du",
+            "rotating_salon": "einen Salon",
+            "rotating_cafe": "ein Café",
+            "rotating_agency": "eine Agentur",
+            "rotating_startup": "ein Startup",
+            "title_suffix_prefix": "Deine Preise verdienen es",
+            "title_suffix": "online zu sein.",
+            "subtitle": "Erstelle interaktive Preislisten und Rechner in wenigen Minuten. Teile sie per Link oder QR-Code. Aktualisiere jederzeit sofort.",
+            "cta_start": "Kostenlos starten",
+            "cta_pricing": "Preise ansehen",
+            "trust_no_coding": "Kein Code",
+            "trust_free": "Kostenloser Start",
+            "trust_works": "Funktioniert auf jedem Gerät",
+            "scroll_hint": "Scrollen zum Entdecken"
+        },
+        "calculator": {
+            "live_preview": "Live-Vorschau",
+            "title": "Bellas Hairstudio",
+            "subtitle": "Wähle deine Services",
+            "service_haircut": "Haarschnitt & Styling",
+            "service_color": "Farbbehandlung",
+            "service_treatment": "Intensivpflege",
+            "service_blowout": "Föhnen",
+            "total": "Gesamt",
+            "cta": "Termin buchen"
+        },
+        "why": {
+            "title": "Warum Unternehmen Tierless wählen",
+            "subtitle": "Spare dir eine komplette Website. Erhalte in Minuten eine professionelle Preisseite.",
+            "no_website_title": "Keine Website nötig",
+            "no_website_desc": "Professionelle Online-Präsenz ohne große Entwicklung.",
+            "mobile_title": "Funktioniert überall",
+            "mobile_desc": "Sieht großartig auf Handy, Tablet und Desktop aus.",
+            "update_title": "Sofort aktualisieren",
+            "update_desc": "Preise ändern und sofort live gehen.",
+            "qr_title": "Per QR-Code teilen",
+            "qr_desc": "Drucke den Code auf Flyer, Menüs oder Karten.",
+            "calculator_title": "Interaktive Rechner",
+            "calculator_desc": "Führe Kunden mit automatischen Summen.",
+            "analytics_title": "Analytics",
+            "analytics_desc": "Verfolge Aufrufe und beliebte Services."
+        },
+        "showcase": {
+            "editor_badge": "VISUELLER EDITOR",
+            "editor_title": "Drag & Drop Leichtigkeit",
+            "editor_desc": "Kein Code. Services hinzufügen, Preise festlegen, Stil wählen.",
+            "embed_title": "Einfaches Einbetten",
+            "embed_desc": "Kompatibel mit WordPress, Webflow, Shopify usw.",
+            "brand_title": "100 % deine Marke",
+            "brand_desc": "Farben, Schriften und Stil vollständig anpassbar."
+        },
+        "qr": {
+            "badge": "So funktioniert's",
+            "title": "Scannen. Anschauen. Fertig.",
+            "subtitle": "Kunden scannen einen QR-Code und sehen sofort deine Preise.",
+            "step1_title": "QR-Code drucken",
+            "step1_desc": "Platziere ihn auf Menü, Flyer, Visitenkarte oder Fenster.",
+            "step2_title": "Kunde scannt",
+            "step2_desc": "Einfach Kamera öffnen – keine App nötig.",
+            "step3_title": "Preise erscheinen",
+            "step3_desc": "Deine schöne Seite lädt im Browser, bereit zum Buchen.",
+            "bella_studio": "Bella Studio",
+            "haircut": "Schnitt",
+            "coloring": "Farbe",
+            "treatment": "Pflege",
+            "blowout": "Föhnen",
+            "book_now": "Jetzt buchen"
+        },
+        "final_cta": {
+            "title": "Bereit, deine Preise online zu stellen?",
+            "subtitle": "Schließe dich Unternehmen an, die Tierless nutzen, um professionell zu wirken.",
+            "cta": "Preisseite erstellen",
+            "pricing": "Preise ansehen",
+            "trust": "Kostenlos starten • Keine Karte nötig"
+        }
+    },
     "footer": {
         "desc": "Erstelle schöne Preisseiten und Menüs ohne Code.",
         "product": "Produkt",

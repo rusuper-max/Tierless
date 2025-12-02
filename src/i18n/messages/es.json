@@ -186,6 +186,85 @@
             ]
         }
     },
+    "landing": {
+        "hero": {
+            "badge": "No necesitas sitio web",
+            "title_run": "Ya sea que dirijas",
+            "rotating_salon": "un salón",
+            "rotating_cafe": "una cafetería",
+            "rotating_agency": "una agencia",
+            "rotating_startup": "una startup",
+            "title_suffix_prefix": "Tus precios merecen estar",
+            "title_suffix": "en línea.",
+            "subtitle": "Crea listas de precios interactivas y calculadoras en minutos. Comparte mediante enlace o código QR. Actualiza cuando quieras, al instante.",
+            "cta_start": "Comienza gratis",
+            "cta_pricing": "Ver precios",
+            "trust_no_coding": "Sin código",
+            "trust_free": "Inicio gratuito",
+            "trust_works": "Funciona en cualquier dispositivo",
+            "scroll_hint": "Desplázate para explorar"
+        },
+        "calculator": {
+            "live_preview": "Vista previa en vivo",
+            "title": "Estudio de Belleza Bella",
+            "subtitle": "Selecciona tus servicios",
+            "service_haircut": "Corte y peinado",
+            "service_color": "Coloración",
+            "service_treatment": "Tratamiento profundo",
+            "service_blowout": "Brushing",
+            "total": "Total",
+            "cta": "Reservar cita"
+        },
+        "why": {
+            "title": "Por qué los negocios eligen Tierless",
+            "subtitle": "Olvida el sitio completo. Obtén una página profesional de precios en minutos.",
+            "no_website_title": "Sin sitio web",
+            "no_website_desc": "Consigue presencia online profesional sin construir un sitio entero.",
+            "mobile_title": "Funciona en cualquier dispositivo",
+            "mobile_desc": "Tus páginas se ven perfectas en móviles, tabletas y computadoras.",
+            "update_title": "Actualiza al instante",
+            "update_desc": "Cambia precios o servicios y tu página se refresca al momento.",
+            "qr_title": "Comparte con código QR",
+            "qr_desc": "Imprime tu QR en menús, flyers o tarjetas.",
+            "calculator_title": "Calculadoras interactivas",
+            "calculator_desc": "Guía a tus clientes con precios dinámicos y totales automáticos.",
+            "analytics_title": "Analíticas de uso",
+            "analytics_desc": "Descubre qué servicios son los más vistos."
+        },
+        "showcase": {
+            "editor_badge": "EDITOR VISUAL",
+            "editor_title": "Arrastra y listo",
+            "editor_desc": "Nada de código. Agrega servicios, precios y elige un estilo.",
+            "embed_title": "Fácil de incrustar",
+            "embed_desc": "Funciona con WordPress, Webflow, Shopify o cualquier sitio.",
+            "brand_title": "100% tu marca",
+            "brand_desc": "Personaliza colores, tipografías y estilo para tu negocio."
+        },
+        "qr": {
+            "badge": "Cómo funciona",
+            "title": "Escanea. Mira. Listo.",
+            "subtitle": "Tus clientes escanean un QR y ven tus precios en segundos.",
+            "step1_title": "Imprime el código",
+            "step1_desc": "Ponlo en tu menú, flyers, tarjetas o escaparate.",
+            "step2_title": "El cliente escanea",
+            "step2_desc": "Solo necesitan la cámara del teléfono. Sin apps.",
+            "step3_title": "Los precios aparecen",
+            "step3_desc": "Tu página se carga en su navegador y pueden reservar.",
+            "bella_studio": "Estudio Bella",
+            "haircut": "Corte",
+            "coloring": "Color",
+            "treatment": "Tratamiento",
+            "blowout": "Brushing",
+            "book_now": "Reservar ahora"
+        },
+        "final_cta": {
+            "title": "¿Listo para poner tus precios online?",
+            "subtitle": "Únete a negocios que comparten sus servicios con Tierless.",
+            "cta": "Crea tu página de precios",
+            "pricing": "Ver precios",
+            "trust": "Empieza gratis • No requiere tarjeta"
+        }
+    },
     "footer": {
         "desc": "Crea hermosas páginas de precios y menús sin código.",
         "product": "Producto",

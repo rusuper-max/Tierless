@@ -1,4 +1,4 @@
-import { useLanguage, Locale } from "./LanguageContext";
+import { useLocale, type Locale } from "./LanguageProvider";
 import en from "./messages/en.json";
 import sr from "./messages/sr.json";
 import es from "./messages/es.json";
@@ -16,7 +16,7 @@ const MESSAGES: Record<Locale, any> = {
 };
 
 export function useTranslation() {
-    const { locale } = useLanguage();
+    const { locale } = useLocale();
     const messages = MESSAGES[locale] || MESSAGES["en"];
 
     function t(key: string, vars?: Record<string, string | number>): string {
