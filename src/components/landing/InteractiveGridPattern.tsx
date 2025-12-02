@@ -69,15 +69,15 @@ export default function InteractiveGridPattern({ className }: { className?: stri
                 }}
             />
 
-            {/* 4. Spotlight Glow (Soft gradient blob - reduced size and opacity) */}
+            {/* 4. Spotlight Glow (Soft gradient blob - instant tracking) */}
             <motion.div
                 className="absolute z-0 w-[400px] h-[400px] rounded-full pointer-events-none mix-blend-multiply"
                 style={{
                     background: "radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, rgba(6, 182, 212, 0.1) 40%, transparent 70%)",
                     left: 0,
                     top: 0,
-                    x: useSpring(mouseX, { stiffness: 50, damping: 20 }), // Slightly different spring for the blob
-                    y: useSpring(mouseY, { stiffness: 50, damping: 20 }),
+                    x: mouseX,
+                    y: mouseY,
                     translateX: "-50%",
                     translateY: "-50%",
                 }}

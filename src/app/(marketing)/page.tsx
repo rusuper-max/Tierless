@@ -24,6 +24,7 @@ import ParticlesBackgroundLight from "@/components/landing/ParticlesBackgroundLi
 import InteractiveGridPattern from "@/components/landing/InteractiveGridPattern";
 import GlowingGrid from "@/components/landing/GlowingGrid";
 import TiltCard from "@/components/landing/TiltCard";
+import MockEditor from "@/components/landing/MockEditor";
 import StartHeader from "@/components/marketing/MarketingHeader";
 import Footer from "@/components/marketing/Footer";
 import GlowButton from "@/components/ui/GlowButton";
@@ -351,75 +352,87 @@ export default function LandingPage() {
                 <section className="py-24 px-4 sm:px-6 bg-white">
                     <div className="max-w-6xl mx-auto">
 
-                        <div className="grid md:grid-cols-2 gap-8">
+                        <div className="grid md:grid-cols-2 gap-8 items-start">
 
                             {/* Left: Editor Showcase */}
                             <motion.div
                                 initial={{ opacity: 0, x: -20 }}
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true }}
-                                className="rounded-3xl bg-slate-50 p-8 lg:p-10 border border-slate-100 relative overflow-hidden"
+                                className="rounded-3xl bg-slate-50 p-8 lg:p-10 border border-slate-100 relative overflow-hidden flex flex-col"
                             >
-                                <div className="relative z-10">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold mb-6">
+                                <div className="relative z-10 flex-1 flex flex-col">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold self-start">
                                         <Layers className="w-3 h-3" /> VISUAL EDITOR
                                     </div>
-                                    <h3 className="text-2xl lg:text-3xl font-bold text-slate-900 mb-4">
+                                    <h3 className="text-2xl lg:text-3xl font-bold text-slate-900 mt-4 mb-2">
                                         Drag & drop simplicity
                                     </h3>
-                                    <p className="text-slate-600 mb-6 text-lg">
+                                    <p className="text-slate-600 text-lg max-w-md mb-6">
                                         No code required. Just add your services and prices,
                                         pick a style, and you're live.
                                     </p>
 
                                     {/* Editor mockup */}
-                                    <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                                        <div className="flex gap-1.5 mb-3">
-                                            <div className="w-2 h-2 rounded-full bg-slate-200" />
-                                            <div className="w-2 h-2 rounded-full bg-slate-200" />
-                                            <div className="w-2 h-2 rounded-full bg-slate-200" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div className="h-8 bg-slate-100 rounded w-3/4" />
-                                            <div className="h-8 bg-indigo-100 rounded w-full" />
-                                            <div className="h-8 bg-slate-100 rounded w-2/3" />
-                                        </div>
+                                    <div className="relative max-w-sm flex-1 flex items-start">
+                                        <MockEditor />
                                     </div>
                                 </div>
                             </motion.div>
 
                             {/* Right: Two cards stacked */}
-                            <div className="flex flex-col gap-6">
+                            <div className="flex flex-col gap-4 pt-0 md:pt-32">
 
                                 {/* Embed Card */}
                                 <motion.div
                                     initial={{ opacity: 0, x: 20 }}
                                     whileInView={{ opacity: 1, x: 0 }}
                                     viewport={{ once: true }}
-                                    className="flex-1 rounded-3xl bg-white p-6 lg:p-8 border border-slate-200 flex items-center gap-6"
+                                    className="rounded-2xl bg-white p-5 border border-slate-200 flex items-center gap-4"
                                 >
                                     <div className="flex-1">
-                                        <h3 className="text-xl font-bold text-slate-900 mb-2">Easy embed</h3>
-                                        <p className="text-slate-600">Works with WordPress, Webflow, Shopify, or any website.</p>
+                                        <h3 className="text-lg font-bold text-slate-900 mb-1.5">{t("landing.showcase.embed_title")}</h3>
+                                        <p className="text-slate-600 text-sm">{t("landing.showcase.easy_embed_desc")}</p>
                                     </div>
-                                    <div className="h-16 w-16 bg-cyan-50 rounded-2xl flex items-center justify-center shrink-0">
-                                        <Code2 className="w-8 h-8 text-cyan-600" />
+                                    <div className="h-12 w-12 bg-cyan-50 rounded-xl flex items-center justify-center shrink-0">
+                                        <Code2 className="w-6 h-6 text-cyan-600" />
                                     </div>
                                 </motion.div>
 
-                                {/* Brand Card */}
+                                {/* Brand Card - Enhanced & Compact */}
                                 <motion.div
                                     initial={{ opacity: 0, x: 20 }}
                                     whileInView={{ opacity: 1, x: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: 0.1 }}
-                                    className="flex-1 rounded-3xl bg-gradient-to-br from-indigo-600 to-cyan-500 p-6 lg:p-8 text-white relative overflow-hidden"
+                                    className="rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-cyan-600 p-5 text-white relative overflow-hidden"
                                 >
-                                    <div className="relative z-10">
-                                        <h3 className="text-xl font-bold mb-2">100% your brand</h3>
-                                        <p className="text-cyan-100">Customize colors, fonts, and style to match your business perfectly.</p>
+                                    <div className="relative z-10 space-y-4">
+                                        <div>
+                                            <h3 className="text-lg font-bold mb-1.5">100% your brand</h3>
+                                            <p className="text-indigo-100 text-xs leading-relaxed">Customize colors, fonts, and style to match your business perfectly.</p>
+                                        </div>
+
+                                        {/* Color Palette Demo */}
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-8 h-8 rounded-lg bg-white shadow-md" />
+                                            <div className="w-8 h-8 rounded-lg bg-indigo-300 shadow-md" />
+                                            <div className="w-8 h-8 rounded-lg bg-cyan-400 shadow-md" />
+                                            <div className="w-8 h-8 rounded-lg bg-slate-900 shadow-md" />
+                                            <Sparkles className="w-4 h-4 ml-1 text-cyan-200" />
+                                        </div>
+
+                                        {/* Font Preview */}
+                                        <div className="space-y-0.5 border-l-2 border-white/30 pl-2.5">
+                                            <div className="text-sm font-bold text-white">Your Business Name</div>
+                                            <div className="text-[11px] text-indigo-100">Professional & Modern</div>
+                                        </div>
                                     </div>
-                                    <Sparkles className="absolute bottom-2 right-2 w-24 h-24 text-white opacity-10" />
+
+                                    {/* Background decorations */}
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-3xl" />
+                                    <div className="absolute bottom-0 left-0 w-20 h-20 bg-cyan-400/20 rounded-full blur-2xl" />
+                                    <Sparkles className="absolute bottom-3 right-3 w-12 h-12 text-white opacity-10" />
                                 </motion.div>
 
                             </div>
@@ -557,9 +570,11 @@ export default function LandingPage() {
                 </section>
 
                 {/* 5. FINAL CTA */}
-                <section className="py-24 lg:py-32 px-6 text-center bg-slate-50 relative overflow-hidden">
-                    {/* Interactive Grid Background */}
-                    <InteractiveGridPattern />
+                <section className="group py-24 lg:py-32 px-6 text-center bg-slate-50 relative overflow-hidden">
+                    {/* Interactive Grid Background - Only visible on desktop hover */}
+                    <div className="hidden md:block opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                        <InteractiveGridPattern />
+                    </div>
 
                     <div className="relative z-10 max-w-3xl mx-auto">
                         <motion.div
