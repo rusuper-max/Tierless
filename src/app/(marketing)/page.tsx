@@ -169,7 +169,7 @@ const HeroCalculator = () => {
                                     key={total}
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-cyan-500"
+                                    className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500"
                                 >
                                     ${total}
                                 </motion.span>
@@ -178,7 +178,7 @@ const HeroCalculator = () => {
                     </div>
 
                     {/* CTA - Demo only, not clickable */}
-                    <div className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold text-sm text-center cursor-default select-none">
+                    <div className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold text-sm text-center cursor-default select-none">
                         {t("landing.calculator.cta")} <span className="opacity-70 text-xs ml-1">(Demo)</span>
                     </div>
                 </div>
@@ -192,9 +192,9 @@ const HeroCalculator = () => {
 export default function LandingPage() {
     const t = useT();
 
-    return (
-        <>
-            <StartHeader />
+  return (
+    <>
+      <StartHeader />
             <main
                 id="main"
                 role="main"
@@ -592,6 +592,6 @@ export default function LandingPage() {
 
             </main>
             <Footer />
-        </>
-    );
+    </>
+  );
 }
