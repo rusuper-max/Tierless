@@ -198,7 +198,8 @@
             "title_suffix": "online.",
             "subtitle": "Kreirajte interaktivne cenovnike i kalkulatore za nekoliko minuta. Podelite putem linka ili QR koda. Ažurirajte bilo kada, trenutno.",
             "cta_start": "Počni besplatno",
-            "cta_pricing": "Vidi cene",
+            "cta_examples": "Vidi primere",
+            "cta_pricing": "Cenovnik",
             "trust_no_coding": "Bez programiranja",
             "trust_free": "Besplatan početak",
             "trust_works": "Radi na svim uređajima",
@@ -263,6 +264,9 @@
             "cta": "Kreirajte vašu stranicu sa cenama",
             "pricing": "Vidi cene",
             "trust": "Besplatan početak • Nije potrebna kreditna kartica"
+        },
+        "cta": {
+            "button": "Kreirajte vašu stranicu sa cenama"
         }
     },
     "footer": {

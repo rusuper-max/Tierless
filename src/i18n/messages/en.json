@@ -236,7 +236,8 @@
       "title_suffix": "online.",
       "subtitle": "Create interactive price lists and calculators in minutes. Share via link or QR code. Update anytime, instantly.",
       "cta_start": "Start Free",
-      "cta_pricing": "View Pricing",
+      "cta_examples": "See Examples",
+      "cta_pricing": "Pricing",
       "trust_no_coding": "No coding required",
       "trust_free": "Free to start",
       "trust_works": "Works on any device",
@@ -301,6 +302,9 @@
       "cta": "Create Your Price Page",
       "pricing": "View Pricing",
       "trust": "Free to start • No credit card required"
+    },
+    "cta": {
+      "button": "Create Your Price Page"
     }
   },
   "footer": {

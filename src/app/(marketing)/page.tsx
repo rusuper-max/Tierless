@@ -243,7 +243,7 @@ export default function LandingPage() {
                                     {t("landing.hero.subtitle")}
                                 </p>
 
-                                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                                <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                                     <Link
                                         href="/login"
                                         className="group inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold text-lg transition-all hover:shadow-lg hover:shadow-cyan-500/30 hover:scale-105 active:scale-95"
@@ -252,8 +252,14 @@ export default function LandingPage() {
                                         <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                                     </Link>
                                     <Link
-                                        href="/start"
+                                        href="/examples"
                                         className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-white border border-slate-200 text-slate-700 font-medium text-lg transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 shadow-sm"
+                                    >
+                                        {t("landing.hero.cta_examples")}
+                                    </Link>
+                                    <Link
+                                        href="/start"
+                                        className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-full text-slate-500 font-medium transition-all hover:text-slate-700 hover:bg-slate-100"
                                     >
                                         {t("landing.hero.cta_pricing")}
                                     </Link>
@@ -572,14 +578,14 @@ export default function LandingPage() {
                                     href="/login"
                                     className="group inline-flex items-center justify-center h-14 px-10 rounded-full bg-slate-900 text-white text-lg font-semibold transition-all hover:bg-slate-800 hover:scale-105 shadow-xl shadow-slate-900/20"
                                 >
-                                    Create Your Price Page
+                                    {t("landing.cta.button")}
                                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </Link>
                                 <Link
-                                    href="/start"
+                                    href="/examples"
                                     className="inline-flex items-center justify-center h-14 px-8 rounded-full bg-white border border-slate-200 text-slate-700 font-medium text-lg transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 shadow-sm"
                                 >
-                                    View Pricing
+                                    {t("landing.hero.cta_examples")}
                                 </Link>
                             </div>
 

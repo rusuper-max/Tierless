@@ -8,6 +8,7 @@ type Props = {
   href?: string;
   children: ReactNode;
   className?: string;
+  rounded?: string;
 };
 
 /**
@@ -19,13 +20,14 @@ export default function ShinyButton({
   href, 
   children, 
   className = "",
+  rounded = "rounded-full",
 }: Props) {
   
   const content = (
     <span 
       className={`
         group inline-flex items-center justify-center gap-2
-        h-14 px-8 rounded-full
+        h-14 px-8 ${rounded}
         bg-white text-slate-900
         font-semibold text-lg
         transition-all duration-200
