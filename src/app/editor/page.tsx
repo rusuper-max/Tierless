@@ -21,3 +21,4 @@ export default async function EditorIndexPage() {
   redirect("/dashboard");
 }
 
+

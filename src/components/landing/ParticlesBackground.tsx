@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Renderer, Camera, Geometry, Program, Mesh, Vec2, GPGPU, Texture } from "ogl";
+import { Renderer, Camera, Geometry, Program, Mesh, Vec2, Texture } from "ogl";
 
 export default function ParticlesBackground() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -116,14 +116,14 @@ export default function ParticlesBackground() {
     const textureAtlas = makePriceAtlas();
 
     // ==========================================
-    // SHADERS
+    // SHADERS (STATELESS & DETERMINISTIC)
     // ==========================================
 
     const vertex = /* glsl */ `
-      attribute vec2 coords;
+      attribute vec3 position;
       attribute vec4 random;
+      
       uniform float uTime;
-      uniform sampler2D tPosition;
       uniform vec2 uMouse;
       uniform float uAspect;
       
@@ -132,20 +132,45 @@ export default function ParticlesBackground() {
 
       void main() {
         vRandom = random; 
-        vec4 position = texture2D(tPosition, coords);
         
-        gl_Position = vec4(position.xy, 0, 1);
+        // --- STATELESS ANIMATION LOGIC ---
+        // We calculate the exact position based on time.
+        // No physics simulation, no accumulation of errors.
         
-        vec2 particlePos = position.xy;
+        vec3 pos = position;
+        
+        // 1. Vertical Movement (Infinite Loop)
+        // Speed varies per particle - SLOWER
+        float speed = 0.015 + random.y * 0.04; 
+        
+        // Offset time so they don't all start at 0
+        float t = uTime + random.x * 100.0;
+        
+        // Modulo arithmetic to loop from -1.2 to 1.2
+        float height = 2.4;
+        float yOffset = mod(t * speed, height);
+        pos.y = -1.2 + yOffset;
+        
+        // 2. Horizontal Wiggle
+        // Gentle sine wave movement
+        pos.x += sin(uTime * 0.5 + random.z * 10.0) * 0.05;
+        
+        // 3. Mouse Interaction
+        vec2 particlePos = pos.xy;
         vec2 distVec = (particlePos - uMouse);
         distVec.x *= uAspect; 
         float dist = length(distVec);
 
         // Mouse reaction radius
         vHover = 1.0 - smoothstep(0.0, 0.45, dist);
+        
+        // Push away from mouse slightly
+        // pos.xy += normalize(distVec) * vHover * 0.1;
 
+        gl_Position = vec4(pos, 1.0);
+        
         // Veličina
-        float baseSize = mix(40.0, 90.0, vRandom.x);
+        float baseSize = mix(40.0, 90.0, random.x);
         float hoverSize = baseSize * (1.0 + vHover * 0.3);
         
         gl_PointSize = hoverSize;
@@ -191,72 +216,32 @@ export default function ParticlesBackground() {
       }
     `;
 
-    // --- PHYSICS (SIMPLIFIED ROBUST LOOP) ---
-    // Nema više velocity shadera koji može da zabaguje. 
-    // Brzina se računa direktno ovde.
-
-    const positionFragment = /* glsl */ `
-      precision highp float;
-      uniform float uTime;
-      uniform sampler2D tMap; // Stara pozicija
-      varying vec2 vUv;
-      
-      // Random generator na osnovu koordinata
-      float rand(vec2 co){
-          return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-      }
-
-      void main() {
-        vec4 position = texture2D(tMap, vUv);
-        
-        // Generišemo unikatnu brzinu za svaku česticu na osnovu njene UV adrese
-        // SMIRENO: 3-4x sporije nego pre
-        float speed = 0.00015 + rand(vUv) * 0.0004; 
-        
-        // Pomeraj na gore
-        position.y += speed;
-        
-        // Reset kad ode gore (Infinite loop)
-        if (position.y > 1.15) {
-            position.y = -1.15;
-            // Random X kad se respawn-uje
-            position.x = rand(vec2(position.x, uTime)) * 2.0 - 1.0;
-        }
-
-        gl_FragColor = position;
-      }
-    `;
-
     // --- INIT ---
 
-    // SMIRENO: Manje čestica za čistiji izgled
-    const numParticles = 300;
-
-    const initialPositionData = new Float32Array(numParticles * 4);
+    const numParticles = 200;
+    const positionData = new Float32Array(numParticles * 3);
     const randomData = new Float32Array(numParticles * 4);
 
     for (let i = 0; i < numParticles; i++) {
-      initialPositionData.set([
-        (Math.random() * 2 - 1),
-        (Math.random() * 2 - 1),
-        0,
-        1
-      ], i * 4);
+      // Initial random positions
+      positionData.set([
+        (Math.random() * 2 - 1), // x: -1 to 1
+        (Math.random() * 2 - 1), // y: -1 to 1 (doesn't matter much as it's overridden by time)
+        0
+      ], i * 3);
 
-      randomData.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
+      // Random attributes for variation
+      randomData.set([
+        Math.random(), // x: size & time offset
+        Math.random(), // y: speed
+        Math.random(), // z: texture index & wiggle phase
+        Math.random()  // w: color mix
+      ], i * 4);
     }
 
-    const position = new GPGPU(gl, { data: initialPositionData });
-
-    // Samo jedan pass (pozicija), velocity je integrisan
-    position.addPass({
-      fragment: positionFragment,
-      uniforms: { uTime: { value: 0 } }
-    });
-
     const geometry = new Geometry(gl, {
+      position: { size: 3, data: positionData },
       random: { size: 4, data: randomData },
-      coords: { size: 2, data: position.coords },
     });
 
     const program = new Program(gl, {
@@ -264,7 +249,6 @@ export default function ParticlesBackground() {
       fragment,
       uniforms: {
         uTime: { value: 0 },
-        tPosition: position.uniform,
         uMouse: { value: new Vec2(9999, 9999) },
         uAspect: { value: 1 },
         uAtlas: { value: textureAtlas },
@@ -299,15 +283,14 @@ export default function ParticlesBackground() {
     let reqId: number;
     function update(t: number) {
       reqId = requestAnimationFrame(update);
-      const time = t * 0.001;
+      // Keep time within reasonable bounds to prevent float precision issues
+      // 10000 seconds is plenty for a loop, and we mod it here
+      const time = (t * 0.001) % 10000;
 
       program.uniforms.uTime.value = time;
       program.uniforms.uAspect.value = gl.canvas.width / gl.canvas.height;
       program.uniforms.uMouse.value = mouse;
 
-      position.passes[0].uniforms.uTime.value = time;
-
-      position.render();
       renderer.render({ scene: points, camera });
     }
     reqId = requestAnimationFrame(update);

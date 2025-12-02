@@ -20,9 +20,13 @@ import {
     Smartphone,
     QrCode,
 } from "lucide-react";
-import StartHeader from "@/components/marketing/MarketingHeader";
 import ParticlesBackgroundLight from "@/components/landing/ParticlesBackgroundLight";
+import InteractiveGridPattern from "@/components/landing/InteractiveGridPattern";
+import GlowingGrid from "@/components/landing/GlowingGrid";
+import TiltCard from "@/components/landing/TiltCard";
+import StartHeader from "@/components/marketing/MarketingHeader";
 import Footer from "@/components/marketing/Footer";
+import GlowButton from "@/components/ui/GlowButton";
 import { useT } from "@/i18n/t";
 
 // --- UTIL ---
@@ -192,9 +196,9 @@ const HeroCalculator = () => {
 export default function LandingPage() {
     const t = useT();
 
-  return (
-    <>
-      <StartHeader />
+    return (
+        <>
+            <StartHeader />
             <main
                 id="main"
                 role="main"
@@ -244,25 +248,16 @@ export default function LandingPage() {
                                 </p>
 
                                 <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-                                    <Link
-                                        href="/login"
-                                        className="group inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold text-lg transition-all hover:shadow-lg hover:shadow-cyan-500/30 hover:scale-105 active:scale-95"
-                                    >
+                                    <GlowButton href="/login" variant="primary">
                                         {t("landing.hero.cta_start")}
                                         <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                                    </Link>
-                                    <Link
-                                        href="/examples"
-                                        className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-white border border-slate-200 text-slate-700 font-medium text-lg transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 shadow-sm"
-                                    >
+                                    </GlowButton>
+                                    <GlowButton href="/examples" variant="secondary">
                                         {t("landing.hero.cta_examples")}
-                                    </Link>
-                                    <Link
-                                        href="/start"
-                                        className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-full text-slate-500 font-medium transition-all hover:text-slate-700 hover:bg-slate-100"
-                                    >
+                                    </GlowButton>
+                                    <GlowButton href="/start" variant="ghost">
                                         {t("landing.hero.cta_pricing")}
-                                    </Link>
+                                    </GlowButton>
                                 </div>
 
                                 {/* Trust indicators */}
@@ -305,9 +300,19 @@ export default function LandingPage() {
                     </motion.div>
                 </section>
 
+
+
                 {/* 2. WHY TIERLESS - Clean Benefits */}
-                <section className="py-24 px-4 sm:px-6 bg-slate-50/50">
-                    <div className="max-w-6xl mx-auto">
+                <section className="relative py-24 px-4 sm:px-6 overflow-hidden bg-slate-50/30">
+
+                    {/* Aurora Mesh Gradient Background (Restored) */}
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute -top-[30%] -left-[10%] w-[70%] h-[70%] rounded-full bg-indigo-500/10 blur-[120px] mix-blend-multiply" />
+                        <div className="absolute top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-cyan-500/10 blur-[120px] mix-blend-multiply" />
+                        <div className="absolute -bottom-[20%] left-[20%] w-[60%] h-[60%] rounded-full bg-teal-500/10 blur-[120px] mix-blend-multiply" />
+                    </div>
+
+                    <div className="relative z-10 max-w-6xl mx-auto">
 
                         <div className="text-center max-w-2xl mx-auto mb-16">
                             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
@@ -318,29 +323,24 @@ export default function LandingPage() {
                             </p>
                         </div>
 
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
                             {[
-                                { icon: Globe, titleKey: "landing.why.no_website_title", descKey: "landing.why.no_website_desc", color: "text-indigo-500", bg: "bg-indigo-50" },
-                                { icon: Smartphone, titleKey: "landing.why.mobile_title", descKey: "landing.why.mobile_desc", color: "text-cyan-500", bg: "bg-cyan-50" },
-                                { icon: Zap, titleKey: "landing.why.update_title", descKey: "landing.why.update_desc", color: "text-amber-500", bg: "bg-amber-50" },
-                                { icon: QrCode, titleKey: "landing.why.qr_title", descKey: "landing.why.qr_desc", color: "text-emerald-500", bg: "bg-emerald-50" },
-                                { icon: Calculator, titleKey: "landing.why.calculator_title", descKey: "landing.why.calculator_desc", color: "text-teal-500", bg: "bg-teal-50" },
-                                { icon: BarChart3, titleKey: "landing.why.analytics_title", descKey: "landing.why.analytics_desc", color: "text-slate-600", bg: "bg-slate-100" },
+                                { icon: Globe, titleKey: "landing.why.no_website_title", descKey: "landing.why.no_website_desc", color: "text-indigo-600", bg: "bg-indigo-50" },
+                                { icon: Smartphone, titleKey: "landing.why.mobile_title", descKey: "landing.why.mobile_desc", color: "text-cyan-600", bg: "bg-cyan-50" },
+                                { icon: Zap, titleKey: "landing.why.update_title", descKey: "landing.why.update_desc", color: "text-amber-600", bg: "bg-amber-50" },
+                                { icon: QrCode, titleKey: "landing.why.qr_title", descKey: "landing.why.qr_desc", color: "text-emerald-600", bg: "bg-emerald-50" },
+                                { icon: Calculator, titleKey: "landing.why.calculator_title", descKey: "landing.why.calculator_desc", color: "text-teal-600", bg: "bg-teal-50" },
+                                { icon: BarChart3, titleKey: "landing.why.analytics_title", descKey: "landing.why.analytics_desc", color: "text-slate-700", bg: "bg-slate-100" },
                             ].map((feature, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: i * 0.1 }}
-                                    className="group p-6 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 transition-all hover:shadow-lg"
-                                >
-                                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-4", feature.bg)}>
-                                        <feature.icon className={cn("w-6 h-6", feature.color)} />
+                                <TiltCard key={i} className="h-full">
+                                    <div className="h-full p-8 rounded-2xl bg-white/80 backdrop-blur-sm border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                                        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-4", feature.bg)}>
+                                            <feature.icon className={cn("w-6 h-6", feature.color)} />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-slate-900 mb-2">{t(feature.titleKey)}</h3>
+                                        <p className="text-slate-600 text-sm leading-relaxed">{t(feature.descKey)}</p>
                                     </div>
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-2">{t(feature.titleKey)}</h3>
-                                    <p className="text-slate-600 text-sm leading-relaxed">{t(feature.descKey)}</p>
-                                </motion.div>
+                                </TiltCard>
                             ))}
                         </div>
 
@@ -558,7 +558,8 @@ export default function LandingPage() {
 
                 {/* 5. FINAL CTA */}
                 <section className="py-24 lg:py-32 px-6 text-center bg-slate-50 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:32px_32px]" />
+                    {/* Interactive Grid Background */}
+                    <InteractiveGridPattern />
 
                     <div className="relative z-10 max-w-3xl mx-auto">
                         <motion.div
@@ -574,19 +575,13 @@ export default function LandingPage() {
                             </p>
 
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <Link
-                                    href="/login"
-                                    className="group inline-flex items-center justify-center h-14 px-10 rounded-full bg-slate-900 text-white text-lg font-semibold transition-all hover:bg-slate-800 hover:scale-105 shadow-xl shadow-slate-900/20"
-                                >
+                                <GlowButton href="/login" variant="primary">
                                     {t("landing.cta.button")}
-                                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                </Link>
-                                <Link
-                                    href="/examples"
-                                    className="inline-flex items-center justify-center h-14 px-8 rounded-full bg-white border border-slate-200 text-slate-700 font-medium text-lg transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 shadow-sm"
-                                >
+                                    <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                                </GlowButton>
+                                <GlowButton href="/examples" variant="secondary">
                                     {t("landing.hero.cta_examples")}
-                                </Link>
+                                </GlowButton>
                             </div>
 
                             <p className="mt-6 text-sm font-medium text-slate-500">
@@ -598,6 +593,6 @@ export default function LandingPage() {
 
             </main>
             <Footer />
-    </>
-  );
+        </>
+    );
 }

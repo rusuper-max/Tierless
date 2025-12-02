@@ -212,3 +212,4 @@ Ako imaš problema:
 2. Proveri server logs za detaljne error poruke
 3. Testiraj webhook sa LemonSqueezy webhook testerom
 
+

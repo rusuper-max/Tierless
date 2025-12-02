@@ -150,10 +150,12 @@ export default function MarketingHeader() {
       </div>
 
       {/* Scroll Progress Line */}
-      <div
-        className="absolute bottom-0 left-0 h-[1px] bg-gradient-to-r from-indigo-500 via-cyan-400 to-indigo-500"
-        style={{ width: `${Math.round(progress * 100)}%`, transition: "width 0.1s linear" }}
-      />
+      <div className="absolute bottom-0 left-0 w-full h-[4px] bg-white/10">
+        <div
+          className="h-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-teal-400 shadow-[0_0_12px_rgba(56,189,248,0.5)]"
+          style={{ width: `${Math.round(progress * 100)}%`, transition: "width 0.12s linear" }}
+        />
+      </div>
     </header>
   );
 }

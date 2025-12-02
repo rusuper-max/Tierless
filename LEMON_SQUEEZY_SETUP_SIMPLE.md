@@ -294,3 +294,4 @@ Ali LemonSqueezy je **mnogo bolje** jer je automatski! 🚀
 
 **Srećno! Ako zapneš negde, javi mi tačno gde si i šta vidiš na ekranu.**
 
+

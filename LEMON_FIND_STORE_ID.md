@@ -140,3 +140,4 @@ U response-u će biti:
 
 Ako imaš API key, hajde da napravim skriptu koja će automatski da nađe Store ID:
 
+

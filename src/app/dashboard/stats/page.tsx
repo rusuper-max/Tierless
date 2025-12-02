@@ -322,21 +322,21 @@ export default function StatsPage() {
           </button>
 
           {/* Time Range */}
-          <div className="flex bg-[var(--card)] border border-[var(--border)] rounded-lg p-1">
+        <div className="flex bg-[var(--card)] border border-[var(--border)] rounded-lg p-1">
             {(["7", "30", "90"] as const).map((range) => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={cn(
-                  "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
-                  timeRange === range
-                    ? "bg-[var(--surface)] text-[var(--text)] shadow-sm ring-1 ring-[var(--border)]"
-                    : "text-[var(--muted)] hover:text-[var(--text)]"
-                )}
-              >
+            <button
+              key={range}
+              onClick={() => setTimeRange(range)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                timeRange === range
+                  ? "bg-[var(--surface)] text-[var(--text)] shadow-sm ring-1 ring-[var(--border)]"
+                  : "text-[var(--muted)] hover:text-[var(--text)]"
+              )}
+            >
                 {range === "7" ? "7 days" : range === "30" ? "30 days" : "90 days"}
-              </button>
-            ))}
+            </button>
+          ))}
           </div>
         </div>
       </header>
@@ -952,32 +952,32 @@ function PageDetailsDrawer({ page, stats, onClose, onShare }: {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Key Metrics */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-[var(--surface)]/50 rounded-xl border border-[var(--border)]">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-[var(--surface)]/50 rounded-xl border border-[var(--border)]">
               <div className="text-[var(--muted)] text-xs mb-1">Views</div>
               <div className="text-2xl font-bold text-[var(--text)]">{s.views.toLocaleString()}</div>
               <div className="text-[10px] text-[var(--muted)] mt-1">{s.uniqueVisitors} unique</div>
-            </div>
-            <div className="p-4 bg-[var(--surface)]/50 rounded-xl border border-[var(--border)]">
+                </div>
+                <div className="p-4 bg-[var(--surface)]/50 rounded-xl border border-[var(--border)]">
               <div className="text-[var(--muted)] text-xs mb-1">Conversion</div>
               <div className="text-2xl font-bold text-[var(--text)]">{convRate}%</div>
               <div className="text-[10px] text-[var(--muted)] mt-1">{s.checkouts} checkouts</div>
-            </div>
-          </div>
+                </div>
+              </div>
 
           {/* Funnel */}
-          <div>
+              <div>
             <h3 className="text-sm font-bold text-[var(--text)] mb-4">Page Funnel</h3>
-            <div className="space-y-2">
+                <div className="space-y-2">
               <FunnelBar label="Views" value={s.views} max={s.views} color="bg-[#22D3EE]" />
               <FunnelBar label="Interactions" value={s.interactions} max={s.views} color="bg-amber-500" />
               <FunnelBar label="Checkouts" value={s.checkouts} max={s.views} color="bg-emerald-500" />
-            </div>
-          </div>
+                  </div>
+                  </div>
 
           {/* Interaction Types */}
           {Object.keys(s.interactionTypes).length > 0 && (
-            <div>
+                <div>
               <h3 className="text-sm font-bold text-[var(--text)] mb-4">Interaction Breakdown</h3>
               <div className="space-y-2">
                 {Object.entries(s.interactionTypes)
@@ -986,10 +986,10 @@ function PageDetailsDrawer({ page, stats, onClose, onShare }: {
                     <div key={type} className="flex justify-between items-center text-sm">
                       <span className="text-[var(--muted)] capitalize">{type.replace(/_/g, ' ')}</span>
                       <span className="font-mono text-[var(--text)]">{count}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
           )}
 
           {/* Rating */}
