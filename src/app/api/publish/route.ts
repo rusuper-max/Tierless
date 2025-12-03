@@ -241,6 +241,12 @@ export async function POST(req: Request) {
 
   if (publish) {
     await injectContactInfo(userId, slug, current);
+    
+    // Sync is_example flag from meta.listInExamples
+    const fullCalc = await fullStore.getFull(userId, slug);
+    const listInExamples = fullCalc?.meta?.listInExamples === true;
+    await calcsStore.setIsExample(userId, slug, listInExamples);
+    console.log("[PUBLISH] Synced is_example:", { slug, listInExamples });
   }
 
   // 2) Upis u calcsStore (zaista postavlja config.published)

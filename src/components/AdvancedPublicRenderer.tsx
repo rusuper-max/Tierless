@@ -642,14 +642,13 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
     >
       <span className="absolute inset-[-1000%] animate-[spin_4s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#00000000_50%,#4F46E5_100%)] opacity-80" />
       <span
-        className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest backdrop-blur-xl"
+        className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest backdrop-blur-xl"
         style={{
           background: isDark ? "rgba(11,12,21,0.9)" : "rgba(255,255,255,0.95)",
-          color: isDark ? "white" : "inherit",
         }}
       >
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
-        {t("Powered by Tierless")}
+          {t("Powered by Tierless")}
         </span>
       </span>
     </a>
@@ -698,117 +697,198 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
         />
       )}
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-40">
-
-        {/* Hero Image */}
-        {heroImageUrl && (
-          <div className="relative w-full h-48 sm:h-64 lg:h-80 rounded-2xl overflow-hidden mb-8 shadow-2xl">
-            <img
-              src={heroImageUrl}
-              alt=""
-              className="w-full h-full object-cover"
-            />
-            <div
-              className="absolute inset-0"
-              style={{
-                background: isDark
-                  ? "linear-gradient(to top, rgba(10,10,15,0.9) 0%, transparent 60%)"
-                  : "linear-gradient(to top, rgba(248,250,252,0.9) 0%, transparent 60%)",
-              }}
-            />
-          </div>
-        )}
-
-        {/* Header */}
-        <header className="text-center mb-10 sm:mb-14">
-          {/* Logo */}
+      {/* Full-Width Hero Section (outside container) */}
+      {heroImageUrl && (
+        <div className="relative w-full min-h-[260px] sm:min-h-[300px] lg:min-h-[340px] overflow-hidden z-10">
+          {/* Hero Background Image */}
+          <img
+            src={heroImageUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          {/* Gradient Overlay for text readability */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: isDark
+                ? "linear-gradient(to top, rgba(10,10,15,0.98) 0%, rgba(10,10,15,0.6) 60%, rgba(10,10,15,0.3) 100%)"
+                : "linear-gradient(to top, rgba(248,250,252,0.98) 0%, rgba(248,250,252,0.7) 60%, rgba(248,250,252,0.4) 100%)",
+            }}
+          />
+          
+          {/* Logo in top-left corner */}
           {logoUrl && (
-            <div className="flex justify-center mb-6">
+            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20">
               <img
                 src={logoUrl}
                 alt="Logo"
-                className="max-h-16 sm:max-h-20 object-contain"
+                className="h-10 sm:h-12 object-contain drop-shadow-lg rounded bg-white/10 backdrop-blur-sm p-1"
               />
             </div>
           )}
 
-          {poweredBy && !logoUrl && (
-            <div className="flex justify-center mb-6">{poweredBy}</div>
-          )}
-
-          {publicName && (
-            <div
-              className="text-[10px] sm:text-xs uppercase tracking-[0.3em] mb-3 font-medium"
-              style={{ color: "var(--muted)" }}
-            >
-              {publicName}
+          {/* Powered by badge - TOP CENTER, prominent! */}
+          {poweredBy && (
+            <div className="absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 z-20">
+              {poweredBy}
             </div>
           )}
 
-          {title && (
-            <h1
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4"
-              style={{ color: "var(--text)" }}
-            >
-              {title}
-            </h1>
-          )}
+          {/* Content overlaid on hero - bottom aligned */}
+          <div className="absolute inset-x-0 bottom-0 z-10 px-4 sm:px-6 lg:px-8 pb-6 sm:pb-8">
+            <div className="max-w-6xl mx-auto text-center">
 
-          {description && (
-            <p
-              className="text-base sm:text-lg max-w-2xl mx-auto leading-relaxed"
-              style={{ color: "var(--muted)" }}
-            >
-              {description}
-            </p>
-          )}
+              {title && (
+                <h1
+                  className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight mb-2 drop-shadow-lg"
+                  style={{ color: "var(--text)" }}
+                >
+                  {title}
+                </h1>
+              )}
 
-          {supportNote && (
-            <p
-              className="text-xs sm:text-sm mt-4 max-w-xl mx-auto"
-              style={{ color: "var(--muted)", opacity: 0.7 }}
-            >
-              {supportNote}
-            </p>
-          )}
+              {description && (
+                <p
+                  className="text-sm sm:text-base max-w-2xl mx-auto leading-relaxed mb-3"
+                  style={{ color: "var(--muted)" }}
+                >
+                  {description}
+                </p>
+              )}
 
-          {/* Portfolio Link */}
-          {portfolioUrl && (
-            <div className="flex justify-center mt-6">
-              <a
-                href={portfolioUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all hover:scale-105"
-                style={{
-                  background: isDark
-                    ? "rgba(255,255,255,0.08)"
-                    : "rgba(0,0,0,0.05)",
-                  color: "var(--text)",
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)"}`,
-                }}
+              {/* Rating + Portfolio in row */}
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                {allowRating && (
+                  <RatingWidget
+                    pageId={pageId}
+                    initialAvg={avgRating}
+                    initialCount={ratingsCount}
+                    initialUserScore={0}
+                    allowRating={allowRating}
+                    isDark={isDark}
+                  />
+                )}
+                
+                {portfolioUrl && (
+                  <a
+                    href={portfolioUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all hover:scale-105 backdrop-blur-sm"
+                    style={{
+                      background: isDark
+                        ? "rgba(255,255,255,0.15)"
+                        : "rgba(0,0,0,0.08)",
+                      color: "var(--text)",
+                      border: `1px solid ${isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.1)"}`,
+                    }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--brand-1)" }} />
+                    {t("Portfolio")}
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={`relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-40 ${heroImageUrl ? 'pt-6 sm:pt-8' : 'py-8 sm:py-12'}`}>
+
+        {/* Header without hero image */}
+        {!heroImageUrl && (
+          /* Header without hero image */
+          <header className="text-center mb-10 sm:mb-14">
+            {/* Logo */}
+            {logoUrl && (
+              <div className="flex justify-center mb-6">
+                <img
+                  src={logoUrl}
+                  alt="Logo"
+                  className="max-h-16 sm:max-h-20 object-contain"
+                />
+              </div>
+            )}
+
+            {poweredBy && (
+              <div className="flex justify-center mb-6">{poweredBy}</div>
+            )}
+
+            {publicName && (
+              <div
+                className="text-[10px] sm:text-xs uppercase tracking-[0.3em] mb-3 font-medium"
+                style={{ color: "var(--muted)" }}
               >
-                <Sparkles className="w-4 h-4" style={{ color: "var(--brand-1)" }} />
-                {t("View My Portfolio")}
-                <ArrowRight className="w-4 h-4" />
-              </a>
-            </div>
-          )}
+                {publicName}
+              </div>
+            )}
 
-          {/* Rating Widget */}
-          {allowRating && (
-            <div className="flex justify-center mt-6">
-              <RatingWidget
-                pageId={pageId}
-                initialAvg={avgRating}
-                initialCount={ratingsCount}
-                initialUserScore={0}
-                allowRating={allowRating}
-                isDark={isDark}
-              />
-            </div>
-          )}
-        </header>
+            {title && (
+              <h1
+                className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4"
+                style={{ color: "var(--text)" }}
+              >
+                {title}
+              </h1>
+            )}
+
+            {description && (
+              <p
+                className="text-base sm:text-lg max-w-2xl mx-auto leading-relaxed"
+                style={{ color: "var(--muted)" }}
+              >
+                {description}
+              </p>
+            )}
+
+            {supportNote && (
+              <p
+                className="text-xs sm:text-sm mt-4 max-w-xl mx-auto"
+                style={{ color: "var(--muted)", opacity: 0.7 }}
+              >
+                {supportNote}
+              </p>
+            )}
+
+            {/* Portfolio Link */}
+            {portfolioUrl && (
+              <div className="flex justify-center mt-6">
+                <a
+                  href={portfolioUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all hover:scale-105"
+                  style={{
+                    background: isDark
+                      ? "rgba(255,255,255,0.08)"
+                      : "rgba(0,0,0,0.05)",
+                    color: "var(--text)",
+                    border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)"}`,
+                  }}
+                >
+                  <Sparkles className="w-4 h-4" style={{ color: "var(--brand-1)" }} />
+                  {t("View My Portfolio")}
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </div>
+            )}
+
+            {/* Rating Widget */}
+            {allowRating && (
+              <div className="flex justify-center mt-6">
+                <RatingWidget
+                  pageId={pageId}
+                  initialAvg={avgRating}
+                  initialCount={ratingsCount}
+                  initialUserScore={0}
+                  allowRating={allowRating}
+                  isDark={isDark}
+                />
+              </div>
+            )}
+          </header>
+        )}
 
         {/* Tiers Section - Full Width */}
         {tierNodes.length > 0 && (
@@ -1001,12 +1081,6 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
       </section>
         )}
 
-        {/* Footer with Powered By (when logo is shown at top) */}
-        {logoUrl && poweredBy && (
-          <div className="flex justify-center pt-8 pb-4">
-            {poweredBy}
-        </div>
-        )}
       </div>
 
       {/* Fixed Bottom Summary Bar */}
@@ -1033,20 +1107,20 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                   style={{ color: "var(--muted)" }}
                 >
                   {t("Estimated total")}
-            </div>
+        </div>
                 <div
                   className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight"
                   style={{ color: "var(--text)" }}
                 >
                   {formatPrice(total)}
-                </div>
+      </div>
                 <p
                   className="text-[10px] sm:text-xs mt-0.5 hidden sm:block"
                   style={{ color: "var(--muted)", opacity: 0.7 }}
                 >
                   {t("This is a rough estimate based on selected packages and extras.")}
                 </p>
-            </div>
+      </div>
 
               {/* Send Inquiry Button */}
               {advancedShowInquiry && resolvedContactType && (
@@ -1071,10 +1145,10 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </span>
                   </button>
-                </div>
-              )}
             </div>
-          </div>
+          )}
+                </div>
+            </div>
         </div>
       )}
     </div>

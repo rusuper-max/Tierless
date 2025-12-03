@@ -324,6 +324,11 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
       if (isPublished) {
         const calcId = normalized.meta?.id as string | undefined;
         
+        // Sync is_example flag from meta.listInExamples
+        const listInExamples = normalized.meta?.listInExamples === true;
+        await calcsStore.setIsExample(userId, slug, listInExamples);
+        console.log(`[EDITOR PUT] Synced is_example: ${listInExamples} for slug=${slug}`);
+        
         // Revalidate all possible URL formats
         revalidatePath(`/p/${slug}`);
         if (calcId) {
@@ -336,6 +341,10 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
         if (calcId) {
           revalidatePath(`/api/public/${calcId}-${slug}`);
         }
+        
+        // Revalidate examples page when is_example changes
+        revalidatePath(`/examples`);
+        revalidatePath(`/api/examples`);
         
         console.log(`[EDITOR PUT] Revalidated paths for slug=${slug}, id=${calcId}`);
       }

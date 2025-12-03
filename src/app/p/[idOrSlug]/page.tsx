@@ -204,9 +204,15 @@ export default async function PublicPage({ params }: PageProps) {
   const editorMode = (calc.meta as any)?.editorMode;
   const isAdvanced = editorMode === "advanced";
 
+  // Advanced/TierBased mode gets full page control (for hero images, full-width layouts)
+  if (isAdvanced) {
+    return <PublicPageClient calc={calc as CalcJson} />;
+  }
+
+  // Simple/List mode uses the card container
   return (
     <main className="min-h-screen bg-[#f8fafc] text-[#020617] dark:bg-[#05010d] dark:text-white">
-      <div className={`mx-auto w-full px-0 py-6 sm:px-6 lg:px-8 ${isAdvanced ? "max-w-[1400px]" : "max-w-5xl"}`}>
+      <div className="mx-auto w-full px-0 py-6 sm:px-6 lg:px-8 max-w-5xl">
         <div className="rounded-none border-0 bg-transparent p-0 shadow-none sm:rounded-3xl sm:border sm:border-[color:var(--border,#e5e7eb)] sm:bg-[color:var(--card,#ffffff)] sm:p-4 sm:shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
           <PublicPageClient calc={calc as CalcJson} />
         </div>

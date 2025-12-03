@@ -17,8 +17,10 @@ export default function ParticlesBackgroundLight() {
     const container = containerRef.current;
     if (!container) return;
 
+    // Use consistent DPR for cross-platform consistency
+    const dpr = Math.min(window.devicePixelRatio, 2);
     const renderer = new Renderer({
-      dpr: Math.min(window.devicePixelRatio, 2),
+      dpr,
       alpha: true,
       depth: false,
     });
@@ -127,9 +129,11 @@ export default function ParticlesBackgroundLight() {
       uniform float uTime;
       uniform vec2 uMouse;
       uniform float uAspect;
+      uniform float uDpr;
       
       varying vec4 vRandom;
       varying float vHover;
+      varying vec2 vPos;
 
       void main() {
         vRandom = random; 
@@ -148,20 +152,25 @@ export default function ParticlesBackgroundLight() {
         // 2. Horizontal Wiggle
         pos.x += sin(uTime * 0.5 + random.z * 10.0) * 0.05;
         
+        // Pass position for exclusion zone check in fragment shader
+        vPos = pos.xy;
+        
         // 3. Mouse Interaction
         vec2 particlePos = pos.xy;
         vec2 distVec = (particlePos - uMouse);
         distVec.x *= uAspect; 
         float dist = length(distVec);
 
-        // Hover radius - LARGER for better reveal effect
-        vHover = 1.0 - smoothstep(0.0, 0.6, dist);
+        // Hover radius - balanced reveal effect
+        vHover = 1.0 - smoothstep(0.0, 0.5, dist);
 
         gl_Position = vec4(pos, 1.0);
 
-        // Size - Balanced particles
-        float baseSize = mix(40.0, 80.0, random.x);
-        float hoverSize = baseSize * (1.0 + vHover * 0.3);
+        // Size - Scale based on DPR for cross-platform consistency
+        // Higher DPR = physically smaller pixels, so we need larger point sizes
+        float dprScale = uDpr;
+        float baseSize = mix(32.0, 64.0, random.x) * dprScale;
+        float hoverSize = baseSize * (1.0 + vHover * 0.25);
         
         gl_PointSize = hoverSize;
       }
@@ -172,11 +181,37 @@ export default function ParticlesBackgroundLight() {
       uniform sampler2D uAtlas;
       varying vec4 vRandom;
       varying float vHover;
+      varying vec2 vPos;
       
       void main() {
         // KEY OPTIMIZATION: Discard particles far from mouse
         // This means GPU doesn't render them at all!
         if (vHover < 0.01) discard;
+        
+        // EXCLUSION ZONE: Only around the LEFT side text area
+        // Smaller zone - just the text "Whether you run... online" and buttons
+        float exclusionLeft = -1.0;   // Start from left edge
+        float exclusionRight = 0.05;  // Only left half of screen
+        float exclusionBottom = -0.4; // Below buttons
+        float exclusionTop = 0.55;    // Above "No website required" badge
+        
+        // Check if particle is inside exclusion zone
+        bool inZoneX = vPos.x > exclusionLeft && vPos.x < exclusionRight;
+        bool inZoneY = vPos.y > exclusionBottom && vPos.y < exclusionTop;
+        
+        float exclusionFade = 1.0; // Default: fully visible
+        
+        if (inZoneX && inZoneY) {
+          // Inside exclusion zone - calculate fade based on distance from edges
+          float distFromEdgeX = min(vPos.x - exclusionLeft, exclusionRight - vPos.x);
+          float distFromEdgeY = min(vPos.y - exclusionBottom, exclusionTop - vPos.y);
+          float distFromEdge = min(distFromEdgeX, distFromEdgeY);
+          
+          // Soft fade at edges (0.15 width)
+          exclusionFade = 1.0 - smoothstep(0.0, 0.15, distFromEdge);
+        }
+        
+        if (exclusionFade < 0.05) discard;
         
         float totalCells = 64.0;
         float cols = 8.0;
@@ -202,15 +237,16 @@ export default function ParticlesBackgroundLight() {
         vec3 gradientColor = mix(colorIndigo, colorCyan, vRandom.w);
         gradientColor = mix(gradientColor, colorTeal, vRandom.y * 0.5);
 
-        // Fade in from transparent to visible
-        float alpha = vHover * 0.85;
+        // Fade in from transparent to visible - balanced visibility
+        // Also apply exclusion zone fade
+        float alpha = vHover * 0.75 * exclusionFade;
 
         gl_FragColor = vec4(gradientColor, alpha * texColor.a);
       }
     `;
 
-    // More particles since we only render near cursor anyway
-    const numParticles = 200;
+    // Balanced particle count - only visible near cursor anyway
+    const numParticles = 180;
 
     const positionData = new Float32Array(numParticles * 3);
     const randomData = new Float32Array(numParticles * 4);
@@ -244,6 +280,7 @@ export default function ParticlesBackgroundLight() {
         uTime: { value: 0 },
         uMouse: { value: new Vec2(9999, 9999) },
         uAspect: { value: 1 },
+        uDpr: { value: dpr },
         uAtlas: { value: textureAtlas },
       },
       transparent: true,

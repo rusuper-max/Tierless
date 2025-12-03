@@ -159,18 +159,42 @@ export function TierCard({
         ? `linear-gradient(${gradientBaseLayer}, ${gradientBaseLayer}) padding-box, ${accent} border-box`
         : undefined;
 
+    // Separate selection indicator from accent color visibility
+    // This ensures selected state is ALWAYS visible, even with alwaysColored
+    const selectionGlow = isActive
+        ? theme === "tierless"
+            ? `0 0 0 2px ${accentPrimary}, 0 0 25px ${accentPrimary}50, 0 0 50px ${accentPrimary}30`
+            : theme === "editorial"
+                ? `0 0 0 2px rgba(251,146,60,0.8), 0 0 25px rgba(251,146,60,0.4)`
+                : theme === "light"
+                    ? `0 0 0 2px ${accentPrimary}, 0 0 20px ${accentPrimary}40, 0 8px 30px rgba(0,0,0,0.15)`
+                    : `0 0 0 2px ${accentPrimary}, 0 0 30px ${accentPrimary}50, 0 0 60px ${accentPrimary}25`
+        : null;
+
+    const finalBoxShadow = selectionGlow
+        ? selectionGlow
+        : showAccentColor
+            ? theme === "tierless"
+                ? `0 0 0 1px ${accentPrimary}60, 0 0 20px ${accentPrimary}15, ${boxShadow}`
+                : theme === "editorial"
+                    ? `0 0 0 1px rgba(251,146,60,0.2), ${boxShadow}`
+                    : boxShadow
+            : restingShadow;
+
     return (
         <button
             type="button"
             onClick={onSelect}
-            className={`group relative w-full text-left rounded-2xl border px-4 py-4 sm:px-6 sm:py-6 transition-all duration-300 transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-1,#4F46E5)] ${theme === "tierless" ? "backdrop-blur-md" : ""
-                }`}
+            className={`group relative w-full text-left rounded-2xl border px-4 py-4 sm:px-6 sm:py-6 transition-all duration-300 transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-1,#4F46E5)] ${theme === "tierless" ? "backdrop-blur-md" : ""} ${isActive ? "scale-[1.02] z-10" : ""}`}
             style={{
                 borderColor: gradientBackground
                     ? "transparent"
-                    : showAccentColor
+                    : isActive
                         ? accentPrimary
-                        : "var(--border)",
+                        : showAccentColor
+                            ? `${accentPrimary}80`
+                            : "var(--border)",
+                borderWidth: isActive ? "2px" : "1px",
                 background: gradientBackground
                     ? gradientBackground
                     : showAccentColor
@@ -180,15 +204,24 @@ export function TierCard({
                                 ? `linear-gradient(to bottom, rgba(255,255,255,0.05), transparent), ${bg}`
                                 : `radial-gradient(circle at 0 0, rgba(79,70,229,.18), transparent 55%), radial-gradient(circle at 100% 0, rgba(34,211,238,.18), transparent 55%), ${bg}`
                         : bg,
-                boxShadow: showAccentColor
-                    ? theme === "tierless"
-                        ? `0 0 0 1px ${accentPrimary}, 0 0 40px ${accentPrimary}30, ${boxShadow}`
-                        : theme === "editorial"
-                            ? `0 0 0 1px rgba(251,146,60,0.3), ${boxShadow}`
-                            : boxShadow
-                    : restingShadow,
+                boxShadow: finalBoxShadow,
             }}
         >
+            {/* Selection indicator - top right corner */}
+            {isActive && (
+                <div 
+                    className="absolute -top-2 -right-2 z-20 flex items-center justify-center w-6 h-6 rounded-full shadow-lg animate-in zoom-in-50 duration-200"
+                    style={{
+                        background: isGradientAccent ? accent : accentPrimary,
+                        boxShadow: `0 2px 10px ${accentPrimary}60`,
+                    }}
+                >
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+            )}
+
             <div className="flex flex-col h-full gap-3">
                 {/* Badge - positioned on top border edge */}
                 {node.badgeText && (
