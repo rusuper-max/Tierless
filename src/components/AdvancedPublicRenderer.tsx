@@ -527,8 +527,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
       activeSliders.forEach(s => {
         const val = sliderValues[s.id] ?? s.min ?? 0;
         const price = val * (s.pricePerStep || 0);
-        const unit = (s as any).unit || "";
-        lines.push(`   • ${s.label || "Option"}: ${val} ${unit} (${formatPrice(price)})`);
+        lines.push(`   • ${s.label || "Option"}: ${val} ${s.unit || ""} (${formatPrice(price)})`);
       });
     }
 

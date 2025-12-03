@@ -184,9 +184,14 @@ export interface AdvancedNode {
   billingPeriod?: BillingPeriod | null;
 
   /**
-   * Npr. “per hour”, “per project”, “per m²”.
+   * Npr. "per hour", "per project", "per m²".
    */
   unitLabel?: string | null;
+
+  /**
+   * Unit of measurement for sliders (e.g. "hours", "km", "pcs").
+   */
+  unit?: string | null;
 
   /**
    * Da li ovaj block ulazi u total kalkulaciju.
