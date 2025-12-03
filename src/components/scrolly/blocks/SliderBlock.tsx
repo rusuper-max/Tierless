@@ -84,12 +84,17 @@ export function SliderBlock({
                             renderKindIcon("slider")
                         )}
                     </span>
-                    <div>
+                    <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-[var(--text)]">
                             {node.label || t("Untitled slider")}
                         </div>
-                        <div className="text-[11px] text-[var(--muted)]">
-                            {t("Range")} {min} – {max}
+                        {node.description && (
+                            <div className="text-[11px] text-[var(--muted)] line-clamp-2 mt-0.5">
+                                {node.description}
+                            </div>
+                        )}
+                        <div className="text-[10px] text-[var(--muted)] opacity-70 mt-0.5">
+                            {t("Range")}: {min} – {max} {node.unit && `(${node.unit})`}
                         </div>
                     </div>
                 </div>

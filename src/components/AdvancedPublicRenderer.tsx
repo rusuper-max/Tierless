@@ -366,6 +366,12 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
   const sliderSolidColor: string | null =
     metaRaw.sliderSolidColor ?? null;
 
+  // Branding & Media
+  const logoUrl: string | null = (metaRaw as any).logoUrl ?? null;
+  const heroImageUrl: string | null = (metaRaw as any).heroImageUrl ?? null;
+  const backgroundImageUrl: string | null = (metaRaw as any).backgroundImageUrl ?? null;
+  const portfolioUrl: string | null = (metaRaw as any).portfolioUrl ?? null;
+
   const hasAnyBlocks =
     tierNodes.length > 0 ||
     addonNodes.length > 0 ||
@@ -651,7 +657,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${fontClass}`}
+      className={`min-h-screen transition-colors duration-300 ${fontClass} relative`}
       data-public-theme={publicTheme}
       style={{
         ...themeVars,
@@ -660,10 +666,32 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
           : "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
       }}
     >
+      {/* Background Image with Overlay */}
+      {backgroundImageUrl && (
+        <div
+          className="fixed inset-0 z-0"
+          style={{
+            backgroundImage: `url(${backgroundImageUrl})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundAttachment: "fixed",
+          }}
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              background: isDark
+                ? "rgba(10, 10, 15, 0.85)"
+                : "rgba(248, 250, 252, 0.88)",
+            }}
+          />
+        </div>
+      )}
+
       {/* Subtle gradient overlay for dark mode */}
       {isDark && (
         <div
-          className="fixed inset-0 pointer-events-none"
+          className="fixed inset-0 pointer-events-none z-[1]"
           style={{
             background: "radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%)",
           }}
@@ -672,9 +700,39 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-40">
 
+        {/* Hero Image */}
+        {heroImageUrl && (
+          <div className="relative w-full h-48 sm:h-64 lg:h-80 rounded-2xl overflow-hidden mb-8 shadow-2xl">
+            <img
+              src={heroImageUrl}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background: isDark
+                  ? "linear-gradient(to top, rgba(10,10,15,0.9) 0%, transparent 60%)"
+                  : "linear-gradient(to top, rgba(248,250,252,0.9) 0%, transparent 60%)",
+              }}
+            />
+          </div>
+        )}
+
         {/* Header */}
         <header className="text-center mb-10 sm:mb-14">
-          {poweredBy && (
+          {/* Logo */}
+          {logoUrl && (
+            <div className="flex justify-center mb-6">
+              <img
+                src={logoUrl}
+                alt="Logo"
+                className="max-h-16 sm:max-h-20 object-contain"
+              />
+            </div>
+          )}
+
+          {poweredBy && !logoUrl && (
             <div className="flex justify-center mb-6">{poweredBy}</div>
           )}
 
@@ -712,6 +770,29 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
             >
               {supportNote}
             </p>
+          )}
+
+          {/* Portfolio Link */}
+          {portfolioUrl && (
+            <div className="flex justify-center mt-6">
+              <a
+                href={portfolioUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all hover:scale-105"
+                style={{
+                  background: isDark
+                    ? "rgba(255,255,255,0.08)"
+                    : "rgba(0,0,0,0.05)",
+                  color: "var(--text)",
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)"}`,
+                }}
+              >
+                <Sparkles className="w-4 h-4" style={{ color: "var(--brand-1)" }} />
+                {t("View My Portfolio")}
+                <ArrowRight className="w-4 h-4" />
+              </a>
+            </div>
           )}
 
           {/* Rating Widget */}
@@ -918,6 +999,13 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
               ))}
             </div>
           </section>
+        )}
+
+        {/* Footer with Powered By (when logo is shown at top) */}
+        {logoUrl && poweredBy && (
+          <div className="flex justify-center pt-8 pb-4">
+            {poweredBy}
+          </div>
         )}
       </div>
 

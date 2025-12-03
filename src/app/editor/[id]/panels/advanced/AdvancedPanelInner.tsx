@@ -8,7 +8,7 @@ import {
   Mail, Send, Zap, ListChecks, Layers, Monitor,
   MoreHorizontal, Coins, ChevronRight, MessageCircle,
   Image as ImageIcon, Upload, Phone, MapPin,
-  Share2, Globe, Clock, Type, Star
+  Share2, Globe, Clock, Type, Star, Link2, Camera, Sparkles
 } from "lucide-react";
 
 import { useAdvancedState } from "./useAdvancedState";
@@ -328,11 +328,31 @@ export default function AdvancedPanelInner() {
 
       if (!uploadRes.ok) throw new Error("Upload failed");
       const data = await uploadRes.json();
+      const imageUrl = data.secure_url || data.url;
 
-      handleUpdateNode(targetId, {
-        imageUrl: data.secure_url || data.url,
-        imagePublicId: data.public_id
-      });
+      // Handle special upload targets (meta fields)
+      if (targetId === "__logo__") {
+        updateCalc((draft) => {
+          if (!draft.meta) draft.meta = {};
+          (draft.meta as any).logoUrl = imageUrl;
+        });
+      } else if (targetId === "__hero__") {
+        updateCalc((draft) => {
+          if (!draft.meta) draft.meta = {};
+          (draft.meta as any).heroImageUrl = imageUrl;
+        });
+      } else if (targetId === "__background__") {
+        updateCalc((draft) => {
+          if (!draft.meta) draft.meta = {};
+          (draft.meta as any).backgroundImageUrl = imageUrl;
+        });
+      } else {
+        // Regular node image (no longer used, but kept for compatibility)
+        handleUpdateNode(targetId, {
+          imageUrl: imageUrl,
+          imagePublicId: data.public_id
+        });
+      }
 
     } catch (err) {
       console.error(err);
@@ -444,13 +464,6 @@ export default function AdvancedPanelInner() {
           borderColor: shouldShowColor ? (isGradient ? "transparent" : accent) : undefined,
         } as React.CSSProperties}
       >
-        {/* Image */}
-        {node.imageUrl && (
-          <div className="w-full h-32 mb-3 rounded-lg overflow-hidden bg-[var(--surface)] relative group">
-            <img src={node.imageUrl} alt={node.label || ""} className="w-full h-full object-cover" />
-          </div>
-        )}
-
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex items-center gap-2 overflow-hidden">
@@ -909,6 +922,116 @@ export default function AdvancedPanelInner() {
                         />
                       </div>
                     </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-[var(--muted)]">{t("Portfolio Link")}</label>
+                      <div className="relative">
+                        <Link2 className="absolute left-3 top-3 text-[var(--muted)]" size={16} />
+                        <input
+                          type="text"
+                          value={(calc?.meta as any)?.portfolioUrl || ""}
+                          onChange={(e) => updateCalc((draft) => {
+                            if (!draft.meta) draft.meta = {};
+                            (draft.meta as any).portfolioUrl = e.target.value;
+                          })}
+                          className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm focus:border-cyan-500 outline-none pl-10 text-[var(--text)]"
+                          placeholder="https://myportfolio.com"
+                        />
+                      </div>
+                      <p className="text-[10px] text-[var(--muted)]">{t("Link to your portfolio or work samples")}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* BRANDING & MEDIA CARD */}
+                <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-5 lg:col-span-2">
+                  <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-cyan-500" /> {t("Branding & Media")}
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Logo Upload */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-[var(--muted)]">{t("Logo")}</label>
+                      {(calc?.meta as any)?.logoUrl ? (
+                        <div className="relative group rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--surface)] h-24 flex items-center justify-center">
+                          <img src={(calc?.meta as any)?.logoUrl} alt="Logo" className="max-h-20 max-w-full object-contain" />
+                          <button
+                            onClick={() => updateCalc((draft) => { if (draft.meta) (draft.meta as any).logoUrl = null; })}
+                            className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            pendingUploadNodeId.current = "__logo__";
+                            fileInputRef.current?.click();
+                          }}
+                          className="w-full h-24 border-2 border-dashed border-[var(--border)] rounded-xl flex flex-col items-center justify-center gap-1 hover:border-cyan-400 transition-colors text-[var(--muted)]"
+                        >
+                          <Upload className="w-5 h-5" />
+                          <span className="text-[10px]">{t("Upload Logo")}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Hero Image Upload */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-[var(--muted)]">{t("Hero Image")}</label>
+                      {(calc?.meta as any)?.heroImageUrl ? (
+                        <div className="relative group rounded-xl overflow-hidden border border-[var(--border)] h-24">
+                          <img src={(calc?.meta as any)?.heroImageUrl} alt="Hero" className="w-full h-full object-cover" />
+                          <button
+                            onClick={() => updateCalc((draft) => { if (draft.meta) (draft.meta as any).heroImageUrl = null; })}
+                            className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            pendingUploadNodeId.current = "__hero__";
+                            fileInputRef.current?.click();
+                          }}
+                          className="w-full h-24 border-2 border-dashed border-[var(--border)] rounded-xl flex flex-col items-center justify-center gap-1 hover:border-cyan-400 transition-colors text-[var(--muted)]"
+                        >
+                          <Sparkles className="w-5 h-5" />
+                          <span className="text-[10px]">{t("Upload Hero")}</span>
+                        </button>
+                      )}
+                      <p className="text-[10px] text-[var(--muted)]">{t("Displayed at the top of page")}</p>
+                    </div>
+
+                    {/* Background Image Upload */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-[var(--muted)]">{t("Background")}</label>
+                      {(calc?.meta as any)?.backgroundImageUrl ? (
+                        <div className="relative group rounded-xl overflow-hidden border border-[var(--border)] h-24">
+                          <img src={(calc?.meta as any)?.backgroundImageUrl} alt="Background" className="w-full h-full object-cover" />
+                          <button
+                            onClick={() => updateCalc((draft) => { if (draft.meta) (draft.meta as any).backgroundImageUrl = null; })}
+                            className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            pendingUploadNodeId.current = "__background__";
+                            fileInputRef.current?.click();
+                          }}
+                          className="w-full h-24 border-2 border-dashed border-[var(--border)] rounded-xl flex flex-col items-center justify-center gap-1 hover:border-cyan-400 transition-colors text-[var(--muted)]"
+                        >
+                          <ImageIcon className="w-5 h-5" />
+                          <span className="text-[10px]">{t("Upload Background")}</span>
+                        </button>
+                      )}
+                      <p className="text-[10px] text-[var(--muted)]">{t("Semi-transparent overlay applied")}</p>
+                    </div>
                   </div>
                 </div>
 
@@ -1128,39 +1251,6 @@ export default function AdvancedPanelInner() {
                     />
                   </div>
 
-                  {/* Image Upload */}
-                  <div className="space-y-1 pt-2">
-                    <label className="text-[10px] font-bold uppercase text-[var(--muted)]">{t("Image")}</label>
-                    {selectedNode.imageUrl ? (
-                      <div className="relative group rounded-lg overflow-hidden border border-[var(--border)]">
-                        <img src={selectedNode.imageUrl} alt="" className="w-full h-32 object-cover" />
-                        <button
-                          onClick={() => handleUpdateNode(selectedId, { imageUrl: null, imagePublicId: null })}
-                          className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-md transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          pendingUploadNodeId.current = selectedId;
-                          fileInputRef.current?.click();
-                        }}
-                        disabled={!!uploadingId}
-                        className="w-full h-24 border-2 border-dashed border-[var(--border)] rounded-lg flex flex-col items-center justify-center gap-2 text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {uploadingId === selectedId ? (
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[var(--accent)]" />
-                        ) : (
-                          <>
-                            <ImageIcon className="w-6 h-6" />
-                            <span className="text-xs font-medium">{t("Upload Image")}</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
                 </section>
 
                 {/* Styling */}
