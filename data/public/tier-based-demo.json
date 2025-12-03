@@ -1,0 +1,89 @@
+{
+  "i18n": {
+    "locale": "en",
+    "currency": "EUR",
+    "decimals": 0
+  },
+  "meta": {
+    "id": "tier-based-demo",
+    "name": "Wedding Photography Packages",
+    "slug": "tier-based-demo",
+    "editorMode": "advanced",
+    "publicTitle": "Wedding Photographer",
+    "publicDescription": "Wedding Photographer pricing",
+    "showPoweredBy": true,
+    "showSummary": true,
+    "showInquiry": true,
+    "columnsDesktop": 3,
+    "enableYearly": false,
+    "advancedNodes": [
+      {
+        "id": "tier_basic",
+        "kind": "tier",
+        "label": "Basic Wedding",
+        "description": "Good for weddings up to 100 people",
+        "price": 49,
+        "emphasis": "normal",
+        "features": [
+          { "id": "f1", "label": "No Video", "highlighted": false },
+          { "id": "f2", "label": "Up to 300 photos", "highlighted": true }
+        ],
+        "accentColor": "#3b82f6"
+      },
+      {
+        "id": "tier_pro",
+        "kind": "tier",
+        "label": "Big Wedding",
+        "description": "Good for larger weddings up to 300 people",
+        "price": 99,
+        "emphasis": "featured",
+        "badgeText": "MOST POPULAR",
+        "features": [
+          { "id": "f3", "label": "Full HD Video", "highlighted": true },
+          { "id": "f4", "label": "Up to 800 photos", "highlighted": true },
+          { "id": "f5", "label": "Photo album included", "highlighted": false }
+        ],
+        "accentColor": "#8b5cf6"
+      },
+      {
+        "id": "tier_premium",
+        "kind": "tier",
+        "label": "Premium Wedding",
+        "description": "Good for weddings with huge amount of guests up to 1000 people",
+        "price": 299,
+        "emphasis": "normal",
+        "features": [
+          { "id": "f6", "label": "4K Video + Drone footage", "highlighted": true },
+          { "id": "f7", "label": "Unlimited photos", "highlighted": true },
+          { "id": "f8", "label": "Premium photo album", "highlighted": true },
+          { "id": "f9", "label": "2 photographers", "highlighted": false }
+        ],
+        "accentColor": "#f59e0b"
+      },
+      {
+        "id": "addon_1",
+        "kind": "addon",
+        "label": "Additional Photographer",
+        "description": "If you want one additional photographer over the amount your package includes",
+        "price": 50,
+        "accentColor": "#22c55e"
+      },
+      {
+        "id": "slider_1",
+        "kind": "slider",
+        "label": "New slider",
+        "description": "",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "pricePerStep": 0
+      }
+    ]
+  },
+  "items": [],
+  "addons": [],
+  "blocks": [],
+  "fields": [],
+  "packages": []
+}
+

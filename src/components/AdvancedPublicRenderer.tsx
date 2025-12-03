@@ -1,10 +1,145 @@
 // src/components/AdvancedPublicRenderer.tsx
+// Renamed from "Advanced" to "Tier Based Editor" for clarity
 "use client";
 
 import React, { useMemo, useState, useEffect, type CSSProperties } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ArrowRight, Check, Star } from "lucide-react";
 import type { CalcJson } from "@/hooks/useEditorStore";
 import { t } from "@/i18n";
+import { useTheme } from "@/hooks/useTheme";
+
+/* -------------------------------------------------------------------------- */
+/* Rating Widget for Tier-Based Pages                                         */
+/* -------------------------------------------------------------------------- */
+function cn(...classes: (string | undefined | null | false)[]) {
+  return classes.filter(Boolean).join(" ");
+}
+
+function RatingWidget({
+  pageId,
+  initialAvg,
+  initialCount,
+  initialUserScore,
+  allowRating,
+  isDark
+}: {
+  pageId: string;
+  initialAvg: number;
+  initialCount: number;
+  initialUserScore: number;
+  allowRating: boolean;
+  isDark: boolean;
+}) {
+  const [avg, setAvg] = useState(initialAvg);
+  const [count, setCount] = useState(initialCount);
+  const [userScore, setUserScore] = useState(initialUserScore);
+  const [hoverScore, setHoverScore] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!allowRating) return;
+    fetch(`/api/rating/status?pageId=${pageId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.avg !== undefined) {
+          setAvg(data.avg);
+          setCount(data.count);
+          setUserScore(data.userScore);
+        }
+      })
+      .catch(console.error);
+  }, [pageId, allowRating]);
+
+  if (!allowRating) return null;
+
+  const handleRate = async (score: number) => {
+    if (loading) return;
+
+    const prevUserScore = userScore;
+    const prevAvg = avg;
+    const prevCount = count;
+
+    setUserScore(score);
+    let newTotal = prevAvg * prevCount;
+    let newCount = prevCount;
+
+    if (prevUserScore > 0) {
+      newTotal -= prevUserScore;
+    } else {
+      newCount += 1;
+    }
+    newTotal += score;
+    const newAvg = newCount > 0 ? newTotal / newCount : 0;
+
+    setAvg(newAvg);
+    setCount(newCount);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/rating", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId, score }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setAvg(data.avg);
+        setCount(data.count);
+        setUserScore(data.userScore);
+      } else {
+        setUserScore(prevUserScore);
+        setAvg(prevAvg);
+        setCount(prevCount);
+      }
+    } catch {
+      setUserScore(prevUserScore);
+      setAvg(prevAvg);
+      setCount(prevCount);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className="flex items-center gap-0.5 px-3 py-1.5 rounded-full border transition-colors"
+        style={{
+          background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)",
+          borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
+        }}
+      >
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => handleRate(star)}
+            onMouseEnter={() => setHoverScore(star)}
+            onMouseLeave={() => setHoverScore(0)}
+            className="p-0.5 focus:outline-none transition-transform hover:scale-110"
+            title={`Rate ${star} stars`}
+          >
+            <Star
+              className={cn(
+                "w-4 h-4 transition-colors",
+                (hoverScore || userScore) >= star
+                  ? "fill-yellow-400 text-yellow-400"
+                  : isDark ? "text-white/30 fill-transparent" : "text-slate-300 fill-transparent"
+              )}
+            />
+          </button>
+        ))}
+      </div>
+      <div className="text-xs font-medium flex flex-col leading-tight" style={{ color: "var(--muted)" }}>
+        <span className="flex items-center gap-1">
+          <span style={{ color: "var(--text)" }} className="font-bold">{avg.toFixed(1)}</span>
+          <span className="opacity-60">({count})</span>
+        </span>
+        {userScore > 0 && <span className="text-[10px] opacity-70">Your rating: {userScore}</span>}
+      </div>
+    </div>
+  );
+}
 
 import {
   BRAND_GRADIENT,
@@ -20,7 +155,7 @@ import {
 import { TierCard, getTierEffectivePrice } from "./scrolly/blocks/TierCard";
 import { AddonCard, getAddonEffectivePrice } from "./scrolly/blocks/AddonCard";
 import { SliderBlock } from "./scrolly/blocks/SliderBlock";
-import { Summary } from "./scrolly/blocks/Summary";
+import ShinyButton from "@/components/marketing/ShinyButton";
 
 type CurrencyPosition = "prefix" | "suffix";
 
@@ -82,9 +217,12 @@ function useCurrencyFormat(calc?: CalcJson) {
 /* -------------------------------------------------------------------------- */
 
 export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
+  // Get site-wide theme instead of page theme
+  // Use mounted to prevent hydration mismatch (server renders light, client might have dark)
+  const { theme: siteTheme, mounted } = useTheme();
+
   const metaRaw = (calc.meta || {}) as AdvancedPublicMeta & {
     advancedNodes?: AdvancedNode[];
-    // legacy keys:
     advancedLayoutVariant?: any;
     advancedColumnsDesktop?: number;
     advancedShowSummary?: boolean;
@@ -119,16 +257,6 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
     [nodes]
   );
 
-  const advancedLayoutVariant: AdvancedLayoutVariant =
-    metaRaw.layoutVariant === "stacked" ||
-      metaRaw.layoutVariant === "comparison" ||
-      metaRaw.layoutVariant === "wizard" ||
-      metaRaw.advancedLayoutVariant === "stacked" ||
-      metaRaw.advancedLayoutVariant === "comparison" ||
-      metaRaw.advancedLayoutVariant === "wizard"
-      ? (metaRaw.layoutVariant ?? metaRaw.advancedLayoutVariant)
-      : "pricingGrid";
-
   const advancedColumnsDesktop: number =
     typeof metaRaw.columnsDesktop === "number"
       ? metaRaw.columnsDesktop
@@ -141,12 +269,6 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
     (metaRaw.advancedShowSummary as boolean | undefined) ??
     true;
 
-  const advancedSummaryPosition: AdvancedSummaryPosition =
-    metaRaw.summaryPosition === "bottom" ||
-      metaRaw.advancedSummaryPosition === "bottom"
-      ? "bottom"
-      : "right";
-
   const advancedShowInquiry: boolean =
     (metaRaw.showInquiry as boolean | undefined) ??
     (metaRaw.advancedShowInquiry as boolean | undefined) ??
@@ -158,6 +280,11 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
       : typeof metaRaw.advancedPublicTitle === "string"
         ? metaRaw.advancedPublicTitle.trim()
         : "";
+
+  const publicName =
+    typeof metaRaw.publicName === "string"
+      ? metaRaw.publicName.trim()
+      : "";
 
   const description =
     typeof metaRaw.publicDescription === "string"
@@ -175,17 +302,30 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
         ? metaRaw.advancedSupportNote.trim()
         : "";
 
+  // Use Page Theme from editor settings, NOT navbar theme
+  // Fall back to navbar theme only if not set in editor
+  const editorPublicTheme = metaRaw.publicTheme || metaRaw.advancedPublicTheme;
   const publicTheme: AdvancedTheme =
-    metaRaw.publicTheme === "tierless"
-      ? "tierless"
-      : metaRaw.theme === "dark" || metaRaw.publicTheme === "dark"
-        ? "dark"
-        : metaRaw.publicTheme === "editorial"
-          ? "editorial"
-          : "light";
+    editorPublicTheme === "dark" ? "dark" :
+      editorPublicTheme === "tierless" ? "tierless" :
+        editorPublicTheme === "light" ? "light" :
+          // Fallback to navbar theme if not set
+          (mounted && siteTheme === "dark") ? "dark" : "light";
+
+  // isDark is derived from publicTheme for backwards compatibility
+  const isDark = publicTheme === "dark" || publicTheme === "tierless";
+
+  // Font customization
+  const publicFont = (metaRaw as any).publicFont || "sans";
+  const fontClass = publicFont === "serif" ? "font-serif" : publicFont === "mono" ? "font-mono" : "font-sans";
 
   const showPoweredBy: boolean =
     metaRaw.showPoweredBy ?? true;
+
+  const allowRating: boolean = metaRaw.allowRating ?? false;
+  const pageId: string = metaRaw.slug || calc?.id || "unknown";
+  const avgRating: number = metaRaw.avgRating || 0;
+  const ratingsCount: number = metaRaw.ratingsCount || 0;
 
   const enableYearly: boolean = metaRaw.enableYearly ?? false;
 
@@ -329,37 +469,35 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
   if (!nodes.length) {
     return (
       <div className="text-sm text-[var(--muted)]">
-        {t("This advanced page does not have any blocks yet.")}
+        {t("This tier-based page does not have any blocks yet.")}
       </div>
     );
   }
 
-  const poweredBy = showPoweredBy ? (
-    <div className="flex justify-start">
-      <a
-        href="https://tierless.net"
-        target="_blank"
-        rel="noreferrer"
-        className="relative inline-flex items-center gap-1.5 rounded-full bg-[var(--bg)] px-3 py-1.5 text-[11px] sm:text-xs text-[var(--muted)] hover:text-[var(--text)] transition"
-      >
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-full"
-          style={{
-            padding: 1,
-            background: BRAND_GRADIENT,
-            WebkitMask:
-              "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-            WebkitMaskComposite: "xor" as any,
-            maskComposite: "exclude",
-          }}
-        />
-        <span className="relative z-[1] font-medium">
-          {t("Powered by Tierless")}
-        </span>
-      </a>
-    </div>
-  ) : null;
+  // Theme variables based on site-wide theme
+  const themeVars: CSSProperties = isDark
+    ? {
+      ["--bg" as any]: "#0a0a0f",
+      ["--card" as any]: "rgba(17, 17, 27, 0.95)",
+      ["--border" as any]: "rgba(255, 255, 255, 0.08)",
+      ["--text" as any]: "#f1f5f9",
+      ["--muted" as any]: "#94a3b8",
+      ["--surface" as any]: "rgba(255, 255, 255, 0.04)",
+      ["--track" as any]: "rgba(255, 255, 255, 0.1)",
+      ["--brand-1" as any]: "#6366f1",
+      ["--brand-2" as any]: "#22d3ee",
+    }
+    : {
+      ["--bg" as any]: "#f8fafc",
+      ["--card" as any]: "#ffffff",
+      ["--border" as any]: "rgba(0, 0, 0, 0.06)",
+      ["--text" as any]: "#0f172a",
+      ["--muted" as any]: "#64748b",
+      ["--surface" as any]: "rgba(0, 0, 0, 0.02)",
+      ["--track" as any]: "rgba(0, 0, 0, 0.08)",
+      ["--brand-1" as any]: "#4F46E5",
+      ["--brand-2" as any]: "#06b6d4",
+    };
 
   const tierGridCols =
     advancedColumnsDesktop === 1
@@ -370,311 +508,357 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
           ? "lg:grid-cols-4"
           : "lg:grid-cols-3";
 
-  const tiersSection =
-    tierNodes.length > 0 ? (
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base sm:text-lg font-semibold text-[var(--text)]">
-            {t("Choose a package")}
-          </h2>
-
-          {enableYearly && (
-            <div className="inline-flex rounded-full bg-[var(--bg)] border border-[var(--border)] p-0.5 text-[11px] sm:text-xs">
-              {(["month", "year"] as BillingPeriod[]).map((mode) => {
-                const active = billingMode === mode;
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setBillingMode(mode)}
-                    className="relative cursor-pointer inline-flex items-center justify-center px-3 py-1 rounded-full transition text-[var(--muted)] hover:text-[var(--text)]"
-                  >
-                    {active && (
-                      <span
-                        aria-hidden
-                        className="pointer-events-none absolute inset-0 rounded-full"
-                        style={{
-                          padding: 1,
-                          background: BRAND_GRADIENT,
-                          WebkitMask:
-                            "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                          WebkitMaskComposite: "xor" as any,
-                          maskComposite: "exclude",
-                        }}
-                      />
-                    )}
-                    <span className="relative z-[1] font-medium">
-                      {mode === "month" ? t("Monthly") : t("Yearly")}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div
-          className={`grid gap-4 sm:grid-cols-2 ${tierGridCols} items-stretch`}
-        >
-          {tierNodes.map((tier) => {
-            const isActive = tier.id === selectedTierId;
-            return (
-              <TierCard
-                key={tier.id}
-                node={tier}
-                isActive={isActive}
-                onSelect={() => setSelectedTierId(tier.id)}
-                formatPrice={formatPrice}
-                billingMode={billingMode}
-                enableYearly={enableYearly}
-                yearlyDiscountPercent={yearlyDiscountPercent}
-                theme={publicTheme}
-              />
-            );
-          })}
-        </div>
-      </section>
-    ) : null;
-
-  const addonsSection =
-    addonNodes.length > 0 ? (
-      <section className="space-y-3">
-        <h3 className="text-sm sm:text-base font-semibold text-[var(--text)]">
-          {t("Extras")}
-        </h3>
-        <div className="grid gap-3 md:grid-cols-2">
-          {addonNodes.map((addon) => {
-            const checked = selectedAddonIds.has(addon.id);
-            return (
-              <AddonCard
-                key={addon.id}
-                node={addon}
-                checked={checked}
-                onToggle={() => toggleAddon(addon.id)}
-                formatPrice={formatPrice}
-                billingMode={billingMode}
-                enableYearly={enableYearly}
-                yearlyDiscountPercent={yearlyDiscountPercent}
-              />
-            );
-          })}
-        </div>
-      </section>
-    ) : null;
-
-  const itemsSection =
-    itemNodes.length > 0 ? (
-      <section className="space-y-3">
-        <h3 className="text-sm sm:text-base font-semibold text-[var(--text)]">
-          {t("Included items")}
-        </h3>
-        <ul className="space-y-1.5 text-xs sm:text-sm text-[var(--text)]">
-          {itemNodes.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-start gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2"
-            >
-              <span className="mt-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--surface)]">
-                {item.iconEmoji ? (
-                  <span className="text-[11px] leading-none">
-                    {item.iconEmoji}
-                  </span>
-                ) : (
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--muted)]" />
-                )}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="font-medium text-[11px] sm:text-xs text-[var(--text)]">
-                  {item.label || t("Untitled item")}
-                </div>
-                {item.description && (
-                  <p className="text-[11px] text-[var(--muted)]">
-                    {item.description}
-                  </p>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
-    ) : null;
-
-  const slidersSection =
-    sliderNodes.length > 0 ? (
-      <section className="space-y-3">
-        <h3 className="text-sm sm:text-base font-semibold text-[var(--text)]">
-          {t("Sliders")}
-        </h3>
-        <div className="space-y-3">
-          {sliderNodes.map((s) => (
-            <SliderBlock
-              key={s.id}
-              node={s}
-              value={
-                sliderValues[s.id] ??
-                (typeof s.min === "number" ? s.min : 0)
-              }
-              onChange={(v) =>
-                setSliderValues((prev) => ({ ...prev, [s.id]: v }))
-              }
-              formatPrice={formatPrice}
-              sliderColorMode={sliderColorMode}
-              sliderSolidColor={sliderSolidColor}
-            />
-          ))}
-        </div>
-      </section>
-    ) : null;
-
-  const summarySection =
-    advancedShowSummary && hasAnyBlocks ? (
-      <Summary
-        total={total}
-        hasAnyBlocks={hasAnyBlocks}
-        formatPrice={formatPrice}
-        showInquiry={advancedShowInquiry}
-        theme={publicTheme}
-      />
-    ) : null;
-
-  const mainContent =
-    advancedLayoutVariant === "pricingGrid" &&
-      advancedSummaryPosition === "right" ? (
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-start">
-        <div className="space-y-5">
-          {tiersSection}
-          {addonsSection}
-          {itemsSection}
-          {slidersSection}
-        </div>
-        {summarySection}
-      </div>
-    ) : (
-      <div className="space-y-5">
-        {tiersSection}
-        {addonsSection}
-        {itemsSection}
-        {slidersSection}
-        {summarySection}
-      </div>
-    );
-
-  const themeVars: CSSProperties =
-    publicTheme === "tierless"
-      ? {
-        ["--bg" as any]: "#020410", // Deeper, richer black/blue
-        ["--card" as any]: "rgba(13, 16, 35, 0.7)", // More transparent for glass effect
-        ["--border" as any]: "rgba(99, 102, 241, 0.2)", // Subtler border
-        ["--text" as any]: "#e0e7ff",
-        ["--muted" as any]: "#94a3b8",
-        ["--surface" as any]: "rgba(255, 255, 255, 0.03)",
-        ["--track" as any]: "rgba(30, 41, 59, 0.5)",
-        ["--brand-1" as any]: "#6366f1", // Indigo 500
-        ["--brand-2" as any]: "#06b6d4", // Cyan 500
-        ["--glass" as any]: "rgba(13, 16, 35, 0.6)",
-        ["--glass-hover" as any]: "rgba(13, 16, 35, 0.8)",
-      }
-      : publicTheme === "dark"
-        ? {
-          ["--bg" as any]: "#05060f",
-          ["--card" as any]: "rgba(10,14,28,0.96)",
-          ["--border" as any]: "rgba(148,163,184,0.28)",
-          ["--text" as any]: "#f8fafc",
-          ["--muted" as any]: "#a5b4fc",
-          ["--surface" as any]: "rgba(148,163,184,0.15)",
-          ["--track" as any]: "rgba(148,163,184,0.3)",
-          ["--brand-1" as any]: "#818cf8",
-          ["--brand-2" as any]: "#22D3EE",
-        }
-        : publicTheme === "editorial"
-          ? {
-            ["--bg" as any]: "#0a0a0a",
-            ["--card" as any]: "rgba(28, 25, 23, 0.6)", // stone-900/60
-            ["--border" as any]: "rgba(231, 229, 228, 0.1)", // stone-200/10
-            ["--text" as any]: "#e7e5e4", // stone-200
-            ["--muted" as any]: "#a8a29e", // stone-400
-            ["--surface" as any]: "rgba(255, 255, 255, 0.03)",
-            ["--track" as any]: "rgba(255, 255, 255, 0.1)",
-            ["--brand-1" as any]: "#fed7aa", // orange-200
-            ["--brand-2" as any]: "#fdba74", // orange-300
-          }
-          : {
-            ["--bg" as any]: "#f8fafc",
-            ["--card" as any]: "#ffffff",
-            ["--border" as any]: "#e2e8f0",
-            ["--text" as any]: "#0f172a",
-            ["--muted" as any]: "#64748b",
-            ["--surface" as any]: "rgba(15,23,42,0.05)",
-            ["--track" as any]: "rgba(15,23,42,0.12)",
-            ["--brand-1" as any]: "#4F46E5",
-            ["--brand-2" as any]: "#22D3EE",
-          };
-
-  const wrapperStyle: CSSProperties =
-    publicTheme === "tierless"
-      ? {
-        ...themeVars,
-        backgroundImage:
-          "radial-gradient(circle at 15% 0%, rgba(99, 102, 241, 0.15), transparent 40%), radial-gradient(circle at 85% 0%, rgba(6, 182, 212, 0.15), transparent 40%)",
-        backgroundColor: "var(--bg)",
-      }
-      : publicTheme === "editorial"
-        ? {
-          ...themeVars,
-          backgroundColor: "var(--bg)",
-          fontFamily: "var(--font-sans)", // We'll use serif for headers specifically
-        }
-        : themeVars;
+  const poweredBy = showPoweredBy ? (
+    <a
+      href="https://tierless.net"
+      target="_blank"
+      rel="noreferrer"
+      className="group/badge relative inline-flex items-center justify-center p-[1px] overflow-hidden rounded-full shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
+    >
+      <span className="absolute inset-[-1000%] animate-[spin_4s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#00000000_50%,#4F46E5_100%)] opacity-80" />
+      <span
+        className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest backdrop-blur-xl"
+        style={{
+          background: isDark ? "rgba(11,12,21,0.9)" : "rgba(255,255,255,0.95)",
+          color: isDark ? "white" : "inherit",
+        }}
+      >
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+          {t("Powered by Tierless")}
+        </span>
+      </span>
+    </a>
+  ) : null;
 
   return (
     <div
-      className="space-y-5 sm:space-y-6"
+      className={`min-h-screen transition-colors duration-300 ${fontClass}`}
       data-public-theme={publicTheme}
-      style={wrapperStyle}
+      style={{
+        ...themeVars,
+        background: isDark
+          ? "linear-gradient(180deg, #0a0a0f 0%, #0f0f1a 100%)"
+          : "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
+      }}
     >
-      {poweredBy}
+      {/* Subtle gradient overlay for dark mode */}
+      {isDark && (
+        <div
+          className="fixed inset-0 pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%)",
+          }}
+        />
+      )}
 
-      {(title || description) && (
-        <header className={`space-y-4 ${publicTheme === "editorial" ? "text-center mb-12 relative z-10" : "space-y-1"}`}>
-          {publicTheme === "editorial" && (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] backdrop-blur-md mb-6">
-              <Sparkles size={12} className="text-[var(--brand-1)]" />
-              <span className="text-xs tracking-widest uppercase text-[var(--muted)] font-medium">Pricing Calculator 2025</span>
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-40">
+
+        {/* Header */}
+        <header className="text-center mb-10 sm:mb-14">
+          {poweredBy && (
+            <div className="flex justify-center mb-6">{poweredBy}</div>
+          )}
+
+          {publicName && (
+            <div
+              className="text-[10px] sm:text-xs uppercase tracking-[0.3em] mb-3 font-medium"
+              style={{ color: "var(--muted)" }}
+            >
+              {publicName}
             </div>
           )}
 
           {title && (
-            <h1 className={`font-semibold text-[var(--text)] ${publicTheme === "editorial"
-              ? "text-4xl md:text-6xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-stone-100 to-stone-400 tracking-tight mb-6"
-              : "text-xl"
-              }`}>
+            <h1
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4"
+              style={{ color: "var(--text)" }}
+            >
               {title}
             </h1>
           )}
+
           {description && (
-            <p className={`text-[var(--muted)] ${publicTheme === "editorial"
-              ? "text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed"
-              : "text-sm"
-              }`}>
+            <p
+              className="text-base sm:text-lg max-w-2xl mx-auto leading-relaxed"
+              style={{ color: "var(--muted)" }}
+            >
               {description}
             </p>
           )}
+
           {supportNote && (
-            <p className="text-[11px] sm:text-xs text-[var(--muted)] mt-1">
+            <p
+              className="text-xs sm:text-sm mt-4 max-w-xl mx-auto"
+              style={{ color: "var(--muted)", opacity: 0.7 }}
+            >
               {supportNote}
             </p>
           )}
-        </header>
-      )}
 
-      {publicTheme === "editorial" && (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-orange-900/10 blur-[120px] rounded-full mix-blend-screen" />
-          <div className="absolute top-[20%] right-[0%] w-[40%] h-[60%] bg-blue-900/10 blur-[120px] rounded-full mix-blend-screen" />
+          {/* Rating Widget */}
+          {allowRating && (
+            <div className="flex justify-center mt-6">
+              <RatingWidget
+                pageId={pageId}
+                initialAvg={avgRating}
+                initialCount={ratingsCount}
+                initialUserScore={0}
+                allowRating={allowRating}
+                isDark={isDark}
+              />
+            </div>
+          )}
+        </header>
+
+        {/* Tiers Section - Full Width */}
+        {tierNodes.length > 0 && (
+          <section className="mb-10">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+              <h2
+                className="text-lg sm:text-xl font-semibold"
+                style={{ color: "var(--text)" }}
+              >
+                {t("Choose a package")}
+              </h2>
+
+              {enableYearly && (
+                <div
+                  className="inline-flex rounded-full p-1 text-xs sm:text-sm"
+                  style={{
+                    background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)",
+                    border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
+                  }}
+                >
+                  {(["month", "year"] as BillingPeriod[]).map((mode) => {
+                    const active = billingMode === mode;
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setBillingMode(mode)}
+                        className="relative cursor-pointer px-4 py-2 rounded-full transition-all font-medium"
+                        style={{
+                          background: active
+                            ? (isDark ? "rgba(99, 102, 241, 0.2)" : "rgba(99, 102, 241, 0.1)")
+                            : "transparent",
+                          color: active ? "var(--brand-1)" : "var(--muted)",
+                          boxShadow: active ? `0 0 0 1px var(--brand-1)` : "none",
+                        }}
+                      >
+                        {mode === "month" ? t("Monthly") : t("Yearly")}
+                        {mode === "year" && yearlyDiscountPercent && (
+                          <span
+                            className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                            style={{
+                              background: "linear-gradient(135deg, #22c55e, #10b981)",
+                              color: "white",
+                            }}
+                          >
+                            -{yearlyDiscountPercent}%
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className={`grid gap-4 sm:gap-6 sm:grid-cols-2 ${tierGridCols}`}>
+              {tierNodes.map((tier) => {
+                const isActive = tier.id === selectedTierId;
+                return (
+                  <TierCard
+                    key={tier.id}
+                    node={tier}
+                    isActive={isActive}
+                    onSelect={() => setSelectedTierId(tier.id)}
+                    formatPrice={formatPrice}
+                    billingMode={billingMode}
+                    enableYearly={enableYearly}
+                    yearlyDiscountPercent={yearlyDiscountPercent}
+                    theme={publicTheme}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Addons Section */}
+        {addonNodes.length > 0 && (
+          <section className="mb-10">
+            <h3
+              className="text-base sm:text-lg font-semibold mb-4"
+              style={{ color: "var(--text)" }}
+            >
+              {t("Extras")}
+            </h3>
+            <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+              {addonNodes.map((addon) => {
+                const checked = selectedAddonIds.has(addon.id);
+                return (
+                  <AddonCard
+                    key={addon.id}
+                    node={addon}
+                    checked={checked}
+                    onToggle={() => toggleAddon(addon.id)}
+                    formatPrice={formatPrice}
+                    billingMode={billingMode}
+                    enableYearly={enableYearly}
+                    yearlyDiscountPercent={yearlyDiscountPercent}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Items Section */}
+        {itemNodes.length > 0 && (
+          <section className="mb-10">
+            <h3
+              className="text-base sm:text-lg font-semibold mb-4"
+              style={{ color: "var(--text)" }}
+            >
+              {t("Included items")}
+            </h3>
+            <div
+              className="rounded-2xl p-4 sm:p-6"
+              style={{
+                background: "var(--card)",
+                border: `1px solid var(--border)`,
+              }}
+            >
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {itemNodes.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-start gap-3"
+                  >
+                    <span
+                      className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full shrink-0"
+                      style={{ background: "var(--surface)" }}
+                    >
+                      {item.iconEmoji ? (
+                        <span className="text-xs leading-none">
+                          {item.iconEmoji}
+                        </span>
+                      ) : (
+                        <Check className="w-3 h-3" style={{ color: "var(--brand-1)" }} />
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className="font-medium text-sm"
+                        style={{ color: "var(--text)" }}
+                      >
+                        {item.label || t("Untitled item")}
+                      </div>
+                      {item.description && (
+                        <p
+                          className="text-xs mt-0.5"
+                          style={{ color: "var(--muted)" }}
+                        >
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
+
+        {/* Sliders Section */}
+        {sliderNodes.length > 0 && (
+          <section className="mb-10">
+            <h3
+              className="text-base sm:text-lg font-semibold mb-4"
+              style={{ color: "var(--text)" }}
+            >
+              {t("Sliders")}
+            </h3>
+            <div className="space-y-4">
+              {sliderNodes.map((s) => (
+                <SliderBlock
+                  key={s.id}
+                  node={s}
+                  value={
+                    sliderValues[s.id] ??
+                    (typeof s.min === "number" ? s.min : 0)
+                  }
+                  onChange={(v) =>
+                    setSliderValues((prev) => ({ ...prev, [s.id]: v }))
+                  }
+                  formatPrice={formatPrice}
+                  sliderColorMode={sliderColorMode}
+                  sliderSolidColor={sliderSolidColor}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+
+      {/* Fixed Bottom Summary Bar */}
+      {advancedShowSummary && hasAnyBlocks && (
+        <div
+          className="fixed bottom-0 left-0 right-0 z-50"
+          style={{
+            background: isDark
+              ? "rgba(10, 10, 15, 0.95)"
+              : "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(20px)",
+            borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
+            boxShadow: isDark
+              ? "0 -10px 40px rgba(0,0,0,0.5)"
+              : "0 -10px 40px rgba(0,0,0,0.08)",
+          }}
+        >
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+            <div className="flex items-center justify-between gap-4">
+              {/* Price Display */}
+              <div className="flex-1">
+                <div
+                  className="text-[10px] sm:text-xs uppercase tracking-wider font-medium mb-1"
+                  style={{ color: "var(--muted)" }}
+                >
+                  {t("Estimated total")}
+                </div>
+                <div
+                  className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight"
+                  style={{ color: "var(--text)" }}
+                >
+                  {formatPrice(total)}
+                </div>
+                <p
+                  className="text-[10px] sm:text-xs mt-0.5 hidden sm:block"
+                  style={{ color: "var(--muted)", opacity: 0.7 }}
+                >
+                  {t("This is a rough estimate based on selected packages and extras.")}
+                </p>
+              </div>
+
+              {/* Send Inquiry Button */}
+              {advancedShowInquiry && (
+                <div className="shrink-0">
+                  <ShinyButton
+                    className="px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold"
+                    rounded="rounded-xl"
+                  >
+                    <span className="flex items-center gap-2">
+                      {t("Send inquiry")}
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </ShinyButton>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
-
-      {mainContent}
     </div>
   );
 }

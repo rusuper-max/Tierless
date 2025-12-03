@@ -34,6 +34,16 @@ export function useTheme() {
     setMounted(true);
   }, []);
 
+  // Listen for theme toggle events from ThemeToggle component
+  useEffect(() => {
+    const handleThemeToggle = (e: CustomEvent<{ dark: boolean }>) => {
+      setTheme(e.detail.dark ? "dark" : "light");
+    };
+    
+    window.addEventListener("TL_THEME_TOGGLED" as any, handleThemeToggle);
+    return () => window.removeEventListener("TL_THEME_TOGGLED" as any, handleThemeToggle);
+  }, []);
+
   // keep in sync with system changes (optional but nice)
   useEffect(() => {
     const mql = window.matchMedia("(prefers-color-scheme: dark)");

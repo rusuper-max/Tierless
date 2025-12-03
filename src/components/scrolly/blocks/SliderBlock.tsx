@@ -46,12 +46,29 @@ export function SliderBlock({
             })
             : "";
 
-    const fillGradient =
-        sliderColorMode === "brand"
-            ? `linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))`
-            : sliderColorMode === "solid" && sliderSolidColor
-                ? `linear-gradient(90deg,${sliderSolidColor},${sliderSolidColor})`
-                : `linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-1,#4F46E5))`;
+    // Use node.accentColor if available, otherwise fall back to global slider colors
+    const accent = node.accentColor;
+    const isGradientAccent = typeof accent === "string" && accent.includes("gradient");
+
+    let fillGradient: string;
+    if (accent) {
+        // Node has its own accent color
+        if (isGradientAccent) {
+            // Use the gradient as-is
+            fillGradient = accent;
+        } else {
+            // Solid color - create a gradient from same color
+            fillGradient = `linear-gradient(90deg,${accent},${accent})`;
+        }
+    } else {
+        // Fall back to global slider colors
+        fillGradient =
+            sliderColorMode === "brand"
+                ? `linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))`
+                : sliderColorMode === "solid" && sliderSolidColor
+                    ? `linear-gradient(90deg,${sliderSolidColor},${sliderSolidColor})`
+                    : `linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-1,#4F46E5))`;
+    }
 
     const percent =
         max > min ? Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100)) : 0;
