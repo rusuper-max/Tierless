@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Trash2, X, Check, Layout, SlidersHorizontal,
   ToggleRight, Calculator, Palette, Settings2, ChevronDown,
-  User, Mail, Send, Zap, ListChecks, Layers, Monitor,
+  Mail, Send, Zap, ListChecks, Layers, Monitor,
   MoreHorizontal, Coins, ChevronRight, MessageCircle,
   Image as ImageIcon, Upload, Phone, MapPin,
   Share2, Globe, Clock, Type, Star
@@ -265,7 +265,6 @@ export default function AdvancedPanelInner() {
 
   // Local UI State
   const [showSettings, setShowSettings] = useState(false);
-  const [previewInquiry, setPreviewInquiry] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showColors, setShowColors] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
@@ -573,7 +572,7 @@ export default function AdvancedPanelInner() {
       {/* 1. TOP TOOLBAR */}
       <header className="shrink-0 h-14 border-b border-[var(--border)] bg-[var(--card)] flex items-center justify-between px-4 z-20 shadow-sm">
         {/* Left: Branding / Title */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-1">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white shadow-sm">
             <Layout className="w-4 h-4" />
           </div>
@@ -610,6 +609,9 @@ export default function AdvancedPanelInner() {
             <Settings2 className="w-3.5 h-3.5" /> {t("Settings")}
           </Button>
         </div>
+
+        {/* Right: Empty spacer for balance */}
+        <div className="flex-1" />
       </header>
 
       {/* Full-Screen Settings Panel */}
@@ -1341,9 +1343,9 @@ export default function AdvancedPanelInner() {
       </div>
 
       {/* 3. BOTTOM FOOTER */}
-      <footer className="shrink-0 h-16 border-t border-[var(--border)] bg-[var(--card)] flex items-center justify-between px-6 z-20">
+      <footer className="shrink-0 h-16 border-t border-[var(--border)] bg-[var(--card)] flex items-center justify-center px-6 z-20">
         <div className="flex items-center gap-4">
-          <div>
+          <div className="text-center">
             <div className="text-[10px] uppercase font-bold text-[var(--muted)]">{t("Estimated Total")}</div>
             <div className="text-xl font-mono font-bold text-[var(--text)]">
               {estimatedTotal}{currency}
@@ -1353,10 +1355,6 @@ export default function AdvancedPanelInner() {
             {showBreakdown ? <ChevronDown className="w-4 h-4" /> : <MoreHorizontal className="w-4 h-4" />}
           </Button>
         </div>
-
-        <Button variant="solid" onClick={() => setPreviewInquiry(true)} className="gap-2 shadow-lg shadow-[var(--accent)]/20">
-          {t("Preview Inquiry")} <Send className="w-4 h-4" />
-        </Button>
       </footer>
 
       {/* Breakdown Popover */}
@@ -1394,48 +1392,6 @@ export default function AdvancedPanelInner() {
         )}
       </AnimatePresence>
 
-      {/* Preview Modal */}
-      <AnimatePresence>
-        {previewInquiry && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setPreviewInquiry(false)}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[var(--card)] w-full max-w-md rounded-2xl shadow-2xl border border-[var(--border)] overflow-hidden"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="p-5 border-b border-[var(--border)] flex justify-between items-center">
-                <h3 className="font-bold text-[var(--text)]">{t("Inquiry Preview")}</h3>
-                <Button size="icon" variant="ghost" onClick={() => setPreviewInquiry(false)}><X className="w-5 h-5" /></Button>
-              </div>
-              <div className="p-6 space-y-4">
-                <div className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex justify-between items-center">
-                  <span className="text-xs font-bold uppercase text-[var(--muted)]">{t("Total Estimate")}</span>
-                  <span className="text-2xl font-mono font-bold text-[var(--text)]">{estimatedTotal}{currency}</span>
-                </div>
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-[var(--muted)]">{t("Name")}</label>
-                    <div className="flex items-center gap-2 p-3 rounded-xl border border-[var(--border)] bg-[var(--bg)]">
-                      <User className="w-4 h-4 text-[var(--muted)]" />
-                      <input className="bg-transparent outline-none flex-1 text-sm text-[var(--text)]" placeholder="John Doe" />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-[var(--muted)]">{t("Email")}</label>
-                    <div className="flex items-center gap-2 p-3 rounded-xl border border-[var(--border)] bg-[var(--bg)]">
-                      <Mail className="w-4 h-4 text-[var(--muted)]" />
-                      <input className="bg-transparent outline-none flex-1 text-sm text-[var(--text)]" placeholder="john@example.com" />
-                    </div>
-                  </div>
-                </div>
-                <Button variant="solid" className="w-full mt-2">{t("Send Inquiry")}</Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Hidden file input for image uploads */}
       <input

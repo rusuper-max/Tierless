@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect, type CSSProperties } from "react";
-import { Sparkles, ArrowRight, Check, Star } from "lucide-react";
+import { Sparkles, ArrowRight, Check, Star, MessageCircle, Send, Mail } from "lucide-react";
 import type { CalcJson } from "@/hooks/useEditorStore";
 import { t } from "@/i18n";
 import { useTheme } from "@/hooks/useTheme";
@@ -304,7 +304,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
 
   // Use Page Theme from editor settings, NOT navbar theme
   // Fall back to navbar theme only if not set in editor
-  const editorPublicTheme = metaRaw.publicTheme || metaRaw.advancedPublicTheme;
+  const editorPublicTheme = metaRaw.publicTheme as string | undefined;
   const publicTheme: AdvancedTheme =
     editorPublicTheme === "dark" ? "dark" :
       editorPublicTheme === "tierless" ? "tierless" :
@@ -326,6 +326,29 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
   const pageId: string = metaRaw.slug || calc?.id || "unknown";
   const avgRating: number = metaRaw.avgRating || 0;
   const ratingsCount: number = metaRaw.ratingsCount || 0;
+
+  // Contact info for inquiry (same logic as PublicRenderer)
+  const rawContact = ((metaRaw as any)?.contact || (metaRaw as any)?.contactOverride || {}) as any;
+  const contact = { ...rawContact };
+  if (rawContact.value && rawContact.type) {
+    if (rawContact.type === 'whatsapp') contact.whatsapp = rawContact.value;
+    if (rawContact.type === 'telegram') contact.telegram = rawContact.value;
+    if (rawContact.type === 'email') contact.email = rawContact.value;
+  }
+  const contactEmail = (contact.email || "").trim();
+  const contactWhatsapp = (contact.whatsapp || "").replace(/[^\d]/g, "");
+  const contactTelegram = (contact.telegram || "").replace(/^@/, "");
+
+  const resolvedContactType = (() => {
+    const normalized = (contact.type || "").toLowerCase();
+    if (normalized === "whatsapp" && contactWhatsapp) return "whatsapp";
+    if (normalized === "telegram" && contactTelegram) return "telegram";
+    if (normalized === "email" && contactEmail) return "email";
+    if (contactWhatsapp) return "whatsapp";
+    if (contactTelegram) return "telegram";
+    if (contactEmail) return "email";
+    return "";
+  })();
 
   const enableYearly: boolean = metaRaw.enableYearly ?? false;
 
@@ -465,6 +488,102 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
     enableYearly,
     yearlyDiscountPercent,
   ]);
+
+  // Build inquiry message
+  const buildInquiryMessage = () => {
+    const lines: string[] = [];
+    lines.push(`📋 *${t("Price Inquiry")}*`);
+    if (title) lines.push(`📄 ${title}`);
+    lines.push("");
+
+    if (selectedTier) {
+      lines.push(`🎯 *${t("Selected Package")}:* ${selectedTier.label || "Package"}`);
+      const { price } = getTierEffectivePrice(selectedTier, billingMode, enableYearly, yearlyDiscountPercent);
+      if (typeof price === "number") {
+        lines.push(`   ${formatPrice(price)}`);
+      }
+    }
+
+    const selectedAddons = addonNodes.filter(a => selectedAddonIds.has(a.id));
+    if (selectedAddons.length > 0) {
+      lines.push("");
+      lines.push(`➕ *${t("Add-ons")}:*`);
+      selectedAddons.forEach(addon => {
+        const { price } = getAddonEffectivePrice(addon, billingMode, enableYearly, yearlyDiscountPercent);
+        lines.push(`   • ${addon.label || "Addon"}: ${formatPrice(price)}`);
+      });
+    }
+
+    const activeSliders = sliderNodes.filter(s => (sliderValues[s.id] ?? s.min ?? 0) > 0);
+    if (activeSliders.length > 0) {
+      lines.push("");
+      lines.push(`📊 *${t("Selections")}:*`);
+      activeSliders.forEach(s => {
+        const val = sliderValues[s.id] ?? s.min ?? 0;
+        const price = val * (s.pricePerStep || 0);
+        lines.push(`   • ${s.label || "Option"}: ${val} ${s.unit || ""} (${formatPrice(price)})`);
+      });
+    }
+
+    lines.push("");
+    lines.push(`💰 *${t("Total Estimate")}:* ${formatPrice(total)}`);
+    lines.push("");
+    lines.push(`---`);
+    lines.push(t("Sent via Tierless"));
+
+    return lines.join("\n");
+  };
+
+  const handleInquiry = () => {
+    if (!resolvedContactType) {
+      alert(t("Contact method is not configured yet."));
+      return;
+    }
+
+    const message = buildInquiryMessage();
+    const encodedMessage = encodeURIComponent(message);
+
+    switch (resolvedContactType) {
+      case "whatsapp":
+        window.open(`https://wa.me/${contactWhatsapp}?text=${encodedMessage}`, "_blank", "noopener,noreferrer");
+        break;
+      case "telegram":
+        window.open(`https://t.me/${contactTelegram}?text=${encodedMessage}`, "_blank", "noopener,noreferrer");
+        break;
+      case "email":
+        const subject = encodeURIComponent(title || t("Price Inquiry"));
+        window.open(`mailto:${contactEmail}?subject=${subject}&body=${encodedMessage}`, "_blank");
+        break;
+    }
+  };
+
+  // Button styling based on contact type
+  const getInquiryButtonStyle = () => {
+    switch (resolvedContactType) {
+      case "whatsapp":
+        return {
+          background: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+          text: t("WhatsApp"),
+        };
+      case "telegram":
+        return {
+          background: "linear-gradient(135deg, #0088cc 0%, #005f8f 100%)",
+          text: t("Telegram"),
+        };
+      case "email":
+        return {
+          background: "linear-gradient(135deg, #6366f1 0%, #22d3ee 100%)",
+          text: t("Email"),
+        };
+      default:
+        return {
+          background: "linear-gradient(135deg, #6366f1 0%, #22d3ee 100%)",
+          text: t("Send inquiry"),
+        };
+    }
+  };
+
+  const inquiryButtonStyle = getInquiryButtonStyle();
 
   if (!nodes.length) {
     return (
@@ -842,17 +961,28 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
               </div>
 
               {/* Send Inquiry Button */}
-              {advancedShowInquiry && (
+              {advancedShowInquiry && resolvedContactType && (
                 <div className="shrink-0">
-                  <ShinyButton
-                    className="px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold"
-                    rounded="rounded-xl"
+                  <button
+                    onClick={handleInquiry}
+                    className="group relative px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold text-white rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+                    style={{
+                      background: inquiryButtonStyle.background,
+                      boxShadow: resolvedContactType === "whatsapp" 
+                        ? "0 10px 30px rgba(17, 153, 142, 0.3)"
+                        : resolvedContactType === "telegram"
+                          ? "0 10px 30px rgba(0, 136, 204, 0.3)"
+                          : "0 10px 30px rgba(99, 102, 241, 0.3)",
+                    }}
                   >
                     <span className="flex items-center gap-2">
+                      {resolvedContactType === "whatsapp" && <MessageCircle className="w-4 h-4" />}
+                      {resolvedContactType === "telegram" && <Send className="w-4 h-4" />}
+                      {resolvedContactType === "email" && <Mail className="w-4 h-4" />}
                       {t("Send inquiry")}
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </span>
-                  </ShinyButton>
+                  </button>
                 </div>
               )}
             </div>
