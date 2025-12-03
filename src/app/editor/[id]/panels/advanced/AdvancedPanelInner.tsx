@@ -7,7 +7,7 @@ import {
   ToggleRight, Calculator, Palette, Settings2, ChevronDown,
   User, Mail, Send, Zap, ListChecks, Layers, Monitor,
   MoreHorizontal, Coins, ChevronRight, MessageCircle,
-  Image as ImageIcon, Upload, Phone, MapPin, 
+  Image as ImageIcon, Upload, Phone, MapPin,
   Share2, Globe, Clock, Type, Star
 } from "lucide-react";
 
@@ -140,8 +140,8 @@ function SortableItem({ id, children, disabled }: { id: string, children: React.
   return (
     <div ref={setNodeRef} style={style} className="h-full relative">
       {/* Drag handle - ALWAYS visible at top center */}
-      <div 
-        {...attributes} 
+      <div
+        {...attributes}
         {...listeners}
         className="absolute left-1/2 -translate-x-1/2 -top-3 z-20 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
         title="Drag to reorder"
@@ -196,28 +196,28 @@ export default function AdvancedPanelInner() {
   } = useAdvancedState();
 
   const { calc, updateCalc } = useEditorStore();
-  
+
   // Use site-wide theme for editor UI (navbar theme), not page theme
   const { theme: siteTheme, mounted: themeMounted } = useTheme();
-  
+
   // Also check html class directly as fallback (ThemeToggle manipulates this)
   const [htmlIsDark, setHtmlIsDark] = useState(false);
   useEffect(() => {
     // Initial check
     setHtmlIsDark(document.documentElement.classList.contains("dark"));
-    
+
     // Watch for class changes (MutationObserver)
     const observer = new MutationObserver(() => {
       setHtmlIsDark(document.documentElement.classList.contains("dark"));
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    
+
     return () => observer.disconnect();
   }, []);
-  
+
   // Use html class as primary source since ThemeToggle manipulates it directly
   const editorIsDark = themeMounted ? siteTheme === "dark" : htmlIsDark;
-  
+
   const contactOverride = (calc?.meta?.contactOverride || {}) as {
     type?: "email" | "whatsapp" | "telegram";
     whatsapp?: string;
@@ -583,7 +583,7 @@ export default function AdvancedPanelInner() {
           </div>
         </div>
 
-        {/* Center: Add Blocks */}
+        {/* Center: Add Blocks + Settings */}
         <div className="flex items-center gap-1 bg-[var(--surface)] p-1 rounded-lg border border-[var(--border)]">
           <Button variant="ghost" size="sm" onClick={() => handleAddNode("tier")} className="gap-2">
             <Layers className="w-3.5 h-3.5" /> {t("Tier")}
@@ -600,18 +600,16 @@ export default function AdvancedPanelInner() {
           <Button variant="ghost" size="sm" onClick={() => handleAddNode("slider")} className="gap-2">
             <SlidersHorizontal className="w-3.5 h-3.5" /> {t("Slider")}
           </Button>
+          <div className="w-px h-4 bg-[var(--border)]" />
+          <Button
+            variant={showSettings ? "solid" : "ghost"}
+            size="sm"
+            onClick={() => setShowSettings(!showSettings)}
+            className="gap-2"
+          >
+            <Settings2 className="w-3.5 h-3.5" /> {t("Settings")}
+          </Button>
         </div>
-
-        {/* Settings Tab - same style as element buttons */}
-        <div className="w-px h-4 bg-[var(--border)]" />
-        <Button 
-          variant={showSettings ? "solid" : "ghost"} 
-          size="sm" 
-          onClick={() => setShowSettings(!showSettings)} 
-          className="gap-2"
-        >
-          <Settings2 className="w-3.5 h-3.5" /> {t("Settings")}
-        </Button>
       </header>
 
       {/* Full-Screen Settings Panel */}
@@ -834,14 +832,14 @@ export default function AdvancedPanelInner() {
                       <span className="text-[10px] text-[var(--muted)] block">{t("I confirm this is my contact information")}</span>
                     </div>
                     <div className="relative inline-flex items-center">
-                      <input 
-                        type="checkbox" 
-                        checked={(calc?.meta as any)?.contactConfirmed || false} 
+                      <input
+                        type="checkbox"
+                        checked={(calc?.meta as any)?.contactConfirmed || false}
                         onChange={e => updateCalc((draft) => {
                           if (!draft.meta) draft.meta = {};
                           (draft.meta as any).contactConfirmed = e.target.checked;
-                        })} 
-                        className="sr-only peer" 
+                        })}
+                        className="sr-only peer"
                       />
                       <div className={`w-11 h-6 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${(calc?.meta as any)?.contactConfirmed ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-300"}`}></div>
                     </div>
@@ -872,7 +870,7 @@ export default function AdvancedPanelInner() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-[var(--muted)]">{t("Location (Google Maps)")}</label>
                       <div className="relative">
@@ -926,14 +924,14 @@ export default function AdvancedPanelInner() {
                         <span className="text-[10px] text-[var(--muted)] block">{t("Let visitors rate your page")}</span>
                       </div>
                       <div className="relative inline-flex items-center shrink-0">
-                        <input 
-                          type="checkbox" 
-                          checked={(calc?.meta as any)?.allowRating || false} 
+                        <input
+                          type="checkbox"
+                          checked={(calc?.meta as any)?.allowRating || false}
                           onChange={e => updateCalc((draft) => {
                             if (!draft.meta) draft.meta = {};
                             (draft.meta as any).allowRating = e.target.checked;
-                          })} 
-                          className="sr-only peer" 
+                          })}
+                          className="sr-only peer"
                         />
                         <div className={`w-11 h-6 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${(calc?.meta as any)?.allowRating ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-300"}`}></div>
                       </div>
@@ -946,14 +944,14 @@ export default function AdvancedPanelInner() {
                         <span className="text-[10px] text-[var(--muted)] block">{t("Feature in public gallery")}</span>
                       </div>
                       <div className="relative inline-flex items-center shrink-0">
-                        <input 
-                          type="checkbox" 
-                          checked={(calc?.meta as any)?.listInExamples || false} 
+                        <input
+                          type="checkbox"
+                          checked={(calc?.meta as any)?.listInExamples || false}
                           onChange={e => updateCalc((draft) => {
                             if (!draft.meta) draft.meta = {};
                             (draft.meta as any).listInExamples = e.target.checked;
-                          })} 
-                          className="sr-only peer" 
+                          })}
+                          className="sr-only peer"
                         />
                         <div className={`w-11 h-6 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${(calc?.meta as any)?.listInExamples ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-300"}`}></div>
                       </div>
@@ -966,14 +964,14 @@ export default function AdvancedPanelInner() {
                         <span className="text-[10px] text-[var(--muted)] block">{t("Show Tierless attribution")}</span>
                       </div>
                       <div className="relative inline-flex items-center shrink-0">
-                        <input 
-                          type="checkbox" 
-                          checked={(calc?.meta as any)?.advancedShowBadge !== false} 
+                        <input
+                          type="checkbox"
+                          checked={(calc?.meta as any)?.advancedShowBadge !== false}
                           onChange={e => updateCalc((draft) => {
                             if (!draft.meta) draft.meta = {};
                             (draft.meta as any).advancedShowBadge = e.target.checked;
-                          })} 
-                          className="sr-only peer" 
+                          })}
+                          className="sr-only peer"
                         />
                         <div className={`w-11 h-6 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${(calc?.meta as any)?.advancedShowBadge !== false ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-300"}`}></div>
                       </div>
