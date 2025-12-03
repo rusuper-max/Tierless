@@ -320,12 +320,12 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
   const fontClass = publicFont === "serif" ? "font-serif" : publicFont === "mono" ? "font-mono" : "font-sans";
 
   const showPoweredBy: boolean =
-    metaRaw.showPoweredBy ?? true;
+    (metaRaw as any).showPoweredBy ?? true;
 
-  const allowRating: boolean = metaRaw.allowRating ?? false;
-  const pageId: string = metaRaw.slug || calc?.id || "unknown";
-  const avgRating: number = metaRaw.avgRating || 0;
-  const ratingsCount: number = metaRaw.ratingsCount || 0;
+  const allowRating: boolean = (metaRaw as any).allowRating ?? false;
+  const pageId: string = (metaRaw as any).slug || calc?.id || "unknown";
+  const avgRating: number = (metaRaw as any).avgRating || 0;
+  const ratingsCount: number = (metaRaw as any).ratingsCount || 0;
 
   // Contact info for inquiry (same logic as PublicRenderer)
   const rawContact = ((metaRaw as any)?.contact || (metaRaw as any)?.contactOverride || {}) as any;
@@ -649,7 +649,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
         }}
       >
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
-          {t("Powered by Tierless")}
+        {t("Powered by Tierless")}
         </span>
       </span>
     </a>
@@ -818,10 +818,10 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                 className="text-lg sm:text-xl font-semibold"
                 style={{ color: "var(--text)" }}
               >
-                {t("Choose a package")}
-              </h2>
+            {t("Choose a package")}
+          </h2>
 
-              {enableYearly && (
+          {enableYearly && (
                 <div
                   className="inline-flex rounded-full p-1 text-xs sm:text-sm"
                   style={{
@@ -829,13 +829,13 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                     border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
                   }}
                 >
-                  {(["month", "year"] as BillingPeriod[]).map((mode) => {
-                    const active = billingMode === mode;
-                    return (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => setBillingMode(mode)}
+              {(["month", "year"] as BillingPeriod[]).map((mode) => {
+                const active = billingMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setBillingMode(mode)}
                         className="relative cursor-pointer px-4 py-2 rounded-full transition-all font-medium"
                         style={{
                           background: active
@@ -847,42 +847,42 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                       >
                         {mode === "month" ? t("Monthly") : t("Yearly")}
                         {mode === "year" && yearlyDiscountPercent && (
-                          <span
+                      <span
                             className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                            style={{
+                        style={{
                               background: "linear-gradient(135deg, #22c55e, #10b981)",
                               color: "white",
                             }}
                           >
                             -{yearlyDiscountPercent}%
-                          </span>
+                    </span>
                         )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className={`grid gap-4 sm:gap-6 sm:grid-cols-2 ${tierGridCols}`}>
-              {tierNodes.map((tier) => {
-                const isActive = tier.id === selectedTierId;
-                return (
-                  <TierCard
-                    key={tier.id}
-                    node={tier}
-                    isActive={isActive}
-                    onSelect={() => setSelectedTierId(tier.id)}
-                    formatPrice={formatPrice}
-                    billingMode={billingMode}
-                    enableYearly={enableYearly}
-                    yearlyDiscountPercent={yearlyDiscountPercent}
-                    theme={publicTheme}
-                  />
+                  </button>
                 );
               })}
             </div>
-          </section>
+          )}
+        </div>
+
+            <div className={`grid gap-4 sm:gap-6 sm:grid-cols-2 ${tierGridCols}`}>
+          {tierNodes.map((tier) => {
+            const isActive = tier.id === selectedTierId;
+            return (
+              <TierCard
+                key={tier.id}
+                node={tier}
+                isActive={isActive}
+                onSelect={() => setSelectedTierId(tier.id)}
+                formatPrice={formatPrice}
+                billingMode={billingMode}
+                enableYearly={enableYearly}
+                yearlyDiscountPercent={yearlyDiscountPercent}
+                theme={publicTheme}
+              />
+            );
+          })}
+        </div>
+      </section>
         )}
 
         {/* Addons Section */}
@@ -892,26 +892,26 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
               className="text-base sm:text-lg font-semibold mb-4"
               style={{ color: "var(--text)" }}
             >
-              {t("Extras")}
-            </h3>
+          {t("Extras")}
+        </h3>
             <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
-              {addonNodes.map((addon) => {
-                const checked = selectedAddonIds.has(addon.id);
-                return (
-                  <AddonCard
-                    key={addon.id}
-                    node={addon}
-                    checked={checked}
-                    onToggle={() => toggleAddon(addon.id)}
-                    formatPrice={formatPrice}
-                    billingMode={billingMode}
-                    enableYearly={enableYearly}
-                    yearlyDiscountPercent={yearlyDiscountPercent}
-                  />
-                );
-              })}
-            </div>
-          </section>
+          {addonNodes.map((addon) => {
+            const checked = selectedAddonIds.has(addon.id);
+            return (
+              <AddonCard
+                key={addon.id}
+                node={addon}
+                checked={checked}
+                onToggle={() => toggleAddon(addon.id)}
+                formatPrice={formatPrice}
+                billingMode={billingMode}
+                enableYearly={enableYearly}
+                yearlyDiscountPercent={yearlyDiscountPercent}
+              />
+            );
+          })}
+        </div>
+      </section>
         )}
 
         {/* Items Section */}
@@ -921,8 +921,8 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
               className="text-base sm:text-lg font-semibold mb-4"
               style={{ color: "var(--text)" }}
             >
-              {t("Included items")}
-            </h3>
+          {t("Included items")}
+        </h3>
             <div
               className="rounded-2xl p-4 sm:p-6"
               style={{
@@ -931,44 +931,44 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
               }}
             >
               <ul className="grid gap-3 sm:grid-cols-2">
-                {itemNodes.map((item) => (
-                  <li
-                    key={item.id}
+          {itemNodes.map((item) => (
+            <li
+              key={item.id}
                     className="flex items-start gap-3"
-                  >
+            >
                     <span
                       className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full shrink-0"
                       style={{ background: "var(--surface)" }}
                     >
-                      {item.iconEmoji ? (
+                {item.iconEmoji ? (
                         <span className="text-xs leading-none">
-                          {item.iconEmoji}
-                        </span>
-                      ) : (
+                    {item.iconEmoji}
+                  </span>
+                ) : (
                         <Check className="w-3 h-3" style={{ color: "var(--brand-1)" }} />
-                      )}
-                    </span>
-                    <div className="min-w-0 flex-1">
+                )}
+              </span>
+              <div className="min-w-0 flex-1">
                       <div
                         className="font-medium text-sm"
                         style={{ color: "var(--text)" }}
                       >
-                        {item.label || t("Untitled item")}
-                      </div>
-                      {item.description && (
+                  {item.label || t("Untitled item")}
+                </div>
+                {item.description && (
                         <p
                           className="text-xs mt-0.5"
                           style={{ color: "var(--muted)" }}
                         >
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    {item.description}
+                  </p>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
             </div>
-          </section>
+      </section>
         )}
 
         {/* Sliders Section */}
@@ -978,34 +978,34 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
               className="text-base sm:text-lg font-semibold mb-4"
               style={{ color: "var(--text)" }}
             >
-              {t("Sliders")}
-            </h3>
+          {t("Sliders")}
+        </h3>
             <div className="space-y-4">
-              {sliderNodes.map((s) => (
-                <SliderBlock
-                  key={s.id}
-                  node={s}
-                  value={
-                    sliderValues[s.id] ??
-                    (typeof s.min === "number" ? s.min : 0)
-                  }
-                  onChange={(v) =>
-                    setSliderValues((prev) => ({ ...prev, [s.id]: v }))
-                  }
-                  formatPrice={formatPrice}
-                  sliderColorMode={sliderColorMode}
-                  sliderSolidColor={sliderSolidColor}
-                />
-              ))}
-            </div>
-          </section>
+          {sliderNodes.map((s) => (
+            <SliderBlock
+              key={s.id}
+              node={s}
+              value={
+                sliderValues[s.id] ??
+                (typeof s.min === "number" ? s.min : 0)
+              }
+              onChange={(v) =>
+                setSliderValues((prev) => ({ ...prev, [s.id]: v }))
+              }
+              formatPrice={formatPrice}
+              sliderColorMode={sliderColorMode}
+              sliderSolidColor={sliderSolidColor}
+            />
+          ))}
+        </div>
+      </section>
         )}
 
         {/* Footer with Powered By (when logo is shown at top) */}
         {logoUrl && poweredBy && (
           <div className="flex justify-center pt-8 pb-4">
             {poweredBy}
-          </div>
+        </div>
         )}
       </div>
 
@@ -1033,7 +1033,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                   style={{ color: "var(--muted)" }}
                 >
                   {t("Estimated total")}
-                </div>
+            </div>
                 <div
                   className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight"
                   style={{ color: "var(--text)" }}
@@ -1046,7 +1046,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                 >
                   {t("This is a rough estimate based on selected packages and extras.")}
                 </p>
-              </div>
+            </div>
 
               {/* Send Inquiry Button */}
               {advancedShowInquiry && resolvedContactType && (
