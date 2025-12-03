@@ -28,7 +28,7 @@ export default function GlowButton({
 }: Props) {
     const baseStyles = `
         relative inline-flex items-center justify-center gap-2
-        font-semibold text-lg
+        font-semibold text-base md:text-lg
         transition-all duration-300 ease-out
         overflow-hidden
         focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:ring-offset-2
@@ -36,7 +36,7 @@ export default function GlowButton({
 
     const variants = {
         primary: `
-            h-14 px-8 rounded-full
+            h-14 px-7 md:px-8 rounded-full
             bg-gradient-to-r from-indigo-600 to-cyan-500
             text-white
             shadow-lg shadow-indigo-500/25
@@ -45,7 +45,7 @@ export default function GlowButton({
             active:scale-[0.98]
         `,
         secondary: `
-            h-14 px-8 rounded-full
+            h-14 px-7 md:px-8 rounded-full
             bg-white border border-slate-200
             text-slate-700
             shadow-sm
@@ -109,5 +109,4 @@ export default function GlowButton({
         </button>
     );
 }
-
 

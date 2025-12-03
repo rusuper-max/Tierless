@@ -237,9 +237,11 @@
             "editor_title": "Jednostavnost prevlačenja",
             "editor_desc": "Nije potreban kod. Samo dodajte usluge i cene, izaberite stil i spremni ste.",
             "embed_title": "Lako ugrađivanje",
-            "embed_desc": "Radi sa WordPress-om, Webflow-om, Shopify-em ili bilo kojim sajtom.",
+            "embed_desc": "Ugradite ga na vaš sajt za nekoliko sekundi.",
             "brand_title": "100% vaš brend",
-            "brand_desc": "Prilagodite boje, fontove i stil da se savršeno uklapa u vaš biznis."
+            "brand_desc": "Prilagodite boje, fontove i stil da se savršeno uklapa u vaš biznis.",
+            "your_business_name": "Naziv vašeg biznisa",
+            "professional_modern": "Profesionalno i Moderno"
         },
         "qr": {
             "badge": "Kako funkcioniše",
@@ -256,17 +258,26 @@
             "coloring": "Farbanje",
             "treatment": "Nega",
             "blowout": "Feniranje",
-            "book_now": "Zakaži sada"
+            "book_now": "Zakaži sada",
+            "add_item": "Dodaj Stavku"
         },
         "final_cta": {
-            "title": "Spremni da stavite svoje cene online?",
-            "subtitle": "Pridružite se biznisima koji koriste Tierless da dele svoje usluge profesionalno.",
-            "cta": "Kreirajte vašu stranicu sa cenama",
-            "pricing": "Vidi cene",
-            "trust": "Besplatan početak • Nije potrebna kreditna kartica"
+            "title_part1": "Vaše cene,",
+            "title_part2": "online.",
+            "subtitle": "Potrebno je samo nekoliko minuta da počnete.",
+            "trust_free": "Besplatan početak",
+            "trust_no_card": "Nije potrebna kreditna kartica",
+            "trust_questions": "Imate pitanja?"
         },
         "cta": {
             "button": "Kreirajte vašu stranicu sa cenama"
+        },
+        "usecases": {
+            "badge": "Za svaki biznis",
+            "title_part1": "Jedan alat, ",
+            "title_part2": "beskonačne mogućnosti",
+            "subtitle": "Od restorana do salona, stomatologa do fotografa — kreirajte profesionalnu listu cena za vaš biznis.",
+            "footer": "...i mnoge druge industrije"
         },
         "aiscan": {
             "badge": "AI Uvoz",

@@ -359,14 +359,13 @@ export default function LandingPage() {
                             >
                                 <div className="relative z-10 flex-1 flex flex-col">
                                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold self-start">
-                                        <Layers className="w-3 h-3" /> VISUAL EDITOR
+                                        <Layers className="w-3 h-3" /> {t("landing.showcase.editor_badge")}
                                     </div>
                                     <h3 className="text-2xl lg:text-3xl font-bold text-slate-900 mt-4 mb-2">
-                                        Drag & drop simplicity
+                                        {t("landing.showcase.editor_title")}
                                     </h3>
                                     <p className="text-slate-600 text-lg max-w-md mb-6">
-                                        No code required. Just add your services and prices,
-                                        pick a style, and you're live.
+                                        {t("landing.showcase.editor_desc")}
                                     </p>
 
                                     {/* Editor mockup */}
@@ -405,8 +404,8 @@ export default function LandingPage() {
                                 >
                                     <div className="relative z-10 space-y-4">
                                         <div>
-                                            <h3 className="text-lg font-bold mb-1.5">100% your brand</h3>
-                                            <p className="text-indigo-100 text-xs leading-relaxed">Customize colors, fonts, and style to match your business perfectly.</p>
+                                            <h3 className="text-lg font-bold mb-1.5">{t("landing.showcase.brand_title")}</h3>
+                                            <p className="text-indigo-100 text-xs leading-relaxed">{t("landing.showcase.brand_desc")}</p>
                                         </div>
 
                                         {/* Color Palette Demo */}
@@ -420,8 +419,8 @@ export default function LandingPage() {
 
                                         {/* Font Preview */}
                                         <div className="space-y-0.5 border-l-2 border-white/30 pl-2.5">
-                                            <div className="text-sm font-bold text-white">Your Business Name</div>
-                                            <div className="text-[11px] text-indigo-100">Professional & Modern</div>
+                                            <div className="text-sm font-bold text-white">{t("landing.showcase.your_business_name")}</div>
+                                            <div className="text-[11px] text-indigo-100">{t("landing.showcase.professional_modern")}</div>
                                         </div>
                                     </div>
 
@@ -449,14 +448,14 @@ export default function LandingPage() {
 
                         {/* Header */}
                         <div className="text-center max-w-2xl mx-auto mb-16">
-                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-cyan-50 border border-indigo-100 text-indigo-700 text-xs font-bold mb-6 uppercase tracking-wider">
-                                <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-500 text-white text-xs font-bold mb-6 uppercase tracking-wider shadow-lg shadow-indigo-500/20">
+                                <Sparkles className="w-3.5 h-3.5 text-white" />
                                 {t("landing.aiscan.badge")}
                             </div>
 
-                            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-                                {t("landing.aiscan.title_prefix")}{" "}
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500">
+                            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 leading-tight">
+                                <span>{t("landing.aiscan.title_prefix")} </span>
+                                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500">
                                     {t("landing.aiscan.title_highlight")}
                                 </span>
                             </h2>
@@ -555,8 +554,8 @@ export default function LandingPage() {
                                         <div className="p-4">
                                             <div className="flex items-center justify-between mb-4">
                                                 <h4 className="font-semibold text-slate-800 text-sm">Main Menu</h4>
-                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded-full border border-cyan-200">
-                                                    <Sparkles className="w-2.5 h-2.5" />
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-gradient-to-r from-indigo-500 to-cyan-500 px-2 py-0.5 rounded-full border border-white/20 shadow-sm">
+                                                    <Sparkles className="w-2.5 h-2.5 text-white" />
                                                     AI Extracted
                                                 </span>
                                             </div>
@@ -588,7 +587,7 @@ export default function LandingPage() {
 
                                             {/* Add Item Placeholder */}
                                             <div className="mt-3 border-2 border-dashed border-slate-200 rounded-lg py-2 flex items-center justify-center gap-2 text-slate-400 text-xs">
-                                                <span>+ Add Item</span>
+                                                <span>+ {t("landing.qr.add_item")}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -631,13 +630,13 @@ export default function LandingPage() {
                         {/* Header */}
                         <div className="text-center max-w-2xl mx-auto mb-16">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 text-cyan-700 text-xs font-bold mb-6 uppercase tracking-wider">
-                                <QrCode className="w-3 h-3" /> How it works
+                                <QrCode className="w-3 h-3" /> {t("landing.qr.badge")}
                             </div>
                             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                                Scan. View. Done.
+                                {t("landing.qr.title")}
                             </h2>
                             <p className="text-lg text-slate-600">
-                                Your customers scan a QR code and instantly see your prices on their phone.
+                                {t("landing.qr.subtitle")}
                             </p>
                         </div>
 
@@ -671,8 +670,8 @@ export default function LandingPage() {
                                     </div>
                                     <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">1</div>
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-2">Print your QR code</h3>
-                                <p className="text-slate-600">Put it on your menu, flyer, business card, or storefront window.</p>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">{t("landing.qr.step1_title")}</h3>
+                                <p className="text-slate-600">{t("landing.qr.step1_desc")}</p>
                             </div>
 
                             {/* Step 2: Phone scanning */}
@@ -687,8 +686,8 @@ export default function LandingPage() {
                                     </div>
                                     <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">2</div>
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-2">Customer scans</h3>
-                                <p className="text-slate-600">They point their phone camera at the code. No app needed.</p>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">{t("landing.qr.step2_title")}</h3>
+                                <p className="text-slate-600">{t("landing.qr.step2_desc")}</p>
                             </div>
 
                             {/* Step 3: Price list appears */}
@@ -723,8 +722,8 @@ export default function LandingPage() {
                                     </div>
                                     <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">3</div>
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-2">Prices appear instantly</h3>
-                                <p className="text-slate-600">Your beautiful price page loads in their browser. Ready to book.</p>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">{t("landing.qr.step3_title")}</h3>
+                                <p className="text-slate-600">{t("landing.qr.step3_desc")}</p>
                             </div>
 
                         </div>
@@ -825,11 +824,11 @@ function ScrollRevealCTA({ t }: { t: (key: string) => string }) {
                 }}
             >
                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
-                    Your prices,<br />
-                    <span className="text-cyan-300">online.</span>
+                    {t("landing.final_cta.title_part1")}<br />
+                    <span className="text-cyan-300">{t("landing.final_cta.title_part2")}</span>
                 </h2>
                 <p className="text-xl text-indigo-100 mb-10 max-w-xl mx-auto">
-                    It only takes a few minutes to get started.
+                    {t("landing.final_cta.subtitle")}
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -849,7 +848,7 @@ function ScrollRevealCTA({ t }: { t: (key: string) => string }) {
                 </div>
 
                 <p className="mt-8 text-sm font-medium text-indigo-200">
-                    Free to start • No credit card required • <Link href="/faq" className="underline hover:text-white">Have questions?</Link>
+                    {t("landing.final_cta.trust_free")} • {t("landing.final_cta.trust_no_card")} • <Link href="/faq" className="underline hover:text-white">{t("landing.final_cta.trust_questions")}</Link>
                 </p>
             </motion.div>
         </section>

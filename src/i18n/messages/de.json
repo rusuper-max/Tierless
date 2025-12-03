@@ -257,6 +257,25 @@
             "blowout": "Föhnen",
             "book_now": "Jetzt buchen"
         },
+        "usecases": {
+            "badge": "Für jede Branche",
+            "title_part1": "Ein Tool, ",
+            "title_part2": "unendliche Möglichkeiten",
+            "subtitle": "Vom Restaurant bis zum Fotografen – baue eine professionelle Preisliste in wenigen Minuten.",
+            "footer": "...und viele weitere Branchen"
+        },
+        "aiscan": {
+            "badge": "KI-Import",
+            "title_prefix": "Von Papier zur Website",
+            "title_highlight": "in 30 Sekunden",
+            "subtitle": "Kein Abtippen mehr. Fotografiere dein Menü, und unsere KI übernimmt alle Artikel und Preise für dich.",
+            "step1": "Dein physisches Menü",
+            "step2": "Bereit im Editor",
+            "processing": "KI verarbeitet",
+            "feature1": "Spart Stunden manueller Arbeit",
+            "feature2": "Hohe Erkennungsgenauigkeit",
+            "feature3": "Sofort bearbeitbar"
+        },
         "final_cta": {
             "title": "Bereit, deine Preise online zu stellen?",
             "subtitle": "Schließe dich Unternehmen an, die Tierless nutzen, um professionell zu wirken.",

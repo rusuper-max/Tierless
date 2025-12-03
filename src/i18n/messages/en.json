@@ -277,7 +277,9 @@
       "embed_title": "Easy embed",
       "easy_embed_desc": "Embed it on your website in seconds.",
       "brand_title": "100% your brand",
-      "brand_desc": "Customize colors, fonts, and style to match your business perfectly."
+      "brand_desc": "Customize colors, fonts, and style to match your business perfectly.",
+      "your_business_name": "Your Business Name",
+      "professional_modern": "Professional & Modern"
     },
     "qr": {
       "badge": "How it works",
@@ -294,17 +296,26 @@
       "coloring": "Coloring",
       "treatment": "Treatment",
       "blowout": "Blowout",
-      "book_now": "Book Now"
+      "book_now": "Book Now",
+      "add_item": "Add Item"
     },
     "final_cta": {
-      "title": "Ready to put your prices online?",
-      "subtitle": "Join businesses that use Tierless to share their services professionally.",
-      "cta": "Create Your Price Page",
-      "pricing": "View Pricing",
-      "trust": "Free to start • No credit card required"
+      "title_part1": "Your prices,",
+      "title_part2": "online.",
+      "subtitle": "It only takes a few minutes to get started.",
+      "trust_free": "Free to start",
+      "trust_no_card": "No credit card required",
+      "trust_questions": "Have questions?"
     },
     "cta": {
       "button": "Create Your Price Page"
+    },
+    "usecases": {
+      "badge": "For every business",
+      "title_part1": "One tool, ",
+      "title_part2": "endless possibilities",
+      "subtitle": "From restaurants to salons, dentists to photographers — create a professional price list for your business.",
+      "footer": "...and many more industries"
     },
     "aiscan": {
       "badge": "AI-Powered Import",

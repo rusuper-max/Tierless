@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { useT } from "@/i18n/t";
 import {
     Utensils,
     Scissors,
@@ -130,9 +131,9 @@ const featuredCases = [
 function GridIcon({ icon: Icon, label, color, muted = true }: { icon: LucideIcon; label: string; color: string; muted?: boolean }) {
     return (
         <div className={`flex flex-col items-center justify-center p-1.5 transition-all duration-200 cursor-default group`}>
-            <Icon 
-                className={`w-5 h-5 transition-colors duration-200 ${muted ? 'text-slate-300 group-hover:' + color : 'text-slate-400 group-hover:' + color}`} 
-                strokeWidth={1.5} 
+            <Icon
+                className={`w-5 h-5 transition-colors duration-200 ${muted ? 'text-slate-300 group-hover:' + color : 'text-slate-400 group-hover:' + color}`}
+                strokeWidth={1.5}
             />
             <span className={`text-[8px] mt-0.5 font-medium transition-colors duration-200 ${muted ? 'text-slate-300 group-hover:text-slate-500' : 'text-slate-400 group-hover:text-slate-600'}`}>
                 {label}
@@ -141,14 +142,30 @@ function GridIcon({ icon: Icon, label, color, muted = true }: { icon: LucideIcon
     );
 }
 
+// Grid cell wrapper with hover border effect - shows all 4 sides
+function GridCell({ children, borderClasses }: { children: React.ReactNode; borderClasses: string }) {
+    return (
+        <div className={`flex items-center justify-center ${borderClasses} relative group/cell`}>
+            <div
+                className="absolute inset-0 rounded-lg opacity-0 transition duration-200 group-hover/cell:opacity-100"
+                style={{
+                    boxShadow: "0 12px 24px -12px rgba(15, 23, 42, 0.25)",
+                    border: "1.5px solid rgba(15, 23, 42, 0.9)"
+                }}
+            />
+            <div className="relative z-10">{children}</div>
+        </div>
+    );
+}
+
 // Featured card with different layouts
-function FeaturedCard({ data, isHovered, onHover }: { 
-    data: typeof featuredCases[0]; 
+function FeaturedCard({ data, isHovered, onHover }: {
+    data: typeof featuredCases[0];
     isHovered: boolean;
     onHover: (id: string | null) => void;
 }) {
     const Icon = data.icon;
-    
+
     return (
         <motion.div
             className={`relative h-full rounded-xl overflow-hidden ${data.bg} border ${isHovered ? 'border-slate-200 shadow-lg' : 'border-white/50 shadow-md'} transition-all cursor-pointer flex flex-col`}
@@ -174,8 +191,8 @@ function FeaturedCard({ data, isHovered, onHover }: {
                         // Tier layout for photographer (like pricing page) - same height as lists
                         <div className="flex gap-1.5 h-full">
                             {data.tiers?.map((tier, i) => (
-                                <div 
-                                    key={i} 
+                                <div
+                                    key={i}
                                     className={`flex-1 flex flex-col items-center justify-center py-3 rounded-lg ${tier.highlight ? `bg-gradient-to-b ${data.gradient} text-white shadow-md` : 'bg-slate-50/80'}`}
                                 >
                                     <div className={`text-[9px] font-bold mb-1 ${tier.highlight ? 'text-white/90' : 'text-slate-500'}`}>{tier.name}</div>
@@ -186,7 +203,7 @@ function FeaturedCard({ data, isHovered, onHover }: {
                     )}
                 </div>
             </div>
-            
+
             {/* Title area */}
             <div className="px-2 py-1.5 flex items-center gap-1.5">
                 <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${data.gradient} flex items-center justify-center shadow-sm`}>
@@ -202,11 +219,12 @@ function FeaturedCard({ data, isHovered, onHover }: {
 }
 
 export default function UseCasesGrid() {
+    const t = useT();
     const [hovered, setHovered] = useState<string | null>(null);
 
     const cols = 8;
     const rows = 6;
-    
+
     const isFeaturedCell = (col: number, row: number): number | null => {
         if (col >= 2 && col < 4 && row >= 1 && row < 3) return 0;
         if (col >= 4 && col < 6 && row >= 1 && row < 3) return 1;
@@ -214,7 +232,7 @@ export default function UseCasesGrid() {
         if (col >= 4 && col < 6 && row >= 3 && row < 5) return 3;
         return null;
     };
-    
+
     const isFeaturedTopLeft = (col: number, row: number): number | null => {
         if (col === 2 && row === 1) return 0;
         if (col === 4 && row === 1) return 1;
@@ -230,21 +248,21 @@ export default function UseCasesGrid() {
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 to-cyan-500/10 border border-indigo-200/50 text-[10px] font-bold mb-3 uppercase tracking-wider">
                         <Sparkles className="w-3 h-3 text-cyan-500" />
-                        <span className="bg-gradient-to-r from-indigo-600 to-cyan-500 bg-clip-text text-transparent">For every business</span>
+                        <span className="bg-gradient-to-r from-indigo-600 to-cyan-500 bg-clip-text text-transparent">{t("landing.usecases.badge")}</span>
                     </div>
                     <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 mb-2">
-                        One tool, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500">endless possibilities</span>
+                        {t("landing.usecases.title_part1")}<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500">{t("landing.usecases.title_part2")}</span>
                     </h2>
                     <p className="text-sm text-slate-500 max-w-lg mx-auto">
-                        From restaurants to salons, dentists to photographers — create a professional price list for your business.
+                        {t("landing.usecases.subtitle")}
                     </p>
                 </div>
 
                 {/* ClickUp-style Grid with visible grid lines */}
                 <div className="relative bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div 
+                    <div
                         className="grid"
-                        style={{ 
+                        style={{
                             gridTemplateColumns: 'repeat(8, 1fr)',
                             gridTemplateRows: 'repeat(6, minmax(50px, auto))'
                         }}
@@ -254,33 +272,33 @@ export default function UseCasesGrid() {
                                 const cellIndex = row * cols + col;
                                 const featuredCardIndex = isFeaturedCell(col, row);
                                 const isTopLeft = isFeaturedTopLeft(col, row);
-                                
+
                                 // Grid lines: right border except last col, bottom border except last row
                                 const borderClasses = `
                                     ${col < cols - 1 ? 'border-r border-slate-100' : ''}
                                     ${row < rows - 1 ? 'border-b border-slate-100' : ''}
                                 `;
-                                
+
                                 // If this is part of a featured card but not top-left, render empty cell with no borders
                                 if (featuredCardIndex !== null && isTopLeft === null) {
                                     return (
-                                        <div 
+                                        <div
                                             key={`empty-${cellIndex}`}
                                             className="bg-transparent"
                                             style={{ gridColumn: col + 1, gridRow: row + 1 }}
                                         />
                                     );
                                 }
-                                
+
                                 // If this is top-left of featured card, render the card spanning 2x2
                                 if (isTopLeft !== null) {
                                     return (
-                                        <div 
+                                        <div
                                             key={`featured-${isTopLeft}`}
                                             className="p-2 z-10"
-                                            style={{ 
-                                                gridColumn: `${col + 1} / span 2`, 
-                                                gridRow: `${row + 1} / span 2` 
+                                            style={{
+                                                gridColumn: `${col + 1} / span 2`,
+                                                gridRow: `${row + 1} / span 2`
                                             }}
                                         >
                                             <FeaturedCard
@@ -291,31 +309,31 @@ export default function UseCasesGrid() {
                                         </div>
                                     );
                                 }
-                                
+
                                 // Regular icon cell with grid borders
                                 const iconIndex = cellIndex % allIcons.length;
                                 const iconData = allIcons[iconIndex];
                                 const isEdge = col === 0 || col === 7 || row === 0 || row === 5;
-                                
+
                                 return (
-                                    <div 
-                                        key={`icon-${cellIndex}`} 
-                                        className={`flex items-center justify-center ${borderClasses}`}
+                                    <GridCell
+                                        key={`icon-${cellIndex}`}
+                                        borderClasses={borderClasses}
                                     >
-                                        <GridIcon 
-                                            icon={iconData.icon} 
+                                        <GridIcon
+                                            icon={iconData.icon}
                                             label={iconData.label}
                                             color={iconData.color}
                                             muted={isEdge}
                                         />
-                                    </div>
+                                    </GridCell>
                                 );
                             })
                         )}
                     </div>
                 </div>
 
-                <p className="text-center text-slate-400 text-xs mt-6">...and many more industries</p>
+                <p className="text-center text-slate-400 text-xs mt-6">{t("landing.usecases.footer")}</p>
             </div>
         </section>
     );

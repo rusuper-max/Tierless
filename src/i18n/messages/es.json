@@ -257,6 +257,25 @@
             "blowout": "Brushing",
             "book_now": "Reservar ahora"
         },
+        "usecases": {
+            "badge": "Para cada negocio",
+            "title_part1": "Una herramienta, ",
+            "title_part2": "infinitas posibilidades",
+            "subtitle": "Desde restaurantes hasta fotógrafos: crea una lista de precios profesional en minutos.",
+            "footer": "...y muchas industrias más"
+        },
+        "aiscan": {
+            "badge": "Importación con IA",
+            "title_prefix": "Del papel al sitio web",
+            "title_highlight": "en 30 segundos",
+            "subtitle": "Olvida escribir a mano. Haz una foto de tu menú y nuestra IA extrae automáticamente todos los elementos y precios.",
+            "step1": "Tu menú físico",
+            "step2": "Listo en el editor",
+            "processing": "Procesando con IA",
+            "feature1": "Ahorra horas de trabajo manual",
+            "feature2": "Extracción muy precisa",
+            "feature3": "Editable al instante"
+        },
         "final_cta": {
             "title": "¿Listo para poner tus precios online?",
             "subtitle": "Únete a negocios que comparten sus servicios con Tierless.",

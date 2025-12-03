@@ -257,6 +257,25 @@
             "blowout": "Brushing",
             "book_now": "Réserver maintenant"
         },
+        "usecases": {
+            "badge": "Pour chaque activité",
+            "title_part1": "Un outil, ",
+            "title_part2": "des possibilités infinies",
+            "subtitle": "Restaurants, salons, photographes… créez une liste de prix pro en quelques minutes.",
+            "footer": "...et bien d'autres secteurs"
+        },
+        "aiscan": {
+            "badge": "Importation IA",
+            "title_prefix": "Du papier au web",
+            "title_highlight": "en 30 secondes",
+            "subtitle": "Plus de saisie manuelle. Prenez votre menu en photo et notre IA extrait automatiquement tous les articles et tarifs.",
+            "step1": "Votre menu papier",
+            "step2": "Prêt dans l'éditeur",
+            "processing": "Traitement IA",
+            "feature1": "Économise des heures de travail",
+            "feature2": "Extraction très précise",
+            "feature3": "Modifiable instantanément"
+        },
         "final_cta": {
             "title": "Prêt à mettre vos tarifs en ligne ?",
             "subtitle": "Rejoignez les entreprises qui utilisent Tierless pour présenter leurs services.",
