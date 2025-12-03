@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { useT } from "@/i18n/t";
 import {
@@ -74,6 +75,7 @@ const featuredCases = [
         gradient: "from-orange-500 to-red-500",
         bg: "bg-gradient-to-br from-orange-50 to-red-50",
         type: "list" as const,
+        href: "/c/restaurant-showcase",
         items: [
             { name: "Caesar Salad", price: "€8" },
             { name: "Pasta Carbonara", price: "€12" },
@@ -89,6 +91,7 @@ const featuredCases = [
         gradient: "from-pink-500 to-rose-500",
         bg: "bg-gradient-to-br from-pink-50 to-rose-50",
         type: "list" as const,
+        href: "/c/salon-showcase",
         items: [
             { name: "Haircut", price: "€15" },
             { name: "Coloring", price: "€45" },
@@ -104,6 +107,7 @@ const featuredCases = [
         gradient: "from-cyan-500 to-blue-500",
         bg: "bg-gradient-to-br from-cyan-50 to-blue-50",
         type: "list" as const,
+        href: "/c/dentist-showcase",
         items: [
             { name: "Check-up", price: "€30" },
             { name: "Cleaning", price: "€40" },
@@ -119,6 +123,7 @@ const featuredCases = [
         gradient: "from-violet-500 to-purple-600",
         bg: "bg-gradient-to-br from-violet-50 to-purple-50",
         type: "tiers" as const,
+        href: "/c/agency-showcase",
         tiers: [
             { name: "Basic", price: "€80", highlight: false },
             { name: "Pro", price: "€150", highlight: true },
@@ -167,54 +172,56 @@ function FeaturedCard({ data, isHovered, onHover }: {
     const Icon = data.icon;
 
     return (
-        <motion.div
-            className={`relative h-full rounded-xl overflow-hidden ${data.bg} border ${isHovered ? 'border-slate-200 shadow-lg' : 'border-white/50 shadow-md'} transition-all cursor-pointer flex flex-col`}
-            onMouseEnter={() => onHover(data.id)}
-            onMouseLeave={() => onHover(null)}
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        >
-            {/* Preview area - no mac buttons, more space */}
-            <div className={`bg-gradient-to-r ${data.gradient} p-2 flex-1`}>
-                <div className="bg-white/95 rounded-lg p-2 shadow-sm h-full flex flex-col justify-center">
-                    {data.type === "list" ? (
-                        // List layout for restaurant, salon, dentist
-                        <div className="space-y-1">
-                            {data.items?.map((item, i) => (
-                                <div key={i} className="flex justify-between items-center text-[9px] py-0.5 border-b border-slate-100 last:border-0">
-                                    <span className="text-slate-600">{item.name}</span>
-                                    <span className={`font-bold bg-gradient-to-r ${data.gradient} bg-clip-text text-transparent`}>{item.price}</span>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        // Tier layout for photographer (like pricing page) - same height as lists
-                        <div className="flex gap-1.5 h-full">
-                            {data.tiers?.map((tier, i) => (
-                                <div
-                                    key={i}
-                                    className={`flex-1 flex flex-col items-center justify-center py-3 rounded-lg ${tier.highlight ? `bg-gradient-to-b ${data.gradient} text-white shadow-md` : 'bg-slate-50/80'}`}
-                                >
-                                    <div className={`text-[9px] font-bold mb-1 ${tier.highlight ? 'text-white/90' : 'text-slate-500'}`}>{tier.name}</div>
-                                    <div className={`text-sm font-bold ${tier.highlight ? 'text-white' : `bg-gradient-to-r ${data.gradient} bg-clip-text text-transparent`}`}>{tier.price}</div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+        <Link href={data.href} className="block h-full">
+            <motion.div
+                className={`relative h-full rounded-xl overflow-hidden ${data.bg} border ${isHovered ? 'border-slate-200 shadow-lg' : 'border-white/50 shadow-md'} transition-all cursor-pointer flex flex-col`}
+                onMouseEnter={() => onHover(data.id)}
+                onMouseLeave={() => onHover(null)}
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            >
+                {/* Preview area - no mac buttons, more space */}
+                <div className={`bg-gradient-to-r ${data.gradient} p-2 flex-1`}>
+                    <div className="bg-white/95 rounded-lg p-2 shadow-sm h-full flex flex-col justify-center">
+                        {data.type === "list" ? (
+                            // List layout for restaurant, salon, dentist
+                            <div className="space-y-1">
+                                {data.items?.map((item, i) => (
+                                    <div key={i} className="flex justify-between items-center text-[9px] py-0.5 border-b border-slate-100 last:border-0">
+                                        <span className="text-slate-600">{item.name}</span>
+                                        <span className={`font-bold bg-gradient-to-r ${data.gradient} bg-clip-text text-transparent`}>{item.price}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            // Tier layout for photographer (like pricing page) - same height as lists
+                            <div className="flex gap-1.5 h-full">
+                                {data.tiers?.map((tier, i) => (
+                                    <div
+                                        key={i}
+                                        className={`flex-1 flex flex-col items-center justify-center py-3 rounded-lg ${tier.highlight ? `bg-gradient-to-b ${data.gradient} text-white shadow-md` : 'bg-slate-50/80'}`}
+                                    >
+                                        <div className={`text-[9px] font-bold mb-1 ${tier.highlight ? 'text-white/90' : 'text-slate-500'}`}>{tier.name}</div>
+                                        <div className={`text-sm font-bold ${tier.highlight ? 'text-white' : `bg-gradient-to-r ${data.gradient} bg-clip-text text-transparent`}`}>{tier.price}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
 
-            {/* Title area */}
-            <div className="px-2 py-1.5 flex items-center gap-1.5">
-                <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${data.gradient} flex items-center justify-center shadow-sm`}>
-                    <Icon className="w-3 h-3 text-white" />
+                {/* Title area */}
+                <div className="px-2 py-1.5 flex items-center gap-1.5">
+                    <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${data.gradient} flex items-center justify-center shadow-sm`}>
+                        <Icon className="w-3 h-3 text-white" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-800 text-[11px] leading-tight">{data.title}</h3>
+                        <p className="text-[8px] text-slate-500">{data.subtitle}</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 className="font-bold text-slate-800 text-[11px] leading-tight">{data.title}</h3>
-                    <p className="text-[8px] text-slate-500">{data.subtitle}</p>
-                </div>
-            </div>
-        </motion.div>
+            </motion.div>
+        </Link>
     );
 }
 
