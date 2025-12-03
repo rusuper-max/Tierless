@@ -276,7 +276,15 @@ export default function LandingPage() {
                                     </span>
                                     <span className="block text-slate-600 text-[0.85em]">
                                         {t("landing.hero.title_suffix_prefix")}{" "}
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-cyan-500 to-teal-400">
+                                        <span
+                                            className="inline-block font-semibold"
+                                            style={{
+                                                background: "linear-gradient(90deg, #4f46e5 0%, #38bdf8 50%, #14b8a6 100%)",
+                                                WebkitBackgroundClip: "text",
+                                                backgroundClip: "text",
+                                                color: "transparent",
+                                            }}
+                                        >
                                             {t("landing.hero.title_suffix")}
                                         </span>
                                     </span>
@@ -358,8 +366,8 @@ export default function LandingPage() {
                                 className="rounded-3xl bg-slate-50 p-8 lg:p-10 border border-slate-100 relative overflow-hidden flex flex-col"
                             >
                                 <div className="relative z-10 flex-1 flex flex-col">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold self-start">
-                                        <Layers className="w-3 h-3" /> {t("landing.showcase.editor_badge")}
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-500 text-white text-xs font-bold self-start shadow-md shadow-indigo-500/30">
+                                        <Layers className="w-3 h-3 text-white" /> {t("landing.showcase.editor_badge")}
                                     </div>
                                     <h3 className="text-2xl lg:text-3xl font-bold text-slate-900 mt-4 mb-2">
                                         {t("landing.showcase.editor_title")}
@@ -609,10 +617,12 @@ export default function LandingPage() {
                             ].map((feature, i) => (
                                 <div
                                     key={i}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm text-sm text-slate-600"
+                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm"
                                 >
-                                    <feature.icon className="w-4 h-4 text-cyan-500" />
-                                    {feature.text}
+                                    <feature.icon className="w-3.5 h-3.5 text-indigo-500" />
+                                    <span className="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500">
+                                        {feature.text}
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -825,7 +835,9 @@ function ScrollRevealCTA({ t }: { t: (key: string) => string }) {
             >
                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
                     {t("landing.final_cta.title_part1")}<br />
-                    <span className="text-cyan-300">{t("landing.final_cta.title_part2")}</span>
+                    <span className="text-cyan-300">
+                        {t("landing.final_cta.title_part2")}
+                    </span>
                 </h2>
                 <p className="text-xl text-indigo-100 mb-10 max-w-xl mx-auto">
                     {t("landing.final_cta.subtitle")}

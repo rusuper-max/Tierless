@@ -188,19 +188,20 @@
     },
     "landing": {
         "hero": {
-            "badge": "No necesitas sitio web",
+            "badge": "No se requiere sitio web",
             "title_run": "Ya sea que dirijas",
             "rotating_salon": "un salón",
             "rotating_cafe": "una cafetería",
             "rotating_agency": "una agencia",
             "rotating_startup": "una startup",
             "title_suffix_prefix": "Tus precios merecen estar",
-            "title_suffix": "en línea.",
-            "subtitle": "Crea listas de precios interactivas y calculadoras en minutos. Comparte mediante enlace o código QR. Actualiza cuando quieras, al instante.",
-            "cta_start": "Comienza gratis",
+            "title_suffix": "online.",
+            "subtitle": "Crea listas de precios interactivas y calculadoras en minutos. Comparte vía enlace o código QR. Actualiza al instante.",
+            "cta_start": "Empezar gratis",
+            "cta_examples": "Ver ejemplos",
             "cta_pricing": "Ver precios",
             "trust_no_coding": "Sin código",
-            "trust_free": "Inicio gratuito",
+            "trust_free": "Comienzo gratuito",
             "trust_works": "Funciona en cualquier dispositivo",
             "scroll_hint": "Desplázate para explorar"
         },
@@ -233,12 +234,14 @@
         },
         "showcase": {
             "editor_badge": "EDITOR VISUAL",
-            "editor_title": "Arrastra y listo",
-            "editor_desc": "Nada de código. Agrega servicios, precios y elige un estilo.",
-            "embed_title": "Fácil de incrustar",
-            "embed_desc": "Funciona con WordPress, Webflow, Shopify o cualquier sitio.",
+            "editor_title": "Simplicidad de arrastrar y soltar",
+            "editor_desc": "Sin código. Añade tus servicios, fija precios, elige un estilo.",
+            "embed_title": "Integración fácil",
+            "easy_embed_desc": "Incrústalo en tu sitio web en segundos.",
             "brand_title": "100% tu marca",
-            "brand_desc": "Personaliza colores, tipografías y estilo para tu negocio."
+            "brand_desc": "Colores, fuentes y estilo totalmente personalizables.",
+            "your_business_name": "Tu Nombre de Negocio",
+            "professional_modern": "Profesional y Moderno"
         },
         "qr": {
             "badge": "Cómo funciona",
@@ -255,7 +258,8 @@
             "coloring": "Color",
             "treatment": "Tratamiento",
             "blowout": "Brushing",
-            "book_now": "Reservar ahora"
+            "book_now": "Reservar ahora",
+            "add_item": "Añadir artículo"
         },
         "usecases": {
             "badge": "Para cada negocio",
@@ -277,11 +281,12 @@
             "feature3": "Editable al instante"
         },
         "final_cta": {
-            "title": "¿Listo para poner tus precios online?",
-            "subtitle": "Únete a negocios que comparten sus servicios con Tierless.",
-            "cta": "Crea tu página de precios",
-            "pricing": "Ver precios",
-            "trust": "Empieza gratis • No requiere tarjeta"
+            "title_part1": "Tus precios,",
+            "title_part2": "online.",
+            "subtitle": "Solo toma unos minutos comenzar.",
+            "trust_free": "Empieza gratis",
+            "trust_no_card": "No requiere tarjeta",
+            "trust_questions": "¿Preguntas?"
         }
     },
     "footer": {

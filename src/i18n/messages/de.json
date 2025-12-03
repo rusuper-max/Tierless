@@ -198,6 +198,7 @@
             "title_suffix": "online zu sein.",
             "subtitle": "Erstelle interaktive Preislisten und Rechner in wenigen Minuten. Teile sie per Link oder QR-Code. Aktualisiere jederzeit sofort.",
             "cta_start": "Kostenlos starten",
+            "cta_examples": "Beispiele ansehen",
             "cta_pricing": "Preise ansehen",
             "trust_no_coding": "Kein Code",
             "trust_free": "Kostenloser Start",
@@ -236,9 +237,11 @@
             "editor_title": "Drag & Drop Leichtigkeit",
             "editor_desc": "Kein Code. Services hinzufügen, Preise festlegen, Stil wählen.",
             "embed_title": "Einfaches Einbetten",
-            "embed_desc": "Kompatibel mit WordPress, Webflow, Shopify usw.",
+            "easy_embed_desc": "Bette es in Sekunden auf deiner Website ein.",
             "brand_title": "100 % deine Marke",
-            "brand_desc": "Farben, Schriften und Stil vollständig anpassbar."
+            "brand_desc": "Farben, Schriften und Stil vollständig anpassbar.",
+            "your_business_name": "Dein Firmenname",
+            "professional_modern": "Professionell & Modern"
         },
         "qr": {
             "badge": "So funktioniert's",
@@ -255,7 +258,8 @@
             "coloring": "Farbe",
             "treatment": "Pflege",
             "blowout": "Föhnen",
-            "book_now": "Jetzt buchen"
+            "book_now": "Jetzt buchen",
+            "add_item": "Artikel hinzufügen"
         },
         "usecases": {
             "badge": "Für jede Branche",
@@ -277,11 +281,12 @@
             "feature3": "Sofort bearbeitbar"
         },
         "final_cta": {
-            "title": "Bereit, deine Preise online zu stellen?",
-            "subtitle": "Schließe dich Unternehmen an, die Tierless nutzen, um professionell zu wirken.",
-            "cta": "Preisseite erstellen",
-            "pricing": "Preise ansehen",
-            "trust": "Kostenlos starten • Keine Karte nötig"
+            "title_part1": "Deine Preise,",
+            "title_part2": "online.",
+            "subtitle": "Es dauert nur wenige Minuten, um zu starten.",
+            "trust_free": "Kostenlos starten",
+            "trust_no_card": "Keine Kreditkarte erforderlich",
+            "trust_questions": "Fragen?"
         }
     },
     "footer": {
