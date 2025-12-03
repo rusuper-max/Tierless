@@ -267,6 +267,18 @@
         },
         "cta": {
             "button": "Kreirajte vašu stranicu sa cenama"
+        },
+        "aiscan": {
+            "badge": "AI Uvoz",
+            "title_prefix": "Od papira do sajta",
+            "title_highlight": "za 30 sekundi",
+            "subtitle": "Zaboravite ručno kucanje. Samo uslikajte vaš meni, a naš AI automatski izvlači sve stavke i cene.",
+            "step1": "Vaš fizički meni",
+            "step2": "Spremno u editoru",
+            "processing": "AI Obrada",
+            "feature1": "Štedi sate ručnog rada",
+            "feature2": "Visoka tačnost izvlačenja",
+            "feature3": "Odmah spremno za izmene"
         }
     },
     "footer": {

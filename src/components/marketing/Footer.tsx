@@ -44,6 +44,7 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-white mb-4">{t("footer.support")}</h4>
             <ul className="space-y-2 text-sm text-slate-400">
+              <li><Link href="/faq" className="hover:text-white transition">FAQ</Link></li>
               <li><a href="mailto:support@tierless.net" className="hover:text-white transition">{t("footer.contact")}</a></li>
             </ul>
           </div>

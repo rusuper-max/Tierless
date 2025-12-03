@@ -4,12 +4,11 @@ import { useEffect, useRef } from "react";
 import { Renderer, Camera, Geometry, Program, Mesh, Vec2, Texture } from "ogl";
 
 /**
- * ParticlesBackgroundLight
+ * ParticlesBackgroundLight - HOVER-ONLY RENDERING
  * 
- * Light mode version with hover-reveal effect:
- * - Prices are nearly invisible by default (2-3% opacity)
- * - On mouse hover, prices "light up" in brand gradient colors
- * - Creates a subtle, interactive "easter egg" effect
+ * Key optimization: Particles are discarded (not rendered) unless 
+ * they're near the mouse cursor. This means GPU work is minimal
+ * when not hovering, and only renders near the cursor.
  */
 export default function ParticlesBackgroundLight() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -18,11 +17,10 @@ export default function ParticlesBackgroundLight() {
     const container = containerRef.current;
     if (!container) return;
 
-    // 1. SETUP RENDERER
     const renderer = new Renderer({
       dpr: Math.min(window.devicePixelRatio, 2),
       alpha: true,
-      depth: false
+      depth: false,
     });
     const gl = renderer.gl;
 
@@ -50,7 +48,7 @@ export default function ParticlesBackgroundLight() {
     resize();
 
     // ==========================================
-    // PRICE ATLAS - Dark text for light background
+    // PRICE ATLAS - Full quality (1024x1024, 8x8 grid)
     // ==========================================
     const makePriceAtlas = () => {
       const size = 1024;
@@ -84,7 +82,7 @@ export default function ParticlesBackgroundLight() {
       ctx.clearRect(0, 0, size, size);
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = "white"; // White text, we'll color it in shader
+      ctx.fillStyle = "white";
 
       for (let i = 0; i < (cols * rows); i++) {
         const col = i % cols;
@@ -172,11 +170,14 @@ export default function ParticlesBackgroundLight() {
     const fragment = /* glsl */ `
       precision highp float;
       uniform sampler2D uAtlas;
-      uniform float uTime;
       varying vec4 vRandom;
       varying float vHover;
       
       void main() {
+        // KEY OPTIMIZATION: Discard particles far from mouse
+        // This means GPU doesn't render them at all!
+        if (vHover < 0.01) discard;
+        
         float totalCells = 64.0;
         float cols = 8.0;
         float rows = 8.0;
@@ -187,11 +188,9 @@ export default function ParticlesBackgroundLight() {
         
         vec2 uv = gl_PointCoord;
         uv.y = 1.0 - uv.y; 
-        
         uv = (uv + vec2(col, row)) / vec2(cols, rows);
         
         vec4 texColor = texture2D(uAtlas, uv);
-        
         if (texColor.a < 0.1) discard;
 
         // Brand gradient colors (indigo -> cyan -> teal)
@@ -199,27 +198,19 @@ export default function ParticlesBackgroundLight() {
         vec3 colorCyan = vec3(0.220, 0.741, 0.973);    // #38bdf8
         vec3 colorTeal = vec3(0.078, 0.722, 0.651);    // #14b8a6
         
-        // Subtle gray for non-hovered state (more visible now)
-        vec3 colorGray = vec3(0.75, 0.78, 0.82);
-        
-        // Mix between gradient colors based on random
+        // Mix gradient based on random
         vec3 gradientColor = mix(colorIndigo, colorCyan, vRandom.w);
         gradientColor = mix(gradientColor, colorTeal, vRandom.y * 0.5);
-        
-        // Final color: gray when not hovered, gradient when hovered
-        vec3 finalColor = mix(colorGray, gradientColor, vHover);
 
-        // MORE VISIBLE: Higher base opacity, much higher hover opacity
-        float baseAlpha = 0.12; // Visible but subtle
-        float hoverAlpha = 0.85; // Very visible on hover
-        float finalAlpha = mix(baseAlpha, hoverAlpha, vHover);
+        // Fade in from transparent to visible
+        float alpha = vHover * 0.85;
 
-        gl_FragColor = vec4(finalColor, finalAlpha * texColor.a);
+        gl_FragColor = vec4(gradientColor, alpha * texColor.a);
       }
     `;
 
-    // --- INIT ---
-    const numParticles = 250; // Slightly fewer for cleaner look
+    // More particles since we only render near cursor anyway
+    const numParticles = 200;
 
     const positionData = new Float32Array(numParticles * 3);
     const randomData = new Float32Array(numParticles * 4);
@@ -279,19 +270,20 @@ export default function ParticlesBackgroundLight() {
       );
     }
 
-    // Reset mouse when leaving window
     function resetMouse() {
       mouse.set(9999, 9999);
     }
 
-    window.addEventListener("mousemove", updateMouse);
-    window.addEventListener("touchmove", updateMouse);
+    window.addEventListener("mousemove", updateMouse, { passive: true });
+    window.addEventListener("touchmove", updateMouse, { passive: true });
     window.addEventListener("mouseleave", resetMouse);
 
+    // --- RENDER LOOP ---
+    // Since we discard most fragments when not hovering, 
+    // full framerate is fine - GPU work is minimal
     let reqId: number;
     function update(t: number) {
       reqId = requestAnimationFrame(update);
-      // Keep time within reasonable bounds
       const time = (t * 0.001) % 10000;
 
       program.uniforms.uTime.value = time;

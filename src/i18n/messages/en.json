@@ -305,6 +305,18 @@
     },
     "cta": {
       "button": "Create Your Price Page"
+    },
+    "aiscan": {
+      "badge": "AI-Powered Import",
+      "title_prefix": "From paper to website",
+      "title_highlight": "in 30 seconds",
+      "subtitle": "Forget manual typing. Just snap a photo of your menu, and our AI extracts all items and prices automatically.",
+      "step1": "Your physical menu",
+      "step2": "Ready in editor",
+      "processing": "AI Processing",
+      "feature1": "Saves hours of manual work",
+      "feature2": "High accuracy extraction",
+      "feature3": "Instantly editable"
     }
   },
   "footer": {

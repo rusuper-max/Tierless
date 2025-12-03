@@ -2,29 +2,26 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import {
     ArrowRight,
     Sparkles,
     CheckCircle2,
     Zap,
-    BarChart3,
     Layers,
-    Calculator,
     Code2,
     Scissors,
     Camera,
     Coffee,
     Rocket,
-    Globe,
     Smartphone,
     QrCode,
+    ScanLine,
+    FileText,
 } from "lucide-react";
 import ParticlesBackgroundLight from "@/components/landing/ParticlesBackgroundLight";
-import InteractiveGridPattern from "@/components/landing/InteractiveGridPattern";
-import GlowingGrid from "@/components/landing/GlowingGrid";
-import TiltCard from "@/components/landing/TiltCard";
 import MockEditor from "@/components/landing/MockEditor";
+import UseCasesGrid from "@/components/landing/UseCasesGrid";
 import StartHeader from "@/components/marketing/MarketingHeader";
 import Footer from "@/components/marketing/Footer";
 import GlowButton from "@/components/ui/GlowButton";
@@ -34,6 +31,47 @@ import { useT } from "@/i18n/t";
 function cn(...classes: (string | undefined | null | false)[]) {
     return classes.filter(Boolean).join(" ");
 }
+
+// --- SECTION DIVIDERS ---
+
+// Dramatic arrow/triangle divider (like jeton.com)
+const ArrowDivider = ({ color = "fill-white", className = "" }: { color?: string; className?: string }) => (
+    <div className={cn("absolute left-0 right-0 bottom-0 w-full overflow-hidden leading-[0]", className)}>
+        <svg
+            className={cn("relative block w-full h-[80px] md:h-[120px] lg:h-[150px]", color)}
+            viewBox="0 0 1200 120"
+            preserveAspectRatio="none"
+        >
+            <path d="M0,0 L600,120 L1200,0 L1200,120 L0,120 Z" />
+        </svg>
+    </div>
+);
+
+// Inverted arrow (for top of sections)
+const ArrowDividerTop = ({ color = "fill-white" }: { color?: string }) => (
+    <div className="absolute left-0 right-0 top-0 w-full overflow-hidden leading-[0]">
+        <svg
+            className={cn("relative block w-full h-[80px] md:h-[120px] lg:h-[150px]", color)}
+            viewBox="0 0 1200 120"
+            preserveAspectRatio="none"
+        >
+            <path d="M0,120 L600,0 L1200,120 L1200,0 L0,0 Z" />
+        </svg>
+    </div>
+);
+
+// Simple wave for subtle transitions
+const WaveDivider = ({ flip = false, color = "fill-white" }: { flip?: boolean; color?: string }) => (
+    <div className={cn("absolute left-0 right-0 w-full overflow-hidden leading-[0]", flip ? "top-0 rotate-180" : "bottom-0")}>
+        <svg
+            className={cn("relative block w-full h-[40px] md:h-[60px]", color)}
+            viewBox="0 0 1200 120"
+            preserveAspectRatio="none"
+        >
+            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" />
+        </svg>
+    </div>
+);
 
 // --- COMPONENTS ---
 
@@ -303,53 +341,11 @@ export default function LandingPage() {
 
 
 
-                {/* 2. WHY TIERLESS - Clean Benefits */}
-                <section className="relative py-24 px-4 sm:px-6 overflow-hidden bg-slate-50/30">
-
-                    {/* Aurora Mesh Gradient Background (Restored) */}
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute -top-[30%] -left-[10%] w-[70%] h-[70%] rounded-full bg-indigo-500/10 blur-[120px] mix-blend-multiply" />
-                        <div className="absolute top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-cyan-500/10 blur-[120px] mix-blend-multiply" />
-                        <div className="absolute -bottom-[20%] left-[20%] w-[60%] h-[60%] rounded-full bg-teal-500/10 blur-[120px] mix-blend-multiply" />
-                    </div>
-
-                    <div className="relative z-10 max-w-6xl mx-auto">
-
-                        <div className="text-center max-w-2xl mx-auto mb-16">
-                            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                                {t("landing.why.title")}
-                            </h2>
-                            <p className="text-lg text-slate-600">
-                                {t("landing.why.subtitle")}
-                            </p>
-                        </div>
-
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {[
-                                { icon: Globe, titleKey: "landing.why.no_website_title", descKey: "landing.why.no_website_desc", color: "text-indigo-600", bg: "bg-indigo-50" },
-                                { icon: Smartphone, titleKey: "landing.why.mobile_title", descKey: "landing.why.mobile_desc", color: "text-cyan-600", bg: "bg-cyan-50" },
-                                { icon: Zap, titleKey: "landing.why.update_title", descKey: "landing.why.update_desc", color: "text-amber-600", bg: "bg-amber-50" },
-                                { icon: QrCode, titleKey: "landing.why.qr_title", descKey: "landing.why.qr_desc", color: "text-emerald-600", bg: "bg-emerald-50" },
-                                { icon: Calculator, titleKey: "landing.why.calculator_title", descKey: "landing.why.calculator_desc", color: "text-teal-600", bg: "bg-teal-50" },
-                                { icon: BarChart3, titleKey: "landing.why.analytics_title", descKey: "landing.why.analytics_desc", color: "text-slate-700", bg: "bg-slate-100" },
-                            ].map((feature, i) => (
-                                <TiltCard key={i} className="h-full">
-                                    <div className="h-full p-8 rounded-2xl bg-white/80 backdrop-blur-sm border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                                        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-4", feature.bg)}>
-                                            <feature.icon className={cn("w-6 h-6", feature.color)} />
-                                        </div>
-                                        <h3 className="text-lg font-semibold text-slate-900 mb-2">{t(feature.titleKey)}</h3>
-                                        <p className="text-slate-600 text-sm leading-relaxed">{t(feature.descKey)}</p>
-                                    </div>
-                                </TiltCard>
-                            ))}
-                        </div>
-
-                    </div>
-                </section>
+                {/* 2. USE CASES GRID - ClickUp Style */}
+                <UseCasesGrid />
 
                 {/* 3. FEATURES SHOWCASE */}
-                <section className="py-24 px-4 sm:px-6 bg-white">
+                <section className="relative py-24 px-4 sm:px-6 bg-white">
                     <div className="max-w-6xl mx-auto">
 
                         <div className="grid md:grid-cols-2 gap-8 items-start">
@@ -439,10 +435,197 @@ export default function LandingPage() {
 
                         </div>
                     </div>
+
                 </section>
 
-                {/* 4. QR CODE DEMO SECTION */}
-                <section className="py-24 px-4 sm:px-6 bg-white overflow-hidden">
+
+                {/* 4. AI SCAN SECTION - Photo to Digital */}
+                <section className="relative py-24 px-4 sm:px-6 bg-gradient-to-b from-cyan-50/30 via-white to-white overflow-hidden">
+
+                    {/* Subtle grid pattern */}
+                    <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#64748b_1px,transparent_1px),linear-gradient(to_bottom,#64748b_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+                    <div className="relative z-10 max-w-6xl mx-auto">
+
+                        {/* Header */}
+                        <div className="text-center max-w-2xl mx-auto mb-16">
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-cyan-50 border border-indigo-100 text-indigo-700 text-xs font-bold mb-6 uppercase tracking-wider">
+                                <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
+                                {t("landing.aiscan.badge")}
+                            </div>
+
+                            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+                                {t("landing.aiscan.title_prefix")}{" "}
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500">
+                                    {t("landing.aiscan.title_highlight")}
+                                </span>
+                            </h2>
+
+                            <p className="text-lg text-slate-600 leading-relaxed">
+                                {t("landing.aiscan.subtitle")}
+                            </p>
+                        </div>
+
+                        {/* Transformation Flow */}
+                        <div className="grid lg:grid-cols-[1fr_auto_1fr] gap-8 lg:gap-6 items-center">
+
+                            {/* LEFT: Physical Menu */}
+                            <div className="relative">
+                                <div className="text-center lg:text-right mb-4">
+                                    <span className="inline-flex items-center gap-2 text-sm font-medium text-slate-500">
+                                        <Camera className="w-4 h-4" />
+                                        {t("landing.aiscan.step1")}
+                                    </span>
+                                </div>
+
+                                {/* Paper Menu Mockup */}
+                                <div className="relative max-w-xs mx-auto lg:ml-auto lg:mr-0">
+                                    <div className="relative bg-amber-50 rounded-lg shadow-lg border border-amber-200/50 p-6">
+                                        {/* Menu Header */}
+                                        <div className="relative text-center border-b-2 border-slate-800 pb-3 mb-4">
+                                            <h4 className="text-lg font-bold text-slate-800 tracking-wide uppercase">Menu</h4>
+                                            <span className="text-[10px] text-slate-500 tracking-widest">RESTAURANT XYZ</span>
+                                        </div>
+
+                                        {/* Menu Items */}
+                                        <div className="relative space-y-3 font-serif text-sm">
+                                            {[
+                                                { name: "Caesar Salad", price: "9.50" },
+                                                { name: "Pasta Carbonara", price: "12.00" },
+                                                { name: "Grilled Steak", price: "24.00" },
+                                                { name: "Tiramisu", price: "6.50" },
+                                            ].map((item, i) => (
+                                                <div key={i} className="flex justify-between items-baseline border-b border-dotted border-slate-400 pb-1">
+                                                    <span className="text-slate-700">{item.name}</span>
+                                                    <span className="text-slate-800 font-medium">${item.price}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* CENTER: AI Processing Arrow */}
+                            <div className="flex flex-col items-center justify-center py-8 lg:py-0">
+                                {/* Mobile: Vertical arrow */}
+                                <div className="lg:hidden flex flex-col items-center gap-3">
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                                        <ScanLine className="w-5 h-5 text-white" />
+                                    </div>
+                                    <ArrowRight className="w-6 h-6 text-slate-300 rotate-90" />
+                                </div>
+
+                                {/* Desktop: Horizontal with line */}
+                                <div className="hidden lg:flex items-center gap-4">
+                                    <div className="w-16 h-0.5 bg-gradient-to-r from-slate-200 to-indigo-300" />
+                                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                                        <ScanLine className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div className="w-16 h-0.5 bg-gradient-to-r from-cyan-300 to-slate-200" />
+                                </div>
+
+                                <span className="mt-3 text-xs font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
+                                    {t("landing.aiscan.processing")}
+                                </span>
+                            </div>
+
+                            {/* RIGHT: Digital Editor Result */}
+                            <div className="relative">
+                                <div className="text-center lg:text-left mb-4">
+                                    <span className="inline-flex items-center gap-2 text-sm font-medium text-slate-500">
+                                        <Smartphone className="w-4 h-4" />
+                                        {t("landing.aiscan.step2")}
+                                    </span>
+                                </div>
+
+                                {/* Digital Editor Mockup */}
+                                <div className="relative max-w-xs mx-auto lg:mr-auto lg:ml-0">
+                                    <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                                        {/* Editor Header */}
+                                        <div className="bg-slate-50 border-b border-slate-100 px-4 py-3 flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                                <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                                                <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                                                <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                                            </div>
+                                            <span className="text-[10px] font-mono text-slate-400">Tierless Editor</span>
+                                        </div>
+
+                                        {/* Editor Content */}
+                                        <div className="p-4">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h4 className="font-semibold text-slate-800 text-sm">Main Menu</h4>
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded-full border border-cyan-200">
+                                                    <Sparkles className="w-2.5 h-2.5" />
+                                                    AI Extracted
+                                                </span>
+                                            </div>
+
+                                            {/* Extracted Items */}
+                                            <div className="space-y-2">
+                                                {[
+                                                    { name: "Caesar Salad", price: "$9.50" },
+                                                    { name: "Pasta Carbonara", price: "$12.00" },
+                                                    { name: "Grilled Steak", price: "$24.00" },
+                                                    { name: "Tiramisu", price: "$6.50" },
+                                                ].map((item, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"
+                                                    >
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className="w-7 h-7 rounded bg-slate-200 flex items-center justify-center">
+                                                                <FileText className="w-3.5 h-3.5 text-slate-500" />
+                                                            </div>
+                                                            <span className="text-sm font-medium text-slate-700">{item.name}</span>
+                                                        </div>
+                                                        <span className="text-sm font-bold text-cyan-600">
+                                                            {item.price}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Add Item Placeholder */}
+                                            <div className="mt-3 border-2 border-dashed border-slate-200 rounded-lg py-2 flex items-center justify-center gap-2 text-slate-400 text-xs">
+                                                <span>+ Add Item</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Success checkmark */}
+                                    <div className="absolute -bottom-3 -right-3 w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center shadow-md">
+                                        <CheckCircle2 className="w-5 h-5 text-white" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Feature Pills */}
+                        <div className="mt-16 flex flex-wrap justify-center gap-4">
+                            {[
+                                { icon: Zap, text: t("landing.aiscan.feature1") },
+                                { icon: CheckCircle2, text: t("landing.aiscan.feature2") },
+                                { icon: Layers, text: t("landing.aiscan.feature3") },
+                            ].map((feature, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm text-sm text-slate-600"
+                                >
+                                    <feature.icon className="w-4 h-4 text-cyan-500" />
+                                    {feature.text}
+                                </div>
+                            ))}
+                        </div>
+
+                    </div>
+
+                    {/* Bottom wave */}
+                    <WaveDivider color="fill-white" />
+                </section>
+
+                {/* 5. QR CODE DEMO SECTION */}
+                <section className="relative py-24 px-4 sm:px-6 bg-white overflow-hidden">
                     <div className="max-w-6xl mx-auto">
 
                         {/* Header */}
@@ -462,14 +645,9 @@ export default function LandingPage() {
                         <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
 
                             {/* Step 1: QR Code */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                className="text-center"
-                            >
+                            <div className="text-center">
                                 <div className="relative inline-block mb-6">
-                                    <div className="w-40 h-40 mx-auto bg-white rounded-2xl border-2 border-slate-200 p-4 shadow-lg">
+                                    <div className="w-40 h-40 mx-auto bg-white rounded-2xl border-2 border-slate-200 p-4 shadow-md">
                                         {/* QR Code SVG */}
                                         <svg viewBox="0 0 100 100" className="w-full h-full">
                                             <rect x="10" y="10" width="25" height="25" rx="2" fill="#0f172a" />
@@ -491,47 +669,32 @@ export default function LandingPage() {
                                             <rect x="80" y="80" width="6" height="6" rx="1" fill="#0f172a" />
                                         </svg>
                                     </div>
-                                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">1</div>
+                                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">1</div>
                                 </div>
                                 <h3 className="text-xl font-bold text-slate-900 mb-2">Print your QR code</h3>
                                 <p className="text-slate-600">Put it on your menu, flyer, business card, or storefront window.</p>
-                            </motion.div>
+                            </div>
 
                             {/* Step 2: Phone scanning */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: 0.1 }}
-                                className="text-center"
-                            >
+                            <div className="text-center">
                                 <div className="relative inline-block mb-6">
-                                    <div className="w-32 h-56 mx-auto bg-slate-900 rounded-[24px] border-4 border-slate-800 shadow-xl overflow-hidden">
+                                    <div className="w-32 h-56 mx-auto bg-slate-900 rounded-[24px] border-4 border-slate-800 shadow-lg overflow-hidden">
                                         {/* Phone screen - camera view */}
                                         <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center relative">
-                                            {/* Scanning animation */}
-                                            <div className="absolute inset-4 border-2 border-cyan-400/50 rounded-lg">
-                                                <div className="absolute top-0 left-0 right-0 h-0.5 bg-cyan-400 animate-pulse" />
-                                            </div>
+                                            <div className="absolute inset-4 border-2 border-cyan-400/50 rounded-lg" />
                                             <QrCode className="w-12 h-12 text-slate-500" />
                                         </div>
                                     </div>
-                                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">2</div>
+                                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">2</div>
                                 </div>
                                 <h3 className="text-xl font-bold text-slate-900 mb-2">Customer scans</h3>
                                 <p className="text-slate-600">They point their phone camera at the code. No app needed.</p>
-                            </motion.div>
+                            </div>
 
                             {/* Step 3: Price list appears */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: 0.2 }}
-                                className="text-center"
-                            >
+                            <div className="text-center">
                                 <div className="relative inline-block mb-6">
-                                    <div className="w-32 h-56 mx-auto bg-slate-900 rounded-[24px] border-4 border-slate-800 shadow-xl overflow-hidden">
+                                    <div className="w-32 h-56 mx-auto bg-slate-900 rounded-[24px] border-4 border-slate-800 shadow-lg overflow-hidden">
                                         {/* Phone screen - price list */}
                                         <div className="w-full h-full bg-white p-2 flex flex-col">
                                             <div className="text-[8px] font-bold text-slate-800 mb-1 text-center">Bella's Studio</div>
@@ -558,56 +721,137 @@ export default function LandingPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">3</div>
+                                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">3</div>
                                 </div>
                                 <h3 className="text-xl font-bold text-slate-900 mb-2">Prices appear instantly</h3>
                                 <p className="text-slate-600">Your beautiful price page loads in their browser. Ready to book.</p>
-                            </motion.div>
+                            </div>
 
                         </div>
 
                     </div>
+
                 </section>
 
-                {/* 5. FINAL CTA */}
-                <section className="group py-24 lg:py-32 px-6 text-center bg-slate-50 relative overflow-hidden">
-                    {/* Interactive Grid Background - Only visible on desktop hover */}
-                    <div className="hidden md:block opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                        <InteractiveGridPattern />
-                    </div>
-
-                    <div className="relative z-10 max-w-3xl mx-auto">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                        >
-                            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
-                                Ready to put your prices online?
-                            </h2>
-                            <p className="text-xl text-slate-600 mb-10 max-w-xl mx-auto">
-                                Join businesses that use Tierless to share their services professionally.
-                            </p>
-
-                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <GlowButton href="/login" variant="primary">
-                                    {t("landing.cta.button")}
-                                    <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                                </GlowButton>
-                                <GlowButton href="/examples" variant="secondary">
-                                    {t("landing.hero.cta_examples")}
-                                </GlowButton>
-                            </div>
-
-                            <p className="mt-6 text-sm font-medium text-slate-500">
-                                Free to start • No credit card required
-                            </p>
-                        </motion.div>
-                    </div>
-                </section>
-
+                {/* 6. FINAL CTA - With scroll-animated reveal */}
+                <ScrollRevealCTA t={t} />
             </main>
             <Footer />
         </>
+    );
+}
+
+// --- FLOATING PRICE COMPONENT ---
+function FloatingPrice({
+    price,
+    scrollYProgress,
+    index
+}: {
+    price: string;
+    scrollYProgress: any;
+    index: number;
+}) {
+    const row = Math.floor(index / 4);
+    const col = index % 4;
+    const baseX = 5 + col * 25;
+    const baseY = 5 + row * 25;
+    const speed = 150 + (index % 3) * 100;
+
+    const y = useTransform(scrollYProgress, [0, 1], [speed, -speed]);
+
+    return (
+        <motion.span
+            className="absolute text-white/[0.08] font-bold text-3xl md:text-5xl lg:text-6xl select-none whitespace-nowrap"
+            style={{
+                left: `${baseX}%`,
+                top: `${baseY}%`,
+                y,
+            }}
+        >
+            {price}
+        </motion.span>
+    );
+}
+
+// --- SIMPLE GRADIENT DIVIDER ---
+function GradientDivider() {
+    return (
+        <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-teal-400" />
+    );
+}
+
+// --- SCROLL-ANIMATED CTA WITH FLYING PRICES ---
+function ScrollRevealCTA({ t }: { t: (key: string) => string }) {
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
+    const { scrollYProgress } = useScroll({
+        target: containerRef,
+        offset: ["start end", "end start"]
+    });
+
+    const contentOpacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.3, 1, 1, 0.3]);
+    const contentScale = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.95, 1, 1, 0.95]);
+
+    const prices = [
+        "$9.99", "€15", "£20", "$49",
+        "€25", "$99", "Free", "/mo",
+        "$29", "€12", "₹499", "$19",
+        "€5", "100%", "$299", "€60"
+    ];
+
+    return (
+        <section
+            ref={containerRef}
+            className="relative py-32 lg:py-40 px-6 text-center bg-gradient-to-br from-indigo-600 via-indigo-700 to-cyan-600 overflow-hidden"
+        >
+            {/* Flying prices in background - parallax on scroll */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {prices.map((price, i) => (
+                    <FloatingPrice
+                        key={i}
+                        price={price}
+                        scrollYProgress={scrollYProgress}
+                        index={i}
+                    />
+                ))}
+            </div>
+
+            {/* Main content with fade effect */}
+            <motion.div
+                className="relative z-10 max-w-3xl mx-auto"
+                style={{
+                    opacity: contentOpacity,
+                    scale: contentScale,
+                }}
+            >
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
+                    Your prices,<br />
+                    <span className="text-cyan-300">online.</span>
+                </h2>
+                <p className="text-xl text-indigo-100 mb-10 max-w-xl mx-auto">
+                    It only takes a few minutes to get started.
+                </p>
+
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <Link
+                        href="/login"
+                        className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-white text-indigo-700 font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200"
+                    >
+                        {t("landing.cta.button")}
+                        <ArrowRight className="w-5 h-5" />
+                    </Link>
+                    <Link
+                        href="/examples"
+                        className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-white/10 text-white font-semibold text-lg border border-white/20 hover:bg-white/20 transition-all duration-200"
+                    >
+                        {t("landing.hero.cta_examples")}
+                    </Link>
+                </div>
+
+                <p className="mt-8 text-sm font-medium text-indigo-200">
+                    Free to start • No credit card required • <Link href="/faq" className="underline hover:text-white">Have questions?</Link>
+                </p>
+            </motion.div>
+        </section>
     );
 }
