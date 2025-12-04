@@ -16,7 +16,6 @@ type Props = {
 
 export default function HelpModeIntro({ onClose, onDontShowAgain, onActivate, onStartTour }: Props) {
     const [dontShow, setDontShow] = useState(false);
-    const [closeHover, setCloseHover] = useState(false);
 
     const handleGotIt = () => {
         if (dontShow) {
@@ -47,27 +46,31 @@ export default function HelpModeIntro({ onClose, onDontShowAgain, onActivate, on
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 overflow-hidden">
+            <div className="relative w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-2xl overflow-hidden">
+
+                {/* Simple X button - top right corner of modal */}
+                <button
+                    onClick={handleClose}
+                    type="button"
+                    className="absolute top-3 right-3 flex items-center justify-center w-11 h-11 rounded-full text-[var(--muted)] hover:text-white hover:rotate-90 transition-all duration-300 z-20 pointer-events-auto group overflow-hidden cursor-pointer shadow-md hover:shadow-2xl"
+                    style={{ lineHeight: 0 }}
+                    title={t("Close")}
+                    aria-label={t("Close")}
+                >
+                    {/* Background - subtle on default, gradient on hover */}
+                    <span
+                        className="absolute inset-0 bg-[var(--surface)] group-hover:opacity-0 transition-opacity duration-300"
+                    />
+                    <span
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        style={{ background: BRAND_GRADIENT }}
+                    />
+                    <X className="w-6 h-6 relative z-10" strokeWidth={2.5} style={{ display: 'block' }} />
+                </button>
 
                 {/* Header with gradient */}
-                <div className="relative p-6 pb-4">
+                <div className="relative p-6 pb-4 pt-6">
                     <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ background: BRAND_GRADIENT }} />
-                    <button
-                        onClick={handleClose}
-                        type="button"
-                        onMouseEnter={() => setCloseHover(true)}
-                        onMouseLeave={() => setCloseHover(false)}
-                        className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full transition-all z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/40"
-                        style={{
-                            background: closeHover ? BRAND_GRADIENT : "rgba(255,255,255,0.08)",
-                            color: closeHover ? "#fff" : "var(--muted)",
-                            boxShadow: closeHover ? "0 12px 24px rgba(79,70,229,0.35)" : "none",
-                        }}
-                        title={t("Close")}
-                        aria-label={t("Close")}
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
 
                     <div className="relative z-10 flex flex-col items-center text-center">
                         <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-lg" style={{ background: BRAND_GRADIENT }}>

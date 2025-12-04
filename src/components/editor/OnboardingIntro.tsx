@@ -14,15 +14,16 @@ type Props = {
 export default function OnboardingIntro({ onStartTour, onSkip }: Props) {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-3 sm:p-4 animate-in fade-in duration-200 overflow-y-auto">
-            <div className="w-full max-w-2xl rounded-2xl sm:rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden my-auto">
+            <div className="w-full max-w-2xl rounded-2xl sm:rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-2xl overflow-hidden my-auto">
 
                 {/* Header with gradient background - COMPACT ON MOBILE */}
                 <div className="relative p-4 sm:p-8 pb-3 sm:pb-6" style={{ background: BRAND_GRADIENT }}>
                     <button
                         onClick={onSkip}
-                        className="absolute top-2 right-2 sm:top-4 sm:right-4 p-1.5 sm:p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-colors z-10"
+                        className="absolute top-2 right-2 sm:top-3 sm:right-3 w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/90 hover:rotate-90 text-white hover:text-[#4F46E5] transition-all duration-300 z-10 shadow-lg hover:shadow-2xl cursor-pointer"
+                        style={{ lineHeight: 0 }}
                     >
-                        <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <X className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.5} style={{ display: 'block' }} />
                     </button>
 
                     <div className="relative z-10 flex flex-col items-center text-center">
@@ -66,27 +67,41 @@ export default function OnboardingIntro({ onStartTour, onSkip }: Props) {
                             </div>
                         </button>
 
+
                         {/* Skip Option - COMPACT ON MOBILE */}
                         <button
                             onClick={onSkip}
-                            className="group relative p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-[var(--border)] bg-[var(--bg)]/50 hover:bg-[var(--surface)] transition-all hover:scale-105 active:scale-95 text-left"
+                            className="group relative p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-[var(--border)] bg-[var(--bg)]/50 hover:border-transparent transition-all hover:scale-105 active:scale-95 text-left overflow-hidden"
                         >
-                            <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--surface)] flex items-center justify-center shrink-0 text-[var(--text)]">
-                                    <span className="text-lg sm:text-xl">👋</span>
+                            {/* Gradient border on hover */}
+                            <span
+                                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                                style={{
+                                    padding: 2,
+                                    background: BRAND_GRADIENT,
+                                    WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                                    WebkitMaskComposite: "xor",
+                                    maskComposite: "exclude",
+                                }}
+                            />
+                            <div className="relative z-10">
+                                <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--surface)] group-hover:bg-gradient-to-br group-hover:from-[#4F46E5]/10 group-hover:to-[#22D3EE]/10 flex items-center justify-center shrink-0 text-[var(--text)] transition-all">
+                                        <span className="text-lg sm:text-xl">👋</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-base sm:text-lg font-bold text-[var(--text)] mb-0.5 sm:mb-1">
+                                            {t("I'll figure things out myself")}
+                                        </h3>
+                                        <p className="text-xs sm:text-sm text-[var(--muted)]">
+                                            {t("Jump straight into editing")}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <h3 className="text-base sm:text-lg font-bold text-[var(--text)] mb-0.5 sm:mb-1">
-                                        {t("I'll figure things out myself")}
-                                    </h3>
-                                    <p className="text-xs sm:text-sm text-[var(--muted)]">
-                                        {t("Jump straight into editing")}
-                                    </p>
+                                <div className="text-[10px] sm:text-xs text-[var(--muted)]">
+                                    <span className="hidden sm:inline">{t("You can always access the Guide button later")}</span>
+                                    <span className="sm:hidden">{t("Access Guide later")}</span>
                                 </div>
-                            </div>
-                            <div className="text-[10px] sm:text-xs text-[var(--muted)]">
-                                <span className="hidden sm:inline">{t("You can always access the Guide button later")}</span>
-                                <span className="sm:hidden">{t("Access Guide later")}</span>
                             </div>
                         </button>
                     </div>

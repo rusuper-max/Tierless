@@ -228,7 +228,8 @@ export default function GuidedTour({ steps, onComplete, onSkip }: Props) {
                         <button
                             onClick={onSkip}
                             type="button"
-                            className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-colors"
+                            className="absolute top-3 right-3 grid place-items-center w-9 h-9 rounded-full text-white/80 hover:text-white hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60 transition-all pointer-events-auto"
+                            aria-label={t("Close")}
                         >
                             <X className="w-4 h-4" />
                         </button>
