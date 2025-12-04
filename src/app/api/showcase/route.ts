@@ -15,6 +15,39 @@ const FEATURED_SLUGS = [
   "fitness-showcase",
 ];
 
+// Helper to get author name with proper priority
+async function getAuthorName(pool: any, userId: string, meta: any): Promise<string> {
+  // Priority 1: Check user_profiles table for business_name
+  try {
+    const profileRes = await pool.query(
+      `SELECT business_name FROM user_profiles WHERE user_id = $1 LIMIT 1`,
+      [userId]
+    );
+    if (profileRes.rows[0]?.business_name) {
+      return profileRes.rows[0].business_name;
+    }
+  } catch (e) {
+    // Table might not exist yet, ignore
+  }
+
+  // Priority 2: displayName from meta
+  if (meta?.displayName) return meta.displayName;
+
+  // Priority 3: publicName from meta  
+  if (meta?.publicName) return meta.publicName;
+
+  // Priority 4: business.name from meta
+  if (meta?.business?.name) return meta.business.name;
+
+  // Priority 5: Email prefix as fallback
+  if (userId?.includes("@")) {
+    return userId.split("@")[0];
+  }
+
+  // Final fallback
+  return `user_${userId.slice(0, 8)}`;
+}
+
 export async function GET() {
   const pool = getPool();
 
@@ -31,12 +64,10 @@ export async function GET() {
     featuredRes.rows.map(async (row) => {
       const fullCalc = await fullStore.getFull(row.user_id, row.slug);
       const meta = fullCalc?.meta || {};
-      const cover = meta.business?.coverUrl || meta.simpleCoverImage || null;
+      const cover = meta.business?.coverUrl || meta.simpleCoverImage || meta.heroImageUrl || null;
 
-      let authorName = meta.business?.name || `user_${row.user_id.slice(0, 8)}`;
-      if (row.user_id && row.user_id.includes("@")) {
-        authorName = row.user_id.split("@")[0];
-      }
+      // Get author from profile business_name first, then meta, then email
+      const authorName = await getAuthorName(pool, row.user_id, meta);
 
       return {
         slug: row.slug,
@@ -67,12 +98,10 @@ export async function GET() {
     communityRes.rows.map(async (row) => {
       const fullCalc = await fullStore.getFull(row.user_id, row.slug);
       const meta = fullCalc?.meta || {};
-      const cover = meta.business?.coverUrl || meta.simpleCoverImage || null;
+      const cover = meta.business?.coverUrl || meta.simpleCoverImage || meta.heroImageUrl || null;
 
-      let authorName = meta.business?.name || `user_${row.user_id.slice(0, 8)}`;
-      if (row.user_id && row.user_id.includes("@")) {
-        authorName = row.user_id.split("@")[0];
-      }
+      // Get author from profile business_name first, then meta, then email
+      const authorName = await getAuthorName(pool, row.user_id, meta);
 
       return {
         slug: row.slug,
@@ -111,10 +140,8 @@ export async function GET() {
       const fullCalc = await fullStore.getFull(row.user_id, row.slug);
       const meta = fullCalc?.meta || {};
 
-      let authorName = `user_${row.user_id.slice(0, 8)}`;
-      if (row.user_id && row.user_id.includes("@")) {
-        authorName = row.user_id.split("@")[0];
-      }
+      // Get author from profile business_name first, then meta, then email
+      const authorName = await getAuthorName(pool, row.user_id, meta);
 
       return {
         rank: index + 1,

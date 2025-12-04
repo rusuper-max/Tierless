@@ -21,10 +21,11 @@ export const SESSION_COOKIE = SESSION_COOKIE_NAME;
 
 // Secret key for JWT signing
 // SECURITY: env.ts validates SESSION_SECRET exists in production
-// In development, use a fallback that will never work in production
-const SECRET = SESSION_SECRET || (IS_DEV ? "dev_secret_min_32_chars_000000000000000" : (() => {
-  throw new Error("FATAL: SESSION_SECRET is required!");
-})());
+// We now enforce it in development too to avoid hardcoded secrets in source
+if (!SESSION_SECRET) {
+  throw new Error("FATAL: SESSION_SECRET is required! Please add it to your .env file.");
+}
+const SECRET = SESSION_SECRET;
 const secretKey = new TextEncoder().encode(SECRET);
 
 export const COOKIE_BASE = {

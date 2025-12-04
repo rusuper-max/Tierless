@@ -6,6 +6,11 @@
  * Runs SQL migrations against PostgreSQL database.
  * Uses DATABASE_URL from environment variables.
  * 
+ * Features:
+ * - Transaction safety (rollback on error)
+ * - Checksum validation (prevents history rewriting)
+ * - Automatic schema updates
+ * 
  * Usage:
  *   node scripts/run-migrations.js
  */
@@ -13,6 +18,7 @@
 const { Pool } = require('pg'); // eslint-disable-line
 const fs = require('fs'); // eslint-disable-line
 const path = require('path'); // eslint-disable-line
+const crypto = require('crypto'); // eslint-disable-line
 
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'data', 'migrations');
 
@@ -26,6 +32,12 @@ if (fs.existsSync(envPath)) {
             process.env[match[1]] = match[2] || '';
         }
     });
+}
+
+function calculateChecksum(content) {
+    // Normalize line endings to prevent OS differences affecting checksum
+    const normalized = content.replace(/\r\n/g, '\n');
+    return crypto.createHash('sha256').update(normalized).digest('hex');
 }
 
 async function runMigrations() {
@@ -50,13 +62,24 @@ async function runMigrations() {
             CREATE TABLE IF NOT EXISTS _migrations (
                 id SERIAL PRIMARY KEY,
                 name TEXT NOT NULL UNIQUE,
+                checksum TEXT,
                 applied_at TIMESTAMPTZ DEFAULT NOW()
             )
         `);
 
+        // Ensure checksum column exists (for existing tables)
+        await pool.query(`
+            DO $$ 
+            BEGIN 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='_migrations' AND column_name='checksum') THEN 
+                    ALTER TABLE _migrations ADD COLUMN checksum TEXT; 
+                END IF; 
+            END $$;
+        `);
+
         // Get list of applied migrations
-        const { rows: applied } = await pool.query('SELECT name FROM _migrations ORDER BY name');
-        const appliedSet = new Set(applied.map(r => r.name));
+        const { rows: applied } = await pool.query('SELECT name, checksum FROM _migrations ORDER BY name');
+        const appliedMap = new Map(applied.map(r => [r.name, r.checksum]));
 
         // Get all migration files
         if (!fs.existsSync(MIGRATIONS_DIR)) {
@@ -77,18 +100,31 @@ async function runMigrations() {
 
         let appliedCount = 0;
         for (const file of files) {
-            if (appliedSet.has(file)) {
+            const filePath = path.join(MIGRATIONS_DIR, file);
+            const sql = fs.readFileSync(filePath, 'utf8');
+            const checksum = calculateChecksum(sql);
+
+            if (appliedMap.has(file)) {
+                const storedChecksum = appliedMap.get(file);
+                // Only verify checksum if one was stored (legacy migrations might be null)
+                if (storedChecksum && storedChecksum !== checksum) {
+                    console.error(`❌ CRITICAL ERROR: Checksum mismatch for ${file}`);
+                    console.error(`   Stored: ${storedChecksum}`);
+                    console.error(`   Calculated: ${checksum}`);
+                    console.error(`   This means the migration file has been changed after being applied.`);
+                    console.error(`   Do NOT modify applied migrations. Create a new migration instead.`);
+                    process.exit(1);
+                }
                 console.log(`⏭️  Skipping ${file} (already applied)`);
                 continue;
             }
 
             console.log(`🔄 Applying ${file}...`);
-            const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8');
 
             try {
                 await pool.query('BEGIN');
                 await pool.query(sql);
-                await pool.query('INSERT INTO _migrations (name) VALUES ($1)', [file]);
+                await pool.query('INSERT INTO _migrations (name, checksum) VALUES ($1, $2)', [file, checksum]);
                 await pool.query('COMMIT');
                 console.log(`✅ Applied ${file}`);
                 appliedCount++;

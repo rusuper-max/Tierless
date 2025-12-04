@@ -47,7 +47,7 @@ export default function HelpModeIntro({ onClose, onDontShowAgain, onActivate, on
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+            <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 overflow-hidden">
 
                 {/* Header with gradient */}
                 <div className="relative p-6 pb-4">

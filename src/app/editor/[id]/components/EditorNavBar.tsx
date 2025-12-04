@@ -342,7 +342,20 @@ export default function EditorNavBar({
               >
                 {t("Dashboard")}
               </Link>
-              <ChevronRight className="w-4 h-4 mx-1 opacity-40" />
+              <ChevronRight className="hidden sm:inline w-4 h-4 mx-1 opacity-40" />
+
+              {editorMode !== "setup" && (
+                <>
+                  <button
+                    onClick={onBack}
+                    className="hidden sm:inline hover:text-[var(--text)] transition-colors"
+                    title={t("Change editor mode")}
+                  >
+                    {editorMode === "simple" ? t("Tierless Editor") : t("Tier Based Editor")}
+                  </button>
+                  <ChevronRight className="hidden sm:inline w-4 h-4 mx-1 opacity-40" />
+                </>
+              )}
 
               <div className="flex items-center gap-2 min-w-0">
                 <span

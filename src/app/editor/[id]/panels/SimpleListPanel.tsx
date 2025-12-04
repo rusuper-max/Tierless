@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, ChangeEvent, useEffect, useMemo } from "react";
+import ReactDOM from "react-dom";
 import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle, LayoutList, ScrollText, Share2, Globe, Percent, MessageCircle, ArrowUp, ArrowDown, Pencil, Send } from "lucide-react";
 import { t } from "@/i18n";
 import { useEditorStore, type SimpleSection, type BrandTheme } from "@/hooks/useEditorStore";
@@ -27,15 +28,135 @@ type Tab = "content" | "business" | "design" | "checkout" | "settings";
 /* ---------------- Configuration ---------------- */
 
 const BADGE_OPTIONS = [
-  { value: "", label: "None" },
-  { value: "popular", label: "⭐ Popular" },
-  { value: "spicy", label: "🌶️ Spicy" },
-  { value: "vegan", label: "🌱 Vegan" },
-  { value: "new", label: "🔥 New" },
-  { value: "sale", label: "💰 Sale" },
-  { value: "chef", label: "👨‍🍳 Chef's" },
-  { value: "gf", label: "Gluten Free" },
+  { value: "", label: "None", emoji: "" },
+  { value: "popular", label: "Popular", emoji: "⭐" },
+  { value: "spicy", label: "Spicy", emoji: "🌶️" },
+  { value: "vegan", label: "Vegan", emoji: "🌱" },
+  { value: "new", label: "New", emoji: "🔥" },
+  { value: "sale", label: "Sale", emoji: "💰" },
+  { value: "chef", label: "Chef's", emoji: "👨‍🍳" },
+  { value: "gf", label: "Gluten Free", emoji: "" },
 ];
+
+/* Custom Badge Dropdown - Cross-platform consistent styling */
+function BadgeDropdown({ 
+  value, 
+  onChange, 
+  disabled 
+}: { 
+  value: string; 
+  onChange: (val: string) => void; 
+  disabled?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+
+  // Close on outside click or scroll
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleClick = (e: MouseEvent) => {
+      if (buttonRef.current && !buttonRef.current.contains(e.target as Node)) {
+        const menu = document.getElementById('badge-dropdown-menu');
+        if (menu && menu.contains(e.target as Node)) return;
+        setIsOpen(false);
+      }
+    };
+    
+    // Close on any scroll
+    const handleScroll = () => setIsOpen(false);
+    
+    document.addEventListener("mousedown", handleClick);
+    window.addEventListener("scroll", handleScroll, true); // true = capture phase to catch all scrolls
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [isOpen]);
+
+  // Calculate position when opening - flip to top if not enough space below
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuHeight = 320; // approximate max height of dropdown
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      // If not enough space below and more space above, show above
+      const showAbove = spaceBelow < menuHeight && spaceAbove > spaceBelow;
+      
+      setMenuPos({
+        top: showAbove ? rect.top - menuHeight - 4 : rect.bottom + 4,
+        left: Math.max(8, rect.right - 160),
+      });
+    }
+  }, [isOpen]);
+
+  const selected = BADGE_OPTIONS.find(opt => opt.value === value) || BADGE_OPTIONS[0];
+
+  return (
+    <div className="relative shrink-0" data-help="Add a badge like 'Spicy' or 'Vegan' to this item.">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className="flex items-center gap-1 bg-[var(--surface)] border border-[var(--border)] text-[10px] h-6 pl-2 pr-6 rounded-full outline-none focus:border-[#22D3EE] cursor-pointer text-[var(--text)] hover:bg-[var(--bg)] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {selected.emoji && <span>{selected.emoji}</span>}
+        <span>{selected.label}</span>
+      </button>
+      <Tag className="w-3 h-3 absolute right-2 top-1.5 pointer-events-none text-[var(--muted)]" />
+      
+      {/* Portal dropdown - renders at body level to avoid overflow clipping */}
+      {isOpen && typeof document !== 'undefined' && ReactDOM.createPortal(
+        <div 
+          id="badge-dropdown-menu"
+          className="fixed w-40 py-1 rounded-xl border border-white/10 shadow-2xl z-[9999] animate-in fade-in duration-100 max-h-80 overflow-y-auto"
+          style={{ 
+            top: menuPos.top, 
+            left: Math.max(8, menuPos.left),
+            backgroundColor: '#1e1e2e',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+          }}
+        >
+          {BADGE_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors"
+              style={{
+                backgroundColor: value === opt.value ? 'rgba(34, 211, 238, 0.15)' : 'transparent',
+                color: value === opt.value ? '#22D3EE' : '#ffffff',
+              }}
+              onMouseEnter={(e) => {
+                if (value !== opt.value) {
+                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (value !== opt.value) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              {opt.emoji && <span className="w-4 text-center">{opt.emoji}</span>}
+              <span>{opt.label}</span>
+              {value === opt.value && <Check className="w-3 h-3 ml-auto" />}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
 
 const THEME_OPTIONS: { key: BrandTheme; label: string; color: string; desc: string }[] = [
   { key: "tierless", label: "Tierless", color: "bg-gradient-to-br from-[#4F46E5] to-[#22D3EE]", desc: "Modern generic gradient" },
@@ -666,25 +787,16 @@ export default function SimpleListPanel() {
               data-help="Add a short description or list ingredients."
             />
 
-            <div className="relative shrink-0" data-help="Add a badge like 'Spicy' or 'Vegan' to this item.">
-              <select
-                value={item.badge || ""}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  updateItem(item.id, {
-                    badge: val,
-                    discountPercent: val === 'sale' ? (item.discountPercent ?? 10) : undefined
-                  });
-                }}
-                className="appearance-none bg-[var(--surface)] border border-[var(--border)] text-[10px] h-6 pl-2 pr-6 rounded-full outline-none focus:border-[#22D3EE] cursor-pointer text-[var(--text)] hover:bg-[var(--bg)] font-medium transition-colors"
-                disabled={isOverLimit}
-              >
-                {BADGE_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-              <Tag className="w-3 h-3 absolute right-2 top-1.5 pointer-events-none text-[var(--muted)]" />
-            </div>
+            <BadgeDropdown
+              value={item.badge || ""}
+              onChange={(val) => {
+                updateItem(item.id, {
+                  badge: val,
+                  discountPercent: val === 'sale' ? (item.discountPercent ?? 10) : undefined
+                });
+              }}
+              disabled={isOverLimit}
+            />
           </div>
 
           {/* Sale Discount Panel */}

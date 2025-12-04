@@ -41,7 +41,7 @@ export default function Nav() {
       aria-label="Top navigation"
     >
       <div className="mx-auto max-w-[1536px] px-4 sm:px-5 lg:px-10 min-h-[56px] py-2 flex flex-row items-center justify-between gap-3">
-        {/* Logo → marketing site */}
+        {/* Logo and Breadcrumb */}
         <div className="flex items-center gap-2 sm:gap-3 select-none">
           <Link
             href="/"
@@ -69,6 +69,14 @@ export default function Nav() {
               Tierless
             </span>
           </Link>
+
+          {/* Breadcrumb */}
+          <div className="hidden sm:flex items-center gap-1.5 text-sm text-[var(--muted)]">
+            <svg className="w-4 h-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className="font-medium text-[var(--text)]">Dashboard</span>
+          </div>
         </div>
 
         {/* --- DESKTOP NAVIGATION - All buttons visible --- */}
