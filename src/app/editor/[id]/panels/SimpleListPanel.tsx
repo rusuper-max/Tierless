@@ -221,7 +221,7 @@ export default function SimpleListPanel() {
   const simpleCoverImage: string = business.coverUrl || meta.simpleCoverImage || "";
   const simpleLogo: string = business.logoUrl || "";
 
-  const canUseImages = plan === "growth" || plan === "pro" || plan === "starter";
+  const canUseImages = plan === "growth" || plan === "pro" || plan === "starter" || plan === "tierless";
 
   // --- Local State ---
   const [activeTab, setActiveTab] = useState<Tab>("content");

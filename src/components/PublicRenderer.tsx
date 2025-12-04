@@ -1955,18 +1955,12 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
         className={`group relative flex flex-col justify-between p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)] transition-all duration-300 min-h-[140px] ${canInteract ? 'cursor-pointer hover:shadow-lg hover:border-[var(--brand-1)]/30 hover:-translate-y-0.5' : ''}`}
       >
         <div>
+          {/* Header with title and quantity */}
           <div className="flex justify-between items-start gap-2 mb-2">
-            <div>
-              {item.badge && (
-                <span className={`inline-block px-1.5 py-0.5 mb-1.5 rounded text-[9px] font-bold uppercase tracking-wide border ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
-                  {item.badge === 'sale' && item.discountPercent ? `💰 -${item.discountPercent}%` : (BADGE_LABELS[item.badge] || item.badge)}
-                </span>
-              )}
-              <h3 className={`font-bold text-lg leading-tight text-[var(--text)] line-clamp-2 transition-colors ${canInteract ? 'group-hover:text-[var(--brand-1)]' : ''}`}>
-                {item.label}
-              </h3>
-            </div>
-            {/* Quantity Badge (Compact) */}
+            <h3 className={`font-bold text-lg leading-tight text-[var(--text)] line-clamp-2 transition-colors flex-1 ${canInteract ? 'group-hover:text-[var(--brand-1)]' : ''}`}>
+              {item.label}
+            </h3>
+            {/* Quantity Badge */}
             {quantity > 0 && (
               <div className="bg-[var(--brand-1)] text-white text-xs font-bold px-2 py-1 rounded-full shrink-0 animate-in zoom-in">
                 {formatQuantityDisplay(quantity)}
@@ -1975,10 +1969,18 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
             )}
           </div>
 
+          {/* Note/Description */}
           {item.note && (
-            <p className="text-sm text-[var(--muted)] line-clamp-2 mb-3 opacity-80">
+            <p className="text-sm text-[var(--muted)] line-clamp-2 mb-2 opacity-80">
               {item.note}
             </p>
+          )}
+          
+          {/* Badge - Inline below note, before price */}
+          {item.badge && (
+            <span className={`inline-block px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide border mb-2 ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
+              {item.badge === 'sale' && item.discountPercent ? `💰 -${item.discountPercent}%` : (BADGE_LABELS[item.badge] || item.badge)}
+            </span>
           )}
         </div>
 
@@ -2043,6 +2045,13 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--card)] via-transparent to-transparent opacity-80"></div>
 
+        {/* Badge - Bottom left of image */}
+        {item.badge && (
+          <span className={`absolute bottom-3 left-3 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border shadow-lg backdrop-blur-sm z-10 ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
+            {item.badge === 'sale' && item.discountPercent ? `💰 -${item.discountPercent}%` : (BADGE_LABELS[item.badge] || item.badge)}
+          </span>
+        )}
+
         {/* Quantity Badge */}
         {quantity > 0 && (
           <div className="absolute top-3 right-3 bg-[var(--brand-1)] text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg flex items-center gap-1 animate-in zoom-in">
@@ -2062,13 +2071,8 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
       </div>
 
       {/* Content Area */}
-      <div className="p-5 flex flex-col flex-1 relative">
+      <div className="p-5 flex flex-col flex-1">
         <div className="mb-2">
-          {item.badge && (
-            <span className={`inline-block px-1.5 py-0.5 mb-2 rounded text-[9px] font-bold uppercase tracking-wide border ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
-              {item.badge === 'sale' && item.discountPercent ? `💰 -${item.discountPercent}%` : (BADGE_LABELS[item.badge] || item.badge)}
-            </span>
-          )}
           <h3 className={`font-bold text-xl leading-tight text-[var(--text)] line-clamp-2 transition-colors ${canInteract ? 'group-hover:text-[var(--brand-1)]' : ''}`}>
             {item.label}
           </h3>

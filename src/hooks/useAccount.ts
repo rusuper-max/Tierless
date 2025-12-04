@@ -4,6 +4,41 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { entitlementsFor, type Plan } from "@/lib/entitlements.adapter";
 
+// --- DEV PLAN OVERRIDE ---
+const DEV_PLAN_KEY = "tierless_dev_plan_override";
+
+// Dev mode ONLY works on localhost - never in production
+function isLocalhost(): boolean {
+  if (typeof window === "undefined") return false;
+  const hostname = window.location.hostname;
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.");
+}
+
+function getDevPlanOverride(): Plan | null {
+  if (!isLocalhost()) return null;
+  const override = localStorage.getItem(DEV_PLAN_KEY);
+  if (override && ["free", "starter", "growth", "pro", "tierless"].includes(override)) {
+    return override as Plan;
+  }
+  return null;
+}
+
+export function setDevPlanOverride(plan: Plan | null) {
+  if (!isLocalhost()) return;
+  if (plan) {
+    localStorage.setItem(DEV_PLAN_KEY, plan);
+  } else {
+    localStorage.removeItem(DEV_PLAN_KEY);
+  }
+  // Trigger refresh
+  window.dispatchEvent(new CustomEvent("TL_DEV_PLAN_CHANGED"));
+}
+
+export function isDevUser(_email: string | null): boolean {
+  // Dev mode only on localhost - completely disabled in production
+  return isLocalhost();
+}
+
 export type AccountSnapshot = {
   loading: boolean;
   authenticated: boolean;
@@ -88,12 +123,16 @@ async function fetchStatusAndMe() {
       whatsappNumber = whoamiJson?.whatsappNumber || "";
     }
 
+    // Check for dev plan override (localhost only)
+    const devOverride = getDevPlanOverride();
+    const effectivePlan = devOverride ?? plan;
+
     state = {
       loading: false,
       authenticated,
       email,
-      plan,
-      entitlements: entitlementsFor(plan),
+      plan: effectivePlan,
+      entitlements: entitlementsFor(effectivePlan),
       renewsOn,
       cancelAtPeriodEnd,
       orderDestination,
@@ -129,6 +168,7 @@ function start() {
   };
 
   window.addEventListener("TL_AUTH_CHANGED", onAuth as EventListener);
+  window.addEventListener("TL_DEV_PLAN_CHANGED", onAuth as EventListener);
   window.addEventListener("focus", onFocus);
   document.addEventListener("visibilitychange", onVis);
 }

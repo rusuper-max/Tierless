@@ -7,6 +7,7 @@ import { Sparkles, ArrowRight, Check, Star, MessageCircle, Send, Mail } from "lu
 import type { CalcJson } from "@/hooks/useEditorStore";
 import { t } from "@/i18n";
 import { useTheme } from "@/hooks/useTheme";
+import { isTemplateLocked, getLockedStyle, type LockedStyle } from "@/data/calcTemplates";
 
 /* -------------------------------------------------------------------------- */
 /* Rating Widget for Tier-Based Pages                                         */
@@ -232,7 +233,13 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
     advancedPublicSubtitle?: string;
     advancedSupportNote?: string;
     publicTheme?: string;
+    templateLocked?: boolean;
+    templateStyleId?: string;
   };
+
+  // 🔒 Check for locked template style
+  const hasLockedTemplate = isTemplateLocked(metaRaw);
+  const lockedStyle: LockedStyle | null = hasLockedTemplate ? getLockedStyle(metaRaw) : null;
 
   const { formatPrice } = useCurrencyFormat(calc);
 
@@ -371,6 +378,10 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
   const heroImageUrl: string | null = (metaRaw as any).heroImageUrl ?? null;
   const backgroundImageUrl: string | null = (metaRaw as any).backgroundImageUrl ?? null;
   const portfolioUrl: string | null = (metaRaw as any).portfolioUrl ?? null;
+
+  // 🔥 Custom Animations - Special effects for premium templates
+  const customAnimations: string | null = (metaRaw as any).customAnimations ?? lockedStyle?.animations ?? null;
+  const isNeonTemplate = customAnimations === "neon";
 
   const hasAnyBlocks =
     tierNodes.length > 0 ||
@@ -599,30 +610,52 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
     );
   }
 
-  // Theme variables based on site-wide theme
-  const themeVars: CSSProperties = isDark
+  // Theme variables based on site-wide theme OR locked template style
+  const themeVars: CSSProperties = lockedStyle
     ? {
-      ["--bg" as any]: "#0a0a0f",
-      ["--card" as any]: "rgba(17, 17, 27, 0.95)",
-      ["--border" as any]: "rgba(255, 255, 255, 0.08)",
-      ["--text" as any]: "#f1f5f9",
-      ["--muted" as any]: "#94a3b8",
-      ["--surface" as any]: "rgba(255, 255, 255, 0.04)",
-      ["--track" as any]: "rgba(255, 255, 255, 0.1)",
-      ["--brand-1" as any]: "#6366f1",
-      ["--brand-2" as any]: "#22d3ee",
+      // 🔒 LOCKED TEMPLATE STYLES - User cannot change these
+      ["--bg" as any]: lockedStyle.backgroundColor,
+      ["--card" as any]: lockedStyle.cardStyle === "glass"
+        ? "rgba(17, 17, 27, 0.85)"
+        : lockedStyle.theme === "dark" ? "#18181b" : "#ffffff",
+      ["--border" as any]: lockedStyle.theme === "dark"
+        ? "rgba(253, 186, 116, 0.15)"
+        : "rgba(0, 0, 0, 0.06)",
+      ["--text" as any]: lockedStyle.theme === "dark" ? "#f5f5f4" : "#0f172a",
+      ["--muted" as any]: lockedStyle.theme === "dark" ? "#a8a29e" : "#64748b",
+      ["--surface" as any]: lockedStyle.theme === "dark"
+        ? "rgba(253, 186, 116, 0.05)"
+        : "rgba(0, 0, 0, 0.02)",
+      ["--track" as any]: lockedStyle.theme === "dark"
+        ? "rgba(253, 186, 116, 0.1)"
+        : "rgba(0, 0, 0, 0.08)",
+      ["--brand-1" as any]: lockedStyle.accentColor,
+      ["--brand-2" as any]: lockedStyle.accentColor,
+      ["--accent" as any]: lockedStyle.accentColor,
     }
-    : {
-      ["--bg" as any]: "#f8fafc",
-      ["--card" as any]: "#ffffff",
-      ["--border" as any]: "rgba(0, 0, 0, 0.06)",
-      ["--text" as any]: "#0f172a",
-      ["--muted" as any]: "#64748b",
-      ["--surface" as any]: "rgba(0, 0, 0, 0.02)",
-      ["--track" as any]: "rgba(0, 0, 0, 0.08)",
-      ["--brand-1" as any]: "#4F46E5",
-      ["--brand-2" as any]: "#06b6d4",
-    };
+    : isDark
+      ? {
+        ["--bg" as any]: "#0a0a0f",
+        ["--card" as any]: "rgba(17, 17, 27, 0.95)",
+        ["--border" as any]: "rgba(255, 255, 255, 0.08)",
+        ["--text" as any]: "#f1f5f9",
+        ["--muted" as any]: "#94a3b8",
+        ["--surface" as any]: "rgba(255, 255, 255, 0.04)",
+        ["--track" as any]: "rgba(255, 255, 255, 0.1)",
+        ["--brand-1" as any]: "#6366f1",
+        ["--brand-2" as any]: "#22d3ee",
+      }
+      : {
+        ["--bg" as any]: "#f8fafc",
+        ["--card" as any]: "#ffffff",
+        ["--border" as any]: "rgba(0, 0, 0, 0.06)",
+        ["--text" as any]: "#0f172a",
+        ["--muted" as any]: "#64748b",
+        ["--surface" as any]: "rgba(0, 0, 0, 0.02)",
+        ["--track" as any]: "rgba(0, 0, 0, 0.08)",
+        ["--brand-1" as any]: "#4F46E5",
+        ["--brand-2" as any]: "#06b6d4",
+      };
 
   const tierGridCols =
     advancedColumnsDesktop === 1
@@ -648,23 +681,215 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
         }}
       >
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
-          {t("Powered by Tierless")}
+        {t("Powered by Tierless")}
         </span>
       </span>
     </a>
   ) : null;
 
+  // Determine the background based on locked style or default
+  const backgroundStyle = lockedStyle?.backgroundGradient
+    ? lockedStyle.backgroundGradient
+    : isDark
+      ? "linear-gradient(180deg, #0a0a0f 0%, #0f0f1a 100%)"
+      : "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)";
+
+  // Font class - locked style overrides user selection
+  const effectiveFontClass = lockedStyle?.fontFamily
+    ? "" // We'll use inline style for locked font
+    : fontClass;
+
+  // 🔥 Neon Animation CSS - Only inject if neon template
+  const neonAnimationStyles = isNeonTemplate ? `
+    @keyframes neon-pulse {
+      0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px var(--brand-1)) drop-shadow(0 0 20px var(--brand-1)); }
+      50% { opacity: 0.95; filter: drop-shadow(0 0 12px var(--brand-1)) drop-shadow(0 0 30px var(--brand-1)); }
+    }
+    @keyframes neon-glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(6, 182, 212, 0.5), 0 0 40px rgba(6, 182, 212, 0.25), inset 0 0 15px rgba(6, 182, 212, 0.15); }
+      50% { box-shadow: 0 0 30px rgba(6, 182, 212, 0.7), 0 0 70px rgba(6, 182, 212, 0.4), inset 0 0 25px rgba(6, 182, 212, 0.25); }
+    }
+    @keyframes neon-border {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes float-up {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-12px); }
+    }
+    @keyframes float-diagonal {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(20px, -15px) scale(1.05); }
+      50% { transform: translate(0, -25px) scale(1.1); }
+      75% { transform: translate(-20px, -15px) scale(1.05); }
+    }
+    @keyframes orbit {
+      0% { transform: rotate(0deg) translateX(150px) rotate(0deg); }
+      100% { transform: rotate(360deg) translateX(150px) rotate(-360deg); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes scan-line {
+      0% { transform: translateY(-100vh); opacity: 0; }
+      5% { opacity: 0.6; }
+      95% { opacity: 0.6; }
+      100% { transform: translateY(100vh); opacity: 0; }
+    }
+    @keyframes particle-float {
+      0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+      25% { transform: translateY(-30px) translateX(10px); opacity: 0.7; }
+      50% { transform: translateY(-50px) translateX(-5px); opacity: 0.5; }
+      75% { transform: translateY(-30px) translateX(-10px); opacity: 0.7; }
+    }
+    @keyframes neon-text-glow {
+      0%, 100% { text-shadow: 0 0 15px rgba(6, 182, 212, 0.9), 0 0 30px rgba(139, 92, 246, 0.7), 0 0 50px rgba(236, 72, 153, 0.5); }
+      50% { text-shadow: 0 0 30px rgba(6, 182, 212, 1), 0 0 60px rgba(139, 92, 246, 0.9), 0 0 90px rgba(236, 72, 153, 0.7); }
+    }
+    @keyframes border-travel {
+      0% { clip-path: inset(0 100% 0 0); }
+      50% { clip-path: inset(0 0 0 0); }
+      100% { clip-path: inset(0 0 0 100%); }
+    }
+    .neon-card { animation: neon-glow 2.5s ease-in-out infinite, float-up 3s ease-in-out infinite; }
+    .neon-card:hover { animation: neon-glow 0.8s ease-in-out infinite; transform: translateY(-8px) scale(1.03); }
+    .neon-title { animation: neon-text-glow 2s ease-in-out infinite; }
+    .neon-border-animated {
+      background: linear-gradient(90deg, #06b6d4, #8b5cf6, #ec4899, #06b6d4);
+      background-size: 300% 100%;
+      animation: neon-border 3s ease infinite;
+    }
+    .neon-shimmer {
+      background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.4), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+    .neon-featured { 
+      animation: neon-pulse 2.5s ease-in-out infinite, float-up 3s ease-in-out infinite;
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.35), 0 0 40px rgba(139, 92, 246, 0.2);
+    }
+    .neon-scan-line {
+      animation: scan-line 4s linear infinite;
+    }
+    .neon-particle {
+      animation: particle-float 4s ease-in-out infinite;
+    }
+    .neon-orbit {
+      animation: orbit 15s linear infinite;
+    }
+  ` : "";
+
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${fontClass} relative`}
+      className={`min-h-screen transition-colors duration-300 ${effectiveFontClass} relative`}
       data-public-theme={publicTheme}
+      data-template-locked={hasLockedTemplate ? "true" : "false"}
+      data-neon-template={isNeonTemplate ? "true" : "false"}
       style={{
         ...themeVars,
-        background: isDark
-          ? "linear-gradient(180deg, #0a0a0f 0%, #0f0f1a 100%)"
-          : "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
+        background: backgroundStyle,
+        ...(lockedStyle?.fontFamily ? { fontFamily: lockedStyle.fontFamily } : {}),
       }}
     >
+      {/* 🔥 Neon Animation Styles */}
+      {isNeonTemplate && <style dangerouslySetInnerHTML={{ __html: neonAnimationStyles }} />}
+
+      {/* 🔥 Neon Grid Background Effect */}
+      {isNeonTemplate && (
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+          {/* Animated grid lines */}
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `
+                linear-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px)
+              `,
+              backgroundSize: "50px 50px",
+            }}
+          />
+
+          {/* Scan line effect */}
+          <div
+            className="absolute w-full h-[2px] neon-scan-line"
+            style={{
+              background: "linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.8), rgba(139, 92, 246, 0.8), transparent)",
+              boxShadow: "0 0 20px rgba(6, 182, 212, 0.5), 0 0 40px rgba(139, 92, 246, 0.3)",
+            }}
+          />
+          <div
+            className="absolute w-full h-[2px] neon-scan-line"
+            style={{
+              background: "linear-gradient(90deg, transparent, rgba(236, 72, 153, 0.6), rgba(139, 92, 246, 0.6), transparent)",
+              boxShadow: "0 0 15px rgba(236, 72, 153, 0.4)",
+              animationDelay: "2s",
+            }}
+          />
+
+          {/* Floating orbs with more dramatic animation */}
+          <div
+            className="absolute w-[600px] h-[600px] rounded-full blur-[150px]"
+            style={{
+              background: "radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, transparent 70%)",
+              top: "-15%",
+              left: "-15%",
+              animation: "float-diagonal 8s ease-in-out infinite",
+            }}
+          />
+          <div
+            className="absolute w-[500px] h-[500px] rounded-full blur-[120px]"
+            style={{
+              background: "radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%)",
+              top: "30%",
+              right: "-10%",
+              animation: "float-diagonal 10s ease-in-out infinite reverse",
+            }}
+          />
+          <div
+            className="absolute w-[450px] h-[450px] rounded-full blur-[100px]"
+            style={{
+              background: "radial-gradient(circle, rgba(236, 72, 153, 0.18) 0%, transparent 70%)",
+              bottom: "-10%",
+              left: "25%",
+              animation: "float-diagonal 12s ease-in-out infinite",
+              animationDelay: "2s",
+            }}
+          />
+
+          {/* Floating particles */}
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 rounded-full neon-particle"
+              style={{
+                background: i % 3 === 0 ? "#06b6d4" : i % 3 === 1 ? "#8b5cf6" : "#ec4899",
+                boxShadow: `0 0 8px ${i % 3 === 0 ? "#06b6d4" : i % 3 === 1 ? "#8b5cf6" : "#ec4899"}`,
+                left: `${15 + i * 10}%`,
+                top: `${20 + (i * 8) % 60}%`,
+                animationDelay: `${i * 0.5}s`,
+                animationDuration: `${3 + i % 3}s`,
+              }}
+            />
+          ))}
+
+          {/* Corner accents with glow */}
+          <div
+            className="absolute w-32 h-32 top-0 left-0"
+            style={{
+              background: "linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, transparent 70%)",
+            }}
+          />
+          <div
+            className="absolute w-32 h-32 bottom-0 right-0"
+            style={{
+              background: "linear-gradient(315deg, rgba(236, 72, 153, 0.15) 0%, transparent 70%)",
+            }}
+          />
+        </div>
+      )}
+
       {/* Background Image with Overlay */}
       {backgroundImageUrl && (
         <div
@@ -715,7 +940,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                 : "linear-gradient(to top, rgba(248,250,252,0.98) 0%, rgba(248,250,252,0.7) 60%, rgba(248,250,252,0.4) 100%)",
             }}
           />
-          
+
           {/* Logo in top-left corner */}
           {logoUrl && (
             <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20">
@@ -768,7 +993,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                     isDark={isDark}
                   />
                 )}
-                
+
                 {portfolioUrl && (
                   <a
                     href={portfolioUrl}
@@ -794,7 +1019,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
         </div>
       )}
 
-      <div className={`relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-40 ${heroImageUrl ? 'pt-6 sm:pt-8' : 'py-8 sm:py-12'}`}>
+      <div className={`relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 ${heroImageUrl ? 'pt-6 sm:pt-8' : 'py-8 sm:py-12'}`} style={{ paddingBottom: advancedShowSummary && hasAnyBlocks ? '10rem' : '2rem' }}>
 
         {/* Header without hero image */}
         {!heroImageUrl && (
@@ -826,8 +1051,18 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
 
             {title && (
               <h1
-                className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4"
-                style={{ color: "var(--text)" }}
+                className={cn(
+                  "text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4",
+                  isNeonTemplate && "neon-title"
+                )}
+                style={{
+                  color: isNeonTemplate ? "transparent" : "var(--text)",
+                  ...(isNeonTemplate ? {
+                    background: "linear-gradient(135deg, #06b6d4 0%, #8b5cf6 50%, #ec4899 100%)",
+                    backgroundClip: "text",
+                    WebkitBackgroundClip: "text",
+                  } : {}),
+                }}
               >
                 {title}
               </h1>
@@ -958,6 +1193,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                 enableYearly={enableYearly}
                 yearlyDiscountPercent={yearlyDiscountPercent}
                 theme={publicTheme}
+                    isNeonTemplate={isNeonTemplate}
               />
             );
           })}
@@ -1098,7 +1334,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
               : "0 -10px 40px rgba(0,0,0,0.08)",
           }}
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
             <div className="flex items-center justify-between gap-4">
               {/* Price Display */}
               <div className="flex-1">
@@ -1130,7 +1366,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                     className="group relative px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold text-white rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
                     style={{
                       background: inquiryButtonStyle.background,
-                      boxShadow: resolvedContactType === "whatsapp" 
+                      boxShadow: resolvedContactType === "whatsapp"
                         ? "0 10px 30px rgba(17, 153, 142, 0.3)"
                         : resolvedContactType === "telegram"
                           ? "0 10px 30px rgba(0, 136, 204, 0.3)"

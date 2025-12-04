@@ -4,6 +4,7 @@ import UpgradeSheetMount from "./_providers/UpgradeSheetMount";
 import Toaster from "@/components/toast/Toaster";
 import ThemeProvider from "./_providers/ThemeProvider";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
+import DevPlanSwitcher from "@/components/DevPlanSwitcher";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             {children}
             <UpgradeSheetMount />
             <Toaster />
+            <DevPlanSwitcher />
           </ThemeProvider>
         </LanguageProvider>
       </body>

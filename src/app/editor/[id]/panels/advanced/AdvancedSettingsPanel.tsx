@@ -3,12 +3,13 @@ import { motion } from "framer-motion";
 import {
     X, Palette, Type, Layout, Coins, MessageCircle,
     Send, Mail, Phone, MapPin, Globe, Link2,
-    Camera, Trash2, Upload, Sparkles, Image as ImageIcon, Star
+    Camera, Trash2, Upload, Sparkles, Image as ImageIcon, Star, Lock
 } from "lucide-react";
 
 import { Button, InlineInput, InlineTextarea } from "./shared";
 import { COLORS, CURRENCY_PRESETS, FONT_OPTIONS, t } from "./constants";
 import type { AdvancedTheme, BillingPeriod } from "./types";
+import { LOCKED_STYLES, type LockedStyle } from "@/data/calcTemplates";
 
 interface AdvancedSettingsPanelProps {
     showSettings: boolean;
@@ -69,6 +70,11 @@ export function AdvancedSettingsPanel({
 }: AdvancedSettingsPanelProps) {
     if (!showSettings) return null;
 
+    // Check if this is a premium locked template
+    const isLocked = calc?.meta?.templateLocked === true;
+    const templateStyleId = calc?.meta?.templateStyleId as string | undefined;
+    const lockedStyle: LockedStyle | undefined = templateStyleId ? LOCKED_STYLES[templateStyleId] : undefined;
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -88,13 +94,54 @@ export function AdvancedSettingsPanel({
                     </Button>
                 </div>
 
+                {/* 🔒 Premium Template Banner */}
+                {isLocked && (
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shrink-0">
+                                <Lock className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-sm font-bold text-[var(--text)] flex items-center gap-2">
+                                    ✨ {t("Premium Template")}
+                                </h3>
+                                <p className="text-xs text-[var(--muted)] mt-1">
+                                    {t("This template has a locked visual style. You can edit all content (tiers, prices, descriptions) but the design theme is fixed to maintain its premium look.")}
+                                </p>
+                                {lockedStyle && (
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                        <span className="px-2 py-1 text-[10px] font-medium rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--muted)]">
+                                            Theme: {lockedStyle.theme}
+                                        </span>
+                                        <span className="px-2 py-1 text-[10px] font-medium rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--muted)]">
+                                            Font: {lockedStyle.fontFamily.split(",")[0].replace(/'/g, "")}
+                                        </span>
+                                        <span className="px-2 py-1 text-[10px] font-medium rounded-full border" style={{ borderColor: lockedStyle.accentColor, color: lockedStyle.accentColor }}>
+                                            Accent: {lockedStyle.accentColor}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Settings Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* APPEARANCE CARD */}
-                    <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-5">
+                    <div className={`p-6 rounded-2xl border bg-[var(--card)] space-y-5 ${isLocked ? "border-amber-500/30 relative overflow-hidden" : "border-[var(--border)]"}`}>
+                        {/* Locked overlay */}
+                        {isLocked && (
+                            <div className="absolute inset-0 bg-[var(--bg)]/80 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center">
+                                <Lock className="w-8 h-8 text-amber-500 mb-2" />
+                                <span className="text-sm font-medium text-[var(--muted)]">{t("Style locked by template")}</span>
+                            </div>
+                        )}
+                        
                         <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide flex items-center gap-2">
                             <Palette className="w-4 h-4 text-cyan-500" /> {t("Appearance")}
+                            {isLocked && <Lock className="w-3 h-3 text-amber-500" />}
                         </h3>
 
                         {/* Theme */}
@@ -105,11 +152,12 @@ export function AdvancedSettingsPanel({
                                 {["light", "dark", "tierless"].map(theme => (
                                     <button
                                         key={theme}
-                                        onClick={() => setAdvancedPublicTheme(theme as any)}
+                                        onClick={() => !isLocked && setAdvancedPublicTheme(theme as any)}
+                                        disabled={isLocked}
                                         className={`px-3 py-2 text-sm rounded-lg border transition-all ${advancedPublicTheme === theme
                                             ? "bg-cyan-500 text-white border-transparent shadow-lg shadow-cyan-500/30"
                                             : "bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-cyan-400"
-                                            }`}
+                                            } ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
                                     >
                                         {theme.charAt(0).toUpperCase() + theme.slice(1)}
                                     </button>
@@ -128,14 +176,15 @@ export function AdvancedSettingsPanel({
                                     return (
                                         <button
                                             key={font.value}
-                                            onClick={() => updateCalc((draft) => {
+                                            onClick={() => !isLocked && updateCalc((draft) => {
                                                 if (!draft.meta) draft.meta = {};
                                                 (draft.meta as any).publicFont = font.value;
                                             })}
+                                            disabled={isLocked}
                                             className={`px-3 py-2 text-sm rounded-lg border transition-all ${font.preview} ${currentFont === font.value
                                                 ? "bg-cyan-500 text-white border-transparent shadow-lg shadow-cyan-500/30"
                                                 : "bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-cyan-400"
-                                                }`}
+                                                } ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
                                         >
                                             {font.label}
                                         </button>
@@ -153,11 +202,12 @@ export function AdvancedSettingsPanel({
                                 {[1, 2, 3, 4].map(n => (
                                     <button
                                         key={n}
-                                        onClick={() => setAdvancedColumnsDesktop(n)}
+                                        onClick={() => !isLocked && setAdvancedColumnsDesktop(n)}
+                                        disabled={isLocked}
                                         className={`flex-1 py-2.5 text-sm rounded-lg border transition-all ${advancedColumnsDesktop === n
                                             ? "bg-cyan-500 text-white border-transparent shadow-lg shadow-cyan-500/30"
                                             : "bg-[var(--bg)] text-[var(--text)] border-[var(--border)] hover:border-cyan-400"
-                                            }`}
+                                            } ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
                                     >
                                         {n}
                                     </button>

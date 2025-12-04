@@ -16,6 +16,7 @@ export type TierCardProps = {
     enableYearly: boolean;
     yearlyDiscountPercent: number | null;
     theme: AdvancedTheme;
+    isNeonTemplate?: boolean;
 };
 
 export function getTierEffectivePrice(
@@ -54,6 +55,7 @@ export function TierCard({
     enableYearly,
     yearlyDiscountPercent,
     theme,
+    isNeonTemplate = false,
 }: TierCardProps) {
     const accent = node.accentColor || "var(--brand-1,#4F46E5)";
     const isGradientAccent = typeof accent === "string" && accent.includes("gradient");
@@ -185,7 +187,7 @@ export function TierCard({
         <button
             type="button"
             onClick={onSelect}
-            className={`group relative w-full text-left rounded-2xl border px-4 py-4 sm:px-6 sm:py-6 transition-all duration-300 transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-1,#4F46E5)] ${theme === "tierless" ? "backdrop-blur-md" : ""} ${isActive ? "scale-[1.02] z-10" : ""}`}
+            className={`group relative w-full text-left rounded-2xl border px-4 py-4 sm:px-6 sm:py-6 transition-all duration-300 transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-1,#4F46E5)] ${theme === "tierless" ? "backdrop-blur-md" : ""} ${isActive ? "scale-[1.02] z-10" : ""} ${isNeonTemplate ? "neon-card" : ""} ${isNeonTemplate && emphasis === "featured" ? "neon-featured" : ""}`}
             style={{
                 borderColor: gradientBackground
                     ? "transparent"

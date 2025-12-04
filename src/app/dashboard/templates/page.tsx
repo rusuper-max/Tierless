@@ -7,19 +7,30 @@ import {
 } from "lucide-react";
 import { CALC_TEMPLATES } from "@/data/calcTemplates";
 import UseTemplateButton from "@/components/UseTemplateButton";
+import TemplateMiniPreview from "@/components/TemplateMiniPreview";
 import { t } from "@/i18n";
 
 // --- Types & Mapping ---
 
 type CategoryId = "all" | "wedding" | "hospitality" | "agency" | "saas" | "services";
 
+// Feature badges for templates with special capabilities
+type FeatureBadge = "locked-style" | "custom-animations" | "tier-based" | "custom-theme" | "editorial";
+
+const FEATURE_BADGE_CONFIG: Record<FeatureBadge, { label: string; icon: string; color: string }> = {
+    "locked-style": { label: "Locked Style", icon: "🔒", color: "bg-amber-500/90 text-white" },
+    "custom-animations": { label: "Animations", icon: "✨", color: "bg-purple-500/90 text-white" },
+    "tier-based": { label: "Tier Based", icon: "📊", color: "bg-blue-500/90 text-white" },
+    "custom-theme": { label: "Custom Theme", icon: "🎨", color: "bg-pink-500/90 text-white" },
+    "editorial": { label: "Editorial", icon: "📰", color: "bg-slate-700/90 text-white" },
+};
+
 interface TemplateMeta {
     category: CategoryId;
     categoryLabel: string;
     imageColor: string;
     accentColor: string;
-    isNew?: boolean;
-    isPopular?: boolean;
+    features?: FeatureBadge[]; // Special features this template has
     isComingSoon?: boolean;
 }
 
@@ -30,15 +41,13 @@ const TEMPLATE_META: Record<string, TemplateMeta> = {
         categoryLabel: "Photography",
         imageColor: "from-amber-800 to-orange-900",
         accentColor: "bg-orange-200",
-        isNew: true,
-        isPopular: true,
+        features: ["locked-style", "tier-based"],
     },
     "web-agency-packages": {
         category: "agency",
         categoryLabel: "SaaS / Service",
         imageColor: "from-violet-900 to-indigo-900",
         accentColor: "bg-blue-400",
-        isPopular: true,
     },
     "cleaning-service-packages": {
         category: "hospitality",
@@ -47,16 +56,34 @@ const TEMPLATE_META: Record<string, TemplateMeta> = {
         accentColor: "bg-emerald-400",
     },
     "personal-trainer-list": {
-        category: "agency",
+        category: "services",
         categoryLabel: "Personal",
         imageColor: "from-slate-800 to-zinc-900",
         accentColor: "bg-zinc-200",
     },
+    "coffee-shop-menu": {
+        category: "hospitality",
+        categoryLabel: "Cafe / Restaurant",
+        imageColor: "from-amber-900 to-yellow-900",
+        accentColor: "bg-amber-400",
+    },
+    "saas-pricing-pro": {
+        category: "saas",
+        categoryLabel: "SaaS",
+        imageColor: "from-purple-900 to-violet-950",
+        accentColor: "bg-purple-400",
+    },
+    "neon-creative-studio": {
+        category: "agency",
+        categoryLabel: "Creative Agency",
+        imageColor: "from-cyan-600 via-purple-600 to-pink-600",
+        accentColor: "bg-cyan-400",
+        features: ["locked-style", "custom-animations", "tier-based", "custom-theme"],
+    },
 };
 
-// Placeholder templates to fill the grid
+// Placeholder templates to fill the grid (Coming Soon)
 const COMING_SOON_TEMPLATES = [
-    { slug: "saas-pricing-pro", name: "SaaS Pricing Pro", category: "saas", description: "Advanced tiered pricing for software companies with monthly/yearly toggle." },
     { slug: "event-planner", name: "Event Planner Quote", category: "services", description: "Comprehensive event planning calculator with venue, catering, and staff options." },
     { slug: "marketing-retainer", name: "Marketing Retainer", category: "agency", description: "Monthly retainer calculator for digital marketing agencies." },
     { slug: "gym-membership", name: "Gym Membership", category: "hospitality", description: "Membership plan builder with signup fees and add-ons." },
@@ -101,7 +128,7 @@ export default function TemplatesPage() {
         // Real templates
         const real = CALC_TEMPLATES.map((tmpl) => {
             const meta = TEMPLATE_META[tmpl.slug] || DEFAULT_META;
-            return { ...tmpl, ...meta, isComingSoon: false };
+            return { ...tmpl, ...meta, isComingSoon: false, isPremiumTemplate: tmpl.isPremium };
         });
 
         // Coming soon templates with varied colors
@@ -125,8 +152,7 @@ export default function TemplatesPage() {
                 imageColor: comingSoonColors[idx % comingSoonColors.length],
                 accentColor: "bg-slate-500",
                 isComingSoon: true,
-                isNew: false,
-                isPopular: false,
+                features: [],
             };
         });
 
@@ -219,60 +245,65 @@ export default function TemplatesPage() {
                                 ${template.isComingSoon ? "opacity-70" : "hover:border-[var(--brand-1)]/40"}
                             `}
                         >
-                            {/* Preview Area - compact for no-scroll layout */}
-                            <div className={`relative h-28 overflow-hidden bg-gradient-to-br ${template.imageColor}`}>
-                                {/* Mock UI */}
-                                <div className="absolute inset-4 bg-[var(--bg)]/95 rounded-xl border border-[var(--border)]/50 shadow-2xl p-3 flex flex-col transform group-hover:scale-[1.02] transition-transform duration-500">
-                                    {/* Window dots */}
-                                    <div className="flex items-center gap-1.5 mb-3">
-                                        <div className="w-2 h-2 rounded-full bg-rose-400/60"></div>
-                                        <div className="w-2 h-2 rounded-full bg-amber-400/60"></div>
-                                        <div className="w-2 h-2 rounded-full bg-emerald-400/60"></div>
-                                    </div>
-                                    {/* Skeleton content */}
-                                    <div className="h-2 w-1/3 bg-[var(--text)]/10 rounded mb-3"></div>
-                                    <div className="flex-1 grid grid-cols-2 gap-2">
-                                        <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)]/30"></div>
-                                        <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)]/30"></div>
-                                    </div>
-                                    <div className="mt-2 h-7 bg-[var(--surface)] rounded-lg"></div>
-                                </div>
+                            {/* Preview Area - full bleed themed background */}
+                            <div className="relative h-36 overflow-hidden">
+                                {/* Themed icon background - takes full area */}
+                                <TemplateMiniPreview
+                                    slug={template.slug}
+                                    isPremium={(template as any).isPremium}
+                                    accentColor={(template as any).lockedStyle?.accentColor}
+                                    isHovered={hoveredCard === template.slug}
+                                    className="absolute inset-0"
+                                />
 
-                                {/* Hover Overlay */}
+                                {/* Hover Overlay - subtle darkening */}
                                 <div className={`
-                                    absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center 
-                                    transition-opacity duration-300
-                                    ${hoveredCard === template.slug ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+                                    absolute inset-0 flex items-center justify-center 
+                                    transition-all duration-300
+                                    ${hoveredCard === template.slug ? 'bg-black/40' : 'bg-transparent'}
                                 `}>
-                                    {!template.isComingSoon ? (
-                                        <UseTemplateButton
-                                            slug={template.slug}
-                                            name={template.defaultName || template.name}
-                                            className="px-5 py-2.5 bg-white text-slate-900 rounded-lg font-semibold text-sm shadow-lg hover:bg-slate-100 transition-colors !border-none"
-                                        >
-                                            {t("Use Template")}
-                                        </UseTemplateButton>
-                                    ) : (
-                                        <div className="px-4 py-2 bg-black/60 text-white/90 border border-white/20 rounded-lg text-sm font-medium backdrop-blur-md flex items-center gap-2">
-                                            <Lock size={14} />
-                                            {t("Coming Soon")}
-                                        </div>
-                                    )}
+                                    <div className={`transition-all duration-300 ${hoveredCard === template.slug ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
+                                        {!template.isComingSoon ? (
+                                            <UseTemplateButton
+                                                slug={template.slug}
+                                                name={template.defaultName || template.name}
+                                                className="px-5 py-2.5 bg-white text-slate-900 rounded-xl font-semibold text-sm shadow-xl hover:bg-slate-50 transition-colors !border-none"
+                                            >
+                                                {t("Use Template")}
+                                            </UseTemplateButton>
+                                        ) : (
+                                            <div className="px-4 py-2 bg-black/70 text-white/90 border border-white/20 rounded-xl text-sm font-medium backdrop-blur-md flex items-center gap-2">
+                                                <Lock size={14} />
+                                                {t("Coming Soon")}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Badges */}
-                                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-                                    {template.isNew && (
-                                        <span className="px-2 py-1 bg-sky-500/90 text-white text-[10px] font-bold uppercase tracking-wide rounded-md shadow-sm">
-                                            New
+                                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[70%]">
+                                    {/* Premium badge for paid tier templates */}
+                                    {(template as any).isPremium && (
+                                        <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold uppercase tracking-wide rounded-md shadow-sm flex items-center gap-1">
+                                            <Sparkles size={10} />
+                                            Premium
                                         </span>
                                     )}
-                                    {template.isPopular && (
-                                        <span className="px-2 py-1 bg-amber-500/90 text-white text-[10px] font-bold uppercase tracking-wide rounded-md shadow-sm flex items-center gap-1">
-                                            <Zap size={10} fill="currentColor" />
-                                            Popular
-                                        </span>
-                                    )}
+                                    {/* Feature badges - show special capabilities */}
+                                    {(template as any).features?.slice(0, 2).map((feature: FeatureBadge) => {
+                                        const config = FEATURE_BADGE_CONFIG[feature];
+                                        if (!config) return null;
+                                        return (
+                                            <span 
+                                                key={feature}
+                                                className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded-md shadow-sm flex items-center gap-1 ${config.color}`}
+                                            >
+                                                <span className="text-[9px]">{config.icon}</span>
+                                                {config.label}
+                                            </span>
+                                        );
+                                    })}
+                                    {/* Coming Soon badge */}
                                     {template.isComingSoon && (
                                         <span className="px-2 py-1 bg-slate-600/90 text-white/90 text-[10px] font-bold uppercase tracking-wide rounded-md shadow-sm">
                                             Coming Soon
@@ -286,7 +317,7 @@ export default function TemplatesPage() {
                                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1 block">
                                     {template.categoryLabel}
                                 </span>
-                                <h3 className="text-base font-semibold text-[var(--text)] mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-400 group-hover:to-cyan-400 transition-all">
+                                <h3 className="text-base font-semibold text-[var(--text)] mb-2 transition-colors">
                                     {template.name}
                                 </h3>
                                 <p className="text-xs text-[var(--muted)] leading-relaxed line-clamp-2">
