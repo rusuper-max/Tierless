@@ -181,9 +181,9 @@ export default function FAQPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
-            <div className="relative z-10 max-w-4xl mx-auto px-6 pt-24 pb-24 sm:pt-32 sm:pb-32">
+            <div className="relative z-10 max-w-4xl mx-auto px-6 pt-20 pb-20 sm:pt-24 sm:pb-24">
                 {/* Back Navigation */}
-                <div className="mb-8 flex items-center gap-4">
+                <div className="mb-6 flex items-center gap-4">
                     <Link href="/" className="inline-flex items-center gap-2 text-slate-600 hover:text-cyan-600 transition-colors group">
                         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                         <span className="font-medium">Back to Home</span>
@@ -199,16 +199,12 @@ export default function FAQPage() {
                     )}
                 </div>
 
-                {/* Header Section */}
-                <div className="text-center mb-16 space-y-4">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold mb-6">
-                        <HelpCircle className="w-4 h-4" />
-                        FAQ
-                    </div>
-                    <h1 className="text-4xl sm:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-cyan-500 mb-4">
+                {/* Header Section - Compact, no redundant icon */}
+                <div className="text-center mb-10">
+                    <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-cyan-500 mb-3">
                         Frequently Asked Questions
                     </h1>
-                    <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                    <p className="text-base text-slate-600 max-w-xl mx-auto">
                         Everything you need to know about creating beautiful price lists and digital menus.
                     </p>
                 </div>

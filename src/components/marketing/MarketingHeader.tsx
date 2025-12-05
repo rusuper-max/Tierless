@@ -124,9 +124,8 @@ export default function MarketingHeader() {
         </Link>
 
         {/* --- NAVIGATION (visible on all screens) --- */}
-        <nav className="flex items-center gap-2 sm:gap-4">
-          {/* Examples link removed as requested */}
-
+        <nav className="flex items-center gap-1 sm:gap-3">
+          {/* Language Switcher */}
           <LanguageSwitcher />
 
           {!authenticated ? (

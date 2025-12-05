@@ -120,23 +120,26 @@ export default function ExamplesPage() {
                         See real price pages from the community. Discover designs that fit your business.
                     </motion.p>
 
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                    >
-                        <Link
-                            href="/"
-                            className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/90 px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-lg shadow-slate-200/40 ring-1 ring-transparent transition-all hover:border-indigo-200 hover:text-indigo-700 hover:shadow-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
-                        >
-                            <ArrowLeft size={16} className="text-indigo-500" />
-                            Back to Home
-                        </Link>
-                    </motion.div>
                 </div>
             </div>
 
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-32">
+
+                {/* Back to Home - Left aligned above content */}
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="mb-8"
+                >
+                    <Link
+                        href="/"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-indigo-300 hover:text-indigo-600 hover:shadow-md"
+                    >
+                        <ArrowLeft size={16} />
+                        Back to Home
+                    </Link>
+                </motion.div>
 
                 {/* OFFICIAL SHOWCASE */}
                 {(!loading && featured.length > 0) && (

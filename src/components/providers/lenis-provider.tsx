@@ -29,10 +29,14 @@ export function LenisProvider({
     const html = document.documentElement;
     html.classList.add("lenis", "lenis-smooth");
 
+    // Gentler scroll easing - feels more natural
+    // duration: shorter = more responsive
+    // easing: subtle ease-out at the end only
     const lenis = new Lenis({
-      duration: 1.1,
-      easing: (t: number) => 1 - Math.pow(1 - t, 3),
+      duration: 0.8,
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // gentle expo ease-out
       smoothWheel: true,
+      wheelMultiplier: 1.2, // slightly faster wheel response
       ...(options || {}),
     });
 

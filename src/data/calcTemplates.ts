@@ -227,7 +227,7 @@ export const CALC_TEMPLATES: PricingTemplate[] = [
       branding: { theme: "light", accent: "#78350f", layout: "list" },
       meta: {
         editorMode: "simple",
-        enableCalculations: true,
+        simpleEnableCalculations: true,
         allowRating: true,
         listInExamples: true,
         simpleSections: [
@@ -284,7 +284,7 @@ export const CALC_TEMPLATES: PricingTemplate[] = [
       branding: { theme: "light", accent: "#14b8a6", layout: "list" },
       meta: {
         editorMode: "simple",
-        enableCalculations: true,
+        simpleEnableCalculations: true,
         allowRating: true,
         listInExamples: true,
         simpleSections: [
@@ -320,166 +320,99 @@ export const CALC_TEMPLATES: PricingTemplate[] = [
   },
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 3. WEB AGENCY PACKAGES (Basic, Packages mode)
+  // 3. WEB AGENCY PACKAGES (Basic, List mode)
   // ─────────────────────────────────────────────────────────────────────────
   {
     slug: "web-agency-packages",
     name: "🌐 Web Agency Packages",
     defaultName: "Website Packages",
     description: "Three packages (Starter/Growth/Pro) for website creation.",
-    mode: "packages",
+    mode: "list",
     isPremium: false,
     config: {
-      pricingMode: "packages",
+      pricingMode: "list",
       i18n: { currency: "EUR" },
       branding: { theme: "dark", accent: "#6366f1", layout: "cards" },
       meta: {
         editorMode: "simple",
-        enableCalculations: true,
+        simpleEnableCalculations: true,
         allowRating: true,
         listInExamples: true,
+        simpleSections: [
+          { id: "sec_packages", label: "📦 Website Packages", collapsed: false },
+          { id: "sec_addons", label: "✨ Additional Services", collapsed: false },
+        ],
         business: {
           name: "WebCraft Studio",
           tagline: "We build digital experiences",
         },
       },
-      packages: [
-        {
-          id: "pkg_starter",
-          label: "Starter",
-          description: "Perfect for small businesses getting online.",
-          basePrice: 600,
-          featured: false,
-          covers: [
-            { text: "Up to 5 pages" },
-            { text: "Mobile responsive" },
-            { text: "Contact form" },
-            { text: "Basic SEO setup" },
-            { text: "1 revision round" },
-          ],
-        },
-        {
-          id: "pkg_growth",
-          label: "Growth",
-          description: "For growing businesses that need more.",
-          basePrice: 1200,
-          featured: true,
-          covers: [
-            { text: "Up to 12 pages", premium: true },
-            { text: "Custom design", premium: true },
-            { text: "Blog integration" },
-            { text: "Advanced SEO", premium: true },
-            { text: "Analytics setup" },
-            { text: "3 revision rounds" },
-          ],
-        },
-        {
-          id: "pkg_pro",
-          label: "Pro",
-          description: "Full-service solution for established brands.",
-          basePrice: 2200,
-          featured: false,
-          covers: [
-            { text: "Unlimited pages", premium: true },
-            { text: "E-commerce ready", premium: true },
-            { text: "Custom animations" },
-            { text: "CMS integration", premium: true },
-            { text: "3rd party integrations" },
-            { text: "Priority support", premium: true },
-            { text: "Unlimited revisions" },
-          ],
-        },
+      items: [
+        // Website Packages
+        { id: "item_1", label: "Starter Package", price: 600, simpleSectionId: "sec_packages", note: "Up to 5 pages • Mobile responsive • Contact form • Basic SEO • 1 revision" },
+        { id: "item_2", label: "Growth Package", price: 1200, simpleSectionId: "sec_packages", note: "Up to 12 pages • Custom design • Blog • Advanced SEO • 3 revisions", badge: "popular" },
+        { id: "item_3", label: "Pro Package", price: 2200, simpleSectionId: "sec_packages", note: "Unlimited pages • E-commerce • Custom animations • CMS • Priority support", badge: "premium" },
+        // Additional Services
+        { id: "item_4", label: "Logo Design", price: 150, simpleSectionId: "sec_addons", note: "3 concepts + revisions" },
+        { id: "item_5", label: "Copywriting", price: 50, simpleSectionId: "sec_addons", note: "Per page" },
+        { id: "item_6", label: "Monthly Maintenance", price: 99, simpleSectionId: "sec_addons", note: "Updates & backups" },
+        { id: "item_7", label: "Social Media Kit", price: 200, simpleSectionId: "sec_addons", note: "Templates for 5 platforms" },
+        { id: "item_8", label: "SEO Optimization", price: 300, simpleSectionId: "sec_addons", note: "On-page + technical SEO", badge: "new" },
       ],
-      addons: [
-        { id: "addon_1", label: "Logo Design", price: 150 },
-        { id: "addon_2", label: "Copywriting (per page)", price: 50 },
-        { id: "addon_3", label: "Monthly Maintenance", price: 99, note: "/month" },
-        { id: "addon_4", label: "Social Media Kit", price: 200 },
-      ],
+      addons: [],
       fields: [],
-      items: [],
     },
   },
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 4. CLEANING SERVICE (Basic, Packages mode)
+  // 4. CLEANING SERVICE (Basic, List mode)
   // ─────────────────────────────────────────────────────────────────────────
   {
     slug: "cleaning-service-packages",
     name: "🧹 Cleaning Service",
     defaultName: "Cleaning Plans",
     description: "Regular cleaning packages for residential and commercial services.",
-    mode: "packages",
+    mode: "list",
     isPremium: false,
     config: {
-      pricingMode: "packages",
+      pricingMode: "list",
       i18n: { currency: "EUR" },
-      branding: { theme: "light", accent: "#0891b2", layout: "cards" },
+      branding: { theme: "dark", accent: "#0891b2", layout: "cards" },
       meta: {
         editorMode: "simple",
-        enableCalculations: true,
+        simpleEnableCalculations: true,
         allowRating: true,
         listInExamples: true,
+        simpleSections: [
+          { id: "sec_plans", label: "🏠 Regular Plans", collapsed: false },
+          { id: "sec_oneoff", label: "⚡ One-Time Services", collapsed: false },
+          { id: "sec_extras", label: "✨ Add-On Services", collapsed: false },
+        ],
         business: {
           name: "SparkleClean",
           tagline: "Your home, spotless",
         },
       },
-      packages: [
-        {
-          id: "pkg_basic",
-          label: "Basic",
-          description: "Essential cleaning for small spaces.",
-          basePrice: 45,
-          featured: false,
-          covers: [
-            { text: "Weekly visit" },
-            { text: "Up to 60 m²" },
-            { text: "Kitchen & bathroom" },
-            { text: "Vacuuming & mopping" },
-            { text: "Dusting" },
-          ],
-        },
-        {
-          id: "pkg_standard",
-          label: "Standard",
-          description: "Our most popular choice for families.",
-          basePrice: 80,
-          featured: true,
-          covers: [
-            { text: "2× per week", premium: true },
-            { text: "Up to 90 m²", premium: true },
-            { text: "All rooms included" },
-            { text: "Window cleaning (inside)" },
-            { text: "Laundry folding" },
-            { text: "Bed making" },
-          ],
-        },
-        {
-          id: "pkg_premium",
-          label: "Premium",
-          description: "White-glove service for pristine homes.",
-          basePrice: 140,
-          featured: false,
-          covers: [
-            { text: "3× per week", premium: true },
-            { text: "Up to 150 m²", premium: true },
-            { text: "Deep cleaning monthly", premium: true },
-            { text: "Appliance cleaning" },
-            { text: "Closet organization" },
-            { text: "Eco-friendly products", premium: true },
-          ],
-        },
+      items: [
+        // Regular Plans
+        { id: "item_1", label: "Basic Plan", price: 45, simpleSectionId: "sec_plans", note: "Weekly • Up to 60 m² • Kitchen & bathroom" },
+        { id: "item_2", label: "Standard Plan", price: 80, simpleSectionId: "sec_plans", note: "2× weekly • Up to 90 m² • All rooms + windows", badge: "popular" },
+        { id: "item_3", label: "Premium Plan", price: 140, simpleSectionId: "sec_plans", note: "3× weekly • Up to 150 m² • Deep clean monthly", badge: "premium" },
+        { id: "item_4", label: "Commercial Basic", price: 120, simpleSectionId: "sec_plans", note: "Office up to 100 m² • Weekly" },
+        { id: "item_5", label: "Commercial Pro", price: 220, simpleSectionId: "sec_plans", note: "Office up to 200 m² • 3× weekly" },
+        // One-Time Services
+        { id: "item_6", label: "Move-In/Out Clean", price: 150, simpleSectionId: "sec_oneoff", note: "Full property deep clean" },
+        { id: "item_7", label: "Post-Renovation Clean", price: 200, simpleSectionId: "sec_oneoff", note: "Dust removal & sanitization", badge: "new" },
+        { id: "item_8", label: "Spring Deep Clean", price: 180, simpleSectionId: "sec_oneoff", note: "Every corner, inside out" },
+        // Add-Ons
+        { id: "item_9", label: "Oven Deep Clean", price: 25, simpleSectionId: "sec_extras" },
+        { id: "item_10", label: "Fridge Cleaning", price: 20, simpleSectionId: "sec_extras" },
+        { id: "item_11", label: "Window Cleaning (outside)", price: 35, simpleSectionId: "sec_extras" },
+        { id: "item_12", label: "Carpet Shampooing", price: 45, simpleSectionId: "sec_extras" },
+        { id: "item_13", label: "Closet Organization", price: 40, simpleSectionId: "sec_extras", note: "Per closet" },
       ],
-      addons: [
-        { id: "addon_1", label: "Oven Deep Clean", price: 25 },
-        { id: "addon_2", label: "Fridge Cleaning", price: 20 },
-        { id: "addon_3", label: "Window Cleaning (outside)", price: 35 },
-        { id: "addon_4", label: "Carpet Shampooing", price: 45 },
-        { id: "addon_5", label: "Move-in/Move-out Clean", price: 150 },
-      ],
+      addons: [],
       fields: [],
-      items: [],
     },
   },
 
@@ -633,7 +566,7 @@ export const CALC_TEMPLATES: PricingTemplate[] = [
       branding: { theme: "dark", accent: "#8b5cf6", layout: "cards" },
       meta: {
         editorMode: "simple",
-        enableCalculations: true,
+        simpleEnableCalculations: true,
         allowRating: true,
         listInExamples: true,
         business: {

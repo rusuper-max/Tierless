@@ -1213,12 +1213,14 @@ export default function DashboardPageClient() {
         </div>
       )}
 
-      {/* Bulk bar */}
+      {/* Bulk bar - Fixed at bottom when items selected */}
       {selected.size > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2">
-          <div className="font-medium text-[var(--text)]">{selected.size} selected</div>
-          <div className="sm:grow" />
-          <ActionButton label="Delete" onClick={bulkDelete} variant="danger" />
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center gap-4 text-sm bg-[var(--card)] border-2 border-[var(--border)] rounded-2xl px-6 py-3 shadow-2xl backdrop-blur-sm">
+            <div className="font-semibold text-[var(--text)]">{selected.size} selected</div>
+            <div className="h-4 w-px bg-[var(--border)]" />
+            <ActionButton label="Delete" onClick={bulkDelete} variant="danger" />
+          </div>
         </div>
       )}
 

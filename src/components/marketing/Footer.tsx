@@ -27,9 +27,9 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-white mb-4">{t("footer.product")}</h4>
             <ul className="space-y-2 text-sm text-slate-400">
-              <li><Link href="/pricing" className="hover:text-white transition">{t("footer.pricing")}</Link></li>
-              <li><Link href="/templates" className="hover:text-white transition">{t("footer.templates")}</Link></li>
-              <li><Link href="/start" className="hover:text-white transition">{t("footer.builder")}</Link></li>
+              <li><Link href="/start" className="hover:text-white transition">{t("footer.pricing")}</Link></li>
+              <li><Link href="/dashboard/templates" className="hover:text-white transition">{t("footer.templates")}</Link></li>
+              <li><Link href="/dashboard" className="hover:text-white transition">{t("footer.builder")}</Link></li>
             </ul>
           </div>
 
@@ -45,7 +45,7 @@ export default function Footer() {
             <h4 className="text-sm font-semibold text-white mb-4">{t("footer.support")}</h4>
             <ul className="space-y-2 text-sm text-slate-400">
               <li><Link href="/faq" className="hover:text-white transition">FAQ</Link></li>
-              <li><a href="mailto:support@tierless.net" className="hover:text-white transition">{t("footer.contact")}</a></li>
+              <li><a href="mailto:contact@tierless.net" className="hover:text-white transition">{t("footer.contact")}</a></li>
             </ul>
           </div>
 

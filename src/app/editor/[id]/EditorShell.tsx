@@ -131,6 +131,26 @@ function EditorContent({ slug, initialCalc }: Props) {
 
   useEffect(() => {
     const key = `tl_editor_mode_${slug}`;
+    
+    // 🎯 PRIORITY: meta.editorMode from calc takes priority over localStorage
+    // This ensures templates always start in the correct mode
+    const metaMode = normalizeMode(
+      initialCalc?.meta?.editorMode as string | null
+    );
+    
+    // If meta has a valid mode (not "setup"), use it and update localStorage
+    if (metaMode !== "setup") {
+      setUiMode(metaMode);
+      setEditorMode(metaMode);
+      try {
+        window.localStorage.setItem(key, metaMode);
+      } catch {
+        // ignore
+      }
+      return;
+    }
+    
+    // No meta mode set - check localStorage
     let stored: Mode | null = null;
     try {
       const raw = window.localStorage.getItem(key) as Mode | null;
@@ -141,10 +161,7 @@ function EditorContent({ slug, initialCalc }: Props) {
       // ignore
     }
 
-    const metaMode = normalizeMode(
-      initialCalc?.meta?.editorMode as string | null
-    );
-    const start: Mode = stored || metaMode || "setup";
+    const start: Mode = stored || "setup";
 
     setUiMode(start);
     if (start !== "setup") {

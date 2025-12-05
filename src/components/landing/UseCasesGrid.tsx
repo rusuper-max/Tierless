@@ -75,7 +75,7 @@ const featuredCases = [
         gradient: "from-orange-500 to-red-500",
         bg: "bg-gradient-to-br from-orange-50 to-red-50",
         type: "list" as const,
-        href: "/c/restaurant-showcase",
+        href: "/examples",
         items: [
             { name: "Caesar Salad", price: "€8" },
             { name: "Pasta Carbonara", price: "€12" },
@@ -91,7 +91,7 @@ const featuredCases = [
         gradient: "from-pink-500 to-rose-500",
         bg: "bg-gradient-to-br from-pink-50 to-rose-50",
         type: "list" as const,
-        href: "/c/salon-showcase",
+        href: "/examples",
         items: [
             { name: "Haircut", price: "€15" },
             { name: "Coloring", price: "€45" },
@@ -107,7 +107,7 @@ const featuredCases = [
         gradient: "from-cyan-500 to-blue-500",
         bg: "bg-gradient-to-br from-cyan-50 to-blue-50",
         type: "list" as const,
-        href: "/c/dentist-showcase",
+        href: "/examples",
         items: [
             { name: "Check-up", price: "€30" },
             { name: "Cleaning", price: "€40" },
@@ -123,7 +123,7 @@ const featuredCases = [
         gradient: "from-violet-500 to-purple-600",
         bg: "bg-gradient-to-br from-violet-50 to-purple-50",
         type: "tiers" as const,
-        href: "/c/agency-showcase",
+        href: "/examples",
         tiers: [
             { name: "Basic", price: "€80", highlight: false },
             { name: "Pro", price: "€150", highlight: true },
