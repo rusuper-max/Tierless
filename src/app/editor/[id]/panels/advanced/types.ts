@@ -179,6 +179,12 @@ export interface AdvancedNode {
   price?: number | null;
 
   /**
+   * Sale price – prikazuje se sa strikethrough na old price.
+   * Ako postoji, koristi se ovaj price umesto base price za total.
+   */
+  salePrice?: number | null;
+
+  /**
    * Billing period – once | month | year.
    */
   billingPeriod?: BillingPeriod | null;

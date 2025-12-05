@@ -67,6 +67,7 @@ export const PkgSchema = z.object({
 export const SocialNetworksSchema = z.object({
   facebook: z.string().optional(),
   instagram: z.string().optional(),
+  threads: z.string().optional(),
   tiktok: z.string().optional(),
   youtube: z.string().optional(),
   telegram: z.string().optional(),

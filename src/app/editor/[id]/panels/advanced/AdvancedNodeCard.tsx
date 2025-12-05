@@ -70,11 +70,32 @@ export function AdvancedNodeCard({
                 {/* Price Tag */}
                 {node.kind !== "slider" && (
                     <div className="text-right shrink-0">
-                        <div className="font-mono font-bold text-[var(--text)]">
-                            {typeof node.price === "number" ? `${node.price}${currency}` : "-"}
-                        </div>
-                        {node.billingPeriod && node.billingPeriod !== "once" && (
-                            <div className="text-[10px] text-[var(--muted)]">/{node.billingPeriod}</div>
+                        {node.salePrice != null && node.price != null ? (
+                            <>
+                                <div className="flex items-center gap-1.5 justify-end">
+                                    <span className="font-mono text-xs text-[var(--muted)] line-through opacity-60">
+                                        {node.price}{currency}
+                                    </span>
+                                    <span
+                                        className="font-mono font-bold text-sm"
+                                        style={{ color: shouldShowColor ? accent : undefined }}
+                                    >
+                                        {node.salePrice}{currency}
+                                    </span>
+                                </div>
+                                {node.billingPeriod && node.billingPeriod !== "once" && (
+                                    <div className="text-[10px] text-[var(--muted)]">/{node.billingPeriod}</div>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <div className="font-mono font-bold text-[var(--text)]">
+                                    {typeof node.price === "number" ? `${node.price}${currency}` : "-"}
+                                </div>
+                                {node.billingPeriod && node.billingPeriod !== "once" && (
+                                    <div className="text-[10px] text-[var(--muted)]">/{node.billingPeriod}</div>
+                                )}
+                            </>
                         )}
                     </div>
                 )}

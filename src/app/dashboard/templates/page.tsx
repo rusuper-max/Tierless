@@ -183,7 +183,7 @@ export default function TemplatesPage() {
 
     return (
         <div className="h-full">
-            <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="container-page">{/* max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 */}
 
                 {/* Header Section - compact */}
                 <header className="text-center mb-6">
@@ -294,7 +294,7 @@ export default function TemplatesPage() {
                                         const config = FEATURE_BADGE_CONFIG[feature];
                                         if (!config) return null;
                                         return (
-                                            <span 
+                                            <span
                                                 key={feature}
                                                 className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded-md shadow-sm flex items-center gap-1 ${config.color}`}
                                             >

@@ -95,6 +95,7 @@ export type ItemRow = {
 export type SocialNetworks = {
     facebook?: string;
     instagram?: string;
+    threads?: string;
     tiktok?: string;
     youtube?: string;
     telegram?: string;

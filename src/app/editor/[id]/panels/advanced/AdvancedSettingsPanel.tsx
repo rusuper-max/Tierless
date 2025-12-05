@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { motion } from "framer-motion";
 import {
@@ -10,6 +12,9 @@ import { Button, InlineInput, InlineTextarea } from "./shared";
 import { COLORS, CURRENCY_PRESETS, FONT_OPTIONS, t } from "./constants";
 import type { AdvancedTheme, BillingPeriod } from "./types";
 import { LOCKED_STYLES, type LockedStyle } from "@/data/calcTemplates";
+import { useAccount } from "@/hooks/useAccount";
+import { canFeature } from "@/lib/entitlements";
+import { useEntitlement } from "@/hooks/useEntitlement";
 
 interface AdvancedSettingsPanelProps {
     showSettings: boolean;
@@ -68,7 +73,29 @@ export function AdvancedSettingsPanel({
     pendingUploadNodeId,
     fileInputRef,
 }: AdvancedSettingsPanelProps) {
+    // Hooks must be called BEFORE any early returns
+    const { plan } = useAccount();
+    const { allowed: removeBadgeAllowed } = canFeature("removeBadge", plan);
+    const { openUpsell } = useEntitlement({ feature: "removeBadge" });
+
+    // Check if user can upload hero (starter+)
+    const canUploadHero = plan !== "free";
+
+    // Early return AFTER hooks
     if (!showSettings) return null;
+
+    // We need upsell hook for showing upgrade modal
+    const showUpsale = () => {
+        // Show upsale using window event (same approach as useEntitlement)
+        window.dispatchEvent(
+            new CustomEvent("open-upgrade-sheet", {
+                detail: {
+                    requiredPlan: "starter",
+                    entrypoint: "hero_upload",
+                },
+            })
+        );
+    };
 
     // Check if this is a premium locked template
     const isLocked = calc?.meta?.templateLocked === true;
@@ -138,7 +165,7 @@ export function AdvancedSettingsPanel({
                                 <span className="text-sm font-medium text-[var(--muted)]">{t("Style locked by template")}</span>
                             </div>
                         )}
-                        
+
                         <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide flex items-center gap-2">
                             <Palette className="w-4 h-4 text-cyan-500" /> {t("Appearance")}
                             {isLocked && <Lock className="w-3 h-3 text-amber-500" />}
@@ -469,7 +496,12 @@ export function AdvancedSettingsPanel({
 
                             {/* Hero Image Upload */}
                             <div className="space-y-2">
-                                <label className="text-xs font-medium text-[var(--muted)]">{t("Hero Image")}</label>
+                                <label className="text-xs font-medium text-[var(--muted)] flex items-center gap-1">
+                                    {t("Hero Image")}
+                                    {!canUploadHero && (
+                                        <span className="text-[9px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider">STARTER+</span>
+                                    )}
+                                </label>
                                 {(calc?.meta as any)?.heroImageUrl ? (
                                     <div className="relative group rounded-xl overflow-hidden border border-[var(--border)] h-24">
                                         <img src={(calc?.meta as any)?.heroImageUrl} alt="Hero" className="w-full h-full object-cover" />
@@ -483,13 +515,22 @@ export function AdvancedSettingsPanel({
                                 ) : (
                                     <button
                                         onClick={() => {
+                                            if (!canUploadHero) {
+                                                showUpsale();
+                                                return;
+                                            }
                                             pendingUploadNodeId.current = "__hero__";
                                             fileInputRef.current?.click();
                                         }}
-                                        className="w-full h-24 border-2 border-dashed border-[var(--border)] rounded-xl flex flex-col items-center justify-center gap-1 hover:border-cyan-400 transition-colors text-[var(--muted)]"
+                                        className={`w-full h-24 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-1 transition-colors ${canUploadHero
+                                            ? "border-[var(--border)] hover:border-cyan-400 text-[var(--muted)]"
+                                            : "border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
+                                            }`}
                                     >
-                                        <Sparkles className="w-5 h-5" />
-                                        <span className="text-[10px]">{t("Upload Hero")}</span>
+                                        {canUploadHero ? <Sparkles className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+                                        <span className="text-[10px] font-medium">
+                                            {canUploadHero ? t("Upload Hero") : t("Upgrade to Upload")}
+                                        </span>
                                     </button>
                                 )}
                                 <p className="text-[10px] text-[var(--muted)]">{t("Displayed at the top of page")}</p>
@@ -573,19 +614,28 @@ export function AdvancedSettingsPanel({
                             </label>
 
                             {/* Show Powered by Badge */}
-                            <label className="flex items-center justify-between p-4 rounded-xl cursor-pointer bg-[var(--surface)] border border-[var(--border)] hover:border-cyan-400 transition-colors">
+                            <label className={`flex items-center justify-between p-4 rounded-xl cursor-pointer bg-[var(--surface)] border border-[var(--border)] transition-colors ${removeBadgeAllowed ? "hover:border-cyan-400" : "opacity-75"}`}>
                                 <div className="space-y-0.5 flex-1 pr-4">
-                                    <span className="text-sm text-[var(--text)] font-medium block">{t("Powered by Badge")}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-[var(--text)] font-medium">{t("Powered by Badge")}</span>
+                                        {!removeBadgeAllowed && <Lock className="w-3 h-3 text-[var(--muted)]" />}
+                                    </div>
                                     <span className="text-[10px] text-[var(--muted)] block">{t("Show Tierless attribution")}</span>
                                 </div>
                                 <div className="relative inline-flex items-center shrink-0">
                                     <input
                                         type="checkbox"
                                         checked={(calc?.meta as any)?.advancedShowBadge !== false}
-                                        onChange={e => updateCalc((draft) => {
-                                            if (!draft.meta) draft.meta = {};
-                                            (draft.meta as any).advancedShowBadge = e.target.checked;
-                                        })}
+                                        onChange={e => {
+                                            if (!e.target.checked && !removeBadgeAllowed) {
+                                                openUpsell({ feature: "removeBadge" });
+                                                return;
+                                            }
+                                            updateCalc((draft) => {
+                                                if (!draft.meta) draft.meta = {};
+                                                (draft.meta as any).advancedShowBadge = e.target.checked;
+                                            });
+                                        }}
                                         className="sr-only peer"
                                     />
                                     <div className={`w-11 h-6 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${(calc?.meta as any)?.advancedShowBadge !== false ? "bg-gradient-to-r from-[#4F46E5] to-[#22D3EE]" : "bg-gray-300"}`}></div>

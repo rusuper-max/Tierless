@@ -39,13 +39,13 @@ const BADGE_OPTIONS = [
 ];
 
 /* Custom Badge Dropdown - Cross-platform consistent styling */
-function BadgeDropdown({ 
-  value, 
-  onChange, 
-  disabled 
-}: { 
-  value: string; 
-  onChange: (val: string) => void; 
+function BadgeDropdown({
+  value,
+  onChange,
+  disabled
+}: {
+  value: string;
+  onChange: (val: string) => void;
   disabled?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -55,7 +55,7 @@ function BadgeDropdown({
   // Close on outside click or scroll
   useEffect(() => {
     if (!isOpen) return;
-    
+
     const handleClick = (e: MouseEvent) => {
       if (buttonRef.current && !buttonRef.current.contains(e.target as Node)) {
         const menu = document.getElementById('badge-dropdown-menu');
@@ -63,13 +63,13 @@ function BadgeDropdown({
         setIsOpen(false);
       }
     };
-    
+
     // Close on any scroll
     const handleScroll = () => setIsOpen(false);
-    
+
     document.addEventListener("mousedown", handleClick);
     window.addEventListener("scroll", handleScroll, true); // true = capture phase to catch all scrolls
-    
+
     return () => {
       document.removeEventListener("mousedown", handleClick);
       window.removeEventListener("scroll", handleScroll, true);
@@ -83,10 +83,10 @@ function BadgeDropdown({
       const menuHeight = 320; // approximate max height of dropdown
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      
+
       // If not enough space below and more space above, show above
       const showAbove = spaceBelow < menuHeight && spaceAbove > spaceBelow;
-      
+
       setMenuPos({
         top: showAbove ? rect.top - menuHeight - 4 : rect.bottom + 4,
         left: Math.max(8, rect.right - 160),
@@ -109,14 +109,14 @@ function BadgeDropdown({
         <span>{selected.label}</span>
       </button>
       <Tag className="w-3 h-3 absolute right-2 top-1.5 pointer-events-none text-[var(--muted)]" />
-      
+
       {/* Portal dropdown - renders at body level to avoid overflow clipping */}
       {isOpen && typeof document !== 'undefined' && ReactDOM.createPortal(
-        <div 
+        <div
           id="badge-dropdown-menu"
           className="fixed w-40 py-1 rounded-xl border border-white/10 shadow-2xl z-[9999] animate-in fade-in duration-100 max-h-80 overflow-y-auto"
-          style={{ 
-            top: menuPos.top, 
+          style={{
+            top: menuPos.top,
             left: Math.max(8, menuPos.left),
             backgroundColor: '#1e1e2e',
             boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
@@ -222,6 +222,7 @@ export default function SimpleListPanel() {
   const simpleLogo: string = business.logoUrl || "";
 
   const canUseImages = plan === "growth" || plan === "pro" || plan === "starter" || plan === "tierless";
+  const canUploadCover = plan !== "free";
 
   // --- Local State ---
   const [activeTab, setActiveTab] = useState<Tab>("content");
@@ -384,6 +385,21 @@ export default function SimpleListPanel() {
   };
 
   const triggerGenericUpload = (id: string, type: 'item' | 'section' | 'cover' | 'logo') => {
+    const allowed =
+      type === "logo"
+        ? true
+        : type === "cover"
+          ? canUploadCover
+          : canUseImages;
+
+    if (!allowed) {
+      openUpsell({
+        feature: (type === "cover" ? "coverImage" : "imageUpload") as any,
+        requiredPlan: "starter",
+      });
+      return;
+    }
+
     setPendingFor(JSON.stringify({ id, type }));
     fileInputRef.current?.click();
   };
@@ -1031,7 +1047,13 @@ export default function SimpleListPanel() {
                 <div className="w-8 h-8 rounded-full border-3 border-transparent animate-spin" style={{ borderTopColor: '#22D3EE', borderRightColor: '#6366f1', borderWidth: '3px' }} />
               ) : (
                 <>
-                  <button onClick={() => triggerGenericUpload("cover", "cover")} className="px-4 py-2 bg-white text-black text-xs font-bold rounded-full hover:scale-105 transition cursor-default" data-help="Upload a cover image for your page. This appears at the top and grabs attention! Recommended size: 1200x400px.">{t("Upload Cover")}</button>
+                  <button
+                    onClick={() => triggerGenericUpload("cover", "cover")}
+                    className={`px-4 py-2 rounded-full text-xs font-bold transition cursor-default ${canUploadCover ? "bg-white text-black hover:scale-105" : "bg-white/20 text-white border border-white/30"}`}
+                    data-help="Upload a cover image for your page. This appears at the top and grabs attention! Recommended size: 1200x400px."
+                  >
+                    {canUploadCover ? t("Upload Cover") : t("Upgrade to Upload")}
+                  </button>
                   {simpleCoverImage && (
                     <button
                       onClick={() => {
@@ -1432,6 +1454,7 @@ export default function SimpleListPanel() {
           {[
             { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/...', icon: <div className="w-3.5 h-3.5 rounded bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500" /> },
             { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/...', icon: <div className="w-3.5 h-3.5 rounded bg-blue-600" /> },
+            { key: 'threads', label: 'Threads', placeholder: 'https://threads.net/@...', icon: <div className="w-3.5 h-3.5 rounded bg-black dark:bg-white" /> },
             { key: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@...', icon: <div className="w-3.5 h-3.5 rounded bg-black border border-white/20" /> },
             { key: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/...', icon: <div className="w-3.5 h-3.5 rounded bg-red-600" /> },
             { key: 'whatsapp', label: 'WhatsApp', placeholder: 'https://wa.me/...', icon: <MessageCircle className="w-3.5 h-3.5 text-green-500" /> },
@@ -1784,9 +1807,24 @@ export default function SimpleListPanel() {
         <div className="grid grid-cols-2 gap-6">
           <label className="space-y-2 group cursor-default">
             <span className="text-xs text-[var(--muted)] font-medium group-hover:text-[var(--text)] transition-colors">{t("Currency Symbol")}</span>
-            <select value={currency || "€"} onChange={e => setI18n({ currency: e.target.value })} className="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] cursor-default">
+            <select
+              value={CURRENCY_PRESETS.includes(currency || "€") ? currency : "Custom"}
+              onChange={e => setI18n({ currency: e.target.value })}
+              className="w-full p-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-sm outline-none focus:border-[#22D3EE] cursor-default"
+            >
               {CURRENCY_PRESETS.map(c => <option key={c} value={c}>{c}</option>)}
+              <option value="Custom">Custom</option>
             </select>
+            {(!CURRENCY_PRESETS.includes(currency || "€") || currency === "Custom") && (
+              <input
+                type="text"
+                value={currency === "Custom" ? "" : currency}
+                onChange={(e) => setI18n({ currency: e.target.value })}
+                placeholder={t("Custom currency...")}
+                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#22D3EE] text-[var(--text)]"
+                autoFocus
+              />
+            )}
           </label>
           <label className="space-y-2 group cursor-default">
             <span className="text-xs text-[var(--muted)] font-medium group-hover:text-[var(--text)] transition-colors">{t("Price Decimals")}</span>
@@ -2082,24 +2120,22 @@ export default function SimpleListPanel() {
       </div>
 
       {/* Global inputs */}
-      {canUseImages && (
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            if (!pendingFor) return;
-            try {
-              const payload = JSON.parse(pendingFor);
-              handleGenericUpload(e, payload.id, payload.type);
-            } catch {
-              handleGenericUpload(e, pendingFor, "item");
-            }
-            setPendingFor(null);
-          }}
-        />
-      )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          if (!pendingFor) return;
+          try {
+            const payload = JSON.parse(pendingFor);
+            handleGenericUpload(e, payload.id, payload.type);
+          } catch {
+            handleGenericUpload(e, pendingFor, "item");
+          }
+          setPendingFor(null);
+        }}
+      />
 
       {/* OCR Modal */}
       {ocrOpen && (

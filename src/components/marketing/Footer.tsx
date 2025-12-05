@@ -3,9 +3,14 @@
 import Link from "next/link";
 import { useTranslation } from "@/i18n/useTranslation";
 import TierlessLogo from "./TierlessLogo";
+import { useAccount } from "@/hooks/useAccount";
 
 export default function Footer() {
   const { t } = useTranslation();
+  const { authenticated } = useAccount();
+
+  // Logged-in users go to /templates, others to /dashboard/templates
+  const templatesLink = authenticated ? "/templates" : "/dashboard/templates";
 
   return (
     <footer className="bg-[#020617] border-t border-white/5 pt-16 pb-8 relative z-30">
@@ -28,7 +33,7 @@ export default function Footer() {
             <h4 className="text-sm font-semibold text-white mb-4">{t("footer.product")}</h4>
             <ul className="space-y-2 text-sm text-slate-400">
               <li><Link href="/start" className="hover:text-white transition">{t("footer.pricing")}</Link></li>
-              <li><Link href="/dashboard/templates" className="hover:text-white transition">{t("footer.templates")}</Link></li>
+              <li><Link href={templatesLink} className="hover:text-white transition">{t("footer.templates")}</Link></li>
               <li><Link href="/dashboard" className="hover:text-white transition">{t("footer.builder")}</Link></li>
             </ul>
           </div>

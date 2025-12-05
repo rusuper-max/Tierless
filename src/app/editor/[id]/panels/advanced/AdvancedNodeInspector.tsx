@@ -142,6 +142,33 @@ export function AdvancedNodeInspector({
                                 </div>
                             )}
 
+                            {selectedNode.kind !== "slider" && (
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold uppercase text-[var(--muted)] flex items-center gap-1">
+                                        {t("Sale Price")}
+                                        <span className="text-[8px] font-normal normal-case opacity-70">({t("optional")})</span>
+                                    </label>
+                                    <div className="relative flex items-center">
+                                        <span className="absolute left-3 text-[var(--muted)] text-sm pointer-events-none z-10">{currency}</span>
+                                        <input
+                                            type="number"
+                                            value={selectedNode.salePrice ?? ""}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                handleUpdateNode(selectedId, { salePrice: val === "" ? null : parseFloat(val) });
+                                            }}
+                                            placeholder={t("Leave empty for no sale")}
+                                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none pl-12 text-[var(--text)] placeholder:text-[var(--muted)]/40"
+                                        />
+                                    </div>
+                                    {selectedNode.salePrice != null && selectedNode.price != null && selectedNode.salePrice >= selectedNode.price && (
+                                        <p className="text-[10px] text-amber-500 flex items-center gap-1">
+                                            ⚠️ {t("Sale price should be lower than regular price")}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
                             <div className="space-y-1">
                                 <label className="text-[10px] font-bold uppercase text-[var(--muted)]">{t("Description")}</label>
                                 <textarea

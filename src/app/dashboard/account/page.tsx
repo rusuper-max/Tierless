@@ -216,7 +216,7 @@ export default function AccountSettings() {
 
   return (
     <div className="w-full min-h-screen bg-[var(--bg)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div className="container-page">{/* max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 */}
 
         {/* HEADER */}
         <div className="mb-8">

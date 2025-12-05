@@ -807,7 +807,9 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
       if (qty > 0 && itemPrice > 0) {
         const discountPercent = Number(it.discountPercent) || 0;
         const discount = it.badge === 'sale' ? discountPercent : 0;
-        const price = itemPrice * (1 - discount / 100);
+        const rawPrice = itemPrice * (1 - discount / 100);
+        // Floor discounted prices to be consistent with display
+        const price = discount > 0 ? Math.floor(rawPrice * 100) / 100 : rawPrice;
         sum += price * qty;
       }
     });
@@ -875,7 +877,9 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
       const itemPrice = Number(item.price) || 0;
       const discountPercent = Number(item.discountPercent) || 0;
       const discount = item.badge === "sale" ? discountPercent : 0;
-      const price = itemPrice * (1 - discount / 100);
+      const rawPrice = itemPrice * (1 - discount / 100);
+      // Floor discounted prices to be consistent
+      const price = discount > 0 ? Math.floor(rawPrice * 100) / 100 : rawPrice;
       lines.push(`${formatQuantityDisplay(qty)} x ${item.label} - ${formatPrice(price * qty)}`);
     });
     lines.push("");
@@ -1139,6 +1143,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                     <div className="flex items-center gap-2 ml-2 pl-2 border-l border-white/20">
                       {business.social.instagram && <a href={business.social.instagram} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><Instagram className="w-3.5 h-3.5" /></a>}
                       {business.social.facebook && <a href={business.social.facebook} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><Facebook className="w-3.5 h-3.5" /></a>}
+                      {business.social.threads && <a href={business.social.threads} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><span className="font-bold text-[10px]">@</span></a>}
                       {business.social.tiktok && <a href={business.social.tiktok} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><span className="font-bold text-[10px]">Tk</span></a>}
                       {business.social.youtube && <a href={business.social.youtube} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><Youtube className="w-3.5 h-3.5" /></a>}
                       {business.social.whatsapp && <a href={business.social.whatsapp} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--glass)] rounded-full hover:bg-[var(--glass-hover)] transition"><MessageCircle className="w-3.5 h-3.5" /></a>}
@@ -1190,6 +1195,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
                   <div className="flex items-center gap-2 ml-2 pl-2 border-l border-[var(--border)]">
                     {business.social.instagram && <a href={business.social.instagram} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><Instagram className="w-4 h-4" /></a>}
                     {business.social.facebook && <a href={business.social.facebook} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><Facebook className="w-4 h-4" /></a>}
+                    {business.social.threads && <a href={business.social.threads} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><span className="font-bold text-[11px]">@</span></a>}
                     {business.social.tiktok && <a href={business.social.tiktok} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><span className="font-bold text-[10px]">Tk</span></a>}
                     {business.social.youtube && <a href={business.social.youtube} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><Youtube className="w-4 h-4" /></a>}
                     {business.social.whatsapp && <a href={business.social.whatsapp} target="_blank" rel="noreferrer" className="p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-full hover:border-[var(--brand-1)] hover:text-[var(--brand-1)] transition"><MessageCircle className="w-4 h-4" /></a>}
@@ -1669,7 +1675,11 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
   const discountPercent = Number(item.discountPercent) || 0;
   const discount = item.badge === 'sale' ? discountPercent : 0;
   const itemPrice = Number(item.price) || 0;
-  const finalPrice = itemPrice > 0 ? itemPrice * (1 - discount / 100) : 0;
+  // Floor discounted prices to avoid rounding UP when decimals=0
+  const rawDiscounted = itemPrice * (1 - discount / 100);
+  const finalPrice = itemPrice > 0
+    ? (discount > 0 ? Math.floor(rawDiscounted * 100) / 100 : rawDiscounted)
+    : 0;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
@@ -1818,7 +1828,12 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
   const discountPercent = Number(item.discountPercent) || 0;
   const discount = item.badge === 'sale' ? discountPercent : 0;
   const itemPrice = Number(item.price) || 0;
-  const finalPrice = itemPrice > 0 ? itemPrice * (1 - discount / 100) : null;
+  // For discounted prices, floor to 2 decimal places to avoid rounding UP when decimals=0
+  // e.g., 3 * 0.9 = 2.7 should show as 2 (floored), not 3 (rounded)
+  const rawDiscounted = itemPrice * (1 - discount / 100);
+  const finalPrice = itemPrice > 0
+    ? (discount > 0 ? Math.floor(rawDiscounted * 100) / 100 : rawDiscounted)
+    : null;
 
   // Unit Label Logic
   const unitLabel = item.unit === "custom" ? item.customUnit : item.unit;
@@ -1984,7 +1999,7 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
               {item.note}
             </p>
           )}
-          
+
           {/* Badge - Inline below note, before price */}
           {item.badge && (
             <span className={`inline-block px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide border mb-2 ${BADGE_STYLES[item.badge] || "bg-gray-100 text-gray-800 border-gray-200"}`}>

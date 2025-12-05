@@ -24,13 +24,17 @@ export function getTierEffectivePrice(
     billingMode: BillingPeriod,
     enableYearly: boolean,
     yearlyDiscountPercent: number | null
-): { price: number | null; billingForLabel: BillingPeriod | null } {
-    if (typeof node.price !== "number") return { price: null, billingForLabel: null };
+): { price: number | null; billingForLabel: BillingPeriod | null; originalPrice?: number | null } {
+    // Use sale price if available, otherwise regular price
+    const basePrice = typeof node.salePrice === "number" ? node.salePrice : node.price;
+    const originalPrice = typeof node.salePrice === "number" ? node.price : null;
+
+    if (typeof basePrice !== "number") return { price: null, billingForLabel: null, originalPrice: null };
 
     const period = node.billingPeriod || "once";
 
     if (!enableYearly || billingMode === "month" || period !== "month") {
-        return { price: node.price, billingForLabel: period };
+        return { price: basePrice, billingForLabel: period, originalPrice };
     }
 
     // yearly view + node je month -> izračunaj yearly sa popustom
@@ -39,11 +43,16 @@ export function getTierEffectivePrice(
             ? Math.min(100, Math.max(0, yearlyDiscountPercent))
             : 0;
 
-    const yearlyBase = node.price * 12;
+    const yearlyBase = basePrice * 12;
     const yearlyPrice =
         discount > 0 ? yearlyBase * (1 - discount / 100) : yearlyBase;
 
-    return { price: yearlyPrice, billingForLabel: "year" };
+    // Calculate yearly original price if sale price exists
+    const yearlyOriginal = typeof originalPrice === "number"
+        ? (discount > 0 ? (originalPrice * 12) * (1 - discount / 100) : originalPrice * 12)
+        : null;
+
+    return { price: yearlyPrice, billingForLabel: "year", originalPrice: yearlyOriginal };
 }
 
 export function TierCard({
@@ -131,7 +140,7 @@ export function TierCard({
                         : "0 25px 60px rgba(2,6,23,.75)";
     }
 
-    const { price, billingForLabel } = getTierEffectivePrice(
+    const { price, billingForLabel, originalPrice } = getTierEffectivePrice(
         node,
         billingMode,
         enableYearly,
@@ -141,6 +150,14 @@ export function TierCard({
     const priceStr =
         typeof price === "number"
             ? formatPrice(price, {
+                billing: billingForLabel,
+                unitLabel: node.unitLabel,
+            })
+            : "";
+
+    const originalPriceStr =
+        typeof originalPrice === "number"
+            ? formatPrice(originalPrice, {
                 billing: billingForLabel,
                 unitLabel: node.unitLabel,
             })
@@ -211,7 +228,7 @@ export function TierCard({
         >
             {/* Selection indicator - top right corner */}
             {isActive && (
-                <div 
+                <div
                     className="absolute -top-2 -right-2 z-20 flex items-center justify-center w-6 h-6 rounded-full shadow-lg animate-in zoom-in-50 duration-200"
                     style={{
                         background: isGradientAccent ? accent : accentPrimary,
@@ -289,18 +306,49 @@ export function TierCard({
 
                 {priceStr && (
                     <div className="mt-2">
-                        <div className={`text-2xl sm:text-3xl font-bold text-[var(--text)] tracking-tight ${theme === "editorial" ? "font-serif font-light" : ""}`}>
-                            {priceStr}
-                        </div>
-                        <div className="text-xs text-[var(--muted)] font-medium mt-1">
-                            {t("Tier")}
-                            {billingForLabel && billingForLabel !== "once"
-                                ? ` · ${billingForLabel === "month"
-                                    ? t("Billed monthly")
-                                    : t("Billed yearly")
-                                }`
-                                : ""}
-                        </div>
+                        {originalPriceStr ? (
+                            <div className="space-y-1">
+                                <div className="flex items-baseline gap-2">
+                                    <span className={`text-lg sm:text-xl font-bold text-[var(--muted)] line-through opacity-60`}>
+                                        {originalPriceStr}
+                                    </span>
+                                    <span
+                                        className={`text-2xl sm:text-3xl font-bold tracking-tight ${theme === "editorial" ? "font-serif font-light" : ""}`}
+                                        style={{ color: showAccentColor ? accentPrimary : "var(--text)" }}
+                                    >
+                                        {priceStr}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
+                                        SALE
+                                    </span>
+                                    <span className="text-xs text-[var(--muted)] font-medium">
+                                        {billingForLabel && billingForLabel !== "once"
+                                            ? ` · ${billingForLabel === "month"
+                                                ? t("Billed monthly")
+                                                : t("Billed yearly")
+                                            }`
+                                            : ""}
+                                    </span>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className={`text-2xl sm:text-3xl font-bold text-[var(--text)] tracking-tight ${theme === "editorial" ? "font-serif font-light" : ""}`}>
+                                    {priceStr}
+                                </div>
+                                <div className="text-xs text-[var(--muted)] font-medium mt-1">
+                                    {t("Tier")}
+                                    {billingForLabel && billingForLabel !== "once"
+                                        ? ` · ${billingForLabel === "month"
+                                            ? t("Billed monthly")
+                                            : t("Billed yearly")
+                                        }`
+                                        : ""}
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
 
@@ -316,14 +364,14 @@ export function TierCard({
                                 if (feat.highlighted) {
                                     // CONSISTENT STYLE: Bordered pill with colored/gradient text
                                     const useGradientText = showAccentColor && isGradientAccent;
-                                    
+
                                     return (
                                         <li key={feat.id}>
                                             <span
                                                 className="inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-semibold"
                                                 style={{
                                                     borderColor: showAccentColor ? featureAccentPrimary : "var(--border)",
-                                                    backgroundColor: showAccentColor 
+                                                    backgroundColor: showAccentColor
                                                         ? `${featureAccentPrimary}15`
                                                         : "var(--surface)",
                                                 }}
