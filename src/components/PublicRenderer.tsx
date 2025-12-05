@@ -803,9 +803,11 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
     let sum = 0;
     items.forEach(it => {
       const qty = quantities[it.id] || 0;
-      if (qty > 0 && it.price) {
-        const discount = it.badge === 'sale' ? (it.discountPercent || 0) : 0;
-        const price = it.price * (1 - discount / 100);
+      const itemPrice = Number(it.price) || 0;
+      if (qty > 0 && itemPrice > 0) {
+        const discountPercent = Number(it.discountPercent) || 0;
+        const discount = it.badge === 'sale' ? discountPercent : 0;
+        const price = itemPrice * (1 - discount / 100);
         sum += price * qty;
       }
     });
@@ -870,8 +872,10 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
     lines.push("");
     selectedItems.forEach((item) => {
       const qty = quantities[item.id] || 0;
-      const discount = item.badge === "sale" ? (item.discountPercent || 0) : 0;
-      const price = (item.price || 0) * (1 - discount / 100);
+      const itemPrice = Number(item.price) || 0;
+      const discountPercent = Number(item.discountPercent) || 0;
+      const discount = item.badge === "sale" ? discountPercent : 0;
+      const price = itemPrice * (1 - discount / 100);
       lines.push(`${formatQuantityDisplay(qty)} x ${item.label} - ${formatPrice(price * qty)}`);
     });
     lines.push("");
@@ -1661,8 +1665,11 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
   const unitLabel = item.unit === "custom" ? item.customUnit || "unit" : item.unit || "pcs";
   const isSoldOut = item.soldOut;
 
-  const discount = item.badge === 'sale' ? (item.discountPercent || 0) : 0;
-  const finalPrice = item.price ? item.price * (1 - discount / 100) : 0;
+  // Discount Logic - Explicit number conversion
+  const discountPercent = Number(item.discountPercent) || 0;
+  const discount = item.badge === 'sale' ? discountPercent : 0;
+  const itemPrice = Number(item.price) || 0;
+  const finalPrice = itemPrice > 0 ? itemPrice * (1 - discount / 100) : 0;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
@@ -1712,8 +1719,8 @@ function ItemDetailModal({ item, onClose, quantity, setQuantity, formatPrice, sh
             )}
             <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text)] leading-tight mb-2">{item.label}</h2>
             <div className="text-xl font-bold text-[var(--brand-1)] flex items-center gap-2">
-              {discount > 0 && (
-                <span className="text-base text-[var(--muted)] line-through decoration-red-500/50">{formatPrice(item.price)}</span>
+              {discount > 0 && itemPrice > 0 && (
+                <span className="text-base text-[var(--muted)] line-through decoration-red-500/50">{formatPrice(itemPrice)}</span>
               )}
               <span>{formatPrice(finalPrice)}</span>
               {showUnits && item.unit && item.unit !== "pcs" && <span className="text-sm font-normal text-[var(--muted)] ml-1">/ {unitLabel}</span>}
@@ -1807,9 +1814,11 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
   const step = item.unit === "pcs" || !item.unit ? 1 : (item.unit === "kg" || item.unit === "l") ? 0.1 : 1;
   const hasImage = !!item.imageUrl;
 
-  // Discount Logic
-  const discount = item.badge === 'sale' ? (item.discountPercent || 0) : 0;
-  const finalPrice = item.price ? item.price * (1 - discount / 100) : null;
+  // Discount Logic - Explicit number conversion to avoid type issues
+  const discountPercent = Number(item.discountPercent) || 0;
+  const discount = item.badge === 'sale' ? discountPercent : 0;
+  const itemPrice = Number(item.price) || 0;
+  const finalPrice = itemPrice > 0 ? itemPrice * (1 - discount / 100) : null;
 
   // Unit Label Logic
   const unitLabel = item.unit === "custom" ? item.customUnit : item.unit;
@@ -1904,11 +1913,11 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
             {item.pricePrefix && (
               <span className="text-[9px] text-[var(--muted)] font-medium mr-1">{item.pricePrefix}</span>
             )}
-            {discount > 0 && (
-              <span className="text-[10px] text-[var(--muted)] line-through mr-1">{formatPrice(item.price)}</span>
+            {discount > 0 && itemPrice > 0 && (
+              <span className="text-[10px] text-[var(--muted)] line-through mr-1">{formatPrice(itemPrice)}</span>
             )}
             <span className="font-bold text-base md:text-lg text-[var(--text)]">
-              {formatPrice(finalPrice || item.price)}
+              {formatPrice(finalPrice ?? itemPrice)}
             </span>
             {showUnitLabel && (
               <span className="text-[9px] text-[var(--muted)] ml-0.5">/{unitLabel}</span>
@@ -1989,11 +1998,11 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
             {item.pricePrefix && (
               <span className="text-[10px] text-[var(--muted)] font-medium">{item.pricePrefix}</span>
             )}
-            {discount > 0 && (
-              <span className="text-xs text-[var(--muted)] line-through decoration-red-500/50">{formatPrice(item.price)}</span>
+            {discount > 0 && itemPrice > 0 && (
+              <span className="text-xs text-[var(--muted)] line-through decoration-red-500/50">{formatPrice(itemPrice)}</span>
             )}
             <div className="font-bold text-lg text-[var(--brand-1)]">
-              {formatPrice(finalPrice || item.price)}
+              {formatPrice(finalPrice ?? itemPrice)}
               {showUnitLabel && <span className="text-xs font-normal text-[var(--muted)] ml-1">/ {unitLabel}</span>}
             </div>
           </div>
@@ -2089,11 +2098,11 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
             {item.pricePrefix && (
               <span className="text-[10px] text-[var(--muted)] font-medium">{item.pricePrefix}</span>
             )}
-            {discount > 0 && (
-              <span className="text-xs text-[var(--muted)] line-through decoration-red-500/50">{formatPrice(item.price)}</span>
+            {discount > 0 && itemPrice > 0 && (
+              <span className="text-xs text-[var(--muted)] line-through decoration-red-500/50">{formatPrice(itemPrice)}</span>
             )}
             <div className="font-bold text-lg text-[var(--brand-1)]">
-              {formatPrice(finalPrice || item.price)}
+              {formatPrice(finalPrice ?? itemPrice)}
               {showUnitLabel && <span className="text-xs font-normal text-[var(--muted)] ml-1">/ {unitLabel}</span>}
             </div>
           </div>
