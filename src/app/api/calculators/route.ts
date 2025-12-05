@@ -4,7 +4,7 @@ import { getUserIdFromRequest } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import * as calcsStore from "@/lib/calcsStore";
 import * as fullStore from "@/lib/fullStore";
-import { ENTITLEMENTS } from "@/lib/entitlements";
+import { ENTITLEMENTS, isPlanId, DEFAULT_PLAN } from "@/lib/entitlements";
 import { calcFromMetaConfig } from "@/lib/calc-init";
 import { randomBytes } from "crypto";
 
@@ -29,9 +29,7 @@ export async function GET(req: Request) {
     [userId]
   );
   const rawPlan = planRows[0]?.plan;
-  const plan = ["free", "starter", "growth", "pro"].includes(rawPlan) 
-    ? rawPlan 
-    : "free";
+  const plan = isPlanId(rawPlan) ? rawPlan : DEFAULT_PLAN;
 
   const limits = ENTITLEMENTS[plan as keyof typeof ENTITLEMENTS]?.limits;
   const pagesAllow = limits?.pages ?? "unlimited";
@@ -84,9 +82,7 @@ export async function POST(req: Request) {
     [userId]
   );
   const rawPlan = planRows[0]?.plan;
-  const plan = ["free", "starter", "growth", "pro"].includes(rawPlan) 
-    ? rawPlan 
-    : "free";
+  const plan = isPlanId(rawPlan) ? rawPlan : DEFAULT_PLAN;
 
   const limits = ENTITLEMENTS[plan as keyof typeof ENTITLEMENTS]?.limits;
   const pagesAllow = limits?.pages ?? "unlimited";

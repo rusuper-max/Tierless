@@ -25,9 +25,17 @@ export function getTierEffectivePrice(
     enableYearly: boolean,
     yearlyDiscountPercent: number | null
 ): { price: number | null; billingForLabel: BillingPeriod | null; originalPrice?: number | null } {
-    // Use sale price if available, otherwise regular price
-    const basePrice = typeof node.salePrice === "number" ? node.salePrice : node.price;
-    const originalPrice = typeof node.salePrice === "number" ? node.price : null;
+    // Calculate base price and original price based on sale type
+    let basePrice = node.price;
+    let originalPrice: number | null | undefined = null;
+
+    if (node.saleType === "percentage" && typeof node.salePercentage === "number" && typeof node.price === "number") {
+        originalPrice = node.price;
+        basePrice = node.price * (1 - node.salePercentage / 100);
+    } else if (typeof node.salePrice === "number") {
+        basePrice = node.salePrice;
+        originalPrice = node.price;
+    }
 
     if (typeof basePrice !== "number") return { price: null, billingForLabel: null, originalPrice: null };
 
@@ -366,9 +374,10 @@ export function TierCard({
                                     const useGradientText = showAccentColor && isGradientAccent;
 
                                     return (
-                                        <li key={feat.id}>
+
+                                        <li key={feat.id} className="flex flex-col gap-2">
                                             <span
-                                                className="inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-semibold"
+                                                className="inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-semibold self-start"
                                                 style={{
                                                     borderColor: showAccentColor ? featureAccentPrimary : "var(--border)",
                                                     backgroundColor: showAccentColor
@@ -395,17 +404,133 @@ export function TierCard({
                                                     </span>
                                                 )}
                                             </span>
+                                            {/* Feature Input (Highlighted) */}
+                                            {feat.inputType === "text" && (
+                                                <div className="w-full pl-1" onClick={e => e.stopPropagation()}>
+                                                    {feat.inputLabel && (
+                                                        <label className="block text-[10px] text-[var(--muted)] font-medium mb-1 pl-1">
+                                                            {feat.inputLabel} {feat.inputRequired && <span className="text-red-400">*</span>}
+                                                        </label>
+                                                    )}
+                                                    <input
+                                                        type="text"
+                                                        placeholder={feat.inputPlaceholder}
+                                                        className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-3 py-2 text-xs outline-none focus:border-cyan-500 transition-colors placeholder:text-[var(--muted)]/50"
+                                                        onClick={e => e.stopPropagation()}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {feat.inputType === "dropdown" && (
+                                                <div className="w-full pl-1" onClick={e => e.stopPropagation()}>
+                                                    {feat.inputLabel && (
+                                                        <label className="block text-[10px] text-[var(--muted)] font-medium mb-1 pl-1">
+                                                            {feat.inputLabel} {feat.inputRequired && <span className="text-red-400">*</span>}
+                                                        </label>
+                                                    )}
+                                                    <select
+                                                        className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-2 py-2 text-xs outline-none focus:border-cyan-500 transition-colors text-[var(--text)] appearance-none"
+                                                        onClick={e => e.stopPropagation()}
+                                                    >
+                                                        <option value="" disabled selected>{t("Select an option")}</option>
+                                                        {(feat.dropdownOptions || []).map((opt, i) => (
+                                                            <option key={i} value={opt}>{opt}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+
+                                            {feat.allowQuantity && (
+                                                <div className="w-full pl-1 pt-1" onClick={e => e.stopPropagation()}>
+                                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                                        <label className="text-[10px] text-[var(--muted)] font-medium pl-1">
+                                                            {t("Quantity")} ({feat.quantityMin || 1}-{feat.quantityMax || 10})
+                                                        </label>
+                                                        <span className="text-[10px] font-mono bg-[var(--surface)] border border-[var(--border)] px-1.5 rounded">
+                                                            1 {feat.quantityLabel || "items"}
+                                                        </span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min={feat.quantityMin || 1}
+                                                        max={feat.quantityMax || 10}
+                                                        step={feat.quantityStep || 1}
+                                                        defaultValue={feat.quantityMin || 1}
+                                                        className="w-full accent-cyan-500 h-1.5 bg-[var(--surface)] rounded-lg appearance-none cursor-pointer border border-[var(--border)]"
+                                                        onClick={e => e.stopPropagation()}
+                                                    />
+                                                </div>
+                                            )}
                                         </li>
                                     );
                                 }
 
                                 return (
-                                    <li key={feat.id} className="flex items-start gap-2.5 text-[var(--muted)]">
-                                        <span
-                                            className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0"
-                                            style={{ backgroundColor: featureAccentPrimary }}
-                                        />
-                                        <span className="leading-snug">{feat.label || t("Feature")}</span>
+                                    <li key={feat.id} className="flex flex-col gap-1.5">
+                                        <div className="flex items-start gap-2.5 text-[var(--muted)]">
+                                            <span
+                                                className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0"
+                                                style={{ backgroundColor: featureAccentPrimary }}
+                                            />
+                                            <span className="leading-snug">{feat.label || t("Feature")}</span>
+                                        </div>
+                                        {/* Feature Input (Regular) */}
+                                        {feat.inputType === "text" && (
+                                            <div className="w-full pl-4" onClick={e => e.stopPropagation()}>
+                                                {feat.inputLabel && (
+                                                    <label className="block text-[10px] text-[var(--muted)] font-medium mb-1">
+                                                        {feat.inputLabel} {feat.inputRequired && <span className="text-red-400">*</span>}
+                                                    </label>
+                                                )}
+                                                <input
+                                                    type="text"
+                                                    placeholder={feat.inputPlaceholder}
+                                                    className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-3 py-2 text-xs outline-none focus:border-cyan-500 transition-colors placeholder:text-[var(--muted)]/50"
+                                                    onClick={e => e.stopPropagation()}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {feat.inputType === "dropdown" && (
+                                            <div className="w-full pl-4" onClick={e => e.stopPropagation()}>
+                                                {feat.inputLabel && (
+                                                    <label className="block text-[10px] text-[var(--muted)] font-medium mb-1">
+                                                        {feat.inputLabel} {feat.inputRequired && <span className="text-red-400">*</span>}
+                                                    </label>
+                                                )}
+                                                <select
+                                                    className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-2 py-2 text-xs outline-none focus:border-cyan-500 transition-colors text-[var(--text)] appearance-none"
+                                                    onClick={e => e.stopPropagation()}
+                                                >
+                                                    <option value="" disabled selected>{t("Select an option")}</option>
+                                                    {(feat.dropdownOptions || []).map((opt, i) => (
+                                                        <option key={i} value={opt}>{opt}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {feat.allowQuantity && (
+                                            <div className="w-full pl-4 pt-1" onClick={e => e.stopPropagation()}>
+                                                <div className="flex items-center justify-between gap-2 mb-1">
+                                                    <label className="text-[10px] text-[var(--muted)] font-medium">
+                                                        {t("Quantity")} ({feat.quantityMin || 1}-{feat.quantityMax || 10})
+                                                    </label>
+                                                    <span className="text-[10px] font-mono bg-[var(--surface)] border border-[var(--border)] px-1.5 rounded">
+                                                        1 {feat.quantityLabel || "items"}
+                                                    </span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min={feat.quantityMin || 1}
+                                                    max={feat.quantityMax || 10}
+                                                    step={feat.quantityStep || 1}
+                                                    defaultValue={feat.quantityMin || 1}
+                                                    className="w-full accent-cyan-500 h-1.5 bg-[var(--surface)] rounded-lg appearance-none cursor-pointer border border-[var(--border)]"
+                                                    onClick={e => e.stopPropagation()}
+                                                />
+                                            </div>
+                                        )}
                                     </li>
                                 );
                             })}

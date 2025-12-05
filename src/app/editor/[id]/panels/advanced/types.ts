@@ -99,6 +99,23 @@ export interface AdvancedTierFeature {
    * Trenutno se ne koristi u rendereru, ali šema je spremna.
    */
   state?: FeatureState;
+
+  /**
+   * Custom Input Configuration
+   */
+  // Input Configuration
+  inputType?: "none" | "text" | "dropdown";
+  inputLabel?: string;
+  inputPlaceholder?: string;
+  inputRequired?: boolean;
+  dropdownOptions?: string[]; // Options for dropdown type
+
+  // Quantity Configuration
+  allowQuantity?: boolean;
+  quantityMin?: number;
+  quantityMax?: number;
+  quantityStep?: number;
+  quantityLabel?: string; // e.g. "users", "items"
 }
 
 /* -------------------------------------------------------------------------- */
@@ -183,6 +200,14 @@ export interface AdvancedNode {
    * Ako postoji, koristi se ovaj price umesto base price za total.
    */
   salePrice?: number | null;
+  /**
+   * Sale discount type - 'fixed' (default) or 'percentage'
+   */
+  saleType?: "fixed" | "percentage";
+  /**
+   * Percentage discount (0-100) if saleType is 'percentage'
+   */
+  salePercentage?: number | null;
 
   /**
    * Billing period – once | month | year.

@@ -70,7 +70,7 @@ export function AdvancedNodeCard({
                 {/* Price Tag */}
                 {node.kind !== "slider" && (
                     <div className="text-right shrink-0">
-                        {node.salePrice != null && node.price != null ? (
+                        {(node.salePrice != null || (node.saleType === "percentage" && node.salePercentage)) && node.price != null ? (
                             <>
                                 <div className="flex items-center gap-1.5 justify-end">
                                     <span className="font-mono text-xs text-[var(--muted)] line-through opacity-60">
@@ -80,7 +80,9 @@ export function AdvancedNodeCard({
                                         className="font-mono font-bold text-sm"
                                         style={{ color: shouldShowColor ? accent : undefined }}
                                     >
-                                        {node.salePrice}{currency}
+                                        {node.saleType === "percentage"
+                                            ? (node.price * (1 - (node.salePercentage || 0) / 100)).toFixed(2).replace(/\.00$/, "")
+                                            : node.salePrice}{currency}
                                     </span>
                                 </div>
                                 {node.billingPeriod && node.billingPeriod !== "once" && (
