@@ -13,6 +13,7 @@ export type SliderBlockProps = {
     formatPrice: (v: number | null | undefined, o?: any) => string;
     sliderColorMode: SliderColorMode;
     sliderSolidColor: string | null;
+    compact?: boolean; // New prop
 };
 
 export function SliderBlock({
@@ -22,6 +23,7 @@ export function SliderBlock({
     formatPrice,
     sliderColorMode,
     sliderSolidColor,
+    compact = false, // Default to false
 }: SliderBlockProps) {
     const min = typeof node.min === "number" ? node.min : 0;
     const max = typeof node.max === "number" ? node.max : 100;
@@ -73,6 +75,47 @@ export function SliderBlock({
     const percent =
         max > min ? Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100)) : 0;
 
+    // Compact Mode Rendering
+    if (compact) {
+        return (
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--card)] border border-[var(--border)] shadow-sm">
+                            {node.iconEmoji ? (
+                                <span className="text-[10px] leading-none">{node.iconEmoji}</span>
+                            ) : (
+                                renderKindIcon("slider")
+                            )}
+                        </span>
+                        <div className="text-xs font-semibold text-[var(--text)]">
+                            {node.label || t("Untitled slider")}
+                        </div>
+                    </div>
+                    <div className="text-[10px] font-mono font-medium text-[var(--muted)] bg-[var(--card)] border border-[var(--border)] px-1.5 py-0.5 rounded">
+                        {value} {node.unit}
+                    </div>
+                </div>
+
+                <input
+                    type="range"
+                    min={min}
+                    max={max}
+                    step={step}
+                    value={value}
+                    onChange={(e) => onChange(Number(e.target.value))}
+                    className="w-full h-1 rounded-full cursor-pointer appearance-none bg-[var(--track)]"
+                    style={{
+                        backgroundImage: `${fillGradient}, linear-gradient(var(--track), var(--track))`,
+                        backgroundSize: `${percent}% 100%, 100% 100%`,
+                        backgroundRepeat: "no-repeat",
+                    }}
+                />
+            </div>
+        );
+    }
+
+    // Standard Mode Rendering
     return (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3">
             <div className="flex items-center justify-between gap-2 mb-2">

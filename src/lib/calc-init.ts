@@ -127,7 +127,7 @@ export function calcBlank(slug: string, name = "Untitled Page"): Calculator {
     { id: "b_pkgs", type: "packages", title: "Plans", layout: "cards" },
   ];
   return {
-    meta: { name, slug, branding: { theme: "dark", accent: "#14b8a6", layout: "cards" } },
+    meta: { name, slug, editorMode: "setup", branding: { theme: "dark", accent: "#14b8a6", layout: "cards" } },
     i18n: { locale: "en", currency: "EUR", decimals: 0 },
     pricingMode: "packages",
     packages: [{ id: "basic", label: "Basic", basePrice: 0, featured: true }],

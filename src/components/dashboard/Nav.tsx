@@ -82,7 +82,7 @@ export default function Nav() {
         {/* --- DESKTOP NAVIGATION - All buttons visible --- */}
         <nav className="hidden sm:flex items-center gap-2 sm:gap-3 flex-wrap justify-end text-[color:var(--text)]">
           <ThemeToggle />
-          <Button size="xs" variant="brand" href="/help" title="Open docs / FAQ">FAQ</Button>
+          <Button size="xs" variant="brand" href="/faq" title="Open docs / FAQ">FAQ</Button>
           <Button size="xs" variant="brand" href="/start" title="Manage your plan">View Plans</Button>
           <Button
             size="xs"
@@ -121,7 +121,7 @@ export default function Nav() {
                 {/* Menu panel */}
                 <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 py-2 animate-in fade-in zoom-in-95 duration-200">
                   <Link
-                    href="/help"
+                    href="/faq"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-[var(--surface)] transition-colors"
                   >

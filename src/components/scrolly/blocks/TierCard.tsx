@@ -6,6 +6,9 @@ import type {
     AdvancedTheme,
     BillingPeriod,
 } from "@/app/editor/[id]/panels/advanced/types";
+import { AddonCard, getAddonEffectivePrice } from "./AddonCard";
+import { SliderBlock } from "./SliderBlock";
+import { SliderColorMode } from "@/app/editor/[id]/panels/advanced/types";
 
 export type TierCardProps = {
     node: AdvancedNode;
@@ -17,6 +20,14 @@ export type TierCardProps = {
     yearlyDiscountPercent: number | null;
     theme: AdvancedTheme;
     isNeonTemplate?: boolean;
+    // Linked features
+    linkedNodes?: AdvancedNode[];
+    sliderValues?: Record<string, number>;
+    setSliderValues?: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+    sliderColorMode?: SliderColorMode;
+    sliderSolidColor?: string | null;
+    selectedAddonIds?: Set<string>;
+    toggleAddon?: (id: string) => void;
 };
 
 export function getTierEffectivePrice(
@@ -73,9 +84,20 @@ export function TierCard({
     yearlyDiscountPercent,
     theme,
     isNeonTemplate = false,
+    linkedNodes = [],
+    sliderValues = {},
+    setSliderValues,
+    sliderColorMode = "brand",
+    sliderSolidColor = null,
+    selectedAddonIds,
+    toggleAddon,
 }: TierCardProps) {
     const accent = node.accentColor || "var(--brand-1,#4F46E5)";
     const isGradientAccent = typeof accent === "string" && accent.includes("gradient");
+
+    const linkedSliders = linkedNodes.filter(n => n.kind === "slider");
+    const linkedAddons = linkedNodes.filter(n => n.kind === "addon");
+
     const gradientColors = isGradientAccent ? accent.match(/#[0-9a-fA-F]{6}/g) : null;
     const accentPrimary = gradientColors?.[0] || accent;
     const textColor = node.textColor || "var(--text)";
@@ -155,17 +177,47 @@ export function TierCard({
         yearlyDiscountPercent
     );
 
+    // Calculate linked options price
+    let totalLinkedPrice = 0;
+
+    // Linked Sliders Price
+    linkedSliders.forEach(s => {
+        if (typeof s.pricePerStep === "number") {
+            const val = sliderValues[s.id] ?? (typeof s.min === "number" ? s.min : 0);
+            totalLinkedPrice += val * s.pricePerStep;
+        }
+    });
+
+    // Linked Addons Price
+    linkedAddons.forEach(a => {
+        if (selectedAddonIds?.has(a.id) && typeof a.price === "number") {
+            const { price: addonPrice } = getAddonEffectivePrice(
+                a,
+                billingMode,
+                enableYearly,
+                yearlyDiscountPercent
+            );
+            if (typeof addonPrice === "number") {
+                totalLinkedPrice += addonPrice;
+            }
+        }
+    });
+
+    // Add linked price to base price
+    const finalPrice = typeof price === "number" ? price + totalLinkedPrice : null;
+    const finalOriginalPrice = typeof originalPrice === "number" ? originalPrice + totalLinkedPrice : null;
+
     const priceStr =
-        typeof price === "number"
-            ? formatPrice(price, {
+        typeof finalPrice === "number"
+            ? formatPrice(finalPrice, {
                 billing: billingForLabel,
                 unitLabel: node.unitLabel,
             })
             : "";
 
     const originalPriceStr =
-        typeof originalPrice === "number"
-            ? formatPrice(originalPrice, {
+        typeof finalOriginalPrice === "number"
+            ? formatPrice(finalOriginalPrice, {
                 billing: billingForLabel,
                 unitLabel: node.unitLabel,
             })
@@ -360,6 +412,43 @@ export function TierCard({
                     </div>
                 )}
 
+                {/* Linked Sliders */}
+                {linkedSliders.length > 0 && setSliderValues && (
+                    <div className="mt-4 space-y-3 pt-3 border-t border-[var(--border)]" onClick={(e) => e.stopPropagation()}>
+                        {linkedSliders.map(s => (
+                            <SliderBlock
+                                key={s.id}
+                                node={s}
+                                value={sliderValues[s.id] ?? (typeof s.min === "number" ? s.min : 0)}
+                                onChange={(v) => setSliderValues(prev => ({ ...prev, [s.id]: v }))}
+                                formatPrice={formatPrice}
+                                sliderColorMode={sliderColorMode}
+                                sliderSolidColor={sliderSolidColor}
+                                compact={true}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                {/* Linked Addons */}
+                {linkedAddons.length > 0 && toggleAddon && selectedAddonIds && (
+                    <div className="mt-3 space-y-2 pt-2 border-t border-[var(--border)]" onClick={(e) => e.stopPropagation()}>
+                        {linkedAddons.map(addon => (
+                            <AddonCard
+                                key={addon.id}
+                                node={addon}
+                                checked={selectedAddonIds.has(addon.id)}
+                                onToggle={() => toggleAddon(addon.id)}
+                                formatPrice={formatPrice}
+                                billingMode={billingMode}
+                                enableYearly={enableYearly}
+                                yearlyDiscountPercent={yearlyDiscountPercent}
+                                compact={true}
+                            />
+                        ))}
+                    </div>
+                )}
+
                 {node.features && node.features.length > 0 && (
                     <div className="pt-4 mt-auto border-t border-[var(--border)]">
                         <ul className="space-y-2 text-xs sm:text-sm">
@@ -421,24 +510,7 @@ export function TierCard({
                                                 </div>
                                             )}
 
-                                            {feat.inputType === "dropdown" && (
-                                                <div className="w-full pl-1" onClick={e => e.stopPropagation()}>
-                                                    {feat.inputLabel && (
-                                                        <label className="block text-[10px] text-[var(--muted)] font-medium mb-1 pl-1">
-                                                            {feat.inputLabel} {feat.inputRequired && <span className="text-red-400">*</span>}
-                                                        </label>
-                                                    )}
-                                                    <select
-                                                        className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-2 py-2 text-xs outline-none focus:border-cyan-500 transition-colors text-[var(--text)] appearance-none"
-                                                        onClick={e => e.stopPropagation()}
-                                                    >
-                                                        <option value="" disabled selected>{t("Select an option")}</option>
-                                                        {(feat.dropdownOptions || []).map((opt, i) => (
-                                                            <option key={i} value={opt}>{opt}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            )}
+
 
                                             {feat.allowQuantity && (
                                                 <div className="w-full pl-1 pt-1" onClick={e => e.stopPropagation()}>
@@ -491,24 +563,7 @@ export function TierCard({
                                             </div>
                                         )}
 
-                                        {feat.inputType === "dropdown" && (
-                                            <div className="w-full pl-4" onClick={e => e.stopPropagation()}>
-                                                {feat.inputLabel && (
-                                                    <label className="block text-[10px] text-[var(--muted)] font-medium mb-1">
-                                                        {feat.inputLabel} {feat.inputRequired && <span className="text-red-400">*</span>}
-                                                    </label>
-                                                )}
-                                                <select
-                                                    className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-2 py-2 text-xs outline-none focus:border-cyan-500 transition-colors text-[var(--text)] appearance-none"
-                                                    onClick={e => e.stopPropagation()}
-                                                >
-                                                    <option value="" disabled selected>{t("Select an option")}</option>
-                                                    {(feat.dropdownOptions || []).map((opt, i) => (
-                                                        <option key={i} value={opt}>{opt}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
+
 
                                         {feat.allowQuantity && (
                                             <div className="w-full pl-4 pt-1" onClick={e => e.stopPropagation()}>

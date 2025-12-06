@@ -242,6 +242,12 @@ export interface AdvancedNode {
    */
   pricePerStep?: number | null;
 
+  /**
+   * ID tier-a za koji je ova opcija vezana (ako je Linked Option).
+   * Ako je setovano, ova opcija se renderuje UNUTAR tog tiera i utiče samo na njegovu cenu.
+   */
+  linkedTierId?: string | null;
+
   /* ------------------------ Tier-specific: features & CTA ---------------- */
 
   /**

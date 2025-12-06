@@ -472,6 +472,7 @@ export default function AdvancedPanelInner() {
           handleUpdateFeature={handleUpdateFeature}
           handleRemoveFeature={handleRemoveFeature}
           currency={currency}
+          nodes={nodes}
         />
 
       </div>

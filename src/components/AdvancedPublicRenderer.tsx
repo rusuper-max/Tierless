@@ -474,6 +474,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
     selectedAddonIds.forEach((id) => {
       const addon = addonNodes.find((a) => a.id === id);
       if (!addon || typeof addon.price !== "number") return;
+      if (addon.linkedTierId && addon.linkedTierId !== selectedTierId) return;
       if (addon.includeInTotal === false) return;
 
       const { price } = getAddonEffectivePrice(
@@ -489,6 +490,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
 
     sliderNodes.forEach((s) => {
       if (typeof s.pricePerStep !== "number") return;
+      if (s.linkedTierId && s.linkedTierId !== selectedTierId) return;
       if (s.includeInTotal === false) return;
       const val = sliderValues[s.id] ?? (typeof s.min === "number" ? s.min : 0);
       sum += val * s.pricePerStep;
@@ -681,7 +683,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
         }}
       >
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
-        {t("Powered by Tierless")}
+          {t("Powered by Tierless")}
         </span>
       </span>
     </a>
@@ -1133,10 +1135,10 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                 className="text-lg sm:text-xl font-semibold"
                 style={{ color: "var(--text)" }}
               >
-            {t("Choose a package")}
-          </h2>
+                {t("Choose a package")}
+              </h2>
 
-          {enableYearly && (
+              {enableYearly && (
                 <div
                   className="inline-flex rounded-full p-1 text-xs sm:text-sm"
                   style={{
@@ -1144,13 +1146,13 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                     border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
                   }}
                 >
-              {(["month", "year"] as BillingPeriod[]).map((mode) => {
-                const active = billingMode === mode;
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setBillingMode(mode)}
+                  {(["month", "year"] as BillingPeriod[]).map((mode) => {
+                    const active = billingMode === mode;
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setBillingMode(mode)}
                         className="relative cursor-pointer px-4 py-2 rounded-full transition-all font-medium"
                         style={{
                           background: active
@@ -1162,72 +1164,79 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                       >
                         {mode === "month" ? t("Monthly") : t("Yearly")}
                         {mode === "year" && yearlyDiscountPercent && (
-                      <span
+                          <span
                             className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                        style={{
+                            style={{
                               background: "linear-gradient(135deg, #22c55e, #10b981)",
                               color: "white",
                             }}
                           >
                             -{yearlyDiscountPercent}%
-                    </span>
+                          </span>
                         )}
-                  </button>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className={`grid gap-4 sm:gap-6 sm:grid-cols-2 ${tierGridCols}`}>
+              {tierNodes.map((tier) => {
+                const isActive = tier.id === selectedTierId;
+                return (
+                  <TierCard
+                    key={tier.id}
+                    node={tier}
+                    isActive={isActive}
+                    onSelect={() => setSelectedTierId(tier.id)}
+                    formatPrice={formatPrice}
+                    billingMode={billingMode}
+                    enableYearly={enableYearly}
+                    yearlyDiscountPercent={yearlyDiscountPercent}
+                    theme={publicTheme}
+                    isNeonTemplate={isNeonTemplate}
+                    linkedNodes={nodes.filter(n => n.linkedTierId === tier.id)}
+                    sliderValues={sliderValues}
+                    setSliderValues={setSliderValues}
+                    sliderColorMode={sliderColorMode}
+                    sliderSolidColor={sliderSolidColor}
+                    selectedAddonIds={selectedAddonIds}
+                    toggleAddon={toggleAddon}
+                  />
                 );
               })}
             </div>
-          )}
-        </div>
-
-            <div className={`grid gap-4 sm:gap-6 sm:grid-cols-2 ${tierGridCols}`}>
-          {tierNodes.map((tier) => {
-            const isActive = tier.id === selectedTierId;
-            return (
-              <TierCard
-                key={tier.id}
-                node={tier}
-                isActive={isActive}
-                onSelect={() => setSelectedTierId(tier.id)}
-                formatPrice={formatPrice}
-                billingMode={billingMode}
-                enableYearly={enableYearly}
-                yearlyDiscountPercent={yearlyDiscountPercent}
-                theme={publicTheme}
-                    isNeonTemplate={isNeonTemplate}
-              />
-            );
-          })}
-        </div>
-      </section>
+          </section>
         )}
 
         {/* Addons Section */}
-        {addonNodes.length > 0 && (
+        {addonNodes.filter(a => !a.linkedTierId).length > 0 && (
           <section className="mb-10">
             <h3
               className="text-base sm:text-lg font-semibold mb-4"
               style={{ color: "var(--text)" }}
             >
-          {t("Extras")}
-        </h3>
+              {t("Extras")}
+            </h3>
             <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
-          {addonNodes.map((addon) => {
-            const checked = selectedAddonIds.has(addon.id);
-            return (
-              <AddonCard
-                key={addon.id}
-                node={addon}
-                checked={checked}
-                onToggle={() => toggleAddon(addon.id)}
-                formatPrice={formatPrice}
-                billingMode={billingMode}
-                enableYearly={enableYearly}
-                yearlyDiscountPercent={yearlyDiscountPercent}
-              />
-            );
-          })}
-        </div>
-      </section>
+              {addonNodes.filter(a => !a.linkedTierId).map((addon) => {
+                const checked = selectedAddonIds.has(addon.id);
+                return (
+                  <AddonCard
+                    key={addon.id}
+                    node={addon}
+                    checked={checked}
+                    onToggle={() => toggleAddon(addon.id)}
+                    formatPrice={formatPrice}
+                    billingMode={billingMode}
+                    enableYearly={enableYearly}
+                    yearlyDiscountPercent={yearlyDiscountPercent}
+                  />
+                );
+              })}
+            </div>
+          </section>
         )}
 
         {/* Items Section */}
@@ -1237,8 +1246,8 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
               className="text-base sm:text-lg font-semibold mb-4"
               style={{ color: "var(--text)" }}
             >
-          {t("Included items")}
-        </h3>
+              {t("Included items")}
+            </h3>
             <div
               className="rounded-2xl p-4 sm:p-6"
               style={{
@@ -1247,74 +1256,74 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
               }}
             >
               <ul className="grid gap-3 sm:grid-cols-2">
-          {itemNodes.map((item) => (
-            <li
-              key={item.id}
+                {itemNodes.map((item) => (
+                  <li
+                    key={item.id}
                     className="flex items-start gap-3"
-            >
+                  >
                     <span
                       className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full shrink-0"
                       style={{ background: "var(--surface)" }}
                     >
-                {item.iconEmoji ? (
+                      {item.iconEmoji ? (
                         <span className="text-xs leading-none">
-                    {item.iconEmoji}
-                  </span>
-                ) : (
+                          {item.iconEmoji}
+                        </span>
+                      ) : (
                         <Check className="w-3 h-3" style={{ color: "var(--brand-1)" }} />
-                )}
-              </span>
-              <div className="min-w-0 flex-1">
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1">
                       <div
                         className="font-medium text-sm"
                         style={{ color: "var(--text)" }}
                       >
-                  {item.label || t("Untitled item")}
-                </div>
-                {item.description && (
+                        {item.label || t("Untitled item")}
+                      </div>
+                      {item.description && (
                         <p
                           className="text-xs mt-0.5"
                           style={{ color: "var(--muted)" }}
                         >
-                    {item.description}
-                  </p>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
-      </section>
+          </section>
         )}
 
         {/* Sliders Section */}
-        {sliderNodes.length > 0 && (
+        {sliderNodes.filter(s => !s.linkedTierId).length > 0 && (
           <section className="mb-10">
             <h3
               className="text-base sm:text-lg font-semibold mb-4"
               style={{ color: "var(--text)" }}
             >
-          {t("Sliders")}
-        </h3>
+              {t("Sliders")}
+            </h3>
             <div className="space-y-4">
-          {sliderNodes.map((s) => (
-            <SliderBlock
-              key={s.id}
-              node={s}
-              value={
-                sliderValues[s.id] ??
-                (typeof s.min === "number" ? s.min : 0)
-              }
-              onChange={(v) =>
-                setSliderValues((prev) => ({ ...prev, [s.id]: v }))
-              }
-              formatPrice={formatPrice}
-              sliderColorMode={sliderColorMode}
-              sliderSolidColor={sliderSolidColor}
-            />
-          ))}
-        </div>
-      </section>
+              {sliderNodes.filter(s => !s.linkedTierId).map((s) => (
+                <SliderBlock
+                  key={s.id}
+                  node={s}
+                  value={
+                    sliderValues[s.id] ??
+                    (typeof s.min === "number" ? s.min : 0)
+                  }
+                  onChange={(v) =>
+                    setSliderValues((prev) => ({ ...prev, [s.id]: v }))
+                  }
+                  formatPrice={formatPrice}
+                  sliderColorMode={sliderColorMode}
+                  sliderSolidColor={sliderSolidColor}
+                />
+              ))}
+            </div>
+          </section>
         )}
 
       </div>
@@ -1343,20 +1352,20 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                   style={{ color: "var(--muted)" }}
                 >
                   {t("Estimated total")}
-        </div>
+                </div>
                 <div
                   className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight"
                   style={{ color: "var(--text)" }}
                 >
                   {formatPrice(total)}
-      </div>
+                </div>
                 <p
                   className="text-[10px] sm:text-xs mt-0.5 hidden sm:block"
                   style={{ color: "var(--muted)", opacity: 0.7 }}
                 >
                   {t("This is a rough estimate based on selected packages and extras.")}
                 </p>
-      </div>
+              </div>
 
               {/* Send Inquiry Button */}
               {advancedShowInquiry && resolvedContactType && (
@@ -1381,10 +1390,10 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </span>
                   </button>
-            </div>
-          )}
                 </div>
+              )}
             </div>
+          </div>
         </div>
       )}
     </div>

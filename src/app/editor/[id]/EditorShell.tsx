@@ -131,13 +131,22 @@ function EditorContent({ slug, initialCalc }: Props) {
 
   useEffect(() => {
     const key = `tl_editor_mode_${slug}`;
-    
+
     // 🎯 PRIORITY: meta.editorMode from calc takes priority over localStorage
     // This ensures templates always start in the correct mode
-    const metaMode = normalizeMode(
-      initialCalc?.meta?.editorMode as string | null
-    );
-    
+    const rawMode = initialCalc?.meta?.editorMode as string | null;
+    const metaMode = normalizeMode(rawMode);
+
+    // If explicitly setup (new blank page), enforce it and ignore LS key from reused slug
+    if (rawMode === "setup") {
+      setUiMode("setup");
+      setEditorMode("setup");
+      try {
+        window.localStorage.removeItem(key);
+      } catch { }
+      return;
+    }
+
     // If meta has a valid mode (not "setup"), use it and update localStorage
     if (metaMode !== "setup") {
       setUiMode(metaMode);
@@ -149,7 +158,7 @@ function EditorContent({ slug, initialCalc }: Props) {
       }
       return;
     }
-    
+
     // No meta mode set - check localStorage
     let stored: Mode | null = null;
     try {

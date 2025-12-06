@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Settings2, Trash2, X, ChevronRight, Zap, Plus
+    Settings2, Trash2, X, ChevronRight, Zap, Plus, Link2, ChevronDown
 } from "lucide-react";
 
 import { Button } from "./shared";
@@ -19,6 +19,7 @@ interface AdvancedNodeInspectorProps {
     handleUpdateFeature: (id: string, featId: string, patch: any) => void;
     handleRemoveFeature: (id: string, featId: string) => void;
     currency: string;
+    nodes: AdvancedNode[];
 }
 
 export function AdvancedNodeInspector({
@@ -31,9 +32,13 @@ export function AdvancedNodeInspector({
     handleUpdateFeature,
     handleRemoveFeature,
     currency,
+    nodes,
 }: AdvancedNodeInspectorProps) {
     const [showColors, setShowColors] = useState(false);
     const [configuringFeatureId, setConfiguringFeatureId] = useState<string | null>(null);
+
+    // Filter available tiers for linking
+    const availableTiers = nodes.filter(n => n.kind === "tier");
 
     // Helper to parse accent color (hex or gradient)
     const getSelectedColors = (colorStr?: string | null) => {
@@ -124,6 +129,34 @@ export function AdvancedNodeInspector({
                                     placeholder={t("e.g. Pro Plan")}
                                 />
                             </div>
+
+                            {/* Linked Tier Selection (for Sliders/Addons) */}
+                            {(selectedNode.kind === "slider" || selectedNode.kind === "addon") && (
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold uppercase text-[var(--muted)] flex items-center gap-1">
+                                        <Link2 className="w-3 h-3" />
+                                        {t("Link to Tier")}
+                                    </label>
+                                    <div className="relative">
+                                        <select
+                                            value={selectedNode.linkedTierId || ""}
+                                            onChange={(e) => handleUpdateNode(selectedId, { linkedTierId: e.target.value || null })}
+                                            className="w-full appearance-none bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none text-[var(--text)] pr-8 cursor-pointer hover:bg-[var(--surface)] transition-colors"
+                                        >
+                                            <option value="">{t("Global (No Link)")}</option>
+                                            {availableTiers.map(tier => (
+                                                <option key={tier.id} value={tier.id}>{tier.label} ({tier.price}{currency})</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--muted)]" />
+                                    </div>
+                                    <p className="text-[10px] text-[var(--muted)]">
+                                        {selectedNode.linkedTierId
+                                            ? t("This option will appear inside the selected tier card.")
+                                            : t("This option will appear globally outside tier cards.")}
+                                    </p>
+                                </div>
+                            )}
 
                             {selectedNode.kind !== "slider" && (
                                 <div className="space-y-1">
@@ -388,12 +421,6 @@ export function AdvancedNodeInspector({
                                                                 >
                                                                     {t("Text Input")}
                                                                 </button>
-                                                                <button
-                                                                    onClick={() => handleUpdateFeature(selectedId, f.id, { inputType: "dropdown" })}
-                                                                    className={`px-2 py-1.5 rounded text-[10px] font-medium transition ${f.inputType === "dropdown" ? "bg-[var(--text)] text-[var(--bg)]" : "bg-[var(--bg)] text-[var(--muted)] border border-[var(--border)]"}`}
-                                                                >
-                                                                    {t("Dropdown")}
-                                                                </button>
                                                             </div>
                                                         </div>
 
@@ -418,111 +445,7 @@ export function AdvancedNodeInspector({
                                                             </div>
                                                         )}
 
-                                                        {f.inputType === "dropdown" && (
-                                                            <div className="space-y-2 pt-2 border-t border-dashed border-[var(--border)]">
-                                                                <div className="space-y-1">
-                                                                    <label className="text-[10px] text-[var(--muted)]">{t("Input Label")}</label>
-                                                                    <input
-                                                                        value={f.inputLabel || ""}
-                                                                        onChange={(e) => handleUpdateFeature(selectedId, f.id, { inputLabel: e.target.value })}
-                                                                        placeholder={t("e.g. Select Color")}
-                                                                        className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-xs outline-none focus:border-cyan-500 text-[var(--text)]"
-                                                                    />
-                                                                </div>
 
-                                                                <div className="space-y-1">
-                                                                    <div className="flex justify-between items-center">
-                                                                        <label className="text-[10px] text-[var(--muted)]">{t("Options")}</label>
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                const currentOpts = f.dropdownOptions || [];
-                                                                                handleUpdateFeature(selectedId, f.id, { dropdownOptions: [...currentOpts, `Option ${currentOpts.length + 1}`] });
-                                                                            }}
-                                                                            className="pb-0.5 text-[10px] text-cyan-500 hover:text-cyan-400 font-medium flex items-center gap-0.5"
-                                                                        >
-                                                                            <Plus className="w-3 h-3" /> {t("Add")}
-                                                                        </button>
-                                                                    </div>
-                                                                    <div className="space-y-1.5">
-                                                                        {(f.dropdownOptions || []).map((opt, optIdx) => (
-                                                                            <div key={optIdx} className="flex gap-1">
-                                                                                <input
-                                                                                    value={opt}
-                                                                                    onChange={(e) => {
-                                                                                        const newOpts = [...(f.dropdownOptions || [])];
-                                                                                        newOpts[optIdx] = e.target.value;
-                                                                                        handleUpdateFeature(selectedId, f.id, { dropdownOptions: newOpts });
-                                                                                    }}
-                                                                                    className="flex-1 bg-[var(--surface)] border border-[var(--border)] rounded px-2 py-1 text-xs outline-none focus:border-cyan-500 text-[var(--text)]"
-                                                                                />
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        const newOpts = (f.dropdownOptions || []).filter((_, i) => i !== optIdx);
-                                                                                        handleUpdateFeature(selectedId, f.id, { dropdownOptions: newOpts });
-                                                                                    }}
-                                                                                    className="p-1 text-[var(--muted)] hover:text-red-400"
-                                                                                >
-                                                                                    <X className="w-3.5 h-3.5" />
-                                                                                </button>
-                                                                            </div>
-                                                                        ))}
-                                                                        {(!f.dropdownOptions || f.dropdownOptions.length === 0) && (
-                                                                            <div className="text-[10px] text-[var(--muted)] italic pl-1">{t("No options added")}</div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-                                                        <div className="pt-2 border-t border-[var(--border)] space-y-2">
-                                                            <AnimatedCheckbox
-                                                                label={t("Allow Quantity Selection")}
-                                                                checked={f.allowQuantity || false}
-                                                                onChange={(e) => handleUpdateFeature(selectedId, f.id, { allowQuantity: e.target.checked })}
-                                                            />
-
-                                                            {f.allowQuantity && (
-                                                                <div className="grid grid-cols-2 gap-2 pl-2">
-                                                                    <div className="space-y-1">
-                                                                        <label className="text-[9px] text-[var(--muted)]">Min</label>
-                                                                        <input
-                                                                            type="number"
-                                                                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-xs outline-none text-[var(--text)]"
-                                                                            value={f.quantityMin ?? 1}
-                                                                            onChange={(e) => handleUpdateFeature(selectedId, f.id, { quantityMin: parseInt(e.target.value) })}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="space-y-1">
-                                                                        <label className="text-[9px] text-[var(--muted)]">Max</label>
-                                                                        <input
-                                                                            type="number"
-                                                                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-xs outline-none text-[var(--text)]"
-                                                                            value={f.quantityMax ?? 10}
-                                                                            onChange={(e) => handleUpdateFeature(selectedId, f.id, { quantityMax: parseInt(e.target.value) })}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="space-y-1">
-                                                                        <label className="text-[9px] text-[var(--muted)]">Step</label>
-                                                                        <input
-                                                                            type="number"
-                                                                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-xs outline-none text-[var(--text)]"
-                                                                            value={f.quantityStep ?? 1}
-                                                                            onChange={(e) => handleUpdateFeature(selectedId, f.id, { quantityStep: parseInt(e.target.value) })}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="space-y-1">
-                                                                        <label className="text-[9px] text-[var(--muted)]">Unit Label</label>
-                                                                        <input
-                                                                            type="text"
-                                                                            placeholder="items"
-                                                                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-xs outline-none text-[var(--text)]"
-                                                                            value={f.quantityLabel ?? ""}
-                                                                            onChange={(e) => handleUpdateFeature(selectedId, f.id, { quantityLabel: e.target.value })}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
                                                     </motion.div>
                                                 )}
                                             </AnimatePresence>

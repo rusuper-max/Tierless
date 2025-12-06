@@ -1,5 +1,5 @@
 import React from "react";
-import { Layers, ToggleRight, Calculator, SlidersHorizontal, Check } from "lucide-react";
+import { Layers, ToggleRight, Calculator, SlidersHorizontal, Check, Link2 } from "lucide-react";
 import { COLORS, t } from "./constants";
 import type { AdvancedNode } from "./types";
 
@@ -141,37 +141,49 @@ export function AdvancedNodeCard({
                 </div>
             )}
 
-            {/* Slider Interactive Preview */}
-            {node.kind === "slider" && (
-                <div className="mt-auto pt-2" onClick={e => e.stopPropagation()}>
-                    <div className="flex justify-between text-[10px] font-mono text-[var(--muted)] mb-1">
-                        <span>{node.min ?? 0}</span>
-                        <span className="text-[var(--accent)] font-bold">
-                            {sliderValues[node.id] ?? node.min ?? 0}
-                        </span>
-                        <span>{node.max ?? 100}</span>
-                    </div>
-                    <input
-                        type="range"
-                        min={node.min ?? 0}
-                        max={node.max ?? 100}
-                        step={node.step ?? 1}
-                        value={sliderValues[node.id] ?? node.min ?? 0}
-                        onChange={(e) => setSliderValues(prev => ({ ...prev, [node.id]: Number(e.target.value) }))}
-                        className="w-full h-1.5 bg-[var(--surface)] rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
-                    />
+            {/* Linked Badge */}
+            {node.linkedTierId && (node.kind === "slider" || node.kind === "addon") && (
+                <div className="absolute top-2 right-2 bg-blue-500/10 text-blue-500 border border-blue-500/20 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                    <Link2 className="w-3 h-3" />
+                    <span>Linked</span>
                 </div>
             )}
 
+            {/* Slider Interactive Preview */}
+            {
+                node.kind === "slider" && (
+                    <div className="mt-auto pt-2" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between text-[10px] font-mono text-[var(--muted)] mb-1">
+                            <span>{node.min ?? 0}</span>
+                            <span className="text-[var(--accent)] font-bold">
+                                {sliderValues[node.id] ?? node.min ?? 0}
+                            </span>
+                            <span>{node.max ?? 100}</span>
+                        </div>
+                        <input
+                            type="range"
+                            min={node.min ?? 0}
+                            max={node.max ?? 100}
+                            step={node.step ?? 1}
+                            value={sliderValues[node.id] ?? node.min ?? 0}
+                            onChange={(e) => setSliderValues(prev => ({ ...prev, [node.id]: Number(e.target.value) }))}
+                            className="w-full h-1.5 bg-[var(--surface)] rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
+                        />
+                    </div>
+                )
+            }
+
             {/* Badge (Featured or Custom) */}
-            {(node.emphasis === "featured" || node.badgeText) && (
-                <div
-                    className="absolute -top-2 -right-2 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm"
-                    style={{ background: node.badgeColor || accent }}
-                >
-                    {node.badgeText || "FEATURED"}
-                </div>
-            )}
-        </div>
+            {
+                (node.emphasis === "featured" || node.badgeText) && (
+                    <div
+                        className="absolute -top-2 -right-2 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm"
+                        style={{ background: node.badgeColor || accent }}
+                    >
+                        {node.badgeText || "FEATURED"}
+                    </div>
+                )
+            }
+        </div >
     );
 }

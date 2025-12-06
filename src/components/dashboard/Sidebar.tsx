@@ -12,6 +12,7 @@ import {
   User,
   LayoutGrid,
   Trash2,
+  Users, // Import Users icon
   type LucideIcon,
 } from "lucide-react";
 import { useAccount } from "@/hooks/useAccount";
@@ -68,6 +69,7 @@ export default function Sidebar() {
     { href: "/dashboard", label: t("Pages"), icon: LayoutDashboard, exact: true, navKey: "pages" },
     { href: "/dashboard/stats", label: t("Stats"), icon: BarChart3, navKey: "stats" },
     { href: "/dashboard/templates", label: t("Templates"), icon: LayoutGrid, navKey: "templates" },
+    { href: "/dashboard/teams", label: t("Teams"), icon: Users, navKey: "teams" }, // Add Teams link
     { href: "/dashboard/integrations", label: t("Integrations"), icon: Puzzle, navKey: "integrations" },
     { href: "/dashboard/settings", label: t("Settings"), icon: Settings, navKey: "settings" },
     { href: "/dashboard/trash", label: t("Trash"), icon: Trash2, badge: trashCount, navKey: "trash" },
