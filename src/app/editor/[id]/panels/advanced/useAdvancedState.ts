@@ -663,6 +663,26 @@ export function useAdvancedState() {
     [nodes, commitNodes]
   );
 
+  const handleMoveFeature = useCallback(
+    (nodeId: string, featureId: string, direction: "up" | "down") => {
+      const next = nodes.map((n) => {
+        if (n.id !== nodeId || n.kind !== "tier" || !n.features) return n;
+        const features = [...n.features];
+        const idx = features.findIndex((f) => f.id === featureId);
+        if (idx < 0) return n;
+
+        const newIdx = direction === "up" ? idx - 1 : idx + 1;
+        if (newIdx < 0 || newIdx >= features.length) return n;
+
+        // Swap
+        [features[idx], features[newIdx]] = [features[newIdx], features[idx]];
+        return { ...n, features };
+      });
+      commitNodes(next);
+    },
+    [nodes, commitNodes]
+  );
+
   return {
     // data
     nodes,
@@ -700,6 +720,7 @@ export function useAdvancedState() {
     handleAddFeature,
     handleUpdateFeature,
     handleRemoveFeature,
+    handleMoveFeature,
     setAdvancedShowInquiry,
     setAdvancedCtaMode,
     setAdvancedLayoutVariant,

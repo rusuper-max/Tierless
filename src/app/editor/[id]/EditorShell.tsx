@@ -14,8 +14,11 @@ import HelpTooltip from "@/components/editor/HelpTooltip";
 import GuidedTour from "@/components/editor/GuidedTour";
 import { editorTourSteps, finalTourMessage } from "@/components/editor/tourSteps";
 
-// Shared renderer
+// Shared renderers
 const PublicRenderer = dynamic(() => import("@/components/PublicRenderer"), {
+  ssr: false,
+});
+const AdvancedPublicRenderer = dynamic(() => import("@/components/AdvancedPublicRenderer"), {
   ssr: false,
 });
 const SimpleListPanel = dynamic(
@@ -674,7 +677,11 @@ function EditorContent({ slug, initialCalc, readOnly = false, teamRole }: Props)
               className="flex-1 overflow-y-auto relative"
             >
               {calc ? (
-                <PublicRenderer calc={calc as any} scrollContainer={previewScrollRef} />
+                uiMode === "simple" ? (
+                  <PublicRenderer calc={calc as any} scrollContainer={previewScrollRef} />
+                ) : (
+                  <AdvancedPublicRenderer calc={calc as any} />
+                )
               ) : (
                 <div className="text-sm text-[var(--muted)] p-8 text-center">
                   {t("Nothing to preview.")}

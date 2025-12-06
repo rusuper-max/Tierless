@@ -3,10 +3,14 @@
  * Maps plan names to LemonSqueezy Variant IDs
  */
 
-export type PlanTier = "growth" | "pro" | "scale";
+export type PlanTier = "starter" | "growth" | "pro" | "agency";
 export type BillingPeriod = "monthly" | "yearly";
 
 export const LEMON_VARIANT_IDS: Record<string, string> = {
+    // Starter Plans (formerly Scale)
+    starter_monthly: "1122011",
+    starter_yearly: "1123106",
+
     // Growth Plans
     growth_monthly: "1123104",
     growth_yearly: "1123107",
@@ -15,9 +19,9 @@ export const LEMON_VARIANT_IDS: Record<string, string> = {
     pro_monthly: "1123105",
     pro_yearly: "1123108",
 
-    // Scale Plans
-    scale_monthly: "1122011",
-    scale_yearly: "1123106",
+    // Agency Plans
+    agency_monthly: "1133562",
+    agency_yearly: "1133564",
 };
 
 /**

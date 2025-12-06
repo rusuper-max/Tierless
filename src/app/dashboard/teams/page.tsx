@@ -5,12 +5,57 @@ import { getSessionUser, getUserPlan } from "@/lib/auth";
 import { t } from "@/i18n";
 import { getUserTeams, ensureTeamsTables, canUserCreateTeam, getInvitesForEmail } from "@/lib/db";
 import { getLimit } from "@/lib/entitlements";
-import { Users, Mail, ArrowRight } from "lucide-react";
+import { Users, Mail, ArrowRight, Crown, Shield, Pencil, Eye } from "lucide-react";
 import { CreateTeamModal } from "./CreateTeamModal";
 import { Button } from "@/components/ui/Button";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const roleConfig = {
+    owner: {
+        label: "Owner",
+        icon: Crown,
+        bg: "bg-amber-100 dark:bg-amber-900/30",
+        text: "text-amber-700 dark:text-amber-300",
+        border: "border-amber-200 dark:border-amber-800",
+    },
+    admin: {
+        label: "Admin",
+        icon: Shield,
+        bg: "bg-indigo-100 dark:bg-indigo-900/30",
+        text: "text-indigo-700 dark:text-indigo-300",
+        border: "border-indigo-200 dark:border-indigo-800",
+    },
+    editor: {
+        label: "Editor",
+        icon: Pencil,
+        bg: "bg-emerald-100 dark:bg-emerald-900/30",
+        text: "text-emerald-700 dark:text-emerald-300",
+        border: "border-emerald-200 dark:border-emerald-800",
+    },
+    viewer: {
+        label: "Viewer",
+        icon: Eye,
+        bg: "bg-slate-100 dark:bg-slate-800",
+        text: "text-slate-600 dark:text-slate-400",
+        border: "border-slate-200 dark:border-slate-700",
+    },
+};
+
+// Generate consistent color from team name
+function getTeamGradient(name: string): string {
+    const gradients = [
+        "from-indigo-500 to-purple-500",
+        "from-cyan-500 to-blue-500",
+        "from-emerald-500 to-teal-500",
+        "from-orange-500 to-red-500",
+        "from-pink-500 to-rose-500",
+        "from-violet-500 to-indigo-500",
+    ];
+    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return gradients[hash % gradients.length];
+}
 
 export default async function TeamsPage() {
     const user = await getSessionUser();
@@ -28,7 +73,7 @@ export default async function TeamsPage() {
     // Check team creation limits
     const teamsOwnedLimit = getLimit(plan, "teamsOwned");
     const createCheck = await canUserCreateTeam(user.email, teamsOwnedLimit);
-    
+
     const limitInfo = {
         canCreate: createCheck.allowed,
         current: createCheck.current,
@@ -78,8 +123,8 @@ export default async function TeamsPage() {
 
             {teams.length === 0 ? (
                 <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-12 text-center flex flex-col items-center justify-center">
-                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface)] mb-6">
-                        <Users className="h-8 w-8 text-[var(--muted)]" />
+                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-indigo-100 to-cyan-100 dark:from-indigo-900/30 dark:to-cyan-900/30 mb-6">
+                        <Users className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-[var(--text)] mb-2">{t("No teams yet")}</h3>
                     <p className="text-sm text-[var(--muted)] max-w-sm mx-auto mb-8 leading-relaxed">
@@ -95,38 +140,59 @@ export default async function TeamsPage() {
                     />
                 </div>
             ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {teams.map((team) => (
-                        <Link
-                            key={team.id}
-                            href={`/dashboard/t/${team.id}`}
-                            className="group relative rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 hover:bg-[var(--surface)] hover:shadow-md transition-all duration-200 block"
-                        >
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <h3 className="font-semibold text-[var(--text)] text-lg mb-1 transition-colors">{team.name}</h3>
-                                    <div className="text-xs text-[var(--muted)] flex items-center gap-2">
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider ${team.role === "owner"
-                                                ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
-                                                : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                            }`}>
-                                            {team.role}
+                <div className="grid gap-4 sm:grid-cols-2">
+                    {teams.map((team) => {
+                        const role = roleConfig[team.role];
+                        const RoleIcon = role.icon;
+                        const gradient = getTeamGradient(team.name);
+
+                        return (
+                            <Link
+                                key={team.id}
+                                href={`/dashboard/t/${team.id}`}
+                                className="group relative rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 hover:border-[var(--brand-1)] hover:shadow-lg transition-all duration-200 block overflow-hidden"
+                            >
+                                {/* Gradient accent line at top */}
+                                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${gradient}`} />
+
+                                <div className="flex items-start gap-4">
+                                    {/* Team Avatar */}
+                                    <div className={`flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-sm`}>
+                                        <span className="text-white font-bold text-lg">
+                                            {team.name.substring(0, 2).toUpperCase()}
                                         </span>
-                                        <span>•</span>
-                                        <span>Joined {new Date(team.created_at).toLocaleDateString()}</span>
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        {/* Team Name */}
+                                        <h3 className="font-semibold text-[var(--text)] text-lg truncate group-hover:text-[var(--brand-1)] transition-colors">
+                                            {team.name}
+                                        </h3>
+
+                                        {/* Role Badge */}
+                                        <div className={`inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${role.bg} ${role.text} border ${role.border}`}>
+                                            <RoleIcon className="w-3 h-3" />
+                                            {role.label}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[var(--brand-1)] to-[var(--brand-2)] opacity-10 group-hover:opacity-20 transition-opacity flex items-center justify-center">
-                                    <span className="text-[var(--brand-1)] font-bold text-lg">{team.name.substring(0, 1).toUpperCase()}</span>
-                                </div>
-                            </div>
 
-                            <div className="mt-6 pt-4 border-t border-[var(--border)] flex items-center justify-between text-xs text-[var(--muted)]">
-                                <span>View Dashboard</span>
-                                <ArrowRight className="size-4 opacity-0 group-hover:opacity-100 transition-opacity translate-x-[-4px] group-hover:translate-x-0 transform duration-200" />
-                            </div>
-                        </Link>
-                    ))}
+                                {/* Stats Row */}
+                                <div className="mt-4 pt-4 border-t border-[var(--border)] flex items-center justify-between">
+                                    <div className="flex items-center gap-4 text-sm text-[var(--muted)]">
+                                        <div className="flex items-center gap-1.5">
+                                            <Users className="w-4 h-4" />
+                                            <span>{team.member_count} {team.member_count === 1 ? 'member' : 'members'}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs text-[var(--muted)] opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span>Open</span>
+                                        <ArrowRight className="w-3.5 h-3.5" />
+                                    </div>
+                                </div>
+                            </Link>
+                        );
+                    })}
                 </div>
             )}
         </main>

@@ -276,10 +276,11 @@ export function hasTeamPermission(userRole: TeamRole, requiredRole: TeamRole): b
 /**
  * Get all teams a user belongs to.
  */
-export async function getUserTeams(userId: string): Promise<(Team & { role: TeamRole })[]> {
+export async function getUserTeams(userId: string): Promise<(Team & { role: TeamRole; member_count: number })[]> {
   const pool = getPool();
   const { rows } = await pool.query(
-    `SELECT t.*, tm.role 
+    `SELECT t.*, tm.role,
+       (SELECT COUNT(*) FROM team_members WHERE team_id = t.id)::int as member_count
      FROM teams t
      JOIN team_members tm ON t.id = tm.team_id
      WHERE tm.user_id = $1
@@ -295,6 +296,7 @@ export async function getUserTeams(userId: string): Promise<(Team & { role: Team
     created_at: Number(r.created_at),
     updated_at: Number(r.updated_at),
     role: r.role as TeamRole,
+    member_count: r.member_count,
   }));
 }
 

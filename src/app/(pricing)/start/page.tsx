@@ -1,8 +1,6 @@
-// src/app/(pricing)/start/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
 import Link from "next/link";
 import { t } from "@/i18n";
 import StartHeader from "@/components/StartHeader";
@@ -11,28 +9,14 @@ import StartHeader from "@/components/StartHeader";
 type Interval = "monthly" | "yearly";
 type PlanId = "free" | "starter" | "growth" | "pro" | "agency";
 
-// Definišemo gradient ovde da bude konzistentan (ili koristi var(--brand-gradient) iz CSS-a)
-const BRAND_GRADIENT = "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%, #ec4899 100%))";
-
 // ============================================
 // 🍋 LEMON SQUEEZY VARIANT IDS
 // ============================================
-// Map each plan to its LemonSqueezy variant ID
-// Format: { [planId]: { monthly: "variant_id", yearly: "variant_id" } }
-// 
-// SETUP INSTRUCTIONS:
-// 1. Go to LemonSqueezy Dashboard → Products → Variants
-// 2. Create 6 variants (3 plans × 2 intervals)
-// 3. Copy the Variant IDs and paste them below
-// 4. See LEMON_SQUEEZY_SETUP.md for detailed instructions
-//
-// IMPORTANT: After creating variants in LemonSqueezy, also update
-// VARIANT_TO_PLAN mapping in src/app/api/webhooks/lemon/route.ts
 const LEMON_VARIANTS: Record<string, { monthly?: string; yearly?: string }> = {
-  starter: { monthly: "1122011", yearly: "1123106" },  // TSM, TSY - Scale/Starter
-  growth: { monthly: "1123104", yearly: "1123107" },  // TGM, TGY - Growth
-  pro: { monthly: "1123105", yearly: "1123108" },  // TPM, TPY - Pro
-  agency: { monthly: "TODO_AGENCY_M", yearly: "TODO_AGENCY_Y" },  // Agency - TODO: Create in LemonSqueezy
+  starter: { monthly: "1122011", yearly: "1123106" },
+  growth: { monthly: "1123104", yearly: "1123107" },
+  pro: { monthly: "1123105", yearly: "1123108" },
+  agency: { monthly: "1133562", yearly: "1133564" },
 };
 
 type SpecialItem = {
@@ -51,14 +35,15 @@ type Plan = {
   perks: string[];
   caps: string[];
   description?: string;
-  isPro?: boolean; // Flag za special tretman Pro tiera
   theme: {
-    text: string;        // Boja teksta za naslov/ikone
-    borderHover: string; // Tailwind klasa za boju bordera na hover (za non-pro)
-    bgHover: string;     // Pozadina na hover
-    button: string;      // Boja dugmeta
-    buttonHover: string; // Boja dugmeta na hover
-    shadow: string;      // Senka na hover
+    text: string;
+    borderHover: string;
+    bgHover: string;
+    button: string;
+    buttonHover: string;
+    shadow: string;
+    focusRing?: string;
+    glowColor?: string;
   };
 };
 
@@ -69,12 +54,14 @@ const PLANS: Plan[] = [
     monthly: 0,
     description: t("Perfect for testing the editor."),
     theme: {
-      text: "text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300",
-      borderHover: "hover:border-gray-400 dark:hover:border-gray-500",
-      bgHover: "group-hover:bg-gray-50 dark:group-hover:bg-gray-900",
-      button: "bg-gray-900 dark:bg-white text-white dark:text-black",
-      buttonHover: "hover:bg-gray-700 dark:hover:bg-gray-200",
-      shadow: "group-hover:shadow-gray-500/10",
+      text: "text-slate-500 dark:text-slate-400",
+      borderHover: "group-hover:border-slate-300 dark:group-hover:border-slate-600",
+      bgHover: "group-hover:bg-slate-50 dark:group-hover:bg-slate-900",
+      button: "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700",
+      buttonHover: "hover:bg-slate-200 dark:hover:bg-slate-700",
+      shadow: "group-hover:shadow-slate-500/10",
+      focusRing: "focus-visible:ring-slate-400",
+      glowColor: "gray",
     },
     chips: [],
     perks: [
@@ -87,22 +74,24 @@ const PLANS: Plan[] = [
   {
     id: "starter",
     name: "Starter",
-    monthly: 9,
+    monthly: 9.99,
     description: t("Perfect for freelancers and side projects."),
     theme: {
-      text: "text-teal-500 group-hover:text-teal-600 dark:group-hover:text-teal-400",
-      borderHover: "hover:border-teal-400 dark:hover:border-teal-500",
-      bgHover: "group-hover:bg-teal-50 dark:group-hover:bg-teal-950/20",
-      button: "bg-teal-600 text-white",
-      buttonHover: "hover:bg-teal-700",
+      text: "text-teal-600 dark:text-teal-400",
+      borderHover: "group-hover:border-teal-400 dark:group-hover:border-teal-500",
+      bgHover: "group-hover:bg-teal-50/50 dark:group-hover:bg-teal-950/20",
+      button: "bg-teal-600 text-white shadow-lg shadow-teal-500/20",
+      buttonHover: "hover:bg-teal-500 hover:shadow-teal-500/30",
       shadow: "group-hover:shadow-teal-500/10",
+      focusRing: "focus-visible:ring-teal-500",
+      glowColor: "teal",
     },
     chips: [
       {
         id: "ocr-import",
         label: t("AI Scan"),
         description: t("Scan your existing menu photo instantly."),
-        href: "#",
+        href: "/faq#ai-scan",
       },
     ],
     perks: [
@@ -116,23 +105,25 @@ const PLANS: Plan[] = [
   {
     id: "growth",
     name: "Growth",
-    monthly: 19,
+    monthly: 19.99,
     badge: t("Best Value"),
     description: t("For small businesses and professionals."),
     theme: {
-      text: "text-red-500 group-hover:text-red-600 dark:group-hover:text-red-400",
-      borderHover: "hover:border-red-400 dark:hover:border-red-500",
-      bgHover: "group-hover:bg-red-50 dark:group-hover:bg-red-950/20",
-      button: "bg-red-600 text-white",
-      buttonHover: "hover:bg-red-700",
-      shadow: "group-hover:shadow-red-500/10",
+      text: "text-rose-600 dark:text-rose-400",
+      borderHover: "group-hover:border-rose-400 dark:group-hover:border-rose-500",
+      bgHover: "group-hover:bg-rose-50/50 dark:group-hover:bg-rose-950/20",
+      button: "bg-rose-600 text-white shadow-lg shadow-rose-500/25",
+      buttonHover: "hover:bg-rose-500 hover:shadow-rose-500/40",
+      shadow: "group-hover:shadow-rose-500/20",
+      focusRing: "focus-visible:ring-rose-500",
+      glowColor: "rose",
     },
     chips: [
       {
         id: "embed",
         label: t("Website Embed"),
         description: t("Display your menu directly on your restaurant website."),
-        href: "#",
+        href: "/faq#embed",
       },
     ],
     perks: [
@@ -147,22 +138,24 @@ const PLANS: Plan[] = [
   {
     id: "pro",
     name: "Pro",
-    monthly: 39,
+    monthly: 39.99,
     description: t("For serious businesses."),
     theme: {
-      text: "text-purple-500 group-hover:text-purple-600 dark:group-hover:text-purple-400",
-      borderHover: "hover:border-purple-400 dark:hover:border-purple-500",
-      bgHover: "group-hover:bg-purple-50 dark:group-hover:bg-purple-950/20",
-      button: "bg-gradient-to-r from-purple-600 to-purple-700 text-white",
-      buttonHover: "hover:from-purple-700 hover:to-purple-800",
-      shadow: "group-hover:shadow-purple-500/10",
+      text: "text-purple-600 dark:text-purple-400",
+      borderHover: "group-hover:border-purple-400 dark:group-hover:border-purple-500",
+      bgHover: "group-hover:bg-purple-50/50 dark:group-hover:bg-purple-950/20",
+      button: "bg-purple-600 text-white shadow-lg shadow-purple-500/25",
+      buttonHover: "hover:bg-purple-500 hover:shadow-purple-500/40",
+      shadow: "group-hover:shadow-purple-500/20",
+      focusRing: "focus-visible:ring-purple-500",
+      glowColor: "purple",
     },
     chips: [
       {
         id: "domain",
         label: t("Custom Domain"),
         description: t("Use menu.your-restaurant.com"),
-        href: "#",
+        href: "/faq#custom-domain",
       },
     ],
     perks: [
@@ -170,30 +163,31 @@ const PLANS: Plan[] = [
       t("Unlimited Items"),
       t("10 Published Pages"),
       t("Team Collaboration (15 seats)"),
-      t("Advanced Analytics"),
+      t("Webhooks & API"),
     ],
     caps: [t("50 Total Pages"), t("15MB image limit"), t("Dedicated Support")],
   },
   {
     id: "agency",
     name: "Agency",
-    monthly: 99,
-    isPro: true,
+    monthly: 99.99,
     description: t("For agencies managing multiple clients."),
     theme: {
-      text: "text-indigo-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-300",
-      borderHover: "",
-      bgHover: "group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/20",
-      button: "text-white",
-      buttonHover: "opacity-90 hover:opacity-100",
-      shadow: "group-hover:shadow-indigo-500/10",
+      text: "text-indigo-600 dark:text-indigo-400",
+      borderHover: "group-hover:border-indigo-400 dark:group-hover:border-indigo-500",
+      bgHover: "group-hover:bg-indigo-50/50 dark:group-hover:bg-indigo-950/20",
+      button: "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25",
+      buttonHover: "hover:bg-indigo-500 hover:shadow-indigo-500/40",
+      shadow: "group-hover:shadow-indigo-500/20",
+      focusRing: "focus-visible:ring-indigo-500",
+      glowColor: "indigo",
     },
     chips: [
       {
         id: "client-workspaces",
         label: t("Client Workspaces"),
         description: t("Create up to 25 separate client workspaces with their own teams."),
-        href: "#",
+        href: "/faq#client-workspaces",
       },
     ],
     perks: [
@@ -215,19 +209,7 @@ const PLAN_RANK: Record<PlanId, number> = {
   agency: 4,
 };
 
-function getNextRenewalISO(interval: Interval, plan: PlanId) {
-  if (plan === "free") return null;
-  const date = new Date();
-  if (interval === "yearly") {
-    date.setFullYear(date.getFullYear() + 1);
-  } else {
-    date.setMonth(date.getMonth() + 1);
-  }
-  return date.toISOString();
-}
-
 function getYearlyPricing(monthly: number) {
-  // 30% discount for yearly (equivalent to 2.4 months free)
   const effMonthly = Math.round(monthly * 0.7 * 100) / 100;
   const perYear = Math.round(monthly * 12 * 0.7);
   return {
@@ -253,10 +235,7 @@ export default function StartPage() {
     title: "",
     body: "",
   });
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
 
-  // Auth & Plan Fetch (zadržano iz originala)
   useEffect(() => {
     const fetchAuth = async () => {
       try {
@@ -289,7 +268,6 @@ export default function StartPage() {
   const handlePlanChange = async (planId: PlanId): Promise<boolean | "redirect"> => {
     if (!authed) return false;
 
-    // FREE plan - direct API update (no payment needed)
     if (planId === "free") {
       try {
         const res = await fetch("/api/me/plan", {
@@ -306,13 +284,10 @@ export default function StartPage() {
       }
     }
 
-    // PAID plans - redirect to LemonSqueezy checkout
     const variantConfig = LEMON_VARIANTS[planId];
     const variantId = interval === "yearly" ? variantConfig?.yearly : variantConfig?.monthly;
 
     if (!variantId) {
-      // Variant not configured - show error or fallback
-      console.error(`No LemonSqueezy variant configured for ${planId} (${interval})`);
       alert(t("Payment not configured. Please contact support."));
       return false;
     }
@@ -329,16 +304,7 @@ export default function StartPage() {
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({}));
-        console.error("Checkout error:", error);
-        // Show more detailed error in console for debugging
-        if (error.error) {
-          console.error("Error details:", error.error);
-          if (error.details) {
-            console.error("LemonSqueezy error:", error.details);
-          }
-        }
-        alert(t("Failed to start checkout. Please try again.") + (error.error ? `\n\nError: ${error.error}` : ""));
+        alert(t("Failed to start checkout. Please try again."));
         return false;
       }
 
@@ -349,45 +315,43 @@ export default function StartPage() {
       }
       return false;
     } catch (err) {
-      console.error("Checkout error:", err);
       alert(t("Failed to start checkout. Please try again."));
       return false;
     }
-  };
-
-  // Stil za gradient outline na Toggle dugmetu
-  // Koristimo trik: background-clip + transparent border
-  const bgCol = isDark ? "#000000" : "#ffffff"; // Mora se poklapati sa pozadinom strane
-  const activeToggleStyle = {
-    background: `linear-gradient(${bgCol},${bgCol}) padding-box, ${BRAND_GRADIENT} border-box`,
-    border: "1px solid transparent",
   };
 
   return (
     <>
       <StartHeader />
 
-      <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-slate-100">
-        <main className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-12 sm:py-16 lg:py-24">
+      <div className="min-h-screen bg-slate-50/50 dark:bg-black text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-500/20">
+        
+        {/* Ambient Background Glows */}
+        <div className="fixed top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-indigo-50/50 to-transparent dark:from-indigo-950/10 pointer-events-none" />
+        <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/5 blur-[120px] rounded-full pointer-events-none" />
+        <div className="fixed top-20 left-0 w-[400px] h-[400px] bg-teal-500/5 blur-[100px] rounded-full pointer-events-none" />
 
-          {/* Header */}
-          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
+        <main className="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 py-16 lg:py-24">
+
+          {/* Header Section */}
+          <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-6">
               {t("Simple pricing")}
             </h1>
-            <p className="mt-3 sm:mt-4 text-base sm:text-lg text-slate-600 dark:text-slate-400">
-              {t("Choose a plan. Switch anytime.")}
+            <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+              {t("Choose a plan. Switch anytime.")} <br className="hidden sm:block" />
+              <span className="opacity-70">Start small and scale as you grow.</span>
             </p>
 
-            {/* Gradient Toggle Switch */}
-            <div className="mt-6 sm:mt-8 flex justify-center">
+            {/* Gradient Toggle Switch (Restored) */}
+            <div className="mt-10 flex justify-center">
               <div className="relative flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-full border border-slate-200 dark:border-slate-800">
                 <button
                   onClick={() => setInterval("monthly")}
                   className={`
-                    relative z-10 px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-200
+                    relative z-10 px-6 py-2 text-sm font-medium rounded-full transition-all duration-200
                     ${interval === "monthly"
-                      ? "text-slate-900 dark:text-white shadow-sm [background:linear-gradient(#ffffff,#ffffff)_padding-box,var(--brand-gradient)_border-box] dark:[background:linear-gradient(#000000,#000000)_padding-box,var(--brand-gradient)_border-box] border border-transparent"
+                      ? "text-slate-900 dark:text-white shadow-sm [background:linear-gradient(#ffffff,#ffffff)_padding-box,var(--brand-gradient,linear-gradient(to_right,#4f46e5,#9333ea))_border-box] dark:[background:linear-gradient(#000000,#000000)_padding-box,var(--brand-gradient,linear-gradient(to_right,#4f46e5,#9333ea))_border-box] border border-transparent"
                       : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border border-transparent"
                     }
                   `}
@@ -398,15 +362,19 @@ export default function StartPage() {
                 <button
                   onClick={() => setInterval("yearly")}
                   className={`
-                    relative z-10 px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1.5 sm:gap-2
+                    relative z-10 px-6 py-2 text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-2
                     ${interval === "yearly"
-                      ? "text-slate-900 dark:text-white shadow-sm [background:linear-gradient(#ffffff,#ffffff)_padding-box,var(--brand-gradient)_border-box] dark:[background:linear-gradient(#000000,#000000)_padding-box,var(--brand-gradient)_border-box] border border-transparent"
+                      ? "text-slate-900 dark:text-white shadow-sm [background:linear-gradient(#ffffff,#ffffff)_padding-box,var(--brand-gradient,linear-gradient(to_right,#4f46e5,#9333ea))_border-box] dark:[background:linear-gradient(#000000,#000000)_padding-box,var(--brand-gradient,linear-gradient(to_right,#4f46e5,#9333ea))_border-box] border border-transparent"
                       : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border border-transparent"
                     }
                   `}
                 >
                   {t("Yearly")}
-                  <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-1 sm:px-1.5 py-0.5 rounded">
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded transition-colors ${
+                    interval === 'yearly'
+                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400"
+                      : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                  }`}>
                     -30%
                   </span>
                 </button>
@@ -414,8 +382,8 @@ export default function StartPage() {
             </div>
           </div>
 
-          {/* Grid - Responsive: 1 col mobile, 2 col tablet, 3 col large, 5 col desktop */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5 items-stretch">
+          {/* Plans Grid - items-stretch ensures equal height */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 xl:gap-4 items-stretch relative z-10">
             {PLANS.map((plan) => (
               <PlanCard
                 key={plan.id}
@@ -425,9 +393,14 @@ export default function StartPage() {
                 currentPlan={currentPlan}
                 onOpenInfo={openInfo}
                 onPlanChange={handlePlanChange}
-                isDark={isDark}
               />
             ))}
+          </div>
+
+          <div className="mt-16 text-center">
+             <p className="text-sm text-slate-500 dark:text-slate-500">
+               Need a custom enterprise solution? <a href="mailto:contact@tierless.net" className="text-slate-900 dark:text-white underline underline-offset-4 hover:text-indigo-500">Contact us</a>
+             </p>
           </div>
 
           <InfoModal state={info} onClose={() => setInfo({ ...info, open: false })} />
@@ -437,6 +410,8 @@ export default function StartPage() {
   );
 }
 
+// --- SUBCOMPONENTS ---
+
 function PlanCard({
   plan,
   interval,
@@ -444,7 +419,6 @@ function PlanCard({
   currentPlan,
   onOpenInfo,
   onPlanChange,
-  isDark,
 }: {
   plan: Plan;
   interval: Interval;
@@ -452,24 +426,13 @@ function PlanCard({
   currentPlan: PlanId | null;
   onOpenInfo: (item: SpecialItem) => void;
   onPlanChange: (id: PlanId) => Promise<boolean | "redirect">;
-  isDark: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const isCurrent = authed && currentPlan === plan.id;
   const { effMonthlyLabel, perYearLabel } = getYearlyPricing(plan.monthly);
-
-  // Gradient stilovi za Pro tier
-  const bgCol = isDark ? "#0f172a" : "#ffffff"; // bg-slate-900 or white
-  const proGradientBorder = {
-    background: `linear-gradient(${bgCol},${bgCol}) padding-box, ${BRAND_GRADIENT} border-box`,
-    border: "1px solid transparent",
-  };
-
-  // Gradient stil za Pro dugme
-  const proButtonStyle = {
-    background: BRAND_GRADIENT,
-    border: "none",
-  };
+  
+  // Highlight "Best Value" plans (Growth) visually
+  const isFeatured = plan.id === 'growth';
 
   let ctaText = t("Get Started");
   if (authed) {
@@ -487,159 +450,177 @@ function PlanCard({
       e.preventDefault();
       setBusy(true);
       const result = await onPlanChange(plan.id);
-      // If redirecting to checkout, don't reset busy state
       if (result === "redirect") return;
-      if (!result) {
-        // Only redirect to signup if not authenticated (edge case)
-        if (!authed) window.location.href = ctaHref;
-      }
+      if (!result && !authed) window.location.href = ctaHref;
       setBusy(false);
     }
   };
 
-  // Hover detection state za Pro gradient border switch
-  // Pošto ne možemo lako koristiti 'group-hover' u style tagu, koristimo CSS varijablu ili klasu.
-  // Ovde je najčistije osloniti se na 'group-hover' Tailwind klase za ne-Pro, 
-  // a za Pro ćemo uvek imati gradient border (ili ga dodati na mouse enter, ali estetski je bolje da je tu ili suptilan).
-  // Tvoj zahtev: "na hover bar da ima tanak outline".
-
-  // Da bi Pro imao outline SAMO na hover koji je gradient, koristimo mali trik sa pseudo elementom ili onMouseEnter/Leave u Reactu
-  // Radi jednostavnosti i performansi, ovde ću koristiti React state za hover samo za Pro karticu ako želimo style prop manipulaciju,
-  // ALI "cleaner" način je da Pro uvek ima taj border ali transparentan, pa na hover postane vidljiv.
-  // Ipak, s obzirom na ograničenja style prop-a i hovera:
-  const [isHovered, setIsHovered] = useState(false);
+  // Dynamic glow colors based on theme
+  const glowColors: Record<string, string> = {
+    teal: "group-hover:shadow-[0_0_30px_-5px_rgba(20,184,166,0.3)] dark:group-hover:shadow-[0_0_30px_-5px_rgba(20,184,166,0.15)]",
+    rose: "group-hover:shadow-[0_0_30px_-5px_rgba(225,29,72,0.3)] dark:group-hover:shadow-[0_0_30px_-5px_rgba(225,29,72,0.15)]",
+    purple: "group-hover:shadow-[0_0_30px_-5px_rgba(147,51,234,0.3)] dark:group-hover:shadow-[0_0_30px_-5px_rgba(147,51,234,0.15)]",
+    indigo: "group-hover:shadow-[0_0_30px_-5px_rgba(79,70,229,0.3)] dark:group-hover:shadow-[0_0_30px_-5px_rgba(79,70,229,0.15)]",
+    gray: "group-hover:shadow-lg",
+  };
+  const glowClass = plan.theme.glowColor ? glowColors[plan.theme.glowColor] : "group-hover:shadow-lg";
 
   return (
     <div
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      // --- GLAVNI KONTEJNER KARTICE ---
-      // h-full obezbeđuje da sve kartice budu iste visine u gridu
       className={`
-        group relative flex flex-col h-full rounded-2xl transition-all duration-300
-        bg-white dark:bg-slate-900
-        ${plan.theme.shadow}
-        ${!plan.isPro ? "border border-slate-200 dark:border-slate-800 " + plan.theme.borderHover : ""}
+        group relative flex flex-col h-full
+        bg-white dark:bg-[#0A0A0A]
+        rounded-2xl transition-all duration-300 ease-out
+        border border-slate-200 dark:border-slate-800
         hover:-translate-y-1
+        ${plan.theme.borderHover}
+        ${glowClass}
+        ${isFeatured ? 'z-20 shadow-xl border-slate-300 dark:border-slate-700 ring-1 ring-black/5 dark:ring-white/10' : ''}
       `}
-      // Za Pro tier primenjujemo gradient border samo na hover (ili uvek ako želiš), ovde na hover:
-      style={plan.isPro && isHovered ? proGradientBorder : (plan.isPro ? { border: "1px solid rgba(148,163,184,0.1)" } : {})}
     >
       {/* Badge */}
       {plan.badge && (
         <div className="absolute -top-3 left-0 right-0 flex justify-center z-20">
-          <span className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide shadow-sm">
+          <span className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
             {plan.badge}
           </span>
         </div>
       )}
 
-      {/* Background Glow effect on hover */}
-      <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${plan.theme.bgHover}`} />
+      {/* Hover Background Gradient */}
+      <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${plan.theme.bgHover}`} />
 
-      <div className="relative p-4 sm:p-6 flex-1 flex flex-col z-10">
-        {/* Header */}
-        <div className="mb-4">
-          <h3 className={`text-lg font-semibold transition-colors ${plan.theme.text}`}>
+      <div className="relative p-5 xl:p-4 flex-1 flex flex-col z-10">
+        
+        {/* Card Header */}
+        <div className="mb-6">
+          <h3 className={`text-lg font-bold transition-colors ${plan.theme.text} flex items-center gap-2`}>
             {plan.name}
           </h3>
 
-          <div className="mt-2 flex items-baseline gap-1 text-slate-900 dark:text-white">
-            <span className="text-3xl font-bold tracking-tight">
+          <div className="mt-3 flex items-baseline gap-1 text-slate-900 dark:text-white">
+            <span className="text-4xl font-extrabold tracking-tight">
               {interval === "monthly" ? `$${plan.monthly}` : effMonthlyLabel.replace("/mo", "")}
             </span>
-            <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">/mo</span>
+            {plan.monthly > 0 && (
+              <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">/mo</span>
+            )}
           </div>
 
-          {interval === "yearly" && plan.monthly > 0 && (
-            <p className="text-xs text-slate-500 mt-1">
-              {t("Billed {price} yearly", { price: perYearLabel })}
-            </p>
-          )}
+          <div className="h-6 mt-1">
+            {interval === "yearly" && plan.monthly > 0 && (
+              <p className="text-xs text-slate-500 font-medium bg-slate-100 dark:bg-slate-800/50 inline-block px-1.5 py-0.5 rounded">
+                {t("Billed {price} yearly", { price: perYearLabel })}
+              </p>
+            )}
+          </div>
 
-          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 min-h-[40px]">
+          <p className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-400 min-h-[40px]">
             {plan.description}
           </p>
         </div>
 
-        {/* Info Chips */}
-        {plan.chips && plan.chips.length > 0 && (
-          <div className="mb-6 flex flex-wrap gap-2">
-            {plan.chips.map((chip) => (
-              <button
-                key={chip.id}
-                type="button"
-                onClick={() => onOpenInfo(chip)}
-                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors z-20"
-              >
-                {chip.label}
-                <InfoIcon className="size-3 opacity-60" />
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="w-full h-px bg-slate-100 dark:bg-slate-800 my-2 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 transition-colors" />
-
-        {/* Perks List - flex-1 gura dugme na dno */}
-        <ul className="space-y-3 mt-4 mb-8 flex-1">
-          {plan.caps.map((cap, i) => (
-            <li key={i} className="text-sm flex items-start gap-3 text-slate-600 dark:text-slate-400">
-              <span className={`mt-1.5 size-1.5 rounded-full shrink-0 bg-slate-400 ${plan.isPro ? "bg-indigo-400" : ""}`} />
-              <span>{cap}</span>
-            </li>
-          ))}
-          {plan.perks.map((perk, i) => (
-            <li key={i} className="text-sm flex items-start gap-3 text-slate-700 dark:text-slate-300">
-              <CheckIcon className={`size-4 shrink-0 mt-0.5 text-slate-400 transition-colors ${plan.theme.text}`} />
-              <span className="leading-tight">{perk}</span>
-            </li>
-          ))}
-        </ul>
-
-        {/* CTA Button - mt-auto osigurava da je uvek na dnu */}
-        <div className="mt-auto pt-4">
+        {/* CTA Button */}
+        <div className="mb-8">
           <Link
             href={ctaHref}
             onClick={handleCta}
-            style={plan.isPro && !isCurrent ? proButtonStyle : {}}
+            aria-disabled={isCurrent || undefined}
             className={`
-                block w-full py-2.5 px-4 rounded-xl text-center text-sm font-semibold transition-all shadow-sm
-                focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black
+                block w-full py-2.5 px-4 rounded-xl text-center text-sm font-semibold transition-all duration-200
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-black
+                ${plan.theme.focusRing ?? "focus-visible:ring-slate-400"}
                 ${isCurrent
-                ? "bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+                ? "bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-transparent"
                 : `${plan.theme.button} ${plan.theme.buttonHover}`
               }
             `}
           >
-            {busy ? t("Updating...") : ctaText}
+            {busy ? (
+               <span className="flex items-center justify-center gap-2">
+                 <span className="size-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                 {t("Processing...")}
+               </span>
+            ) : ctaText}
           </Link>
-
-          <p className="mt-3 text-[11px] text-center text-slate-400 dark:text-slate-500">
-            {plan.id === "free" ? t("No credit card required") : t("Cancel anytime")}
+          
+          <p className="mt-2 text-[10px] text-center text-slate-400 dark:text-slate-600 font-medium">
+             {plan.id === "free" ? "No card needed" : "Cancel anytime"}
           </p>
         </div>
+
+        {/* Divider */}
+        <div className="w-full h-px bg-slate-100 dark:bg-slate-800 mb-6 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 transition-colors" />
+
+        {/* Chips (Special Features) */}
+        {plan.chips && plan.chips.length > 0 && (
+          <div className="mb-6">
+            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Highlights</p>
+            <div className="flex flex-wrap gap-2">
+              {plan.chips.map((chip) => (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => onOpenInfo(chip)}
+                  className={`
+                    w-full text-left flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all
+                    border border-slate-100 dark:border-slate-800
+                    hover:border-slate-300 dark:hover:border-slate-600
+                    bg-slate-50/50 dark:bg-slate-900/50
+                    text-slate-700 dark:text-slate-300
+                  `}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <StarIcon className={`size-3 ${plan.theme.text}`} />
+                    {chip.label}
+                  </span>
+                  <InfoIcon className="size-3.5 opacity-40 hover:opacity-100" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Perks List */}
+        <div className="flex-1">
+          <ul className="space-y-3">
+            {plan.perks.map((perk, i) => (
+              <li key={i} className="text-[13px] flex items-start gap-3 text-slate-700 dark:text-slate-300 leading-snug">
+                <CheckIcon className={`size-4 shrink-0 mt-0.5 ${plan.theme.text}`} />
+                <span>{perk}</span>
+              </li>
+            ))}
+             {plan.caps.map((cap, i) => (
+              <li key={`cap-${i}`} className="text-[13px] flex items-start gap-3 text-slate-500 dark:text-slate-500 leading-snug">
+                <div className="size-4 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="size-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+                </div>
+                <span>{cap}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
       </div>
     </div>
   );
 }
 
-// ... (InfoModal, CheckIcon, InfoIcon ostaju isti)
-
 function InfoModal({ state, onClose }: { state: InfoModalState; onClose: () => void }) {
   if (!state.open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{state.title}</h3>
-        <p className="text-sm text-slate-600 dark:text-slate-300">{state.body}</p>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in fade-in zoom-in-95 duration-200">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 pr-8">{state.title}</h3>
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 dark:hover:text-white p-1">
+          <CloseIcon className="size-5" />
+        </button>
+        <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{state.body}</p>
         <div className="mt-6 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900">
-            {t("Close")}
-          </button>
           {state.href && (
-            <Link href={state.href} className="px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg">
+            <Link href={state.href} className="w-full text-center px-4 py-2.5 text-sm font-semibold bg-slate-900 dark:bg-white text-white dark:text-black rounded-xl hover:opacity-90 transition-opacity">
               {t("Learn more")}
             </Link>
           )}
@@ -649,18 +630,36 @@ function InfoModal({ state, onClose }: { state: InfoModalState; onClose: () => v
   );
 }
 
+// --- ICONS ---
+
 function CheckIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7.75 12.75L10 15.25L16.25 8.75" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
 
 function InfoIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
     </svg>
   );
 }

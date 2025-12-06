@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     ChevronDown,
     HelpCircle,
@@ -19,6 +19,7 @@ import { useAuthStatus } from '@/hooks/useAuthStatus';
 type Category = 'general' | 'features' | 'pricing' | 'technical';
 
 interface FAQItem {
+    id: string;
     question: string;
     answer: React.ReactNode;
     category: Category;
@@ -29,32 +30,38 @@ interface FAQItem {
 const faqs: FAQItem[] = [
     // GENERAL
     {
+        id: 'what-is-tierless',
         category: 'general',
         question: 'What exactly is Tierless?',
         answer: 'Tierless is a visual editor that lets you create beautiful, mobile-friendly price lists and digital menus in minutes. Think of it as a specialized website builder designed strictly for services and products. You can share your page via a link, a QR code, or embed it directly into your existing website.'
     },
     {
+        id: 'need-website',
         category: 'general',
         question: 'Do I need a website if I have Tierless?',
         answer: 'Not necessarily. For many businesses like salons, freelancers, or pop-up cafes, a Tierless page serves as your primary "Link in Bio" or website. It includes your branding, contact info, and services. However, if you already have a website, Tierless acts as a powerful plugin to handle your pricing section.'
     },
     {
+        id: 'how-customers-see',
         category: 'general',
         question: 'How do my customers see my prices?',
         answer: 'You can print a unique QR code (provided in your dashboard) and place it on your tables or counter. Customers scan it with their phone camera to instantly view your live menu. You can also share the URL on social media or Instagram stories.'
     },
     // PRICING
     {
+        id: 'is-free',
         category: 'pricing',
         question: 'Is Tierless really free?',
         answer: 'Yes, we offer a Free Forever plan. It allows you to create up to 3 drafts and keep 1 page public/live at a time. The free plan is limited to 15 items per list and includes a small "Powered by Tierless" badge. It\'s perfect for small price lists or testing the platform.'
     },
     {
+        id: 'item-limit',
         category: 'pricing',
         question: 'Why can\'t I add more than 15 items on the Free plan?',
         answer: 'The Free plan is designed for simple use cases (like a "Top Services" list). For full restaurant menus or extensive agency catalogs, our Starter or Growth plans unlock up to 100+ items and remove the item limit entirely on higher tiers.'
     },
     {
+        id: 'draft-vs-public',
         category: 'pricing',
         question: 'What is the difference between a "Draft" and a "Public" page?',
         answer: (
@@ -67,47 +74,62 @@ const faqs: FAQItem[] = [
     },
     // FEATURES
     {
+        id: 'custom-domain',
         category: 'features',
         question: 'Can I use my own domain name (e.g., menu.mycafe.com)?',
         answer: 'Yes! Custom domains are available on the Pro Plan. This removes the tierless.net branding from your URL entirely, making it look fully professional.'
     },
     {
+        id: 'ai-scan',
         category: 'features',
         question: 'I have a photo of my menu. Do I have to type everything manually?',
         answer: 'No! On the Starter plan and above, you can use our AI Scan (OCR) feature. Simply upload a photo of your existing physical menu, and our system will automatically extract the items and prices into the editor for you.'
     },
     {
+        id: 'remove-badge',
         category: 'features',
         question: 'Can I remove the "Powered by Tierless" badge?',
         answer: 'Yes. Upgrading to the Growth Plan or higher allows you to remove all Tierless branding, giving you a completely white-label experience.'
     },
     {
+        id: 'teams',
         category: 'features',
         question: 'Can I invite my staff to update prices?',
         answer: 'Yes. We support Teams. You can invite members with different roles (like "Editor" or "Viewer"). This is perfect for allowing managers to update daily specials without giving them full ownership of the account.'
     },
     {
+        id: 'customize',
         category: 'features',
         question: 'Can I customize the look and feel of my page?',
         answer: 'Absolutely! You can customize colors, fonts, button styles, and layout to match your brand perfectly. Choose from our curated templates or create your own unique design from scratch.'
     },
+    {
+        id: 'client-workspaces',
+        category: 'features',
+        question: 'What are Client Workspaces and how do they work?',
+        answer: 'Client Workspaces are separate environments for agencies managing multiple clients. Available on the Agency Plan, you can create up to 25 independent workspaces, each with its own team members, pages, and branding. Perfect for design agencies, marketing firms, or consultants who manage menus for multiple businesses.'
+    },
     // TECHNICAL
     {
+        id: 'embed',
         category: 'technical',
         question: 'How do I embed my price list on my WordPress/Wix/Squarespace site?',
         answer: 'If you are on the Growth Plan, you will see an "Embed Code" option in the publishing menu. Copy this snippet and paste it into any HTML block on your website. Your prices will update automatically on your site whenever you edit them in Tierless.'
     },
     {
+        id: 'password-reset',
         category: 'technical',
         question: 'I forgot my password. How do I reset it?',
         answer: 'Tierless uses Passwordless Login (Magic Links). You never need to remember a password. Simply enter your email on the login page, and we will send you a secure link. Click it, and you are instantly logged in.'
     },
     {
+        id: 'payments',
         category: 'technical',
         question: 'Does Tierless handle payments or bookings?',
         answer: 'Currently, Tierless is a showcase platform. We help you present your prices professionally. While we don\'t process credit card payments directly for your services yet, you can add "Book Now" buttons to your pages that link to your existing booking system or WhatsApp.'
     },
     {
+        id: 'mobile-friendly',
         category: 'technical',
         question: 'Are my pages mobile-friendly?',
         answer: 'Yes! All pages are fully responsive and optimized for mobile, tablet, and desktop. Your customers will have a seamless experience on any device, especially when scanning QR codes with their phones.'
@@ -141,7 +163,7 @@ const CategoryButton = ({
 
 const AccordionItem = ({ item, isOpen, onClick }: { item: FAQItem; isOpen: boolean; onClick: () => void }) => {
     return (
-        <div className="border-b border-slate-200 last:border-0">
+        <div id={item.id} className="border-b border-slate-200 last:border-0 scroll-mt-32">
             <button
                 onClick={onClick}
                 className="flex items-center justify-between w-full py-5 text-left group focus:outline-none"
@@ -170,6 +192,21 @@ export default function FAQPage() {
     const [activeCategory, setActiveCategory] = useState<Category | 'all'>('all');
     const [openIndex, setOpenIndex] = useState<number | null>(0);
     const { authenticated } = useAuthStatus();
+
+    // Handle anchor links (e.g., /faq#ai-scan)
+    useEffect(() => {
+        const hash = window.location.hash.slice(1);
+        if (hash) {
+            const idx = faqs.findIndex(f => f.id === hash);
+            if (idx >= 0) {
+                setOpenIndex(idx);
+                // Small delay to ensure DOM is ready
+                setTimeout(() => {
+                    document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            }
+        }
+    }, []);
 
     const filteredFaqs = activeCategory === 'all'
         ? faqs

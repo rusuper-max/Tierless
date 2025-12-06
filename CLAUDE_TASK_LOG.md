@@ -123,5 +123,278 @@ Ovaj fajl služi kao evidencija svih zadataka, ispravki i implementacija.
 
 ---
 
+### [2025-12-06] - Preview Modal Bug Fix
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/app/editor/[id]/EditorShell.tsx`
+- **Opis:**
+
+**Problem:**
+- Preview dugme u navbar-u je uvek prikazivalo SimpleListPanel preview
+- Čak i kada je korisnik u Advanced Panel (Tier Based Editor) modu
+
+**Uzrok:**
+- Preview modal je koristio hardcoded `<PublicRenderer>` komponentu
+- `uiMode` state nije bio korišćen za izbor renderera
+
+**Rešenje:**
+- Dodat dynamic import za `AdvancedPublicRenderer`
+- Preview modal sada koristi `uiMode` za conditional rendering:
+  - `uiMode === "simple"` → `<PublicRenderer>`
+  - `uiMode === "advanced"` → `<AdvancedPublicRenderer>`
+
+**Izmenjeni kod:**
+```tsx
+// Pre (BUG)
+<PublicRenderer calc={calc} ... />
+
+// Posle (FIX)
+{uiMode === "simple"
+  ? <PublicRenderer calc={calc} ... />
+  : <AdvancedPublicRenderer calc={calc} />
+}
+```
+
+---
+
+### [2025-12-06] - ARCHITECTURE.md Documentation
+- **Status:** Completed
+- **Fajlovi:**
+  - `ARCHITECTURE.md` (novi fajl)
+- **Opis:**
+
+Kreirana kompletna arhitekturna dokumentacija projekta koja uključuje:
+- Tech Stack tabela (Next.js, React, Tailwind, Zustand, PostgreSQL, etc.)
+- Project Structure pregled sa svim folderima
+- Key Patterns dokumentacija:
+  - Editor Modes (Simple vs Advanced)
+  - State Management (Zustand sa undo/redo)
+  - Team Permissions (owner/editor/viewer)
+  - Read-Only Mode prop drilling
+  - Public Rendering komponente
+- Database Schema pregled
+- API Conventions i response format
+- Component Conventions
+- Testing setup (Vitest + Playwright)
+- Environment Variables lista
+- Deployment info (Vercel + Neon)
+- Common Tasks sekcija
+
+---
+
+### [2025-12-06] - Feature Reorder in Tier Inspector
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/app/editor/[id]/panels/advanced/useAdvancedState.ts`
+  - `src/app/editor/[id]/panels/advanced/AdvancedPanelInner.tsx`
+  - `src/app/editor/[id]/panels/advanced/AdvancedNodeInspector.tsx`
+- **Opis:**
+
+Dodata mogućnost reordera features u tier inspector-u pomoću strelica gore/dole.
+
+**Implementacija:**
+1. `useAdvancedState.ts` - Dodat `handleMoveFeature` handler:
+   - Prima `nodeId`, `featureId` i `direction` ("up" | "down")
+   - Swap-uje feature sa susednim u nizu
+   - Koristi existing `commitNodes` pattern
+
+2. `AdvancedPanelInner.tsx` - Prosleđuje novi handler:
+   - Destructure `handleMoveFeature` iz hook-a
+   - Prosleđuje kao prop ka `AdvancedNodeInspector`
+
+3. `AdvancedNodeInspector.tsx` - UI za reorder:
+   - Dodat `ChevronUp` import iz lucide-react
+   - Dodat prop u interface i destructuring
+   - Za svaki feature dodate dve strelice (gore/dole)
+   - Strelice su disabled na granicama (prva/poslednja)
+   - Strelice su skrivene u read-only modu
+
+**UX:**
+- Strelice su kompaktne (ChevronUp/ChevronDown, 3x3 px)
+- Disabled state sa smanjenom opacity
+- Hover effect sa pozadinom
+- Title tooltip za accessibility
+
+---
+
+### [2025-12-06] - Lemon Squeezy Agency Plan & Pricing Page Fix
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/lib/lemon-config.ts`
+  - `src/app/(pricing)/start/page.tsx`
+  - `src/app/api/webhooks/lemon/route.ts`
+- **Opis:**
+
+**Agency Plan Variant IDs:**
+Dodati Lemon Squeezy variant IDs za Agency plan:
+- Monthly: `1133562`
+- Yearly: `1133564`
+
+**Izmene u fajlovima:**
+1. `lemon-config.ts`:
+   - Dodat `agency` u PlanTier type
+   - Renamed `scale` → `starter` (za konzistentnost)
+   - Dodati agency_monthly i agency_yearly variant IDs
+
+2. `start/page.tsx` (LEMON_VARIANTS):
+   - Agency sada ima prave variant IDs umesto TODO placeholder-a
+
+3. `webhooks/lemon/route.ts` (VARIANT_TO_PLAN):
+   - Update-ovani SVI variant IDs da se poklapaju sa pricing stranicom
+   - Stari IDs (712914, 713622, etc.) zamenjeni novim (1122011, 1123104, etc.)
+   - Dodat Agency plan mapping
+
+**Pro Plan Hover Outline Fix:**
+- Pro plan nije imao vidljiv hover outline kao ostali planovi
+- Dodat `hover:ring-2 hover:ring-purple-400/30` u Pro theme.borderHover
+- Sada Pro ima i border color change i ring effect na hover
+
+---
+
+### [2025-12-06] - Pricing Page Fixes (Prices & Pro Hover)
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/app/(pricing)/start/page.tsx`
+- **Opis:**
+
+**Decimalne cene:**
+- Ažurirane mesečne cene da prikazuju 2 decimale:
+  - Starter: $9 → $9.99
+  - Growth: $19 → $19.99
+  - Pro: $39 → $39.99
+  - Agency: $99 → $99.99
+
+**Pro hover border fix:**
+- Problem: Pro plan nije imao vidljiv hover outline kao ostali planovi
+- Uzrok: borderHover je imao kompleksne ring klase koje nisu radile
+- Rešenje: Pojednostavljen borderHover da koristi isti pattern kao Growth plan
+  - Pre: `hover:border-purple-500 dark:hover:border-purple-400 hover:ring-2 hover:ring-purple-500 dark:hover:ring-purple-400`
+  - Posle: `hover:border-purple-400 dark:hover:border-purple-500`
+- Sada Pro ima jednostavnu promenu boje bordera na hover, isto kao i svi ostali planovi
+
+---
+
+### [2025-12-06] - Pricing Cards Simplification (Remove isPro)
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/app/(pricing)/start/page.tsx`
+- **Opis:**
+
+**Problem:**
+1. Pro plan dugme bilo nevidljivo (gradient koji nije radio)
+2. Agency plan imao flickering na hover (gradient border logika)
+3. Svi planovi trebaju da se ponašaju isto - jednostavno, kao Growth ili Starter
+
+**Rešenje - potpuno uklonjena `isPro` logika:**
+
+1. **Pro plan:**
+   - Dugme: `bg-gradient-to-r from-purple-600...` → `bg-purple-600 text-white`
+   - Hover: `hover:bg-purple-700` (isto kao Growth ima `hover:bg-red-700`)
+
+2. **Agency plan:**
+   - Uklonjeno `isPro: true`
+   - Dodat normalan theme kao svi ostali planovi:
+     - `borderHover: "hover:border-indigo-400 dark:hover:border-indigo-500"`
+     - `button: "bg-indigo-600 text-white"`
+     - `buttonHover: "hover:bg-indigo-700"`
+
+3. **Uklonjeno iz koda:**
+   - `isPro` property iz Plan type
+   - `proGradientBorder` i `proButtonStyle` stilovi
+   - `isHovered` state i mouse event handleri
+   - `isDark`, `resolvedTheme`, `useTheme`
+   - `BRAND_GRADIENT` konstanta
+   - `activeToggleStyle` (nekorišćen)
+
+**Rezultat:**
+- Svih 5 planova sada ima identično ponašanje
+- Jednostavni solid-color dugmići i hover efekti
+- Nema flickeringa, nema gradijenata, nema posebne logike
+
+---
+
+### [2025-12-06] - Pricing Page FAQ Integration & Feature Fix
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/app/(pricing)/start/page.tsx`
+  - `src/app/(marketing)/faq/page.tsx`
+- **Opis:**
+
+**Pricing Page Fixes:**
+- Promenjen "Advanced Analytics" u "Webhooks & API" za Pro plan (analytics je isti za sve paid planove)
+- Ažurirani `href` atributi za feature chips da vode na odgovarajuća FAQ pitanja:
+  - Starter: `/faq#ai-scan`
+  - Growth: `/faq#embed`
+  - Pro: `/faq#custom-domain`
+  - Agency: `/faq#client-workspaces`
+
+**FAQ Page Improvements:**
+- Dodat `id` field u FAQItem interface
+- Dodati IDs za sva FAQ pitanja (what-is-tierless, need-website, ai-scan, embed, itd.)
+- Implementirana anchor navigacija sa `useEffect` za hash URL-ove
+- Dodata `scroll-mt-32` klasa za scroll offset
+- Dodato novo pitanje: "What are Client Workspaces and how do they work?"
+
+---
+
+### [2025-12-06] - Branded Error Pages (404 & 500)
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/app/not-found.tsx` (novi fajl)
+  - `src/app/error.tsx` (novi fajl)
+- **Opis:**
+
+**404 Page (not-found.tsx):**
+- Branded dizajn sa gradient "404" tekstom
+- Responsive layout (mobile-friendly)
+- Dark mode podrška
+- Linkovi: Back to Home, Go to Dashboard, Check our FAQ
+- Koristi indigo-to-cyan gradient za branding
+
+**500 Error Page (error.tsx):**
+- Client component (prima error i reset props)
+- AlertTriangle ikona u gradient krugu (red-to-orange)
+- "Try Again" button za reset
+- Error digest prikaz za debugging
+- Link ka support email-u
+- Dark mode podrška
+
+---
+
+### [2025-12-06] - Teams Page UI Redesign
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/lib/db.ts` (getUserTeams funkcija)
+  - `src/app/dashboard/teams/page.tsx`
+- **Opis:**
+
+**Database Change:**
+- `getUserTeams()` sada vraća `member_count` za svaki tim
+- SQL subquery: `(SELECT COUNT(*) FROM team_members WHERE team_id = t.id)::int`
+
+**Teams Page UI Improvements:**
+1. **Role Badges with Icons:**
+   - Owner: Crown ikona, amber boja
+   - Admin: Shield ikona, indigo boja
+   - Editor: Pencil ikona, emerald boja
+   - Viewer: Eye ikona, slate boja
+
+2. **Team Cards:**
+   - Gradient accent line na vrhu kartice
+   - Avatar sa prvim dvema slovima imena tima
+   - Consistent gradient boje bazirane na hash-u imena
+   - Member count prikaz (X members)
+   - Hover efekti: border color, shadow, "Open" text
+
+3. **Empty State:**
+   - Poboljšan dizajn sa gradient pozadinom za ikonu
+   - Bolji indigo/cyan teme umesto slate
+
+4. **Gradients:**
+   - 6 različitih gradient kombinacija
+   - Konzistentno mapiranje bazirano na team name hash
+
+---
+
 <!-- Novi unosi će biti dodati ovde -->
 

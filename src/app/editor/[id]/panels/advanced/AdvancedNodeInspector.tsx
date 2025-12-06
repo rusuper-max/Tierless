@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Settings2, Trash2, X, ChevronRight, Zap, Plus, Link2, ChevronDown
+    Settings2, Trash2, X, ChevronRight, Zap, Plus, Link2, ChevronDown,
+    ChevronUp
 } from "lucide-react";
 
 import { Button } from "./shared";
@@ -18,6 +19,7 @@ interface AdvancedNodeInspectorProps {
     handleAddFeature: (id: string) => void;
     handleUpdateFeature: (id: string, featId: string, patch: any) => void;
     handleRemoveFeature: (id: string, featId: string) => void;
+    handleMoveFeature: (nodeId: string, featureId: string, direction: "up" | "down") => void;
     currency: string;
     nodes: AdvancedNode[];
     readOnly?: boolean;
@@ -32,6 +34,7 @@ export function AdvancedNodeInspector({
     handleAddFeature,
     handleUpdateFeature,
     handleRemoveFeature,
+    handleMoveFeature,
     currency,
     nodes,
     readOnly = false,
@@ -380,9 +383,36 @@ export function AdvancedNodeInspector({
                                     {!readOnly && <Button size="xs" variant="ghost" onClick={() => handleAddFeature(selectedId)}>+ {t("Add")}</Button>}
                                 </div>
                                 <div className="space-y-2">
-                                    {selectedNode.features?.map(f => (
+                                    {selectedNode.features?.map((f, idx) => (
                                         <div key={f.id} className="space-y-2 bg-[var(--surface)]/30 rounded-lg p-2 border border-transparent hover:border-[var(--border)] transition-all">
                                             <div className="flex items-center gap-2 group">
+                                                {/* Reorder buttons */}
+                                                {!readOnly && (
+                                                    <div className="flex flex-col -my-1">
+                                                        <button
+                                                            onClick={() => handleMoveFeature(selectedId!, f.id, "up")}
+                                                            disabled={idx === 0}
+                                                            className={`p-0.5 rounded transition-colors ${idx === 0
+                                                                ? "text-[var(--muted)]/30 cursor-not-allowed"
+                                                                : "text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]"
+                                                                }`}
+                                                            title={t("Move up")}
+                                                        >
+                                                            <ChevronUp className="w-3 h-3" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleMoveFeature(selectedId!, f.id, "down")}
+                                                            disabled={idx === (selectedNode.features?.length || 0) - 1}
+                                                            className={`p-0.5 rounded transition-colors ${idx === (selectedNode.features?.length || 0) - 1
+                                                                ? "text-[var(--muted)]/30 cursor-not-allowed"
+                                                                : "text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]"
+                                                                }`}
+                                                            title={t("Move down")}
+                                                        >
+                                                            <ChevronDown className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                )}
                                                 <button
                                                     onClick={() => !readOnly && handleUpdateFeature(selectedId, f.id, { highlighted: !f.highlighted })}
                                                     disabled={readOnly}

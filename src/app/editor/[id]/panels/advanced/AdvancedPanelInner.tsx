@@ -107,6 +107,7 @@ export default function AdvancedPanelInner({ readOnly = false }: AdvancedPanelIn
     handleAddFeature,
     handleUpdateFeature,
     handleRemoveFeature,
+    handleMoveFeature,
     setAdvancedPublicTitle,
     setAdvancedPublicSubtitle,
     setAdvancedPublicTheme,
@@ -477,6 +478,7 @@ export default function AdvancedPanelInner({ readOnly = false }: AdvancedPanelIn
           handleAddFeature={handleAddFeature}
           handleUpdateFeature={handleUpdateFeature}
           handleRemoveFeature={handleRemoveFeature}
+          handleMoveFeature={handleMoveFeature}
           currency={currency}
           nodes={nodes}
           readOnly={readOnly}
