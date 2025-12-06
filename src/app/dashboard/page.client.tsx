@@ -78,8 +78,16 @@ async function getPublicUrlForSlug(slug: string): Promise<string> {
 /* ------------------------------------------------------------------ */
 type FilterId = "all" | "online" | "offline" | "favorites";
 
-// src/app/dashboard/t/[teamId]/page.tsx calls this with teamId
-export default function DashboardPageClient({ teamId }: { teamId?: string }) {
+// src/app/dashboard/t/[teamId]/page.tsx calls this with teamId, teamName, teamRole
+export default function DashboardPageClient({
+  teamId,
+  teamName,
+  teamRole,
+}: {
+  teamId?: string;
+  teamName?: string;
+  teamRole?: string;
+}) {
   const account = useAccount();
   const router = useRouter();
 
@@ -1122,8 +1130,24 @@ export default function DashboardPageClient({ teamId }: { teamId?: string }) {
 
       <header className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--text)]">Pages</h1>
-          <p className="text-xs text-[var(--muted)]">Create, edit and share your Tierless pages.</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold text-[var(--text)]">
+              {teamName ? `${teamName} Pages` : "Pages"}
+            </h1>
+            {teamRole && (
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                teamRole === "owner" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" :
+                teamRole === "admin" ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" :
+                teamRole === "editor" ? "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400" :
+                "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+              }`}>
+                {teamRole.charAt(0).toUpperCase() + teamRole.slice(1)}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-[var(--muted)]">
+            {teamName ? `Manage ${teamName}'s calculator pages.` : "Create, edit and share your Tierless pages."}
+          </p>
           {userDebug && (
             <p className="mt-1 text-[11px] text-[var(--muted)]">
               user: <code>{userDebug.userId}</code> • file: <code>{userDebug.file}</code>

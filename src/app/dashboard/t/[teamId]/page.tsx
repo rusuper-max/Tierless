@@ -1,6 +1,7 @@
 
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
+import { getUserTeams } from "@/lib/db";
 import DashboardPageClient from "../../page.client";
 
 export const runtime = "nodejs";
@@ -16,10 +17,19 @@ export default async function TeamDashboardPage({ params }: Props) {
 
     const { teamId } = await params;
 
-    // We could do a server-side permission check here too to avoid loading the client
-    // if not allowed, but the API will handle it securely. 
-    // For UX, the client component handles 403s nicely if needed, 
-    // or we can let the API call fail and show empty state.
+    // Get team info to pass to client
+    const teams = await getUserTeams(user.email);
+    const team = teams.find(t => t.id === teamId);
 
-    return <DashboardPageClient teamId={teamId} />;
+    if (!team) {
+        redirect("/dashboard");
+    }
+
+    return (
+        <DashboardPageClient
+            teamId={teamId}
+            teamName={team.name}
+            teamRole={team.role}
+        />
+    );
 }

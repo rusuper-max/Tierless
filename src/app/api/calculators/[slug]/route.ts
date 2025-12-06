@@ -162,11 +162,28 @@ export async function GET(req: Request, ctx: { params?: { slug?: string } }) {
   if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
   try {
-    // Uvek prvo mini red – zbog imena, published itd.
-    const miniRow = await calcsStore.get(userId, slug);
+    // First try personal ownership
+    let miniRow = await calcsStore.get(userId, slug);
+    let effectiveOwner = userId;
+
+    // If not found, check if it's a team calculator the user has access to
+    if (!miniRow) {
+      const { findCalcBySlug, requireTeamMember } = await import("@/lib/permissions");
+      const ownership = await findCalcBySlug(slug);
+
+      if (ownership?.teamId) {
+        // It's a team calculator - check if user has access
+        const perm = await requireTeamMember(userId, ownership.teamId, "viewer");
+        if (perm.allowed) {
+          // User has team access - get the calc using owner's userId
+          miniRow = await calcsStore.get(ownership.userId, slug);
+          effectiveOwner = ownership.userId;
+        }
+      }
+    }
 
     // 1) FULL iz storage-a (with version for optimistic locking)
-    const fullRecord = await fullStore.getFullWithVersion(userId, slug);
+    const fullRecord = await fullStore.getFullWithVersion(effectiveOwner, slug);
     if (fullRecord) {
       const full = fullRecord.calc;
       const version = fullRecord.version;
@@ -184,7 +201,7 @@ export async function GET(req: Request, ctx: { params?: { slug?: string } }) {
 
       // Ako ranije nije imao id ili je ime promenjeno – upiši nazad u fullStore
       if (!full?.meta?.id || full?.meta?.name !== mergedMeta.name) {
-        await fullStore.putFull(userId, slug, ready);
+        await fullStore.putFull(effectiveOwner, slug, ready);
       }
 
       // Return with ETag header for version tracking
@@ -204,7 +221,7 @@ export async function GET(req: Request, ctx: { params?: { slug?: string } }) {
         meta: { ...seeded.meta, slug, id: genId() },
         _version: 1, // New record starts at version 1
       };
-      await fullStore.putFull(userId, slug, normalized);
+      await fullStore.putFull(effectiveOwner, slug, normalized);
       
       const res = NextResponse.json(normalized);
       res.headers.set("cache-control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
@@ -228,13 +245,34 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
   const slug = await extractSlug(req, ctx);
   if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
+  // Check ownership - personal or team
+  let effectiveOwner = userId;
+  const { findCalcBySlug, requireTeamMember } = await import("@/lib/permissions");
+  const ownership = await findCalcBySlug(slug);
+
+  if (!ownership) {
+    return jsonNoCache({ error: "not_found" }, 404);
+  }
+
+  // If it's a team calculator, verify edit permission
+  if (ownership.teamId) {
+    const perm = await requireTeamMember(userId, ownership.teamId, "editor");
+    if (!perm.allowed) {
+      return jsonNoCache({ error: "forbidden", reason: perm.reason }, 403);
+    }
+    effectiveOwner = ownership.userId;
+  } else if (ownership.userId !== userId) {
+    // Personal calculator but not owned by current user
+    return jsonNoCache({ error: "forbidden" }, 403);
+  }
+
   // ========== OPTIMISTIC LOCKING ==========
   // Client can send If-Match header with version number
   const ifMatch = req.headers.get("If-Match");
   const expectedVersion = ifMatch ? parseInt(ifMatch, 10) : undefined;
   // =========================================
 
-  console.log("[EDITOR PUT] userId:", userId, "slug:", slug, "expectedVersion:", expectedVersion);
+  console.log("[EDITOR PUT] userId:", userId, "effectiveOwner:", effectiveOwner, "slug:", slug, "expectedVersion:", expectedVersion);
 
   try {
     const rawBody = await req.json();
@@ -291,7 +329,7 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
     // ========== ATOMIC SAVE (Meta + Full in transaction) ==========
     const newName = String(body?.meta?.name ?? "").trim();
     const saveResult = await calcsStore.saveAtomic(
-      userId,
+      effectiveOwner,
       slug,
       normalized,
       newName ? { name: newName } : undefined,
@@ -319,14 +357,14 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
 
     // Revalidate public pages if published
     try {
-      const mini = await calcsStore.get(userId, slug);
+      const mini = await calcsStore.get(effectiveOwner, slug);
       const isPublished = !!mini?.meta?.published;
       if (isPublished) {
         const calcId = normalized.meta?.id as string | undefined;
-        
+
         // Sync is_example flag from meta.listInExamples
         const listInExamples = normalized.meta?.listInExamples === true;
-        await calcsStore.setIsExample(userId, slug, listInExamples);
+        await calcsStore.setIsExample(effectiveOwner, slug, listInExamples);
         console.log(`[EDITOR PUT] Synced is_example: ${listInExamples} for slug=${slug}`);
         
         // Revalidate all possible URL formats

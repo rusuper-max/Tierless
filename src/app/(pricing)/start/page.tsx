@@ -148,15 +148,14 @@ const PLANS: Plan[] = [
     id: "pro",
     name: "Pro",
     monthly: 39,
-    isPro: true,
     description: t("For serious businesses."),
     theme: {
-      text: "text-indigo-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-300",
-      borderHover: "",
-      bgHover: "group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/20",
-      button: "text-white",
-      buttonHover: "opacity-90 hover:opacity-100",
-      shadow: "group-hover:shadow-indigo-500/10",
+      text: "text-purple-500 group-hover:text-purple-600 dark:group-hover:text-purple-400",
+      borderHover: "hover:border-purple-400 dark:hover:border-purple-500",
+      bgHover: "group-hover:bg-purple-50 dark:group-hover:bg-purple-950/20",
+      button: "bg-gradient-to-r from-purple-600 to-purple-700 text-white",
+      buttonHover: "hover:from-purple-700 hover:to-purple-800",
+      shadow: "group-hover:shadow-purple-500/10",
     },
     chips: [
       {
@@ -179,14 +178,15 @@ const PLANS: Plan[] = [
     id: "agency",
     name: "Agency",
     monthly: 99,
+    isPro: true,
     description: t("For agencies managing multiple clients."),
     theme: {
-      text: "text-purple-500 group-hover:text-purple-600 dark:group-hover:text-purple-400",
-      borderHover: "hover:border-purple-400 dark:hover:border-purple-500",
-      bgHover: "group-hover:bg-purple-50 dark:group-hover:bg-purple-950/20",
-      button: "bg-purple-600 text-white",
-      buttonHover: "hover:bg-purple-700",
-      shadow: "group-hover:shadow-purple-500/10",
+      text: "text-indigo-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-300",
+      borderHover: "",
+      bgHover: "group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/20",
+      button: "text-white",
+      buttonHover: "opacity-90 hover:opacity-100",
+      shadow: "group-hover:shadow-indigo-500/10",
     },
     chips: [
       {

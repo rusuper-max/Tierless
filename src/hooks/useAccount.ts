@@ -34,9 +34,14 @@ export function setDevPlanOverride(plan: Plan | null) {
   window.dispatchEvent(new CustomEvent("TL_DEV_PLAN_CHANGED"));
 }
 
-export function isDevUser(_email: string | null): boolean {
-  // Dev mode only on localhost - completely disabled in production
-  return isLocalhost();
+// Whitelist of emails with Dev access
+const DEV_EMAILS = ["rusuper@gmail.com"];
+
+export function isDevUser(email: string | null): boolean {
+  // Dev mode only on localhost AND for whitelisted emails
+  if (!isLocalhost()) return false;
+  if (!email) return false;
+  return DEV_EMAILS.includes(email.toLowerCase());
 }
 
 export type AccountSnapshot = {

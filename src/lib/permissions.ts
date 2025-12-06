@@ -8,8 +8,8 @@ import * as calcsStore from "@/lib/calcsStore";
 // TYPES
 // ============================================================================
 
-export type PermissionResult = 
-  | { allowed: true }
+export type PermissionResult =
+  | { allowed: true; role?: TeamRole }
   | { allowed: false; reason: string; status: number };
 
 export type CalcOwnership = {
@@ -51,8 +51,8 @@ export async function requireTeamMember(
       status: 403,
     };
   }
-  
-  return { allowed: true };
+
+  return { allowed: true, role: userRole };
 }
 
 /**
