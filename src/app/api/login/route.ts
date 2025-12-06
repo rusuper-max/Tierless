@@ -1,12 +1,25 @@
 import { NextResponse } from "next/server";
 import { createAuthToken } from "@/lib/db";
 import { Resend } from "resend";
+import { checkRateLimit, getClientIP, rateLimitHeaders, LOGIN_LIMIT } from "@/lib/rateLimit";
 
 // NOTE: Auth tables are created by migration script (data/migrations/001_init_schema.sql)
 // Do NOT call ensureAuthTables at runtime - it causes performance issues
 
 export async function POST(req: Request) {
   try {
+    // 0. Rate Limiting - 5 requests per minute per IP
+    const clientIP = getClientIP(req);
+    const rateResult = checkRateLimit(clientIP, LOGIN_LIMIT);
+    
+    if (!rateResult.success) {
+      console.warn(`[LOGIN] Rate limit exceeded for IP: ${clientIP}`);
+      return NextResponse.json(
+        { error: "Too many login attempts. Please try again later." },
+        { status: 429, headers: rateLimitHeaders(rateResult) }
+      );
+    }
+
     // 1. Provera API ključa
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {

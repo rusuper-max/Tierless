@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { getPool } from "@/lib/db";
 import { LEMON_WEBHOOK_SECRET } from "@/lib/env";
 import { type PlanId } from "@/lib/entitlements";
+import { getRedis } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,10 +41,43 @@ const RELEVANT_EVENTS = new Set([
   "subscription_payment_failed",
 ]);
 
-// Processed webhook IDs (in-memory cache for idempotency)
-// In production with multiple instances, use Redis instead
-const processedWebhooks = new Set<string>();
+// Processed webhook IDs (in-memory fallback for idempotency)
+const processedWebhooksMemory = new Set<string>();
 const MAX_PROCESSED_CACHE = 1000;
+
+// Redis-based webhook deduplication (preferred in production)
+const WEBHOOK_TTL_SECONDS = 86400; // 24 hours
+
+async function isWebhookProcessed(webhookId: string): Promise<boolean> {
+  const redis = getRedis();
+  if (redis) {
+    try {
+      const exists = await redis.get(`webhook:processed:${webhookId}`);
+      return !!exists;
+    } catch (e) {
+      console.warn("[webhook] Redis check failed, using in-memory", e);
+    }
+  }
+  return processedWebhooksMemory.has(webhookId);
+}
+
+async function markWebhookProcessed(webhookId: string): Promise<void> {
+  const redis = getRedis();
+  if (redis) {
+    try {
+      await redis.set(`webhook:processed:${webhookId}`, "1", { ex: WEBHOOK_TTL_SECONDS });
+      return;
+    } catch (e) {
+      console.warn("[webhook] Redis set failed, using in-memory", e);
+    }
+  }
+  // Fallback to in-memory
+  processedWebhooksMemory.add(webhookId);
+  if (processedWebhooksMemory.size > MAX_PROCESSED_CACHE) {
+    const toDelete = Array.from(processedWebhooksMemory).slice(0, 100);
+    toDelete.forEach(id => processedWebhooksMemory.delete(id));
+  }
+}
 
 function verifySignature(raw: string, signature: string | null): boolean {
   // SECURITY: Require webhook secret in production
@@ -104,7 +138,7 @@ export async function POST(req: Request) {
   console.log(`📥 Webhook received: ${eventName} (ID: ${webhookId})`);
 
   // 4. Idempotency check - skip if already processed
-  if (webhookId && processedWebhooks.has(webhookId)) {
+  if (webhookId && await isWebhookProcessed(webhookId)) {
     console.log(`⏭️ Webhook ${webhookId} already processed, skipping`);
     return NextResponse.json({ ok: true, skipped: true });
   }
@@ -191,17 +225,12 @@ export async function POST(req: Request) {
     );
     
     console.log(`✅ Webhook processed: ${eventName} for user ${userId} → plan: ${finalPlan}`);
-    
+
     // 8. Mark as processed (for idempotency)
     if (webhookId) {
-      processedWebhooks.add(webhookId);
-      // Cleanup old entries to prevent memory leak
-      if (processedWebhooks.size > MAX_PROCESSED_CACHE) {
-        const toDelete = Array.from(processedWebhooks).slice(0, 100);
-        toDelete.forEach(id => processedWebhooks.delete(id));
-      }
+      await markWebhookProcessed(webhookId);
     }
-    
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("❌ Webhook database error:", error);

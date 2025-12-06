@@ -9,7 +9,7 @@ import StartHeader from "@/components/StartHeader";
 
 // --- TYPES & CONFIG ---
 type Interval = "monthly" | "yearly";
-type PlanId = "free" | "starter" | "growth" | "pro";
+type PlanId = "free" | "starter" | "growth" | "pro" | "agency";
 
 // Definišemo gradient ovde da bude konzistentan (ili koristi var(--brand-gradient) iz CSS-a)
 const BRAND_GRADIENT = "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%, #ec4899 100%))";
@@ -32,6 +32,7 @@ const LEMON_VARIANTS: Record<string, { monthly?: string; yearly?: string }> = {
   starter: { monthly: "1122011", yearly: "1123106" },  // TSM, TSY - Scale/Starter
   growth: { monthly: "1123104", yearly: "1123107" },  // TGM, TGY - Growth
   pro: { monthly: "1123105", yearly: "1123108" },  // TPM, TPY - Pro
+  agency: { monthly: "TODO_AGENCY_M", yearly: "TODO_AGENCY_Y" },  // Agency - TODO: Create in LemonSqueezy
 };
 
 type SpecialItem = {
@@ -148,7 +149,7 @@ const PLANS: Plan[] = [
     name: "Pro",
     monthly: 39,
     isPro: true,
-    description: t("For serious businesses and agencies."),
+    description: t("For serious businesses."),
     theme: {
       text: "text-indigo-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-300",
       borderHover: "",
@@ -169,10 +170,40 @@ const PLANS: Plan[] = [
       t("3 Custom Domains (SSL)"),
       t("Unlimited Items"),
       t("10 Published Pages"),
-      t("Team Collaboration (10 seats)"),
+      t("Team Collaboration (15 seats)"),
       t("Advanced Analytics"),
     ],
     caps: [t("50 Total Pages"), t("15MB image limit"), t("Dedicated Support")],
+  },
+  {
+    id: "agency",
+    name: "Agency",
+    monthly: 99,
+    description: t("For agencies managing multiple clients."),
+    theme: {
+      text: "text-purple-500 group-hover:text-purple-600 dark:group-hover:text-purple-400",
+      borderHover: "hover:border-purple-400 dark:hover:border-purple-500",
+      bgHover: "group-hover:bg-purple-50 dark:group-hover:bg-purple-950/20",
+      button: "bg-purple-600 text-white",
+      buttonHover: "hover:bg-purple-700",
+      shadow: "group-hover:shadow-purple-500/10",
+    },
+    chips: [
+      {
+        id: "client-workspaces",
+        label: t("Client Workspaces"),
+        description: t("Create up to 25 separate client workspaces with their own teams."),
+        href: "#",
+      },
+    ],
+    perks: [
+      t("10 Custom Domains (SSL)"),
+      t("50 Published Pages"),
+      t("25 Client Workspaces"),
+      t("50 Team Seats"),
+      t("Priority Support"),
+    ],
+    caps: [t("200 Total Pages"), t("25MB image limit"), t("White Label")],
   },
 ];
 
@@ -181,6 +212,7 @@ const PLAN_RANK: Record<PlanId, number> = {
   starter: 1,
   growth: 2,
   pro: 3,
+  agency: 4,
 };
 
 function getNextRenewalISO(interval: Interval, plan: PlanId) {
@@ -234,7 +266,7 @@ export default function StartPage() {
       try {
         const mp = await fetch("/api/me/plan").then((r) => (r.ok ? r.json() : null));
         const p = mp?.plan;
-        setCurrentPlan(p && ["free", "starter", "growth", "pro"].includes(p) ? p : null);
+        setCurrentPlan(p && ["free", "starter", "growth", "pro", "agency"].includes(p) ? p : null);
       } catch {
         setCurrentPlan(null);
       }
@@ -382,8 +414,8 @@ export default function StartPage() {
             </div>
           </div>
 
-          {/* Grid - Responsive: 1 col mobile, 2 col tablet, 4 col desktop */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 items-stretch">
+          {/* Grid - Responsive: 1 col mobile, 2 col tablet, 3 col large, 5 col desktop */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5 items-stretch">
             {PLANS.map((plan) => (
               <PlanCard
                 key={plan.id}

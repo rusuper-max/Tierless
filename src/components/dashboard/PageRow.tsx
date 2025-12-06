@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { MoreHorizontal, Share2, Edit, Copy, Trash, ExternalLink, GripVertical } from "lucide-react";
+import { MoreHorizontal, Share2, Edit, Copy, Trash, ExternalLink, GripVertical, ArrowRightLeft, Users } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import AnimatedCheckbox from "@/components/ui/AnimatedCheckbox";
 import { FavoriteStar } from "./DashboardUI";
@@ -19,7 +19,9 @@ type MiniCalc = {
         favorite?: boolean;
         order?: number;
         createdAt?: number;
+        teamId?: string;
     };
+    teamName?: string;
 };
 
 type PageRowProps = {
@@ -40,6 +42,7 @@ type PageRowProps = {
     onPointerDragStart: (slug: string, e: React.MouseEvent<HTMLButtonElement>) => void;
     publishedCount: number;
     publishedLimit: number;
+    onMove: (slug: string) => void;
 };
 
 export default function PageRow({
@@ -59,6 +62,7 @@ export default function PageRow({
     onPointerDragStart,
     publishedCount,
     publishedLimit,
+    onMove,
 }: PageRowProps) {
     const { slug, name, favorite, createdAt } = row.meta;
     const published = !!(row.meta.published ?? row.meta.online);
@@ -103,14 +107,33 @@ export default function PageRow({
                         <FavoriteStar active={!!favorite} />
                     </button>
                     <div className="flex flex-col">
-                        <span
-                            className={`cursor-text truncate max-w-[200px] sm:max-w-[300px] block font-semibold ${published ? "text-[var(--text)]" : "text-[var(--muted)]"
-                                }`}
-                            onDoubleClick={() => onRenameStart(slug, name)}
-                            title="Double-click to rename"
-                        >
-                            {name}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span
+                                className={`cursor-text truncate max-w-[200px] sm:max-w-[300px] block font-semibold ${published ? "text-[var(--text)]" : "text-[var(--muted)]"
+                                    }`}
+                                onDoubleClick={() => onRenameStart(slug, name)}
+                                title="Double-click to rename"
+                            >
+                                {name}
+                            </span>
+                            {row.teamName && (
+                                <span className="relative inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--card)]">
+                                    <span
+                                        aria-hidden
+                                        className="pointer-events-none absolute inset-0 rounded-full"
+                                        style={{
+                                            padding: 1,
+                                            background: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
+                                            WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                                            WebkitMaskComposite: "xor" as any,
+                                            maskComposite: "exclude",
+                                        }}
+                                    />
+                                    <Users className="size-3 text-[var(--muted)]" />
+                                    <span className="text-[var(--muted)]">{row.teamName}</span>
+                                </span>
+                            )}
+                        </div>
                         <span className="text-[10px] text-[var(--muted)] opacity-70">
                             {published ? "Live on web" : "Draft (Private)"}
                         </span>
@@ -222,6 +245,9 @@ export default function PageRow({
                                         </button>
                                         <button onClick={() => { onDuplicate(slug, name); setMenuOpen(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-left cursor-pointer transition-colors">
                                             <Copy className="size-4" /> Duplicate
+                                        </button>
+                                        <button onClick={() => { onMove(slug); setMenuOpen(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-left cursor-pointer transition-colors">
+                                            <ArrowRightLeft className="size-4" /> Move to team
                                         </button>
                                         <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
                                         <button onClick={() => { onDelete(slug, name); setMenuOpen(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-left cursor-pointer transition-colors">

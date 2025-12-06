@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import * as fullStore from "@/lib/fullStore";
+import { checkRateLimit, getClientIP, rateLimitHeaders, STATS_LIMIT } from "@/lib/rateLimit";
 
 // Event types we track
 type EventType =
@@ -266,6 +267,18 @@ export async function GET(req: NextRequest) {
 // Record new events
 export async function POST(req: NextRequest) {
   try {
+    // Rate Limiting - 100 requests per minute per IP
+    const clientIP = getClientIP(req);
+    const rateResult = checkRateLimit(clientIP, STATS_LIMIT);
+    
+    if (!rateResult.success) {
+      // Don't log every rate limit hit for stats (could be noisy)
+      return NextResponse.json(
+        { error: "rate_limited" },
+        { status: 429, headers: rateLimitHeaders(rateResult) }
+      );
+    }
+
     const body = await req.json();
     const { events } = body as { events: AnalyticsEvent[] };
 

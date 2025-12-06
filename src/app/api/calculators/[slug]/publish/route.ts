@@ -102,14 +102,14 @@ async function resolveSlug(
     if (params?.slug && params.slug !== "undefined" && params.slug !== "null") {
       return decodeURIComponent(String(params.slug));
     }
-  } catch {}
+  } catch { }
   try {
     const url = new URL(req.url);
     const parts = url.pathname.split("/").filter(Boolean);
     const idx = parts.lastIndexOf("calculators");
     const candidate = idx >= 0 ? parts[idx + 1] : parts[parts.length - 1];
     if (candidate) return decodeURIComponent(candidate);
-  } catch {}
+  } catch { }
   return "";
 }
 
@@ -150,17 +150,33 @@ export async function POST(
   }
   const nextPublish: boolean = !!body.publish;
 
-  const current = await calcsStore.get(userId, slug);
+  const { findCalcBySlug, requireCanPublish } = await import("@/lib/permissions");
+
+  // 1. Determine ownership
+  const ownership = await findCalcBySlug(slug);
+  if (!ownership) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // 2. Check permission
+  const perm = await requireCanPublish(userId, ownership.userId, slug);
+  if (!perm.allowed) {
+    return NextResponse.json({ error: perm.reason || "Forbidden" }, { status: 403 });
+  }
+
+  const current = await calcsStore.get(ownership.userId, slug);
   if (!current) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   const isCurrentlyPublished = !!current.meta?.published;
 
   if (nextPublish && !isCurrentlyPublished) {
-    const plan = await getUserPlan(userId);
+    // Check limits against the OWNER's plan, not necessarily the publisher's
+    // (Or should we check the Team logic? For now strict to owner's plan is safest MVP)
+    const plan = await getUserPlan(ownership.userId);
     const cap = getPublishedCap(plan);
     if (cap !== "unlimited") {
-      const already = await calcsStore.countPublished(userId);
+      const already = await calcsStore.countPublished(ownership.userId);
       if (already + 1 > cap) {
         return NextResponse.json(
           {
@@ -176,19 +192,19 @@ export async function POST(
     }
   }
 
-  const ok = await calcsStore.setPublished(userId, slug, nextPublish);
+  const ok = await calcsStore.setPublished(ownership.userId, slug, nextPublish);
   if (!ok) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   if (nextPublish) {
-    await injectContactInfo(userId, slug);
-    
+    await injectContactInfo(ownership.userId, slug);
+
     // Revalidate all possible URL formats
     try {
-      const calc = await fullStore.getFull(userId, slug);
+      const calc = await fullStore.getFull(ownership.userId, slug);
       const calcId = calc?.meta?.id;
-      
+
       revalidatePath(`/p/${slug}`);
       if (calcId) {
         revalidatePath(`/p/${calcId}-${slug}`); // Canonical format
@@ -198,7 +214,7 @@ export async function POST(
       if (calcId) {
         revalidatePath(`/api/public/${calcId}-${slug}`);
       }
-      
+
       console.log(`[PUBLISH] Revalidated paths for slug=${slug}, id=${calcId}`);
     } catch (error) {
       console.error("[PUBLISH] Revalidate failed:", error);
@@ -206,9 +222,9 @@ export async function POST(
   } else {
     // Unpublish - also revalidate to show 404
     try {
-      const calc = await fullStore.getFull(userId, slug);
+      const calc = await fullStore.getFull(ownership.userId, slug);
       const calcId = calc?.meta?.id;
-      
+
       revalidatePath(`/p/${slug}`);
       if (calcId) {
         revalidatePath(`/p/${calcId}-${slug}`);

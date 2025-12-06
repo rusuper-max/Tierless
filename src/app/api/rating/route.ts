@@ -3,9 +3,21 @@ import { getVoterIdentity, ensureVoterCookie } from "@/lib/voter";
 import { upsertRating } from "@/lib/ratingsStore";
 import { findMiniInAllUsers } from "@/lib/calcsStore";
 import * as fullStore from "@/lib/fullStore";
+import { checkRateLimit, getClientIP, rateLimitHeaders, RATING_LIMIT } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
     try {
+        // Rate Limiting - 10 ratings per minute per IP
+        const clientIP = getClientIP(req);
+        const rateResult = checkRateLimit(clientIP, RATING_LIMIT);
+        
+        if (!rateResult.success) {
+            return NextResponse.json(
+                { error: "Too many rating requests. Please slow down." },
+                { status: 429, headers: rateLimitHeaders(rateResult) }
+            );
+        }
+
         const body = await req.json();
         const { pageId, score } = body;
 

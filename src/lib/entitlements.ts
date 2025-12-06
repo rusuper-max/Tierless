@@ -1,6 +1,6 @@
 // src/lib/entitlements.ts
 
-export type PlanId = "free" | "starter" | "growth" | "pro" | "tierless";
+export type PlanId = "free" | "starter" | "growth" | "pro" | "agency" | "tierless";
 
 export type FeatureKey =
   | "customColors"       // Edit brand colors
@@ -24,7 +24,12 @@ export type Limits = {
   maxPublicPages: number | "unlimited";
   tiersPerPage: number | "unlimited";
   items: number | "unlimited";
+  /** Max members per team (for team owners) */
   teamSeats: number | "unlimited";
+  /** Max teams user can CREATE (be owner of) */
+  teamsOwned: number | "unlimited";
+  /** Max teams user can be a MEMBER of (including owned) */
+  teamsMember: number | "unlimited";
   customDomains: number | "unlimited";
   /** Image upload size limit in bytes */
   uploadSize: number;
@@ -40,10 +45,11 @@ export const PLAN_RANK: Record<PlanId, number> = {
   starter: 1,
   growth: 2,
   pro: 3,
+  agency: 4,     // Agency plan for managing multiple clients
   tierless: 999, // Founder plan - highest rank
 };
 
-export const PLAN_ORDER: PlanId[] = ["free", "starter", "growth", "pro", "tierless"];
+export const PLAN_ORDER: PlanId[] = ["free", "starter", "growth", "pro", "agency", "tierless"];
 export const DEFAULT_PLAN: PlanId = "free";
 
 export const isPlanId = (v: unknown): v is PlanId =>
@@ -76,6 +82,8 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
       tiersPerPage: 2,
       items: 15,             // Strict teaser limit
       teamSeats: 1,
+      teamsOwned: 0,         // Cannot create teams
+      teamsMember: 1,        // Can join 1 team (if invited)
       customDomains: 0,
       uploadSize: 2 * 1024 * 1024, // 2 MB
     },
@@ -101,7 +109,9 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
       maxPublicPages: 3,     // 3 Live pages (e.g. Food, Drinks, Happy Hour)
       tiersPerPage: 3,
       items: 50,             // Good for cafes
-      teamSeats: 1,
+      teamSeats: 2,          // Small team
+      teamsOwned: 1,         // Can create 1 team
+      teamsMember: 3,        // Can be in 3 teams total
       customDomains: 0,
       uploadSize: 5 * 1024 * 1024, // 5 MB
     },
@@ -127,7 +137,9 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
       maxPublicPages: 5,     // 5 Live pages (Enough for one serious restaurant)
       tiersPerPage: 5,
       items: 100,            // Good for full restaurants
-      teamSeats: 3,
+      teamSeats: 5,          // Medium team
+      teamsOwned: 3,         // Can create 3 teams
+      teamsMember: 10,       // Can be in 10 teams
       customDomains: 0,
       uploadSize: 8 * 1024 * 1024, // 8 MB
     },
@@ -153,9 +165,39 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
       maxPublicPages: 10,    // 10 Live pages
       tiersPerPage: "unlimited",
       items: "unlimited",
-      teamSeats: 10,
+      teamSeats: 15,         // Large team
+      teamsOwned: 10,        // Can create 10 teams (agency mode)
+      teamsMember: "unlimited",
       customDomains: 3,      // Key feature: 3 Custom Domains
       uploadSize: 15 * 1024 * 1024, // 15 MB
+    },
+  },
+  agency: {
+    features: {
+      customColors: true,
+      removeBadge: true,
+      templates: true,
+      backgroundVideo: true,
+      eventsAnalytics: true,
+      advancedFormulas: true,
+      webhooks: true,
+      aiAgent: true,
+      whiteLabel: true,
+      ocrImport: true,
+      canEmbed: true,
+      premiumFonts: true,
+      premiumThemes: true,
+    },
+    limits: {
+      pages: 200,              // Large page allowance for agencies
+      maxPublicPages: 50,      // 50 Live pages
+      tiersPerPage: "unlimited",
+      items: "unlimited",
+      teamSeats: 50,           // Large teams / multiple clients
+      teamsOwned: 25,          // 25 client workspaces
+      teamsMember: "unlimited",
+      customDomains: 10,       // Key feature: 10 Custom Domains
+      uploadSize: 25 * 1024 * 1024, // 25 MB
     },
   },
   tierless: {
@@ -180,6 +222,8 @@ export const ENTITLEMENTS: Record<PlanId, Entitlements> = {
       tiersPerPage: "unlimited",
       items: "unlimited",
       teamSeats: "unlimited",
+      teamsOwned: "unlimited",
+      teamsMember: "unlimited",
       customDomains: "unlimited",
       uploadSize: 50 * 1024 * 1024, // 50 MB
     },
@@ -207,7 +251,7 @@ export function canFeature(feature: FeatureKey, plan: PlanId): { allowed: boolea
 }
 
 export type UsageNeeds = Partial<
-  Pick<Limits, "pages" | "tiersPerPage" | "items" | "maxPublicPages" | "teamSeats" | "customDomains">
+  Pick<Limits, "pages" | "tiersPerPage" | "items" | "maxPublicPages" | "teamSeats" | "teamsOwned" | "teamsMember" | "customDomains">
 >;
 
 export type LimitsCheck = {

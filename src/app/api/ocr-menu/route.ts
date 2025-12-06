@@ -2,6 +2,10 @@
 import { NextResponse } from "next/server";
 import { parseOcrMenuText } from "@/lib/ocrMenu";
 import { openai } from "@/lib/openai";
+import { checkRateLimit, getClientIP, rateLimitHeaders, OCR_LIMIT } from "@/lib/rateLimit";
+import { getSessionUser, coercePlan } from "@/lib/auth";
+import { canUseOcr, incrementOcrUsage, ensureOcrUsageTable } from "@/lib/ocrUsage";
+import { getPool } from "@/lib/db";
 
 const OCR_API_URL =
   process.env.OCR_MENU_API_URL || "https://api.edenai.run/v2/ocr/ocr";
@@ -251,6 +255,63 @@ async function parseWithChatGpt(ocrText: string): Promise<ParsedMenu> {
 
 export async function POST(req: Request) {
   try {
+    // 1) Rate Limiting - 20 requests per hour per IP (protects against abuse)
+    const clientIP = getClientIP(req);
+    const rateResult = checkRateLimit(clientIP, OCR_LIMIT);
+    
+    if (!rateResult.success) {
+      console.warn(`[OCR] Rate limit exceeded for IP: ${clientIP}`);
+      return NextResponse.json(
+        { error: "Too many OCR requests. Please try again later." },
+        { status: 429, headers: rateLimitHeaders(rateResult) }
+      );
+    }
+
+    // 2) User Authentication & Monthly Limit
+    const user = await getSessionUser(req);
+    if (!user?.email) {
+      return NextResponse.json(
+        { error: "Please log in to use OCR scanning." },
+        { status: 401 }
+      );
+    }
+
+    // Get user's plan
+    const pool = getPool();
+    const { rows } = await pool.query(
+      `SELECT plan FROM user_plans WHERE user_id = $1 LIMIT 1`,
+      [user.email]
+    );
+    const plan = coercePlan(rows[0]?.plan || "free");
+
+    // Check usage limit (monthly for paid, lifetime for free)
+    await ensureOcrUsageTable();
+    const usage = await canUseOcr(user.email, plan);
+    
+    if (!usage.allowed) {
+      const limitType = usage.isLifetimeTrial ? "trial" : "monthly";
+      console.warn(`[OCR] ${limitType} limit exceeded for user: ${user.email} (${usage.used}/${usage.limit})`);
+      
+      // Different error messages for free vs paid
+      const errorMsg = usage.isLifetimeTrial
+        ? `You've used all ${usage.limit} free trial scans. Upgrade to Starter for 10 monthly scans!`
+        : `Monthly OCR limit reached (${usage.used}/${usage.limit}). Upgrade your plan for more scans.`;
+      
+      return NextResponse.json(
+        { 
+          error: errorMsg,
+          usage: { 
+            used: usage.used, 
+            limit: usage.limit, 
+            remaining: 0,
+            isLifetimeTrial: usage.isLifetimeTrial 
+          },
+          requiresUpgrade: true
+        },
+        { status: 429 }
+      );
+    }
+
     if (!OCR_API_KEY) {
       console.error("OCR_MENU_API_KEY is missing");
       return NextResponse.json(
@@ -341,12 +402,23 @@ export async function POST(req: Request) {
       );
     }
 
+    // Increment usage counter on success
+    const newUsage = await incrementOcrUsage(user.email);
+    const periodLabel = usage.isLifetimeTrial ? "lifetime" : "monthly";
+    console.log(`[OCR] Success for ${user.email}, ${periodLabel} usage: ${newUsage.monthly}/${usage.limit}`);
+
     // Vraćamo items + sekcije + rawText (frontend trenutno koristi items; sekcije možeš kasnije da iskoristiš)
     return NextResponse.json(
       {
         items: parsed.items,
         sections: parsed.sections,
         rawText: text,
+        usage: { 
+          used: usage.isLifetimeTrial ? newUsage.lifetime : newUsage.monthly, 
+          limit: usage.limit, 
+          remaining: usage.limit - (usage.isLifetimeTrial ? newUsage.lifetime : newUsage.monthly),
+          isLifetimeTrial: usage.isLifetimeTrial
+        },
       },
       { status: 200 }
     );

@@ -32,6 +32,7 @@ type PageCardProps = {
     publishedCount: number;
     publishedLimit: number;
     moveBy: (slug: string, dir: -1 | 1) => void;
+    onMove: (slug: string) => void;
 };
 
 export default function PageCard({
@@ -50,6 +51,7 @@ export default function PageCard({
     publishedCount,
     publishedLimit,
     moveBy,
+    onMove,
 }: PageCardProps) {
     const { slug, name, favorite, createdAt } = row.meta;
     const published = !!(row.meta.published ?? row.meta.online);

@@ -71,7 +71,7 @@ export async function ensureUserProfilesTable() {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
-    
+
     // Add telegram_username column if it doesn't exist (for existing tables)
     await client.query(`
       ALTER TABLE user_profiles 
@@ -190,7 +190,7 @@ export interface TeamInvite {
 export async function ensureTeamsTables() {
   const pool = getPool();
   const client = await pool.connect();
-  
+
   try {
     // 1. Teams table - Core team information
     await client.query(`
@@ -299,6 +299,28 @@ export async function getUserTeams(userId: string): Promise<(Team & { role: Team
 }
 
 /**
+ * Get a team by ID.
+ */
+export async function getTeamById(teamId: string): Promise<Team | null> {
+  const pool = getPool();
+  const { rows } = await pool.query(
+    `SELECT * FROM teams WHERE id = $1`,
+    [teamId]
+  );
+  if (rows.length === 0) return null;
+  const r = rows[0];
+  return {
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    owner_id: r.owner_id,
+    logo_url: r.logo_url,
+    created_at: Number(r.created_at),
+    updated_at: Number(r.updated_at),
+  };
+}
+
+/**
  * Get a user's role in a specific team.
  * Returns null if user is not a member.
  */
@@ -325,6 +347,30 @@ export async function getTeamMembers(teamId: string): Promise<TeamMember[]> {
     user_id: r.user_id,
     role: r.role as TeamRole,
     joined_at: Number(r.joined_at),
+  }));
+}
+
+/**
+ * Get all members of a team with their profile details.
+ * Note: user_id in team_members IS the email address
+ */
+export async function getTeamMembersWithDetails(teamId: string): Promise<(TeamMember & { email?: string; name?: string })[]> {
+  const pool = getPool();
+  const { rows } = await pool.query(
+    `SELECT tm.*, up.business_name as name
+     FROM team_members tm
+     LEFT JOIN user_profiles up ON tm.user_id = up.user_id
+     WHERE tm.team_id = $1
+     ORDER BY tm.joined_at ASC`,
+    [teamId]
+  );
+  return rows.map((r) => ({
+    team_id: r.team_id,
+    user_id: r.user_id,
+    role: r.role as TeamRole,
+    joined_at: Number(r.joined_at),
+    email: r.user_id, // user_id IS the email
+    name: r.name || r.user_id.split('@')[0], // fallback to email prefix
   }));
 }
 
@@ -460,6 +506,61 @@ export async function getInvitesForEmail(email: string): Promise<TeamInvite[]> {
 }
 
 /**
+ * Get pending invites for an email with team details.
+ */
+export interface TeamInviteWithDetails extends TeamInvite {
+  team_name: string;
+  team_slug: string;
+}
+
+export async function getInvitesForEmailWithDetails(email: string): Promise<TeamInviteWithDetails[]> {
+  const pool = getPool();
+  const now = Date.now();
+  const { rows } = await pool.query(
+    `SELECT
+      ti.id, ti.team_id, ti.email, ti.role, ti.invited_by, ti.expires_at, ti.created_at,
+      t.name as team_name, t.slug as team_slug
+    FROM team_invites ti
+    JOIN teams t ON t.id = ti.team_id
+    WHERE ti.email = $1 AND ti.expires_at > $2
+    ORDER BY ti.created_at DESC`,
+    [email.toLowerCase(), now]
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    team_id: r.team_id,
+    email: r.email,
+    role: r.role as TeamRole,
+    invited_by: r.invited_by,
+    expires_at: Number(r.expires_at),
+    created_at: Number(r.created_at),
+    team_name: r.team_name,
+    team_slug: r.team_slug,
+  }));
+}
+
+/**
+ * Get pending invites for a team.
+ */
+export async function getInvitesForTeam(teamId: string): Promise<TeamInvite[]> {
+  const pool = getPool();
+  const now = Date.now();
+  const { rows } = await pool.query(
+    `SELECT * FROM team_invites WHERE team_id = $1 AND expires_at > $2 ORDER BY created_at DESC`,
+    [teamId, now]
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    team_id: r.team_id,
+    email: r.email,
+    role: r.role as TeamRole,
+    invited_by: r.invited_by,
+    expires_at: Number(r.expires_at),
+    created_at: Number(r.created_at),
+  }));
+}
+
+/**
  * Accept a team invite.
  */
 export async function acceptTeamInvite(inviteId: string, userId: string): Promise<boolean> {
@@ -530,4 +631,128 @@ export async function getTeamCalculators(teamId: string): Promise<{ user_id: str
     [teamId]
   );
   return rows;
+}
+
+/**
+ * Delete a team.
+ */
+export async function deleteTeam(teamId: string): Promise<void> {
+  const pool = getPool();
+  // Cascade delete handles members and invites.
+  // Calculators with team_id will be set to NULL (based on ON DELETE SET NULL) or we should check?
+  // In ensureTeamsTables: ON DELETE SET NULL is used for calculators.
+  await pool.query(`DELETE FROM teams WHERE id = $1`, [teamId]);
+}
+
+/**
+ * Update team name.
+ */
+export async function updateTeamName(teamId: string, name: string): Promise<void> {
+  const pool = getPool();
+  const now = Date.now();
+  await pool.query(
+    `UPDATE teams SET name = $1, updated_at = $2 WHERE id = $3`,
+    [name, now, teamId]
+  );
+}
+
+// ============================================================================
+// TEAM COUNTING (for plan limits)
+// ============================================================================
+
+/**
+ * Count how many teams a user OWNS (created).
+ */
+export async function countUserOwnedTeams(userId: string): Promise<number> {
+  const pool = getPool();
+  const { rows } = await pool.query(
+    `SELECT COUNT(*) as count FROM teams WHERE owner_id = $1`,
+    [userId]
+  );
+  return parseInt(rows[0]?.count || "0", 10);
+}
+
+/**
+ * Count how many teams a user is a MEMBER of (including owned).
+ */
+export async function countUserTeamMemberships(userId: string): Promise<number> {
+  const pool = getPool();
+  const { rows } = await pool.query(
+    `SELECT COUNT(*) as count FROM team_members WHERE user_id = $1`,
+    [userId]
+  );
+  return parseInt(rows[0]?.count || "0", 10);
+}
+
+/**
+ * Check if user can create a new team based on plan limits.
+ */
+export async function canUserCreateTeam(
+  userId: string,
+  planLimit: number | "unlimited"
+): Promise<{ allowed: boolean; current: number; limit: number | "unlimited" }> {
+  if (planLimit === "unlimited") {
+    return { allowed: true, current: 0, limit: "unlimited" };
+  }
+  
+  const current = await countUserOwnedTeams(userId);
+  return {
+    allowed: current < planLimit,
+    current,
+    limit: planLimit,
+  };
+}
+
+/**
+ * Check if user can join another team based on plan limits.
+ */
+export async function canUserJoinTeam(
+  userId: string,
+  planLimit: number | "unlimited"
+): Promise<{ allowed: boolean; current: number; limit: number | "unlimited" }> {
+  if (planLimit === "unlimited") {
+    return { allowed: true, current: 0, limit: "unlimited" };
+  }
+  
+  const current = await countUserTeamMemberships(userId);
+  return {
+    allowed: current < planLimit,
+    current,
+    limit: planLimit,
+  };
+}
+
+/**
+ * Permanently delete a user and all their data.
+ */
+export async function deleteUser(userId: string): Promise<void> {
+  const pool = getPool();
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // 1. Delete user's calculators
+    await client.query("DELETE FROM calculators WHERE user_id = $1", [userId]);
+
+    // 2. Delete teams owned by user
+    await client.query("DELETE FROM teams WHERE owner_id = $1", [userId]);
+
+    // 3. Remove from team memberships
+    await client.query("DELETE FROM team_members WHERE user_id = $1", [userId]);
+
+    // 4. Remove pending invites (where user is the invitee)
+    await client.query("DELETE FROM team_invites WHERE email = $1", [userId]);
+
+    // 5. Delete profile and plan
+    await client.query("DELETE FROM user_profiles WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM user_plans WHERE user_id = $1", [userId]);
+
+    await client.query("COMMIT");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
 }

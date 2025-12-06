@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAndConsumeToken } from "@/lib/db";
 import { getUserPlan, signSession } from "@/lib/auth";
+import { checkRateLimit, getClientIP, rateLimitHeaders, AUTH_VERIFY_LIMIT } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
+  // Rate limiting to prevent token brute-forcing
+  const ip = getClientIP(req);
+  const rateCheck = checkRateLimit(ip, AUTH_VERIFY_LIMIT);
+
+  if (!rateCheck.success) {
+    return NextResponse.json(
+      { error: "too_many_requests" },
+      { status: 429, headers: rateLimitHeaders(rateCheck) }
+    );
+  }
+
   const token = req.nextUrl.searchParams.get("token");
   if (!token) {
     return NextResponse.json({ error: "missing_token" }, { status: 400 });

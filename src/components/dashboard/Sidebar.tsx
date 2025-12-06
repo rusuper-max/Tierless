@@ -12,7 +12,7 @@ import {
   User,
   LayoutGrid,
   Trash2,
-  Users, // Import Users icon
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import { useAccount } from "@/hooks/useAccount";
@@ -27,7 +27,11 @@ type Item = {
   navKey?: string;
 };
 
-export default function Sidebar() {
+import { TeamSwitcher } from "./TeamSwitcher";
+import { type Team } from "@/lib/db";
+
+// Update component signature
+export default function Sidebar({ teams = [], pendingInviteCount = 0 }: { teams?: Team[]; pendingInviteCount?: number }) {
   const pathname = usePathname();
   const { plan } = useAccount();
 
@@ -64,23 +68,56 @@ export default function Sidebar() {
     };
   }, [pathname]);
 
+  // --- Detect active team context ---
+  const teamMatch = pathname?.match(/^\/dashboard\/t\/([^/]+)/);
+  const activeTeamId = teamMatch?.[1] || null;
+  const foundTeamFromProp = activeTeamId ? teams.find(t => t.id === activeTeamId) : null;
+
+  // Fetch team details if not in prop (e.g., after creating a new team)
+  const [fetchedTeam, setFetchedTeam] = useState<{ id: string; name: string; slug: string } | null>(null);
+
+  useEffect(() => {
+    if (activeTeamId && !foundTeamFromProp) {
+      // Team not in prop - fetch it
+      fetch(`/api/teams/${activeTeamId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.team) {
+            setFetchedTeam({ id: data.team.id, name: data.team.name, slug: data.team.slug || "" });
+          }
+        })
+        .catch(() => {});
+    } else {
+      setFetchedTeam(null);
+    }
+  }, [activeTeamId, foundTeamFromProp]);
+
+  const foundTeam = foundTeamFromProp || fetchedTeam;
+  // Fallback: if we're on a team URL but team not in list, create placeholder
+  const activeTeam = foundTeam || (activeTeamId ? { id: activeTeamId, name: "Team", slug: "" } : null);
+
   // --- Navigation Config ---
   const NAV: Item[] = useMemo(() => [
     { href: "/dashboard", label: t("Pages"), icon: LayoutDashboard, exact: true, navKey: "pages" },
     { href: "/dashboard/stats", label: t("Stats"), icon: BarChart3, navKey: "stats" },
     { href: "/dashboard/templates", label: t("Templates"), icon: LayoutGrid, navKey: "templates" },
-    { href: "/dashboard/teams", label: t("Teams"), icon: Users, navKey: "teams" }, // Add Teams link
+    { href: "/dashboard/teams", label: t("Teams"), icon: Users, badge: pendingInviteCount, navKey: "teams" },
     { href: "/dashboard/integrations", label: t("Integrations"), icon: Puzzle, navKey: "integrations" },
-    { href: "/dashboard/settings", label: t("Settings"), icon: Settings, navKey: "settings" },
     { href: "/dashboard/trash", label: t("Trash"), icon: Trash2, badge: trashCount, navKey: "trash" },
-  ], [trashCount]);
+  ], [trashCount, pendingInviteCount]);
 
   const ACCOUNT_NAV: Item[] = [
     { href: "/dashboard/account", label: t("Account"), icon: User, navKey: "account" },
   ];
 
-  const isActive = (it: Item) =>
-    it.exact ? pathname === it.href : pathname?.startsWith(it.href);
+  const isActive = (it: Item) => {
+    if (it.exact) return pathname === it.href;
+    // Special case: Teams nav should be active for both /dashboard/teams AND /dashboard/t/[teamId]
+    if (it.navKey === 'teams') {
+      return pathname?.startsWith('/dashboard/teams') || pathname?.startsWith('/dashboard/t/');
+    }
+    return pathname?.startsWith(it.href);
+  };
 
   return (
     <aside
@@ -98,17 +135,24 @@ export default function Sidebar() {
       </svg>
 
       {/* --- Header --- */}
-      <div className="px-5 py-6 flex items-center justify-between border-b border-[var(--border)]">
-        <h2 className="text-lg font-bold tracking-tight" style={{
-          backgroundImage: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
-          WebkitBackgroundClip: "text",
-          backgroundClip: "text",
-          color: "transparent",
-          WebkitTextFillColor: "transparent",
-        }}>
-          Dashboard
-        </h2>
-        <PlanPill plan={String(plan)} />
+      <div className="px-5 py-4 flex flex-col gap-4 border-b border-[var(--border)]">
+        <div className="flex items-center justify-between">
+          <Link href="/dashboard" className="flex items-center gap-2 group">
+            <h2 className="text-lg font-bold tracking-tight" style={{
+              backgroundImage: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+              WebkitTextFillColor: "transparent",
+            }}>
+              {t("Dashboard")}
+            </h2>
+          </Link>
+          <PlanPill plan={String(plan)} />
+        </div>
+
+        {/* Context Switcher */}
+        <TeamSwitcher teams={teams} />
       </div>
 
       {/* --- Main Navigation --- */}
@@ -116,12 +160,52 @@ export default function Sidebar() {
         {/* Primary Items */}
         <ul className="space-y-1">
           {NAV.map((it) => (
-            <NavItem
-              key={it.href}
-              item={it}
-              active={isActive(it)}
-              isTrashFlashing={it.navKey === 'trash' && isTrashFlashing}
-            />
+            <li key={it.href}>
+              <NavItem
+                item={it}
+                active={isActive(it)}
+                isTrashFlashing={it.navKey === 'trash' && isTrashFlashing}
+              />
+              {/* Team sub-navigation when viewing a team */}
+              {it.navKey === 'teams' && activeTeam && (
+                <div className="ml-6 mt-1 border-l-2 border-[var(--border)] pl-3">
+                  {/* Team name label - only show if team was found */}
+                  {foundTeam && (
+                    <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] truncate">
+                      {foundTeam.name}
+                    </div>
+                  )}
+                  <ul className="space-y-1">
+                    <li>
+                      <Link
+                        href={`/dashboard/t/${activeTeam.id}`}
+                        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all ${
+                          pathname === `/dashboard/t/${activeTeam.id}`
+                            ? 'bg-[var(--surface)] text-[var(--text)] font-medium'
+                            : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
+                        }`}
+                      >
+                        <LayoutDashboard className="size-4" />
+                        <span>{t("Pages")}</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href={`/dashboard/t/${activeTeam.id}/settings/members`}
+                        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all ${
+                          pathname?.includes(`/dashboard/t/${activeTeam.id}/settings`)
+                            ? 'bg-[var(--surface)] text-[var(--text)] font-medium'
+                            : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
+                        }`}
+                      >
+                        <Settings className="size-4" />
+                        <span>{t("Team Settings")}</span>
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </li>
           ))}
         </ul>
 
@@ -132,7 +216,9 @@ export default function Sidebar() {
           </div>
           <ul className="space-y-1">
             {ACCOUNT_NAV.map((it) => (
-              <NavItem key={it.href} item={it} active={isActive(it)} />
+              <li key={it.href}>
+                <NavItem item={it} active={isActive(it)} />
+              </li>
             ))}
           </ul>
         </div>
@@ -163,7 +249,6 @@ const NavItem = ({
   isTrashFlashing?: boolean
 }) => {
   return (
-    <li>
       <Link
         href={item.href}
         data-nav={item.navKey}
@@ -214,7 +299,15 @@ const NavItem = ({
 
         {/* Badge */}
         {typeof item.badge === "number" && item.badge > 0 && (
-          <span className="ml-auto inline-flex items-center justify-center rounded-full min-w-5 h-5 px-1 text-[11px] text-[var(--text)] opacity-60 bg-[var(--surface)] ring-1 ring-inset ring-[var(--border)]">
+          <span className={`ml-auto inline-flex items-center justify-center rounded-full min-w-5 h-5 px-1.5 text-[11px] font-medium ${
+            item.navKey === "teams"
+              ? "text-white"
+              : "text-[var(--text)] opacity-60 bg-[var(--surface)] ring-1 ring-inset ring-[var(--border)]"
+          }`}
+          style={item.navKey === "teams" ? {
+            background: "linear-gradient(90deg, var(--brand-1, #4F46E5), var(--brand-2, #22D3EE))"
+          } : undefined}
+          >
             {item.badge}
           </span>
         )}
@@ -232,7 +325,6 @@ const NavItem = ({
           }
         `}</style>
       </Link>
-    </li>
   );
 };
 

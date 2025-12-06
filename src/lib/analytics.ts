@@ -112,17 +112,29 @@ function getUtmParams(): { utm_source?: string; utm_medium?: string; utm_campaig
   };
 }
 
+// ==================== BATCHING CONFIG ====================
+const MAX_BATCH_SIZE = 50;        // Max events per batch
+const MAX_QUEUE_SIZE = 200;       // Max queued events (prevents memory leak)
+const FLUSH_INTERVAL_MS = 1000;   // Debounce interval
+const MAX_RETRY_ATTEMPTS = 3;     // Retry failed sends
+
 // Event queue for batching
 let eventQueue: AnalyticsEvent[] = [];
 let flushTimeout: ReturnType<typeof setTimeout> | null = null;
+let retryCount = 0;
 
 async function flushEvents() {
   if (eventQueue.length === 0) return;
 
-  const events = [...eventQueue];
-  eventQueue = [];
+  // Take a batch (max size)
+  const batchSize = Math.min(eventQueue.length, MAX_BATCH_SIZE);
+  const events = eventQueue.slice(0, batchSize);
+  eventQueue = eventQueue.slice(batchSize);
 
-  console.log("[Analytics] Sending", events.length, "events:", events.map(e => e.type));
+  // Only log in dev
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Analytics] Sending", events.length, "events");
+  }
 
   try {
     const res = await fetch("/api/stats", {
@@ -130,11 +142,32 @@ async function flushEvents() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ events }),
     });
-    const data = await res.json();
-    console.log("[Analytics] Response:", data);
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    
+    // Success - reset retry count
+    retryCount = 0;
+    
+    // If more events in queue, schedule another flush
+    if (eventQueue.length > 0) {
+      scheduleFlush();
+    }
   } catch (e) {
     console.error("[Analytics] Failed to send events:", e);
-    eventQueue.unshift(...events);
+    
+    // Retry with exponential backoff (max 3 attempts)
+    if (retryCount < MAX_RETRY_ATTEMPTS) {
+      retryCount++;
+      eventQueue.unshift(...events);
+      // Exponential backoff: 2s, 4s, 8s
+      setTimeout(() => flushEvents(), 2000 * Math.pow(2, retryCount - 1));
+    } else {
+      // Give up after max retries to prevent infinite loop
+      console.warn("[Analytics] Dropping", events.length, "events after max retries");
+      retryCount = 0;
+    }
   }
 }
 
@@ -150,7 +183,7 @@ function scheduleFlush(immediate = false) {
   flushTimeout = setTimeout(() => {
     flushTimeout = null;
     flushEvents();
-  }, 1000); // Reduced from 2s to 1s
+  }, FLUSH_INTERVAL_MS);
 }
 
 // Main tracking function
@@ -160,6 +193,13 @@ export function trackEvent(
   props?: Record<string, any>
 ) {
   if (typeof window === "undefined") return;
+
+  // Prevent memory leak if events aren't being sent
+  if (eventQueue.length >= MAX_QUEUE_SIZE) {
+    // Drop oldest events to make room
+    eventQueue = eventQueue.slice(-MAX_QUEUE_SIZE + 10);
+    console.warn("[Analytics] Queue overflow - dropped old events");
+  }
 
   const event: AnalyticsEvent = {
     type,

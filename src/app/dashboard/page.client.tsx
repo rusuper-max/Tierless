@@ -23,6 +23,7 @@ import {
 } from "@/components/dashboard/DashboardUI";
 import PageRow from "@/components/dashboard/PageRow";
 import PageCard from "@/components/dashboard/PageCard";
+import { MoveToTeamModal } from "./MoveToTeamModal";
 
 /* ------------------------------------------------------------------ */
 /* Types & helpers                                                     */
@@ -75,7 +76,8 @@ async function getPublicUrlForSlug(slug: string): Promise<string> {
 /* ------------------------------------------------------------------ */
 type FilterId = "all" | "online" | "offline" | "favorites";
 
-export default function DashboardPageClient() {
+// src/app/dashboard/t/[teamId]/page.tsx calls this with teamId
+export default function DashboardPageClient({ teamId }: { teamId?: string }) {
   const account = useAccount();
   const router = useRouter();
 
@@ -97,6 +99,9 @@ export default function DashboardPageClient() {
   const dragSlugRef = useRef<string | null>(null);
   const overSlugRef = useRef<string | null>(null);
   const overPosRef = useRef<"before" | "after" | null>(null);
+
+  // Move to Team state
+  const [moveSlug, setMoveSlug] = useState<string | null>(null);
 
   // --- Persisted sorting / order (localStorage) --------------------
   const LS_SORT_KEY = "tl_pages_sort";
@@ -406,7 +411,12 @@ export default function DashboardPageClient() {
   async function load() {
     setLoading(true);
     try {
-      const r = await fetch("/api/calculators", {
+      // Build URL with teamId if present
+      const url = teamId
+        ? `/api/calculators?teamId=${encodeURIComponent(teamId)}`
+        : "/api/calculators";
+
+      const r = await fetch(url, {
         cache: "no-store",
         credentials: "same-origin",
         headers: { "x-no-cache": String(Date.now()) },
@@ -707,7 +717,7 @@ export default function DashboardPageClient() {
         method: "POST",
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ teamId }),
         cache: "no-store",
       });
 
@@ -761,7 +771,7 @@ export default function DashboardPageClient() {
         method: "POST",
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ from: slug, name: safeName }),
+        body: JSON.stringify({ from: slug, name: safeName, teamId }),
       });
       const payload = await r.text();
       if (!r.ok) {
@@ -926,7 +936,11 @@ export default function DashboardPageClient() {
       const payload = await r.text().catch(() => "");
       if (!r.ok) {
         console.error("DELETE /api/calculators ->", payload);
-        alert("Failed to move to Trash.");
+        if (r.status === 403) {
+          alert("Permission denied. You cannot delete this page.");
+        } else {
+          alert("Failed to move to Trash.");
+        }
         return;
       }
       setRows((prev) => prev.filter((x) => x.meta.slug !== slug));
@@ -1012,7 +1026,11 @@ export default function DashboardPageClient() {
       const payload = await r.text().catch(() => "");
       if (!r.ok) {
         console.error("BULK DELETE /api/calculators ->", payload);
-        alert("Failed to move selected pages to Trash.");
+        if (r.status === 403) {
+          alert("Permission denied. Some pages could not be deleted.");
+        } else {
+          alert("Failed to move selected pages to Trash.");
+        }
         return;
       }
 
@@ -1036,6 +1054,26 @@ export default function DashboardPageClient() {
   return (
     <main className="container-page space-y-6 tl-dashboard">
       {toast && <div className="fixed bottom-4 right-4 z-[120] card px-3 py-2 text-sm shadow-ambient">{toast}</div>}
+
+      <MoveToTeamModal
+        slug={moveSlug}
+        currentTeamId={teamId}
+        open={!!moveSlug}
+        onClose={() => setMoveSlug(null)}
+        onSuccess={(newTeamId) => {
+          if (newTeamId !== (teamId || null)) {
+            setRows((prev) => prev.filter((x) => x.meta.slug !== moveSlug));
+            if (moveSlug) {
+              deleteFavLS(moveSlug);
+              deleteCreatedLS(moveSlug);
+            }
+            showToast("Moved to team");
+          } else {
+            showToast("Moved (no change)");
+          }
+          setMoveSlug(null);
+        }}
+      />
 
       {notice && (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] text-[var(--text)] p-3 text-sm">
@@ -1197,7 +1235,7 @@ export default function DashboardPageClient() {
             <div className="text-xs text-[var(--muted)]">{derived.length} total</div>
           </div>
 
-          <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center justify-between flex-wrap gap-3 relative z-0">
             <div className="flex flex-wrap items-center gap-2">
               <FilterChip label="All" active={activeFilter === "all"} onClick={() => setActiveFilter("all")} />
               <FilterChip label="Online" active={activeFilter === "online"} onClick={() => setActiveFilter("online")} />
@@ -1299,6 +1337,7 @@ export default function DashboardPageClient() {
                 publishedCount={publishedCount}
                 publishedLimit={publishedLimitNum}
                 moveBy={moveBy}
+                onMove={(slug) => setMoveSlug(slug)}
               />
             ))}
           </div>
@@ -1366,6 +1405,7 @@ export default function DashboardPageClient() {
                                           onPointerDragStart={() => { }}
                                           publishedCount={publishedCount}
                                           publishedLimit={publishedLimitNum}
+                                          onMove={() => { }}
                                         />
                                       </tbody>
                                     </table>
@@ -1398,6 +1438,7 @@ export default function DashboardPageClient() {
                         onPointerDragStart={onPointerDragStart}
                         publishedCount={publishedCount}
                         publishedLimit={publishedLimitNum}
+                        onMove={(slug) => setMoveSlug(slug)}
                       />
 
                       {/* GAP after */}
@@ -1431,6 +1472,7 @@ export default function DashboardPageClient() {
                                           onPointerDragStart={() => { }}
                                           publishedCount={publishedCount}
                                           publishedLimit={publishedLimitNum}
+                                          onMove={() => { }}
                                         />
                                       </tbody>
                                     </table>
@@ -1465,8 +1507,8 @@ export default function DashboardPageClient() {
       />
       {mounted && renSlug && typeof document !== "undefined" &&
         createPortal(
-          <div className="fixed inset-0 z-[7000] flex items-center justify-center" role="dialog" aria-modal="true">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" onClick={() => !busy && setRenSlug(null)} />
+          <div className="fixed inset-0 z-[7000] flex items-center justify-center" role="dialog" aria-modal="true" style={{ isolation: "isolate" }}>
+            <div className="absolute inset-0 z-[7000] bg-black/60 backdrop-blur-[2px]" onClick={() => !busy && setRenSlug(null)} />
             <div className="relative z-[7001] card w-[92vw] max-w-md p-5 bg-[var(--card)] border border-[var(--border)]">
               <div className="text-lg font-semibold text-[var(--text)]">Rename page</div>
               <input

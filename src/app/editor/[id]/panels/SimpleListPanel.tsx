@@ -8,6 +8,7 @@ import { useEditorStore, type SimpleSection, type BrandTheme } from "@/hooks/use
 import { useAccount } from "@/hooks/useAccount";
 import { ENTITLEMENTS, canFeature, getLimit } from "@/lib/entitlements";
 import { useEntitlement } from "@/hooks/useEntitlement";
+import { useOcrUsage } from "@/hooks/useOcrUsage";
 // --- FIX 1: Import pointerWithin for smoother drag ---
 import { DndContext, pointerWithin, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
@@ -190,6 +191,7 @@ export default function SimpleListPanel() {
   const { calc, updateCalc, addItem, updateItem, removeItem, moveItem, setMeta } = useEditorStore();
   const { plan } = useAccount();
   const { openUpsell } = useEntitlement({ feature: "ocrImport" });
+  const { usage: ocrUsage, refresh: refreshOcrUsage, canScan: ocrCanScan, displayText: ocrDisplayText } = useOcrUsage();
 
   // --- Feature Gates & Limits ---
   const { allowed: ocrAllowed } = canFeature("ocrImport", plan);
@@ -201,6 +203,11 @@ export default function SimpleListPanel() {
 
   const handleOcrClick = () => {
     if (!ocrAllowed) {
+      openUpsell({ feature: "ocrImport" });
+      return;
+    }
+    // Check if user has scans remaining
+    if (!ocrCanScan && ocrUsage) {
       openUpsell({ feature: "ocrImport" });
       return;
     }
@@ -415,7 +422,20 @@ export default function SimpleListPanel() {
       form.append("file", file);
       const res = await fetch("/api/ocr-menu", { method: "POST", body: form });
       const data = await res.json();
-      if (!res.ok) { setOcrError(data?.error || t("Failed to scan.")); return; }
+      
+      // Refresh usage counter regardless of result
+      refreshOcrUsage();
+      
+      if (!res.ok) { 
+        // Show upgrade message if limit exceeded
+        if (data?.requiresUpgrade) {
+          openUpsell({ feature: "ocrImport" });
+          setOcrOpen(false);
+          return;
+        }
+        setOcrError(data?.error || t("Failed to scan.")); 
+        return; 
+      }
       const rawItems = (data?.items ?? []) as any[];
       if (!rawItems.length) { setOcrError(t("No items found.")); return; }
       const mapped: ParsedOcrItem[] = rawItems.map((it) => ({
@@ -1144,15 +1164,28 @@ export default function SimpleListPanel() {
                   <List className="w-3.5 h-3.5" /> {t("Section")}
                 </button>
 
-                {/* Scan Button */}
-                <button
-                  onClick={handleOcrClick}
-                  className="h-9 w-9 cursor-default flex items-center justify-center rounded-lg border border-[var(--border)] text-[#22D3EE] hover:bg-[var(--surface)] transition shrink-0 ml-auto"
-                  title={t("Scan Document / Menu")}
-                  data-help="Upload a photo of your existing menu and our AI will automatically extract all items!"
-                >
-                  {!ocrAllowed ? <Lock className="w-3.5 h-3.5 opacity-70" /> : <ScanLine className="w-3.5 h-3.5" />}
-                </button>
+                {/* Scan Button with Usage Counter */}
+                <div className="relative ml-auto">
+                  <button
+                    onClick={handleOcrClick}
+                    className={`h-9 cursor-default flex items-center gap-2 px-3 rounded-lg border border-[var(--border)] hover:bg-[var(--surface)] transition shrink-0 ${
+                      !ocrAllowed || !ocrCanScan ? "text-[var(--muted)]" : "text-[#22D3EE]"
+                    }`}
+                    title={ocrDisplayText || t("Scan Document / Menu")}
+                    data-help="Upload a photo of your existing menu and our AI will automatically extract all items!"
+                  >
+                    {!ocrAllowed || !ocrCanScan ? (
+                      <Lock className="w-3.5 h-3.5 opacity-70" />
+                    ) : (
+                      <ScanLine className="w-3.5 h-3.5" />
+                    )}
+                    {ocrUsage && (
+                      <span className="text-[10px] font-bold tabular-nums">
+                        {ocrUsage.limit >= 9999 ? "∞" : `${ocrUsage.used}/${ocrUsage.limit}`}
+                      </span>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -2145,6 +2178,21 @@ export default function SimpleListPanel() {
               <div>
                 <h3 className="text-xl font-bold text-[var(--text)]">{t("AI Menu Scan")}</h3>
                 <p className="text-sm text-[var(--muted)]">{t("Upload a photo to auto-magically extract items.")}</p>
+                {/* OCR Usage Counter */}
+                {ocrUsage && ocrUsage.limit < 9999 && (
+                  <div className={`mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                    ocrUsage.remaining > 0 
+                      ? "bg-[#22D3EE]/10 text-[#22D3EE]" 
+                      : "bg-red-500/10 text-red-500"
+                  }`}>
+                    <ScanLine className="w-3 h-3" />
+                    {ocrUsage.isLifetimeTrial ? (
+                      <span>{ocrUsage.used}/{ocrUsage.limit} {t("trial scans used")}</span>
+                    ) : (
+                      <span>{ocrUsage.used}/{ocrUsage.limit} {t("this month")}</span>
+                    )}
+                  </div>
+                )}
               </div>
               <button onClick={() => { setOcrOpen(false); setOcrItems([]); setOcrSelectedIds([]); setOcrError(null); }} className="p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text)]"><X className="w-5 h-5" /></button>
             </div>

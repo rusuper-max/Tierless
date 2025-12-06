@@ -11,7 +11,40 @@ export type { CalcJson, Mode, BrandTheme, SimpleSection, ItemRow, Pkg, OptionGro
 
 // ==================== HISTORY CONFIG ====================
 const MAX_HISTORY_SIZE = 50;
+const MAX_HISTORY_BYTES = 5 * 1024 * 1024; // 5MB max for history stack
 const DEBOUNCE_MS = 300; // Group rapid changes within this window
+
+/**
+ * Estimate byte size of an object (rough but fast)
+ */
+function estimateBytes(obj: unknown): number {
+  try {
+    return JSON.stringify(obj).length * 2; // UTF-16 = 2 bytes per char
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Trim history to stay under memory limit
+ */
+function trimHistoryBySize(history: CalcJson[]): CalcJson[] {
+  let totalBytes = 0;
+  const result: CalcJson[] = [];
+  
+  // Keep newest entries first (reverse iteration)
+  for (let i = history.length - 1; i >= 0; i--) {
+    const entrySize = estimateBytes(history[i]);
+    if (totalBytes + entrySize > MAX_HISTORY_BYTES) {
+      console.warn(`[Editor] History trimmed by size limit (${Math.round(totalBytes / 1024)}KB kept)`);
+      break;
+    }
+    totalBytes += entrySize;
+    result.unshift(history[i]);
+  }
+  
+  return result;
+}
 
 type EditorState = {
   slug: string;
@@ -109,7 +142,11 @@ function pushToHistory(
   }
 
   // Push current state to history
-  const newPast = [...past, clone(currentCalc)].slice(-MAX_HISTORY_SIZE);
+  let newPast = [...past, clone(currentCalc)].slice(-MAX_HISTORY_SIZE);
+  
+  // Also apply size limit
+  newPast = trimHistoryBySize(newPast);
+  
   return { past: newPast, future: [], _lastHistoryPush: now };
 }
 

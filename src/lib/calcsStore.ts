@@ -204,6 +204,21 @@ export async function list(userId: string): Promise<Calc[]> {
   return rows.map(rowToCalc);
 }
 
+export async function listWithTeams(userId: string): Promise<(Calc & { teamName?: string })[]> {
+  const { rows } = await pool.query(
+    `SELECT c.*, t.name as team_name
+     FROM calculators c
+     LEFT JOIN teams t ON c.team_id = t.id
+     WHERE c.user_id = $1
+     ORDER BY c."order" ASC, c.created_at ASC`,
+    [userId]
+  );
+  return rows.map((r) => ({
+    ...rowToCalc(r),
+    teamName: r.team_name || undefined,
+  }));
+}
+
 export async function get(userId: string, slug: string): Promise<Calc | undefined> {
   const { rows } = await pool.query(
     `SELECT * FROM calculators WHERE user_id=$1 AND slug=$2 LIMIT 1`,
@@ -212,13 +227,13 @@ export async function get(userId: string, slug: string): Promise<Calc | undefine
   return rows[0] ? rowToCalc(rows[0]) : undefined;
 }
 
-export async function create(userId: string, name = "Untitled Page"): Promise<Calc> {
+export async function create(userId: string, name = "Untitled Page", teamId?: string): Promise<Calc> {
   const slug = await uniqueSlug(userId, name);
   const now = Date.now();
   await pool.query(
-    `INSERT INTO calculators (user_id, slug, name, template, config, published, favorite, "order", views7d, created_at, updated_at)
-     VALUES ($1,$2,$3,NULL,'{}',FALSE,FALSE,0,0,$4,$4)`,
-    [userId, slug, name, now]
+    `INSERT INTO calculators (user_id, slug, name, template, config, published, favorite, "order", views7d, created_at, updated_at, team_id)
+     VALUES ($1,$2,$3,NULL,'{}',FALSE,FALSE,0,0,$4,$4,$5)`,
+    [userId, slug, name, now, teamId || null]
   );
   const { rows } = await pool.query(
     `SELECT * FROM calculators WHERE user_id=$1 AND slug=$2`,
@@ -290,7 +305,7 @@ export async function createFromTemplate(userId: string, templateSlug: string, n
   return rowToCalc(rows[0]);
 }
 
-export async function duplicate(userId: string, fromSlug: string, newName: string) {
+export async function duplicate(userId: string, fromSlug: string, newName: string, teamId?: string) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -312,9 +327,9 @@ export async function duplicate(userId: string, fromSlug: string, newName: strin
 
     // 2. Insert new calculator
     await client.query(
-      `INSERT INTO calculators (user_id, slug, name, template, config, published, favorite, "order", views7d, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,FALSE,FALSE,0,0,$6,$6)`,
-      [userId, slug, friendlyName, src.template ?? null, src.config ?? {}, now]
+      `INSERT INTO calculators (user_id, slug, name, template, config, published, favorite, "order", views7d, created_at, updated_at, team_id)
+       VALUES ($1,$2,$3,$4,$5,FALSE,FALSE,0,0,$6,$6,$7)`,
+      [userId, slug, friendlyName, src.template ?? null, src.config ?? {}, now, teamId || null]
     );
 
     // 3. Handle full store

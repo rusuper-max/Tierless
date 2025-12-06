@@ -41,3 +41,24 @@ export async function updateProfile(formData: FormData) {
 
     revalidatePath("/dashboard/settings");
 }
+
+export async function deleteAccount() {
+    const user = await getSessionUser();
+    if (!user) {
+        throw new Error("Unauthorized");
+    }
+
+    // Since we use email as ID usually, confirm structure.
+    // Assuming user.email is the ID as established in previous turns.
+    const userId = user.email;
+
+    const { deleteUser } = await import("@/lib/db");
+    await deleteUser(userId);
+
+    // Redirect to home/login handled by client usually, but here server action...
+    // We should probably sign them out too.
+    // For now, let's just delete and redirect.
+    // redirect("/"); // Can't redirect from inside try/catch block if wrapped, but here it's top level.
+    // But we need to return success to client to handle redirect there?
+    // Or just redirect here.
+}

@@ -5,6 +5,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardTabs from "@/components/dashboard/DashboardTabs";
 import AccountHydrator from "@/components/providers/AccountHydrator";
 import { entitlementsFor, type Plan } from "@/lib/entitlements.adapter";
+import { getUserTeams, getInvitesForEmail } from "@/lib/db";
 
 export const metadata = { title: "Tierless — Dashboard" };
 
@@ -29,7 +30,7 @@ async function loadAccountSSR() {
     let cancelAtPeriodEnd = false;
     let orderDestination = "email";
     let whatsappNumber = "";
-    
+
     if (authenticated) {
       const mRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/me/plan`, {
         cache: "no-store",
@@ -88,6 +89,14 @@ async function loadAccountSSR() {
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const initialAccount = await loadAccountSSR();
 
+  // Fetch teams and invites for sidebar if user is authenticated
+  const [userTeams, userInvites] = initialAccount.email
+    ? await Promise.all([
+        getUserTeams(initialAccount.email),
+        getInvitesForEmail(initialAccount.email)
+      ])
+    : [[], []];
+
   return (
     <>
       {/* Nav (client, sticky) */}
@@ -103,7 +112,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
       {/* Sve dashboard varijable i stilovi pod .tl-dashboard */}
       <div className="tl-dashboard min-h-screen w-full flex flex-col md:flex-row bg-[var(--bg)]">
-        <Sidebar />
+        <Sidebar teams={userTeams} pendingInviteCount={userInvites.length} />
 
         {/* Brand gradient separator line */}
         <div
