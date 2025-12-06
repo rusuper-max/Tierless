@@ -721,12 +721,19 @@ export async function setTeam(userId: string, slug: string, teamId: string | nul
 /**
  * List all calculators for a team (across all users).
  */
-export async function listTeamCalcs(teamId: string): Promise<Calc[]> {
+export async function listTeamCalcs(teamId: string): Promise<(Calc & { teamName?: string })[]> {
   const { rows } = await pool.query(
-    `SELECT * FROM calculators WHERE team_id = $1 ORDER BY name ASC`,
+    `SELECT c.*, t.name as team_name
+     FROM calculators c
+     LEFT JOIN teams t ON c.team_id = t.id
+     WHERE c.team_id = $1
+     ORDER BY c.name ASC`,
     [teamId]
   );
-  return rows.map(rowToCalc);
+  return rows.map((r) => ({
+    ...rowToCalc(r),
+    teamName: r.team_name || undefined,
+  }));
 }
 
 // ============================================================================

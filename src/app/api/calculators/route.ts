@@ -40,10 +40,35 @@ export async function GET(req: Request) {
     // 2. Fetch team calcs
     const rows = await calcsStore.listTeamCalcs(teamId);
 
-    // Enrich with debugging info if needed, but for now just return rows
-    // We might want to add "permissions" metadata to each row later
+    // 3. Enrich with IDs (same logic as personal context)
+    const enriched = await Promise.all(
+      rows.map(async (r) => {
+        const slug = r?.meta?.slug;
+        const ownerId = r?.meta?.userId || userId;
+        if (!slug) return r;
+
+        try {
+          let full = await fullStore.getFull(ownerId, slug);
+
+          if (!full) {
+            full = calcFromMetaConfig(r);
+          }
+
+          if (!full?.meta?.id) {
+            const newId = randomBytes(9).toString("base64url");
+            full = { ...full, meta: { ...(full?.meta || {}), id: newId } };
+            await fullStore.putFull(ownerId, slug, full);
+          }
+
+          return { ...r, meta: { ...r.meta, id: full.meta.id }, teamName: r.teamName };
+        } catch {
+          return { ...r, teamName: r.teamName };
+        }
+      })
+    );
+
     return NextResponse.json(
-      { rows, __debug: { userId, teamId, role: "viewer" } },
+      { rows: enriched, __debug: { userId, teamId, role: perm.role } },
       { headers: { "Cache-Control": "no-store" } }
     );
   }

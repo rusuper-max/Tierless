@@ -107,38 +107,31 @@ export default function PageRow({
                         <FavoriteStar active={!!favorite} />
                     </button>
                     <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                            <span
-                                className={`cursor-text truncate max-w-[200px] sm:max-w-[300px] block font-semibold ${published ? "text-[var(--text)]" : "text-[var(--muted)]"
-                                    }`}
-                                onDoubleClick={() => onRenameStart(slug, name)}
-                                title="Double-click to rename"
-                            >
-                                {name}
-                            </span>
-                            {row.teamName && (
-                                <span className="relative inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--card)]">
-                                    <span
-                                        aria-hidden
-                                        className="pointer-events-none absolute inset-0 rounded-full"
-                                        style={{
-                                            padding: 1,
-                                            background: "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))",
-                                            WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                                            WebkitMaskComposite: "xor" as any,
-                                            maskComposite: "exclude",
-                                        }}
-                                    />
-                                    <Users className="size-3 text-[var(--muted)]" />
-                                    <span className="text-[var(--muted)]">{row.teamName}</span>
-                                </span>
-                            )}
-                        </div>
+                        <span
+                            className={`cursor-text truncate max-w-[200px] sm:max-w-[300px] block font-semibold ${published ? "text-[var(--text)]" : "text-[var(--muted)]"
+                                }`}
+                            onDoubleClick={() => onRenameStart(slug, name)}
+                            title="Double-click to rename"
+                        >
+                            {name}
+                        </span>
                         <span className="text-[10px] text-[var(--muted)] opacity-70">
                             {published ? "Live on web" : "Draft (Private)"}
                         </span>
                     </div>
                 </div>
+            </td>
+
+            {/* Team Column */}
+            <td className="text-center hidden md:table-cell py-3">
+                {row.teamName ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--surface)] text-[var(--muted)]">
+                        <Users className="size-3" />
+                        <span className="truncate max-w-[100px]" title={row.teamName}>{row.teamName}</span>
+                    </span>
+                ) : (
+                    <span className="text-xs text-[var(--muted)] opacity-50">—</span>
+                )}
             </td>
 
             <td className="text-[var(--muted)] text-center hidden sm:table-cell py-3">
@@ -152,19 +145,16 @@ export default function PageRow({
             </td>
 
             <td className="text-center py-3">
-                {/* FIX ZA SKAKANJE: Kontejner fiksne širine (povećan da stane "Unpublish") */}
-                <div className="w-[140px] flex justify-center mx-auto">
-                    <Button
-                        variant={published ? "success" : "neutral"}
-                        size="xs"
-                        onClick={() => onToggleOnline(slug, !published)}
-                        disabled={toggleDisabled}
-                        className="min-w-[80px]"
-                    >
-                        <span className="block group-hover:hidden">{published ? "Online" : "Offline"}</span>
-                        <span className="hidden group-hover:block font-medium">{published ? "Stop" : "Publish"}</span>
-                    </Button>
-                </div>
+                <Button
+                    variant={published ? "success" : "neutral"}
+                    size="xs"
+                    onClick={() => onToggleOnline(slug, !published)}
+                    disabled={toggleDisabled}
+                    className="min-w-[80px]"
+                >
+                    <span className="block group-hover:hidden">{published ? "Online" : "Offline"}</span>
+                    <span className="hidden group-hover:block font-medium">{published ? "Stop" : "Publish"}</span>
+                </Button>
             </td>
 
             {/* ACTIONS COLUMN */}

@@ -40,6 +40,10 @@ export async function createTeamAction(name: string) {
         return { error: "Team name must be at least 3 characters" };
     }
 
+    if (name.length > 32) {
+        return { error: "Team name cannot exceed 32 characters" };
+    }
+
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     if (slug.length < 3) {
         return { error: "Generated slug is too short. Try a different name." };
@@ -172,6 +176,7 @@ export async function renameTeam(teamId: string, newName: string) {
     if (!perm.allowed) return { error: "Insufficient permissions" };
 
     if (!newName || newName.length < 3) return { error: "Name too short" };
+    if (newName.length > 32) return { error: "Name cannot exceed 32 characters" };
 
     try {
         await db.updateTeamName(teamId, newName);

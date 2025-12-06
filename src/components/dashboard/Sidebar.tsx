@@ -27,7 +27,6 @@ type Item = {
   navKey?: string;
 };
 
-import { TeamSwitcher } from "./TeamSwitcher";
 import { type Team } from "@/lib/db";
 
 // Update component signature
@@ -150,9 +149,6 @@ export default function Sidebar({ teams = [], pendingInviteCount = 0 }: { teams?
           </Link>
           <PlanPill plan={String(plan)} />
         </div>
-
-        {/* Context Switcher */}
-        <TeamSwitcher teams={teams} />
       </div>
 
       {/* --- Main Navigation --- */}
@@ -191,7 +187,7 @@ export default function Sidebar({ teams = [], pendingInviteCount = 0 }: { teams?
                     </li>
                     <li>
                       <Link
-                        href={`/dashboard/t/${activeTeam.id}/settings/members`}
+                        href={`/dashboard/t/${activeTeam.id}/settings`}
                         className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all ${
                           pathname?.includes(`/dashboard/t/${activeTeam.id}/settings`)
                             ? 'bg-[var(--surface)] text-[var(--text)] font-medium'
@@ -199,7 +195,7 @@ export default function Sidebar({ teams = [], pendingInviteCount = 0 }: { teams?
                         }`}
                       >
                         <Settings className="size-4" />
-                        <span>{t("Team Settings")}</span>
+                        <span>{t("Settings")}</span>
                       </Link>
                     </li>
                   </ul>

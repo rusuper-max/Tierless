@@ -40,7 +40,9 @@ type MiniCalc = {
     createdAt?: number;
     updatedAt?: number;
     views7d?: number;
+    teamId?: string;
   };
+  teamName?: string;
 };
 
 type ApiRows =
@@ -1358,14 +1360,15 @@ export default function DashboardPageClient({ teamId }: { teamId?: string }) {
                       }}
                     />
                   </th>
-                  <th className="text-[var(--text)]">Name</th>
-                  <th className="text-[var(--text)] text-center">Link</th>
-                  <th className="text-[var(--text)] text-center hidden sm:table-cell">Created</th>
-                  <th className="w-[140px] text-[var(--text)] text-center">Status</th>
-                  <th className="w-[560px] text-[var(--text)] text-center">
+                  <th className="text-[var(--text)] w-[280px]">Name</th>
+                  <th className="text-[var(--text)] text-center hidden md:table-cell w-[140px]">Team</th>
+                  <th className="text-[var(--text)] text-center w-[80px]">Link</th>
+                  <th className="text-[var(--text)] text-center hidden sm:table-cell w-[160px]">Created</th>
+                  <th className="text-[var(--text)] text-center w-[120px]">Status</th>
+                  <th className="text-[var(--text)] text-center">
                     <span className="inline-block">Actions</span>
                   </th>
-                  <th className="w-[110px] text-[var(--text)] text-center hidden lg:table-cell">Reorder (drag)</th>
+                  <th className="text-[var(--text)] text-center hidden lg:table-cell w-[100px]">Reorder (drag)</th>
                 </tr>
               </thead>
               <tbody>

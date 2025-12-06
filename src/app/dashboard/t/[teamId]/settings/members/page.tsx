@@ -28,13 +28,31 @@ export default async function TeamMembersPage({ params }: { params: Promise<{ te
 
     return (
         <div className="container-page max-w-4xl space-y-8 py-8">
-            <div>
+            <header className="border-b border-slate-200 dark:border-slate-800 pb-6">
                 <Link href={`/dashboard/t/${teamId}`} className="text-sm text-cyan-600 dark:text-cyan-400 hover:underline mb-2 block">
                     &larr; Back to Dashboard
                 </Link>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Team Members</h1>
-                <p className="text-slate-500 dark:text-slate-400">Manage who has access to this team.</p>
-            </div>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Team Settings</h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Manage your team&apos;s preferences and members.
+                </p>
+
+                {/* Tabs */}
+                <div className="flex gap-4 mt-6 border-b border-slate-200 dark:border-slate-700">
+                    <Link
+                        href={`/dashboard/t/${teamId}/settings`}
+                        className="pb-3 px-1 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    >
+                        General
+                    </Link>
+                    <Link
+                        href={`/dashboard/t/${teamId}/settings/members`}
+                        className="pb-3 px-1 text-sm font-medium border-b-2 border-cyan-600 text-cyan-600"
+                    >
+                        Members
+                    </Link>
+                </div>
+            </header>
 
             {/* Invite Section */}
             {canManage && (

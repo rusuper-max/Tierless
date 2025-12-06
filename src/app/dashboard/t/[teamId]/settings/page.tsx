@@ -4,8 +4,10 @@ import { getSessionUser } from "@/lib/auth";
 import { requireTeamMember } from "@/lib/permissions";
 import { getUserTeams, getTeamMembers } from "@/lib/db";
 import { Button } from "@/components/ui/Button";
-import { renameTeam, deleteTeam, removeMember } from "@/actions/teams";
+import { deleteTeam, removeMember } from "@/actions/teams";
 import { AlertTriangle, Trash2 } from "lucide-react";
+import { RenameTeamForm } from "./RenameTeamForm";
+import Link from "next/link";
 
 export default async function TeamSettingsPage({ params }: { params: Promise<{ teamId: string }> }) {
     const user = await getSessionUser();
@@ -24,12 +26,6 @@ export default async function TeamSettingsPage({ params }: { params: Promise<{ t
     const role = thisTeam.role;
     const canManage = role === "owner" || role === "admin";
     const isOwner = role === "owner";
-
-    async function handleRename(formData: FormData) {
-        "use server";
-        const newName = formData.get("name") as string;
-        await renameTeam(teamId, newName);
-    }
 
     async function handleDelete() {
         "use server";
@@ -52,6 +48,22 @@ export default async function TeamSettingsPage({ params }: { params: Promise<{ t
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                     Manage your team&apos;s preferences and danger zone.
                 </p>
+
+                {/* Tabs */}
+                <div className="flex gap-4 mt-6 border-b border-slate-200 dark:border-slate-700">
+                    <Link
+                        href={`/dashboard/t/${teamId}/settings`}
+                        className="pb-3 px-1 text-sm font-medium border-b-2 border-cyan-600 text-cyan-600"
+                    >
+                        General
+                    </Link>
+                    <Link
+                        href={`/dashboard/t/${teamId}/settings/members`}
+                        className="pb-3 px-1 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    >
+                        Members
+                    </Link>
+                </div>
             </header>
 
             {/* General Settings */}
@@ -64,30 +76,7 @@ export default async function TeamSettingsPage({ params }: { params: Promise<{ t
                 </div>
 
                 <div className="card p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl">
-                    <form action={handleRename} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                Team Name
-                            </label>
-                            <div className="flex gap-3">
-                                <input
-                                    type="text"
-                                    name="name"
-                                    defaultValue={thisTeam.name}
-                                    disabled={!canManage}
-                                    className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white disabled:opacity-50"
-                                />
-                                {canManage && (
-                                    <Button type="submit" variant="neutral">Save</Button>
-                                )}
-                            </div>
-                        </div>
-                        {!canManage && (
-                            <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                                Only admins and owners can rename the team.
-                            </p>
-                        )}
-                    </form>
+                    <RenameTeamForm teamId={teamId} currentName={thisTeam.name} canManage={canManage} />
                 </div>
             </section>
 
