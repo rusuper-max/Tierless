@@ -10,6 +10,7 @@ export type Calc = {
   meta: {
     name: string;
     slug: string;
+    userId?: string;
     published?: boolean;
     online?: boolean; // legacy alias
     favorite?: boolean;
@@ -105,6 +106,7 @@ function rowToCalc(r: any): Calc {
     meta: {
       name: r.name,
       slug: r.slug,
+      userId: r.user_id || undefined,
       published: !!r.published,
       favorite: !!r.favorite,
       order: typeof r.order === "number" ? r.order : 0,
