@@ -11,6 +11,7 @@ interface AdvancedNodeCardProps {
     sliderValues: Record<string, number>;
     setSliderValues: React.Dispatch<React.SetStateAction<Record<string, number>>>;
     isDark: boolean;
+    readOnly?: boolean;
 }
 
 export function AdvancedNodeCard({
@@ -21,6 +22,7 @@ export function AdvancedNodeCard({
     sliderValues,
     setSliderValues,
     isDark,
+    readOnly = false,
 }: AdvancedNodeCardProps) {
     const isSelected = node.id === selectedId;
     const accent = node.accentColor || COLORS[0].hex;
@@ -33,7 +35,7 @@ export function AdvancedNodeCard({
             tabIndex={0}
             onClick={(e) => { e.stopPropagation(); setSelectedId(node.id); }}
             className={`
-        relative flex flex-col h-full p-5 rounded-2xl border-2 transition-all cursor-pointer group
+        relative flex flex-col h-full p-5 rounded-2xl border-2 transition-all group cursor-pointer
         ${shouldShowColor
                     ? "shadow-lg ring-1 ring-[var(--local-accent)]"
                     : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--muted)] hover:shadow-md"
@@ -166,8 +168,9 @@ export function AdvancedNodeCard({
                             max={node.max ?? 100}
                             step={node.step ?? 1}
                             value={sliderValues[node.id] ?? node.min ?? 0}
-                            onChange={(e) => setSliderValues(prev => ({ ...prev, [node.id]: Number(e.target.value) }))}
-                            className="w-full h-1.5 bg-[var(--surface)] rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
+                            onChange={(e) => !readOnly && setSliderValues(prev => ({ ...prev, [node.id]: Number(e.target.value) }))}
+                            disabled={readOnly}
+                            className={`w-full h-1.5 bg-[var(--surface)] rounded-lg appearance-none accent-[var(--accent)] ${readOnly ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
                         />
                     </div>
                 )

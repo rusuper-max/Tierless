@@ -217,6 +217,8 @@ export default function EditorNavBar({
   onRedo,
   canUndo = false,
   canRedo = false,
+  // Read-only mode for viewers
+  readOnly = false,
 }: {
   calcName?: string;
   showBack?: boolean;
@@ -238,6 +240,8 @@ export default function EditorNavBar({
   onRedo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
+  // Read-only mode
+  readOnly?: boolean;
 }) {
   const [qrOpen, setQrOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -329,6 +333,7 @@ export default function EditorNavBar({
             <nav className="flex items-center text-sm text-[var(--muted)] overflow-hidden whitespace-nowrap">
               <Link
                 href="/"
+                data-allow-readonly
                 className="hidden sm:inline font-semibold bg-clip-text text-transparent hover:opacity-80 transition-opacity"
                 style={{ backgroundImage: BRAND_GRADIENT }}
                 title="Tierless"
@@ -338,6 +343,7 @@ export default function EditorNavBar({
               <ChevronRight className="hidden sm:inline w-4 h-4 mx-1 opacity-40" />
               <Link
                 href="/dashboard"
+                data-allow-readonly
                 className="hidden sm:inline hover:text-[var(--brand-2,#22D3EE)] transition-colors"
               >
                 {t("Dashboard")}
@@ -432,50 +438,52 @@ export default function EditorNavBar({
               <div className="hidden sm:flex items-center gap-0.5 border-r border-[var(--border)] pr-2 mr-1">
                 <button
                   onClick={onUndo}
-                  disabled={!canUndo}
+                  disabled={!canUndo || readOnly}
                   className={`
                     flex items-center justify-center w-7 h-7 rounded-md transition-all
-                    ${canUndo
+                    ${canUndo && !readOnly
                       ? "text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/10 dark:hover:bg-white/5 cursor-pointer"
                       : "text-[var(--muted)]/30 cursor-not-allowed"
                     }
                   `}
-                  title={`${t("Undo")} (Ctrl+Z)`}
-                  data-help="Undo the last change. Keyboard shortcut: Ctrl+Z (Cmd+Z on Mac)"
+                  title={readOnly ? t("View-only mode") : `${t("Undo")} (Ctrl+Z)`}
+                  data-help={readOnly ? "View-only mode" : "Undo the last change. Keyboard shortcut: Ctrl+Z (Cmd+Z on Mac)"}
                 >
                   <Undo2 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={onRedo}
-                  disabled={!canRedo}
+                  disabled={!canRedo || readOnly}
                   className={`
                     flex items-center justify-center w-7 h-7 rounded-md transition-all
-                    ${canRedo
+                    ${canRedo && !readOnly
                       ? "text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/10 dark:hover:bg-white/5 cursor-pointer"
                       : "text-[var(--muted)]/30 cursor-not-allowed"
                     }
                   `}
-                  title={`${t("Redo")} (Ctrl+Shift+Z)`}
-                  data-help="Redo a previously undone change. Keyboard shortcut: Ctrl+Shift+Z (Cmd+Shift+Z on Mac)"
+                  title={readOnly ? t("View-only mode") : `${t("Redo")} (Ctrl+Shift+Z)`}
+                  data-help={readOnly ? "View-only mode" : "Redo a previously undone change. Keyboard shortcut: Ctrl+Shift+Z (Cmd+Shift+Z on Mac)"}
                 >
                   <Redo2 className="w-4 h-4" />
                 </button>
               </div>
             )}
 
-            {/* Save Button (enhanced when dirty) */}
+            {/* Save Button (enhanced when dirty) - disabled in read-only mode */}
             <button
               onClick={onSave}
-              disabled={isSaving}
+              disabled={isSaving || readOnly}
               data-tour="save-button"
               className={`
                 relative flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 cursor-pointer
-                ${isDirty
-                  ? "text-white bg-gradient-to-r from-[#4F46E5] to-[#22D3EE] shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 active:scale-95 focus:ring-cyan-500 animate-pulse-glow"
-                  : "text-[var(--muted)] bg-transparent hover:bg-white/5 dark:hover:bg-white/5 active:scale-95 focus:ring-[var(--brand-2)]"
+                ${readOnly
+                  ? "opacity-50 cursor-not-allowed text-[var(--muted)] bg-transparent"
+                  : isDirty
+                    ? "text-white bg-gradient-to-r from-[#4F46E5] to-[#22D3EE] shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 active:scale-95 focus:ring-cyan-500 animate-pulse-glow"
+                    : "text-[var(--muted)] bg-transparent hover:bg-white/5 dark:hover:bg-white/5 active:scale-95 focus:ring-[var(--brand-2)]"
                 }
               `}
-              data-help="Save your changes to make them permanent. Your calculator auto-saves periodically, but you can manually save anytime."
+              data-help={readOnly ? "You have view-only access to this calculator." : "Save your changes to make them permanent. Your calculator auto-saves periodically, but you can manually save anytime."}
             >
               {isSaving ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -485,15 +493,16 @@ export default function EditorNavBar({
                 <Check className="w-3.5 h-3.5 text-emerald-500" />
               )}
               <span className={isDirty ? "inline" : "hidden xl:inline"}>
-                {isSaving ? t("Saving") : isDirty ? t("Save") : t("Saved")}
+                {readOnly ? t("View Only") : isSaving ? t("Saving") : isDirty ? t("Save") : t("Saved")}
               </span>
             </button>
 
-            {/* Preview Button */}
+            {/* Preview Button - always allowed even in read-only */}
             {onPreview && (
               <button
                 onClick={onPreview}
                 data-tour="preview-button"
+                data-allow-readonly
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/5 dark:hover:bg-white/5 transition-all cursor-pointer"
                 title={t("Preview")}
                 data-help="Preview how your page looks to visitors. See it exactly as they will!"
@@ -505,21 +514,23 @@ export default function EditorNavBar({
 
             {/* Public/Share Split (compact pill style) */}
             <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800/50 p-0.5 rounded-full border border-slate-200 dark:border-slate-700">
-              {/* Main Publish/Draft button */}
+              {/* Main Publish/Draft button - disabled in read-only mode */}
               <button
                 onClick={onTogglePublish}
-                disabled={isPublishing}
+                disabled={isPublishing || readOnly}
                 data-tour="publish-button"
                 className={`
                   flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer
-                  ${isPublished
-                    ? "bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  ${readOnly
+                    ? "opacity-50 cursor-not-allowed text-slate-500"
+                    : isPublished
+                      ? "bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                   }
                   ${isPublishing ? "opacity-50 cursor-not-allowed" : ""}
                 `}
-                title={isPublished ? t("Page is Online") : t("Page is Offline (Draft)")}
-                data-help={isPublished ? "Your page is live! Click to unpublish." : "Click to publish your page and make it publicly accessible."}
+                title={readOnly ? t("View-only mode") : isPublished ? t("Page is Online") : t("Page is Offline (Draft)")}
+                data-help={readOnly ? "You have view-only access." : isPublished ? "Your page is live! Click to unpublish." : "Click to publish your page and make it publicly accessible."}
               >
                 {isPublishing ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -529,7 +540,7 @@ export default function EditorNavBar({
                 <span>{isPublishing ? t("Publishing...") : isPublished ? t("Online") : t("Draft")}</span>
               </button>
 
-              {/* Separator + External Link (only if published) */}
+              {/* Separator + External Link (only if published) - always allowed */}
               {isPublished && (
                 <>
                   <div className="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-1" />
@@ -537,6 +548,7 @@ export default function EditorNavBar({
                     href={fullPublicUrl}
                     target="_blank"
                     rel="noreferrer"
+                    data-allow-readonly
                     className="p-1.5 rounded-full hover:bg-white dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-all"
                     title={t("Open Public Page")}
                     data-help="Open your live page in a new tab."

@@ -738,3 +738,11 @@ html.dark,
   pointer-events: none;
   z-index: -1;
 }
+
+/* =========================================
+   EDITOR READ-ONLY MODE (Viewer Role)
+   Note: Disabling is now handled via proper disabled props in components
+========================================= */
+.editor-read-only {
+  /* Class marker for read-only mode - styling handled by components */
+}

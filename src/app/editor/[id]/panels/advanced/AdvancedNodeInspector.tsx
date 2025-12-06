@@ -20,6 +20,7 @@ interface AdvancedNodeInspectorProps {
     handleRemoveFeature: (id: string, featId: string) => void;
     currency: string;
     nodes: AdvancedNode[];
+    readOnly?: boolean;
 }
 
 export function AdvancedNodeInspector({
@@ -33,6 +34,7 @@ export function AdvancedNodeInspector({
     handleRemoveFeature,
     currency,
     nodes,
+    readOnly = false,
 }: AdvancedNodeInspectorProps) {
     const [showColors, setShowColors] = useState(false);
     const [configuringFeatureId, setConfiguringFeatureId] = useState<string | null>(null);
@@ -97,17 +99,26 @@ export function AdvancedNodeInspector({
                     <div className="h-14 flex items-center justify-between px-4 border-b border-[var(--border)]">
                         <div className="flex items-center gap-2 text-xs font-bold uppercase text-[var(--muted)]">
                             <Settings2 className="w-4 h-4" />
-                            {t("Edit")} {selectedNode.kind}
+                            {readOnly ? t("View") : t("Edit")} {selectedNode.kind}
                         </div>
                         <div className="flex gap-1">
-                            <Button size="icon" variant="ghost" onClick={() => handleRemoveNode(selectedId)} className="text-red-400 hover:text-red-500 hover:bg-red-500/10">
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
+                            {!readOnly && (
+                                <Button size="icon" variant="ghost" onClick={() => handleRemoveNode(selectedId)} className="text-red-400 hover:text-red-500 hover:bg-red-500/10">
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            )}
                             <Button size="icon" variant="ghost" onClick={() => setSelectedId(null)}>
                                 <X className="w-4 h-4" />
                             </Button>
                         </div>
                     </div>
+
+                    {/* Read-Only Notice */}
+                    {readOnly && (
+                        <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-medium text-center">
+                            {t("View only mode - editing disabled")}
+                        </div>
+                    )}
 
                     {/* Inspector Content */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
@@ -125,7 +136,8 @@ export function AdvancedNodeInspector({
                                     value={selectedNode.label || ""}
                                     onChange={(e) => handleUpdateNode(selectedId, { label: e.target.value.slice(0, 30) })}
                                     maxLength={30}
-                                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none text-[var(--text)]"
+                                    disabled={readOnly}
+                                    className={`w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none text-[var(--text)] ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                     placeholder={t("e.g. Pro Plan")}
                                 />
                             </div>
@@ -141,7 +153,8 @@ export function AdvancedNodeInspector({
                                         <select
                                             value={selectedNode.linkedTierId || ""}
                                             onChange={(e) => handleUpdateNode(selectedId, { linkedTierId: e.target.value || null })}
-                                            className="w-full appearance-none bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none text-[var(--text)] pr-8 cursor-pointer hover:bg-[var(--surface)] transition-colors"
+                                            disabled={readOnly}
+                                            className={`w-full appearance-none bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none text-[var(--text)] pr-8 cursor-pointer hover:bg-[var(--surface)] transition-colors ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                         >
                                             <option value="">{t("Global (No Link)")}</option>
                                             {availableTiers.map(tier => (
@@ -170,7 +183,8 @@ export function AdvancedNodeInspector({
                                                 const val = e.target.value;
                                                 handleUpdateNode(selectedId, { price: val === "" ? null : parseFloat(val) });
                                             }}
-                                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] outline-none pl-12 text-[var(--text)]"
+                                            disabled={readOnly}
+                                            className={`w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] outline-none pl-12 text-[var(--text)] ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                         />
                                     </div>
                                 </div>
@@ -187,19 +201,21 @@ export function AdvancedNodeInspector({
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => handleUpdateNode(selectedId, { saleType: "fixed" })}
+                                            disabled={readOnly}
                                             className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition ${(selectedNode.saleType || "fixed") === "fixed"
                                                 ? "bg-cyan-500 text-white"
                                                 : "bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]"
-                                                }`}
+                                                } ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                         >
                                             {t("Fixed Price")}
                                         </button>
                                         <button
                                             onClick={() => handleUpdateNode(selectedId, { saleType: "percentage" })}
+                                            disabled={readOnly}
                                             className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition ${selectedNode.saleType === "percentage"
                                                 ? "bg-cyan-500 text-white"
                                                 : "bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]"
-                                                }`}
+                                                } ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                         >
                                             {t("% Discount")}
                                         </button>
@@ -216,8 +232,9 @@ export function AdvancedNodeInspector({
                                                         const val = e.target.value;
                                                         handleUpdateNode(selectedId, { salePrice: val === "" ? null : parseFloat(val) });
                                                     }}
+                                                    disabled={readOnly}
                                                     placeholder={t("Leave empty for no sale")}
-                                                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none pl-12 text-[var(--text)] placeholder:text-[var(--muted)]/40"
+                                                    className={`w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none pl-12 text-[var(--text)] placeholder:text-[var(--muted)]/40 ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                                 />
                                             </div>
                                             {selectedNode.salePrice != null && selectedNode.price != null && selectedNode.salePrice >= selectedNode.price && (
@@ -241,8 +258,9 @@ export function AdvancedNodeInspector({
                                                             handleUpdateNode(selectedId, { salePercentage: val === "" ? null : parseFloat(val) });
                                                         }
                                                     }}
+                                                    disabled={readOnly}
                                                     placeholder={t("Discount %")}
-                                                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none text-[var(--text)]"
+                                                    className={`w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none text-[var(--text)] ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                                 />
                                                 <span className="absolute right-3 text-[var(--muted)] text-sm pointer-events-none">%</span>
                                             </div>
@@ -263,7 +281,8 @@ export function AdvancedNodeInspector({
                                     value={selectedNode.description || ""}
                                     rows={3}
                                     onChange={(e) => handleUpdateNode(selectedId, { description: e.target.value })}
-                                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] outline-none resize-none text-[var(--text)]"
+                                    disabled={readOnly}
+                                    className={`w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] outline-none resize-none text-[var(--text)] ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                     placeholder={t("Brief description...")}
                                 />
                             </div>
@@ -338,7 +357,8 @@ export function AdvancedNodeInspector({
                                             value={selectedNode.badgeText || ""}
                                             onChange={(e) => handleUpdateNode(selectedId, { badgeText: e.target.value.slice(0, 20) })}
                                             maxLength={20}
-                                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none text-[var(--text)]"
+                                            disabled={readOnly}
+                                            className={`w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none text-[var(--text)] ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                             placeholder={t("e.g. Popular, Best Value")}
                                         />
                                     </div>
@@ -346,6 +366,7 @@ export function AdvancedNodeInspector({
                                         label={t("Highlight as Featured")}
                                         checked={selectedNode.emphasis === "featured"}
                                         onChange={(e) => handleUpdateNode(selectedId, { emphasis: e.target.checked ? "featured" : "normal" })}
+                                        disabled={readOnly}
                                     />
                                 </div>
                             )}
@@ -356,50 +377,56 @@ export function AdvancedNodeInspector({
                             <section className="space-y-3 pt-4 border-t border-[var(--border)]">
                                 <div className="flex items-center justify-between">
                                     <div className="text-[10px] font-bold uppercase text-[var(--muted)]">{t("Features")}</div>
-                                    <Button size="xs" variant="ghost" onClick={() => handleAddFeature(selectedId)}>+ {t("Add")}</Button>
+                                    {!readOnly && <Button size="xs" variant="ghost" onClick={() => handleAddFeature(selectedId)}>+ {t("Add")}</Button>}
                                 </div>
                                 <div className="space-y-2">
                                     {selectedNode.features?.map(f => (
                                         <div key={f.id} className="space-y-2 bg-[var(--surface)]/30 rounded-lg p-2 border border-transparent hover:border-[var(--border)] transition-all">
                                             <div className="flex items-center gap-2 group">
                                                 <button
-                                                    onClick={() => handleUpdateFeature(selectedId, f.id, { highlighted: !f.highlighted })}
+                                                    onClick={() => !readOnly && handleUpdateFeature(selectedId, f.id, { highlighted: !f.highlighted })}
+                                                    disabled={readOnly}
                                                     className={`p-1.5 rounded-md transition-colors ${f.highlighted
                                                         ? "text-amber-500 bg-amber-500/20 ring-1 ring-amber-500/50"
                                                         : "text-[var(--muted)] hover:bg-[var(--surface)]"
-                                                        }`}
-                                                    title={f.highlighted ? "Highlighted" : "Click to highlight"}
+                                                        } ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
+                                                    title={readOnly ? t("View-only mode") : (f.highlighted ? "Highlighted" : "Click to highlight")}
                                                 >
                                                     <Zap className={`w-3.5 h-3.5 ${f.highlighted ? "fill-current" : ""}`} />
                                                 </button>
                                                 <input
                                                     value={f.label}
                                                     onChange={(e) => handleUpdateFeature(selectedId, f.id, { label: e.target.value })}
-                                                    className="flex-1 bg-transparent border-none text-sm outline-none py-1 text-[var(--text)] placeholder:text-[var(--muted)]"
+                                                    disabled={readOnly}
+                                                    className={`flex-1 bg-transparent border-none text-sm outline-none py-1 text-[var(--text)] placeholder:text-[var(--muted)] ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                                     placeholder={t("Feature name...")}
                                                 />
-                                                <button
-                                                    onClick={() => setConfiguringFeatureId(configuringFeatureId === f.id ? null : f.id)}
-                                                    className={`p-1.5 rounded-md transition-colors ${configuringFeatureId === f.id
-                                                        ? "bg-[var(--surface)] text-[var(--text)]"
-                                                        : f.inputType === "text"
-                                                            ? "text-cyan-400 hover:bg-[var(--surface)]"
-                                                            : "text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--text)]"
-                                                        }`}
-                                                    title="Configure Input"
-                                                >
-                                                    <Settings2 className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleRemoveFeature(selectedId, f.id)}
-                                                    className="p-1 text-[var(--muted)] hover:text-red-400 opacity-60 group-hover:opacity-100 transition-opacity"
-                                                >
-                                                    <X className="w-3.5 h-3.5" />
-                                                </button>
+                                                {!readOnly && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => setConfiguringFeatureId(configuringFeatureId === f.id ? null : f.id)}
+                                                            className={`p-1.5 rounded-md transition-colors ${configuringFeatureId === f.id
+                                                                ? "bg-[var(--surface)] text-[var(--text)]"
+                                                                : f.inputType === "text"
+                                                                    ? "text-cyan-400 hover:bg-[var(--surface)]"
+                                                                    : "text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--text)]"
+                                                                }`}
+                                                            title="Configure Input"
+                                                        >
+                                                            <Settings2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRemoveFeature(selectedId, f.id)}
+                                                            className="p-1 text-[var(--muted)] hover:text-red-400 opacity-60 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
 
                                             <AnimatePresence>
-                                                {configuringFeatureId === f.id && (
+                                                {configuringFeatureId === f.id && !readOnly && (
                                                     <motion.div
                                                         initial={{ opacity: 0, height: 0 }}
                                                         animate={{ opacity: 1, height: "auto" }}
@@ -471,7 +498,8 @@ export function AdvancedNodeInspector({
                                             type="number"
                                             value={selectedNode.min ?? 0}
                                             onChange={(e) => handleUpdateNode(selectedId, { min: Number(e.target.value) })}
-                                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-sm outline-none text-[var(--text)] focus:border-cyan-500"
+                                            disabled={readOnly}
+                                            className={`w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-sm outline-none text-[var(--text)] focus:border-cyan-500 ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -480,7 +508,8 @@ export function AdvancedNodeInspector({
                                             type="number"
                                             value={selectedNode.max ?? 100}
                                             onChange={(e) => handleUpdateNode(selectedId, { max: Number(e.target.value) })}
-                                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-sm outline-none text-[var(--text)] focus:border-cyan-500"
+                                            disabled={readOnly}
+                                            className={`w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-sm outline-none text-[var(--text)] focus:border-cyan-500 ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -489,7 +518,8 @@ export function AdvancedNodeInspector({
                                             type="number"
                                             value={selectedNode.step ?? 1}
                                             onChange={(e) => handleUpdateNode(selectedId, { step: Number(e.target.value) })}
-                                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-sm outline-none text-[var(--text)] focus:border-cyan-500"
+                                            disabled={readOnly}
+                                            className={`w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-sm outline-none text-[var(--text)] focus:border-cyan-500 ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                         />
                                     </div>
                                 </div>
@@ -501,7 +531,8 @@ export function AdvancedNodeInspector({
                                             type="number"
                                             value={selectedNode.pricePerStep ?? 0}
                                             onChange={(e) => handleUpdateNode(selectedId, { pricePerStep: Number(e.target.value) })}
-                                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-sm outline-none pl-12 text-[var(--text)] focus:border-cyan-500"
+                                            disabled={readOnly}
+                                            className={`w-full bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-sm outline-none pl-12 text-[var(--text)] focus:border-cyan-500 ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                                         />
                                     </div>
                                 </div>

@@ -2,6 +2,10 @@
 
 import AdvancedPanelInner from "./advanced/AdvancedPanelInner";
 
-export default function AdvancedPanel() {
-  return <AdvancedPanelInner />;
+type Props = {
+  readOnly?: boolean;
+};
+
+export default function AdvancedPanel({ readOnly = false }: Props) {
+  return <AdvancedPanelInner readOnly={readOnly} />;
 }

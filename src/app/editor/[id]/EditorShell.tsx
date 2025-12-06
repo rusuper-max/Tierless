@@ -27,7 +27,13 @@ const AdvancedPanel = dynamic(
   { ssr: false }
 );
 
-type Props = { slug: string; initialCalc: CalcJson };
+type TeamRole = "owner" | "admin" | "editor" | "viewer" | null;
+type Props = {
+  slug: string;
+  initialCalc: CalcJson;
+  readOnly?: boolean;
+  teamRole?: TeamRole;
+};
 
 const BRAND_GRADIENT = "linear-gradient(90deg,var(--brand-1,#4F46E5),var(--brand-2,#22D3EE))";
 
@@ -41,7 +47,7 @@ function normalizeMode(input?: string | null): Mode {
   return "setup";
 }
 
-function EditorContent({ slug, initialCalc }: Props) {
+function EditorContent({ slug, initialCalc, readOnly = false, teamRole }: Props) {
   const { calc, init, isDirty, isSaving, setEditorMode, undo, redo, canUndo, canRedo } = useEditorStore();
   const { isActive: isHelpMode, hasSeenIntro, markIntroAsSeen, enableHelpMode, disableHelpMode, toggleHelpMode } = useHelpMode();
 
@@ -471,7 +477,7 @@ function EditorContent({ slug, initialCalc }: Props) {
   }, []);
 
   return (
-    <main className={`tl-editor min-h-screen ${isHelpMode ? "help-mode-active" : ""}`}>
+    <main className={`tl-editor min-h-screen ${isHelpMode ? "help-mode-active" : ""} ${readOnly ? "editor-read-only" : ""}`}>
       {toast && (
         <div className="fixed bottom-4 right-4 z-[120] card px-3 py-2 text-sm shadow-ambient">
           {toast}
@@ -588,7 +594,19 @@ function EditorContent({ slug, initialCalc }: Props) {
         onRedo={redo}
         canUndo={canUndo()}
         canRedo={canRedo()}
+        // Read-only mode for viewers
+        readOnly={readOnly}
       />
+
+      {/* Read-Only Banner for Viewers - positioned below navbar */}
+      {readOnly && (
+        <div className="sticky top-14 left-0 right-0 z-[55] bg-amber-500 text-amber-950 text-center py-2 px-4 text-sm font-medium shadow-md">
+          <span className="inline-flex items-center gap-2">
+            <Eye className="w-4 h-4" />
+            View Only Mode — You have viewer access to this team calculator. Contact an admin to request edit permissions.
+          </span>
+        </div>
+      )}
 
       <div className="px-4 lg:px-8 py-5">
 
@@ -627,9 +645,9 @@ function EditorContent({ slug, initialCalc }: Props) {
             ) : (
               <section className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)]">
                 {uiMode === "simple" ? (
-                  <SimpleListPanel />
+                  <SimpleListPanel readOnly={readOnly} />
                 ) : (
-                  <AdvancedPanel />
+                  <AdvancedPanel readOnly={readOnly} />
                 )}
               </section>
             )}

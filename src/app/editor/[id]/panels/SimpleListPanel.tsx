@@ -187,7 +187,11 @@ const createId = () => `sec_${Math.random().toString(36).slice(2, 10)}`;
 
 /* ====================================================================== */
 
-export default function SimpleListPanel() {
+type SimpleListPanelProps = {
+  readOnly?: boolean;
+};
+
+export default function SimpleListPanel({ readOnly = false }: SimpleListPanelProps) {
   const { calc, updateCalc, addItem, updateItem, removeItem, moveItem, setMeta } = useEditorStore();
   const { plan } = useAccount();
   const { openUpsell } = useEntitlement({ feature: "ocrImport" });
@@ -197,6 +201,7 @@ export default function SimpleListPanel() {
   const { allowed: ocrAllowed } = canFeature("ocrImport", plan);
   const { allowed: removeBadgeAllowed } = canFeature("removeBadge", plan);
   const { allowed: premiumThemesAllowed } = canFeature("premiumThemes", plan);
+  const { allowed: backgroundVideoAllowed, requiredPlan: backgroundVideoRequiredPlan } = canFeature("backgroundVideo", plan);
 
   const itemLimit = getLimit(plan, "items");
   const maxItems = itemLimit === "unlimited" ? Infinity : itemLimit;
@@ -1048,6 +1053,14 @@ export default function SimpleListPanel() {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
 
+        {/* Read-Only Notice */}
+        {readOnly && (
+          <div className="px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-600 dark:text-amber-400 text-sm font-medium text-center">
+            <Eye className="w-4 h-4 inline-block mr-2" />
+            {t("View only mode - editing disabled")}
+          </div>
+        )}
+
         {/* Hero Card */}
         <div className="relative rounded-2xl overflow-hidden bg-[var(--card)] border border-[var(--border)] shadow-sm group">
           <div className="h-40 bg-[var(--track)] relative flex items-center justify-center">
@@ -1139,27 +1152,30 @@ export default function SimpleListPanel() {
                 {/* Add Item Button */}
                 <button
                   onClick={() => {
+                    if (readOnly) return;
                     if (items.length >= maxItems) {
                       openUpsell({ needs: { items: items.length + 1 }, requiredPlan: "starter" });
                       return;
                     }
                     addItem(t("New item"), 0);
                   }}
+                  disabled={readOnly}
                   data-tour="add-item"
-                  className={`h-9 cursor-default flex items-center gap-2 px-4 text-xs font-bold rounded-lg shadow-sm transition-all shrink-0 ${items.length >= maxItems
+                  className={`h-9 cursor-default flex items-center gap-2 px-4 text-xs font-bold rounded-lg shadow-sm transition-all shrink-0 ${readOnly || items.length >= maxItems
                     ? "bg-[var(--surface)] text-[var(--muted)] opacity-50 cursor-not-allowed"
                     : "bg-[#22D3EE] text-black hover:bg-[#22D3EE]/90 hover:shadow-md"
                     }`}
-                  data-help="Add a new item (product, service, or plan) with a name and price."
+                  data-help={readOnly ? "View-only mode" : "Add a new item (product, service, or plan) with a name and price."}
                 >
                   <Plus className="w-3.5 h-3.5" /> {t("Add Item")}
                 </button>
 
                 {/* Add Section Button */}
                 <button
-                  onClick={handleAddSection}
-                  className="h-9 cursor-default flex items-center gap-2 px-4 rounded-lg border border-dashed border-[var(--border)] text-[var(--muted)] text-xs font-bold hover:text-[var(--text)] hover:border-[#22D3EE] hover:bg-[#22D3EE]/5 transition shrink-0"
-                  data-help="Organize your items by creating sections."
+                  onClick={readOnly ? undefined : handleAddSection}
+                  disabled={readOnly}
+                  className={`h-9 cursor-default flex items-center gap-2 px-4 rounded-lg border border-dashed border-[var(--border)] text-[var(--muted)] text-xs font-bold transition shrink-0 ${readOnly ? "opacity-50 cursor-not-allowed" : "hover:text-[var(--text)] hover:border-[#22D3EE] hover:bg-[#22D3EE]/5"}`}
+                  data-help={readOnly ? "View-only mode" : "Organize your items by creating sections."}
                 >
                   <List className="w-3.5 h-3.5" /> {t("Section")}
                 </button>
@@ -1167,12 +1183,13 @@ export default function SimpleListPanel() {
                 {/* Scan Button with Usage Counter */}
                 <div className="relative ml-auto">
                   <button
-                    onClick={handleOcrClick}
-                    className={`h-9 cursor-default flex items-center gap-2 px-3 rounded-lg border border-[var(--border)] hover:bg-[var(--surface)] transition shrink-0 ${
-                      !ocrAllowed || !ocrCanScan ? "text-[var(--muted)]" : "text-[#22D3EE]"
+                    onClick={readOnly ? undefined : handleOcrClick}
+                    disabled={readOnly}
+                    className={`h-9 cursor-default flex items-center gap-2 px-3 rounded-lg border border-[var(--border)] transition shrink-0 ${
+                      readOnly ? "opacity-50 cursor-not-allowed text-[var(--muted)]" : (!ocrAllowed || !ocrCanScan ? "text-[var(--muted)] hover:bg-[var(--surface)]" : "text-[#22D3EE] hover:bg-[var(--surface)]")
                     }`}
-                    title={ocrDisplayText || t("Scan Document / Menu")}
-                    data-help="Upload a photo of your existing menu and our AI will automatically extract all items!"
+                    title={readOnly ? t("View-only mode") : (ocrDisplayText || t("Scan Document / Menu"))}
+                    data-help={readOnly ? "View-only mode" : "Upload a photo of your existing menu and our AI will automatically extract all items!"}
                   >
                     {!ocrAllowed || !ocrCanScan ? (
                       <Lock className="w-3.5 h-3.5 opacity-70" />
@@ -1194,7 +1211,8 @@ export default function SimpleListPanel() {
               <input
                 value={simpleTitle}
                 onChange={e => setMeta({ simpleTitle: e.target.value })}
-                className="w-full text-2xl font-bold bg-transparent outline-none placeholder-[var(--muted)] text-[var(--text)] border-b border-transparent focus:border-[var(--border)] transition-colors"
+                disabled={readOnly}
+                className={`w-full text-2xl font-bold bg-transparent outline-none placeholder-[var(--muted)] text-[var(--text)] border-b border-transparent focus:border-[var(--border)] transition-colors ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                 placeholder={t("My Awesome Brand")}
                 data-help="The main title of your menu page. This is what customers see first - make it catchy!"
               />
@@ -1330,24 +1348,24 @@ export default function SimpleListPanel() {
                       />
                       <div className="text-xs text-[var(--muted)]">{sectionItems.length} {t("items")}</div>
 
-                      {/* Video URL Input (Pro Only) */}
+                      {/* Video URL Input (Growth+ Only) */}
                       <div className="flex items-center gap-2">
                         <input
                           type="url"
-                          className={`flex-1 text-xs bg-[var(--surface)] border border-[var(--border)] rounded px-2 py-1.5 outline-none focus:border-[#22D3EE] transition-colors placeholder-[var(--muted)] ${plan !== 'pro' ? 'opacity-50' : ''}`}
+                          className={`flex-1 text-xs bg-[var(--surface)] border border-[var(--border)] rounded px-2 py-1.5 outline-none focus:border-[#22D3EE] transition-colors placeholder-[var(--muted)] ${!backgroundVideoAllowed ? 'opacity-50' : ''}`}
                           value={(section as any).videoUrl || ''}
                           onChange={(e) => {
-                            if (plan !== 'pro') {
-                              openUpsell({ requiredPlan: 'pro' });
+                            if (!backgroundVideoAllowed) {
+                              openUpsell({ requiredPlan: backgroundVideoRequiredPlan });
                               return;
                             }
                             const next = simpleSections.map(s => s.id === section.id ? { ...s, videoUrl: e.target.value } as any : s);
                             setMeta({ simpleSections: next });
                           }}
-                          placeholder={t("Video URL (Pro)")}
-                          disabled={plan !== 'pro'}
+                          placeholder={t("Video URL (Growth+)")}
+                          disabled={!backgroundVideoAllowed}
                         />
-                        {plan !== 'pro' && (
+                        {!backgroundVideoAllowed && (
                           <Lock className="w-3 h-3 text-[var(--muted)]" />
                         )}
                       </div>

@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import EditorShell from "./EditorShell";
 import type { CalcJson } from "@/hooks/useEditorStore";
 
+type TeamRole = "owner" | "admin" | "editor" | "viewer" | null;
+
 export default function ClientBoundary({
   slug,
   initialCalc,
@@ -15,6 +17,7 @@ export default function ClientBoundary({
   initialError?: { status: number; error: string } | null;
 }) {
   const [calc, setCalc] = useState<CalcJson | null>(initialCalc);
+  const [teamRole, setTeamRole] = useState<TeamRole>(null);
   const [err, setErr] = useState<{ status: number; error: string } | null>(initialError ?? null);
   const [loading, setLoading] = useState<boolean>(!initialCalc && !initialError);
 
@@ -40,8 +43,10 @@ export default function ClientBoundary({
         }
         const raw = await res.json();
         const got = (raw && (raw.calc || raw)) as CalcJson;
+        const role = raw?._teamRole as TeamRole;
         if (!aborted) {
           setCalc(got);
+          setTeamRole(role);
           setLoading(false);
         }
       } catch (e: any) {
@@ -76,5 +81,8 @@ export default function ClientBoundary({
     );
   }
 
-  return <EditorShell slug={calc.meta?.slug || slug} initialCalc={calc} />;
+  // Viewer role = read-only mode
+  const isReadOnly = teamRole === "viewer";
+
+  return <EditorShell slug={calc.meta?.slug || slug} initialCalc={calc} readOnly={isReadOnly} teamRole={teamRole} />;
 }

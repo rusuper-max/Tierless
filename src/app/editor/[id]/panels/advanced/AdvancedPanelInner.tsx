@@ -84,7 +84,11 @@ function SortableItem({ id, children, disabled }: { id: string, children: React.
 /* -----------------------------------------------------------------------------
    Main Component
 ----------------------------------------------------------------------------- */
-export default function AdvancedPanelInner() {
+type AdvancedPanelInnerProps = {
+  readOnly?: boolean;
+};
+
+export default function AdvancedPanelInner({ readOnly = false }: AdvancedPanelInnerProps) {
   const {
     // Data
     nodes,
@@ -333,19 +337,19 @@ export default function AdvancedPanelInner() {
 
         {/* Center: Add Blocks + Settings */}
         <div className="flex items-center gap-1 bg-[var(--surface)] p-1 rounded-lg border border-[var(--border)]">
-          <Button variant="ghost" size="sm" onClick={() => handleAddNode("tier")} className="gap-2">
+          <Button variant="ghost" size="sm" onClick={() => handleAddNode("tier")} disabled={readOnly} className="gap-2">
             <Layers className="w-3.5 h-3.5" /> {t("Tier")}
           </Button>
           <div className="w-px h-4 bg-[var(--border)]" />
-          <Button variant="ghost" size="sm" onClick={() => handleAddNode("addon")} className="gap-2">
+          <Button variant="ghost" size="sm" onClick={() => handleAddNode("addon")} disabled={readOnly} className="gap-2">
             <ToggleRight className="w-3.5 h-3.5" /> {t("Addon")}
           </Button>
           <div className="w-px h-4 bg-[var(--border)]" />
-          <Button variant="ghost" size="sm" onClick={() => handleAddNode("item")} className="gap-2">
+          <Button variant="ghost" size="sm" onClick={() => handleAddNode("item")} disabled={readOnly} className="gap-2">
             <Calculator className="w-3.5 h-3.5" /> {t("Item")}
           </Button>
           <div className="w-px h-4 bg-[var(--border)]" />
-          <Button variant="ghost" size="sm" onClick={() => handleAddNode("slider")} className="gap-2">
+          <Button variant="ghost" size="sm" onClick={() => handleAddNode("slider")} disabled={readOnly} className="gap-2">
             <SlidersHorizontal className="w-3.5 h-3.5" /> {t("Slider")}
           </Button>
           <div className="w-px h-4 bg-[var(--border)]" />
@@ -353,6 +357,7 @@ export default function AdvancedPanelInner() {
             variant={showSettings ? "solid" : "ghost"}
             size="sm"
             onClick={() => setShowSettings(!showSettings)}
+            disabled={readOnly}
             className="gap-2"
           >
             <Settings2 className="w-3.5 h-3.5" /> {t("Settings")}
@@ -425,7 +430,7 @@ export default function AdvancedPanelInner() {
                     style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
                   >
                     {nodes.map(node => (
-                      <SortableItem key={node.id} id={node.id}>
+                      <SortableItem key={node.id} id={node.id} disabled={readOnly}>
                         <motion.div
                           layoutId={node.id}
                           initial={{ opacity: 0, scale: 0.95 }}
@@ -441,6 +446,7 @@ export default function AdvancedPanelInner() {
                             sliderValues={sliderValues}
                             setSliderValues={setSliderValues}
                             isDark={isDark}
+                            readOnly={readOnly}
                           />
                         </motion.div>
                       </SortableItem>
@@ -473,6 +479,7 @@ export default function AdvancedPanelInner() {
           handleRemoveFeature={handleRemoveFeature}
           currency={currency}
           nodes={nodes}
+          readOnly={readOnly}
         />
 
       </div>

@@ -165,6 +165,7 @@ export async function GET(req: Request, ctx: { params?: { slug?: string } }) {
     // First try personal ownership
     let miniRow = await calcsStore.get(userId, slug);
     let effectiveOwner = userId;
+    let teamRole: string | null = null; // Track user's role if team calc
 
     // If not found, check if it's a team calculator the user has access to
     if (!miniRow) {
@@ -178,6 +179,7 @@ export async function GET(req: Request, ctx: { params?: { slug?: string } }) {
           // User has team access - get the calc using owner's userId
           miniRow = await calcsStore.get(ownership.userId, slug);
           effectiveOwner = ownership.userId;
+          teamRole = perm.role || "viewer"; // Store the user's role
         }
       }
     }
@@ -197,7 +199,7 @@ export async function GET(req: Request, ctx: { params?: { slug?: string } }) {
         id,
       };
 
-      const ready = { ...full, meta: mergedMeta, _version: version };
+      const ready = { ...full, meta: mergedMeta, _version: version, _teamRole: teamRole };
 
       // Ako ranije nije imao id ili je ime promenjeno – upiši nazad u fullStore
       if (!full?.meta?.id || full?.meta?.name !== mergedMeta.name) {
@@ -220,9 +222,10 @@ export async function GET(req: Request, ctx: { params?: { slug?: string } }) {
         blocks: normalizeBlocks(seeded),
         meta: { ...seeded.meta, slug, id: genId() },
         _version: 1, // New record starts at version 1
+        _teamRole: teamRole,
       };
       await fullStore.putFull(effectiveOwner, slug, normalized);
-      
+
       const res = NextResponse.json(normalized);
       res.headers.set("cache-control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
       res.headers.set("ETag", "1");
