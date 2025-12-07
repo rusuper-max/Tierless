@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuthStatus } from "@/hooks/useAuthStatus";
 import TierlessLogo from "@/components/marketing/TierlessLogo";
 import ShinyButton from "@/components/marketing/ShinyButton";
-import { useT } from "@/i18n/t";
+import { useT } from "@/i18n";
 import { useLocale, type Locale } from "@/i18n/LanguageProvider";
 import { Globe, ChevronDown, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";

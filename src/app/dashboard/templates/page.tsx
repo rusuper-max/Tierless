@@ -8,7 +8,7 @@ import {
 import { CALC_TEMPLATES } from "@/data/calcTemplates";
 import UseTemplateButton from "@/components/UseTemplateButton";
 import TemplateMiniPreview from "@/components/TemplateMiniPreview";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 
 // --- Types & Mapping ---
 
@@ -109,6 +109,7 @@ const DEFAULT_META: TemplateMeta = {
 const ITEMS_PER_PAGE = 6;
 
 export default function TemplatesPage() {
+    const t = useT();
     const [activeCategory, setActiveCategory] = useState<CategoryId>("all");
     const [hoveredCard, setHoveredCard] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");

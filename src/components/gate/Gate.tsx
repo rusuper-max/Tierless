@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import { useEntitlement } from "@/hooks/useEntitlement";
 import type { FeatureKey, PlanId, UsageNeeds } from "@/lib/entitlements";
 import { ENTITLEMENTS, PLAN_ORDER } from "@/lib/entitlements";
@@ -34,6 +34,7 @@ export default function Gate({
   children,
   inlineFallback = false,
 }: GateProps) {
+  const t = useT();
   const { loading, plan, limits, suggestPlan, openUpsell } = useEntitlement({
     feature, // može biti undefined — hook to podržava
     needs,

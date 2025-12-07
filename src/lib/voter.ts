@@ -38,8 +38,13 @@ export async function getVoterIdentity(req: Request): Promise<VoterIdentity> {
     }
 
     // If not logged in, check for tl_sid cookie
-    const cookieStore = await cookies();
-    let sid = cookieStore.get(VOTER_COOKIE_NAME)?.value;
+    let sid: string | undefined;
+    try {
+        const cookieStore = await cookies();
+        sid = cookieStore.get(VOTER_COOKIE_NAME)?.value;
+    } catch {
+        sid = undefined;
+    }
 
     // If no cookie, we will generate one later or use a placeholder if this is just a read
     // But for writing, we need a stable ID.

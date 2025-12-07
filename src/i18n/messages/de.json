@@ -5,12 +5,24 @@
     "nav": {
         "pages": "Seiten",
         "templates": "Vorlagen",
+        "stats": "Statistiken",
+        "integrations": "Integrationen",
+        "trash": "Papierkorb",
         "signin": "Anmelden",
         "signup": "Registrieren",
         "account": "Konto",
         "billing": "Abrechnung",
         "signout": "Abmelden",
-        "dashboard": "Dashboard"
+        "signingOut": "Abmelden…",
+        "dashboard": "Dashboard",
+        "faq": "FAQ",
+        "viewPlans": "Pläne ansehen",
+        "teams": "Teams",
+        "settings": "Einstellungen",
+        "user": "Benutzer",
+        "needHelp": "Hilfe benötigt?",
+        "docs": "Dokumentation",
+        "sidebarLabel": "Dashboard-Seitenleiste"
     },
     "hero": {
         "title": "Vergiss die Website. Gib deinen Preisen eine Seite und einen QR-Code",

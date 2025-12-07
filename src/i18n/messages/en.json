@@ -5,12 +5,24 @@
   "nav": {
     "pages": "Pages",
     "templates": "Templates",
+    "stats": "Stats",
+    "integrations": "Integrations",
+    "trash": "Trash",
     "signin": "Log in",
     "signup": "Sign up",
     "account": "Account",
     "billing": "Billing",
     "signout": "Sign out",
-    "dashboard": "Dashboard"
+    "signingOut": "Signing out…",
+    "dashboard": "Dashboard",
+    "faq": "FAQ",
+    "viewPlans": "View Plans",
+    "teams": "Teams",
+    "settings": "Settings",
+    "user": "User",
+    "needHelp": "Need help?",
+    "docs": "Docs",
+    "sidebarLabel": "Dashboard sidebar"
   },
   "hero": {
     "title": "Skip the website. Give your prices a page and QR code",

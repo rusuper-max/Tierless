@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useT } from "@/i18n/t";
+import { useT } from "@/i18n";
 import {
     Utensils,
     Scissors,
@@ -265,8 +265,23 @@ export default function UseCasesGrid() {
                     </p>
                 </div>
 
-                {/* ClickUp-style Grid with visible grid lines */}
-                <div className="relative bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                {/* MOBILE: Simple 2x2 grid of featured cards only */}
+                <div className="md:hidden">
+                    <div className="grid grid-cols-2 gap-3">
+                        {featuredCases.map((data) => (
+                            <div key={data.id} className="aspect-[3/4]">
+                                <FeaturedCard
+                                    data={data}
+                                    isHovered={hovered === data.id}
+                                    onHover={setHovered}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* DESKTOP: ClickUp-style Grid with visible grid lines */}
+                <div className="hidden md:block relative bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div
                         className="grid"
                         style={{

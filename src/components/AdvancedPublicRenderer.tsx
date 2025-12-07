@@ -5,7 +5,7 @@
 import React, { useMemo, useState, useEffect, type CSSProperties } from "react";
 import { Sparkles, ArrowRight, Check, Star, MessageCircle, Send, Mail } from "lucide-react";
 import type { CalcJson } from "@/hooks/useEditorStore";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import { useTheme } from "@/hooks/useTheme";
 import { isTemplateLocked, getLockedStyle, type LockedStyle } from "@/data/calcTemplates";
 
@@ -221,6 +221,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
   // Get site-wide theme instead of page theme
   // Use mounted to prevent hydration mismatch (server renders light, client might have dark)
   const { theme: siteTheme, mounted } = useTheme();
+  const t = useT();
 
   const metaRaw = (calc.meta || {}) as AdvancedPublicMeta & {
     advancedNodes?: AdvancedNode[];

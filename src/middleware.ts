@@ -1,5 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 import { getSlugFromDomain } from "@/lib/domains";
+
+// JWT verification setup - must match auth.ts
+const SESSION_SECRET = process.env.SESSION_SECRET;
+const secretKey = SESSION_SECRET ? new TextEncoder().encode(SESSION_SECRET) : null;
+
+/**
+ * Verify JWT token from cookie.
+ * Returns true if valid, false otherwise.
+ */
+async function verifyToken(token: string | undefined): Promise<boolean> {
+  if (!token || !secretKey) return false;
+  try {
+    await jwtVerify(token, secretKey);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export const config = {
   matcher: [
@@ -45,11 +64,18 @@ export default async function middleware(req: NextRequest) {
       url.pathname.startsWith("/editor");
 
     if (isPrivate) {
-      const hasSession = !!req.cookies.get(SESSION_COOKIE);
-      if (!hasSession) {
+      const sessionCookie = req.cookies.get(SESSION_COOKIE);
+      const isValidSession = await verifyToken(sessionCookie?.value);
+      if (!isValidSession) {
+        // Clear invalid/expired cookie if present
         const to = new URL("/signin", req.url);
         to.searchParams.set("next", path);
-        return NextResponse.redirect(to);
+        const response = NextResponse.redirect(to);
+        if (sessionCookie) {
+          // Delete the invalid cookie
+          response.cookies.delete(SESSION_COOKIE);
+        }
+        return response;
       }
     }
     // For main domain, we just let Next.js handle the routing normally

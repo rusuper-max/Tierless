@@ -83,12 +83,23 @@ export async function ensureUserProfilesTable() {
 }
 
 /**
- * Generiše novi token za dati email, čuva ga u bazi i vraća ga.
+ * Hash a token using SHA256 for secure storage.
+ * We store the hash in the database, not the raw token.
+ */
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+/**
+ * Generiše novi token za dati email, čuva HASH u bazi i vraća RAW token.
  * Token važi 15 minuta.
+ * SECURITY: Only the hash is stored in database. If DB is compromised,
+ * attacker cannot use the hashed tokens directly.
  */
 export async function createAuthToken(email: string) {
   const pool = getPool();
-  const token = crypto.randomUUID(); // Generiše siguran ID
+  const token = crypto.randomUUID(); // Raw token sent to user
+  const tokenHash = hashToken(token); // Hash stored in database
   const expiresAt = Date.now() + 1000 * 60 * 15; // 15 minuta od sada
 
   const client = await pool.connect();
@@ -96,12 +107,12 @@ export async function createAuthToken(email: string) {
     // 1. Brišemo stare tokene za ovaj email da ne pravimo "đubre" u bazi
     await client.query('DELETE FROM auth_tokens WHERE email = $1', [email]);
 
-    // 2. Upisujemo novi token
+    // 2. Upisujemo HASH tokena (ne raw token!)
     await client.query(
       'INSERT INTO auth_tokens (token, email, expires_at) VALUES ($1, $2, $3)',
-      [token, email.toLowerCase(), expiresAt]
+      [tokenHash, email.toLowerCase(), expiresAt]
     );
-    return token;
+    return token; // Vraćamo raw token za email link
   } finally {
     client.release();
   }
@@ -111,15 +122,17 @@ export async function createAuthToken(email: string) {
  * Proverava da li token postoji i da li je validan.
  * Ako je validan, vraća email i BRIŠE token (One-time use).
  * Ako nije validan ili je istekao, vraća null.
+ * SECURITY: We hash the incoming token and compare with stored hash.
  */
 export async function verifyAndConsumeToken(token: string) {
   const pool = getPool();
+  const tokenHash = hashToken(token); // Hash incoming token for lookup
   const client = await pool.connect();
   try {
-    // 1. Pronađi token
+    // 1. Pronađi token po HASH-u
     const res = await client.query(
       'SELECT email, expires_at FROM auth_tokens WHERE token = $1',
-      [token]
+      [tokenHash]
     );
 
     if (res.rows.length === 0) {
@@ -129,7 +142,7 @@ export async function verifyAndConsumeToken(token: string) {
     const { email, expires_at } = res.rows[0];
 
     // 2. ODMAH obriši token (da ne može da se iskoristi dva puta)
-    await client.query('DELETE FROM auth_tokens WHERE token = $1', [token]);
+    await client.query('DELETE FROM auth_tokens WHERE token = $1', [tokenHash]);
 
     // 3. Proveri da li je istekao
     if (Date.now() > Number(expires_at)) {

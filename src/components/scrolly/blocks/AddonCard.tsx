@@ -1,5 +1,7 @@
+"use client";
+
 import React from "react";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import { renderKindIcon } from "./utils";
 import type {
     AdvancedNode,
@@ -52,6 +54,7 @@ export function AddonCard({
     yearlyDiscountPercent,
     compact = false, // Default to false
 }: AddonCardProps) {
+    const t = useT();
     const accent = node.accentColor || "var(--brand-1,#4F46E5)";
     const isGradientAccent = typeof accent === "string" && accent.includes("gradient");
     const gradientColors = isGradientAccent ? accent.match(/#[0-9a-fA-F]{6}/g) : null;

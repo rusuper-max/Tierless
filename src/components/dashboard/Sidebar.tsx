@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAccount } from "@/hooks/useAccount";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 
 type Item = {
   href: string;
@@ -33,6 +33,7 @@ import { type Team } from "@/lib/db";
 export default function Sidebar({ teams = [], pendingInviteCount = 0 }: { teams?: Team[]; pendingInviteCount?: number }) {
   const pathname = usePathname();
   const { plan } = useAccount();
+  const t = useT();
 
   // --- Trash Logic ---
   const [trashCount, setTrashCount] = useState<number>(0);
@@ -97,17 +98,17 @@ export default function Sidebar({ teams = [], pendingInviteCount = 0 }: { teams?
 
   // --- Navigation Config ---
   const NAV: Item[] = useMemo(() => [
-    { href: "/dashboard", label: t("Pages"), icon: LayoutDashboard, exact: true, navKey: "pages" },
-    { href: "/dashboard/stats", label: t("Stats"), icon: BarChart3, navKey: "stats" },
-    { href: "/dashboard/templates", label: t("Templates"), icon: LayoutGrid, navKey: "templates" },
-    { href: "/dashboard/teams", label: t("Teams"), icon: Users, badge: pendingInviteCount, navKey: "teams" },
-    { href: "/dashboard/integrations", label: t("Integrations"), icon: Puzzle, navKey: "integrations" },
-    { href: "/dashboard/trash", label: t("Trash"), icon: Trash2, badge: trashCount, navKey: "trash" },
-  ], [trashCount, pendingInviteCount]);
+    { href: "/dashboard", label: t("nav.pages"), icon: LayoutDashboard, exact: true, navKey: "pages" },
+    { href: "/dashboard/stats", label: t("nav.stats"), icon: BarChart3, navKey: "stats" },
+    { href: "/dashboard/templates", label: t("nav.templates"), icon: LayoutGrid, navKey: "templates" },
+    { href: "/dashboard/teams", label: t("nav.teams"), icon: Users, badge: pendingInviteCount, navKey: "teams" },
+    { href: "/dashboard/integrations", label: t("nav.integrations"), icon: Puzzle, navKey: "integrations" },
+    { href: "/dashboard/trash", label: t("nav.trash"), icon: Trash2, badge: trashCount, navKey: "trash" },
+  ], [t, trashCount, pendingInviteCount]);
 
-  const ACCOUNT_NAV: Item[] = [
-    { href: "/dashboard/account", label: t("Account"), icon: User, navKey: "account" },
-  ];
+  const ACCOUNT_NAV: Item[] = useMemo(() => [
+    { href: "/dashboard/account", label: t("nav.account"), icon: User, navKey: "account" },
+  ], [t]);
 
   const isActive = (it: Item) => {
     if (it.exact) return pathname === it.href;
@@ -121,7 +122,7 @@ export default function Sidebar({ teams = [], pendingInviteCount = 0 }: { teams?
   return (
     <aside
       className="hidden md:flex md:flex-col md:w-64 lg:w-72 h-screen sticky top-0 bg-[var(--sidebar)] border-r border-[var(--border)] text-[var(--text)] transition-colors duration-300"
-      aria-label={t("Dashboard sidebar")}
+      aria-label={t("nav.sidebarLabel")}
     >
       {/* Defined Brand Gradient for SVG Strokes - Referenced by ID */}
       <svg width="0" height="0" className="absolute pointer-events-none" aria-hidden="true">
@@ -144,7 +145,7 @@ export default function Sidebar({ teams = [], pendingInviteCount = 0 }: { teams?
               color: "transparent",
               WebkitTextFillColor: "transparent",
             }}>
-              {t("Dashboard")}
+              {t("nav.dashboard")}
             </h2>
           </Link>
           <PlanPill plan={String(plan)} />
@@ -182,7 +183,7 @@ export default function Sidebar({ teams = [], pendingInviteCount = 0 }: { teams?
                         }`}
                       >
                         <LayoutDashboard className="size-4" />
-                        <span>{t("Pages")}</span>
+                        <span>{t("nav.pages")}</span>
                       </Link>
                     </li>
                     <li>
@@ -195,7 +196,7 @@ export default function Sidebar({ teams = [], pendingInviteCount = 0 }: { teams?
                         }`}
                       >
                         <Settings className="size-4" />
-                        <span>{t("Settings")}</span>
+                        <span>{t("nav.settings")}</span>
                       </Link>
                     </li>
                   </ul>
@@ -208,7 +209,7 @@ export default function Sidebar({ teams = [], pendingInviteCount = 0 }: { teams?
         {/* Secondary Group (Separator) */}
         <div className="pt-4 border-t border-[var(--border)]">
           <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] opacity-60">
-            {t("User")}
+            {t("nav.user")}
           </div>
           <ul className="space-y-1">
             {ACCOUNT_NAV.map((it) => (
@@ -223,9 +224,9 @@ export default function Sidebar({ teams = [], pendingInviteCount = 0 }: { teams?
       {/* --- Footer --- */}
       <div className="p-5 text-xs border-t border-[var(--border)]">
         <div className="flex items-center gap-1 text-[var(--muted)]">
-          <span>{t("Need help?")}</span>
+          <span>{t("nav.needHelp")}</span>
           <Link href="/help" className="hover:underline" style={{ color: "var(--brand-1)" }}>
-            {t("Docs")}
+            {t("nav.docs")}
           </Link>
         </div>
       </div>
@@ -358,6 +359,38 @@ function PlanPill({ plan }: { plan: string }) {
             Dev
           </b>
         </span>
+      </div>
+    );
+  }
+
+  // Special treatment for Agency plan (purple/pink gradient)
+  if (key === "agency") {
+    return (
+      <div className="relative inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] bg-[var(--card)]">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-full"
+          style={{
+            padding: 1.5,
+            background: "linear-gradient(90deg, #8B5CF6, #EC4899)",
+            WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+            WebkitMaskComposite: "xor" as any,
+            maskComposite: "exclude",
+          }}
+        />
+        <span className="inline-block h-2 w-2 rounded-full" style={{ background: "linear-gradient(90deg, #8B5CF6, #EC4899)" }} aria-hidden />
+        <b
+          className="uppercase font-medium tracking-wider"
+          style={{
+            backgroundImage: "linear-gradient(90deg, #8B5CF6, #EC4899)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+            WebkitTextFillColor: "transparent",
+          }}
+        >
+          Agency
+        </b>
       </div>
     );
   }

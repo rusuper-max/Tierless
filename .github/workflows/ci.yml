@@ -34,7 +34,6 @@ jobs:
           # Minimal env for build
           DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
           SESSION_SECRET: "build_check_secret_min_32_characters_long"
-          IRON_SESSION_PASSWORD: "build_check_password_min_32_characters"
           SKIP_ENV_VALIDATION: "1"
 
   # ============================================

@@ -5,12 +5,24 @@
     "nav": {
         "pages": "Páginas",
         "templates": "Plantillas",
+        "stats": "Estadísticas",
+        "integrations": "Integraciones",
+        "trash": "Papelera",
         "signin": "Iniciar sesión",
         "signup": "Registrarse",
         "account": "Cuenta",
         "billing": "Facturación",
         "signout": "Cerrar sesión",
-        "dashboard": "Panel"
+        "signingOut": "Cerrando sesión…",
+        "dashboard": "Panel",
+        "faq": "Preguntas frecuentes",
+        "viewPlans": "Ver planes",
+        "teams": "Equipos",
+        "settings": "Configuración",
+        "user": "Usuario",
+        "needHelp": "¿Necesitas ayuda?",
+        "docs": "Documentación",
+        "sidebarLabel": "Barra lateral del panel"
     },
     "hero": {
         "title": "Salta el sitio web. Dale a tus precios una página y un código QR",

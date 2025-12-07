@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useId } from "react";
 import { X, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 
 const BRAND_GRADIENT = "linear-gradient(135deg, #4F46E5 0%, #22D3EE 100%)";
 
@@ -30,6 +30,7 @@ type Props = {
 };
 
 export default function GuidedTour({ steps, onComplete, onSkip }: Props) {
+    const t = useT();
     const [currentStep, setCurrentStep] = useState(0);
     const [tooltipPosition, setTooltipPosition] = useState(getCenteredPosition);
     const [targetRect, setTargetRect] = useState<DOMRect | null>(null);

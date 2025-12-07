@@ -1,7 +1,7 @@
 // src/app/dashboard/integrations/page.tsx
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
-import { t } from "@/i18n";
+import { t } from "@/i18n/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { getCountryDisplay } from "@/lib/countries";
 import ShareQrModal from "@/components/share/ShareQrModal";
 
 // --- Public URL helper: /p/{id}-{slug} (fallback /p/slug) -------
@@ -630,16 +631,33 @@ export default function StatsPage() {
             <Globe className="w-4 h-4" /> Top Countries
           </h4>
           <div className="space-y-3">
-            {(stats?.countries || []).slice(0, 5).map((c, idx) => (
-              <div key={`${c.name}-${idx}`} className="flex items-center justify-between">
-                <span className="text-sm text-[var(--text)]">{c.name}</span>
-                <span className="text-sm font-mono font-medium text-[var(--muted)]">{c.count}</span>
-              </div>
-            ))}
+            {(stats?.countries || []).slice(0, 5).map((c, idx) => {
+              const { flag, name } = getCountryDisplay(c.name);
+              const isUnknown = c.name === "Unknown" || !c.name;
+              return (
+                <div key={`${c.name}-${idx}`} className="flex items-center justify-between group">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg leading-none" title={c.name}>{flag}</span>
+                    <span className={cn(
+                      "text-sm",
+                      isUnknown ? "text-[var(--muted)] italic" : "text-[var(--text)]"
+                    )}>
+                      {name}
+                    </span>
+                  </div>
+                  <span className="text-sm font-mono font-medium text-[var(--muted)] tabular-nums">{c.count}</span>
+                </div>
+              );
+            })}
             {(!stats?.countries || stats.countries.length === 0) && (
               <p className="text-xs text-[var(--muted)] italic">No data yet</p>
             )}
           </div>
+          {stats?.countries && stats.countries.some(c => c.name === "Unknown") && (
+            <p className="text-[10px] text-[var(--muted)] mt-3 pt-3 border-t border-[var(--border)] border-dashed">
+              "Unknown" = VPN/proxy users or localhost testing
+            </p>
+          )}
         </section>
       </div>
 

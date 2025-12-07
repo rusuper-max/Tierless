@@ -1,6 +1,8 @@
 // src/lib/analytics.ts
 // Client-side analytics tracking for PublicRenderer
 
+import { hasConsent } from "@/lib/consent";
+
 type EventType =
   | "page_view"
   | "page_exit"
@@ -194,6 +196,9 @@ export function trackEvent(
 ) {
   if (typeof window === "undefined") return;
 
+  // Respect user's cookie consent choice
+  if (!hasConsent()) return;
+
   // Prevent memory leak if events aren't being sent
   if (eventQueue.length >= MAX_QUEUE_SIZE) {
     // Drop oldest events to make room
@@ -302,6 +307,8 @@ export function initAnalytics() {
 
   // Track page exit with time and scroll depth
   window.addEventListener("beforeunload", () => {
+    // Respect user's cookie consent choice
+    if (!hasConsent()) return;
     if (currentPageId) {
       const timeOnPage = getTimeOnPage();
       const events = [

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser, getUserPlan } from "@/lib/auth";
-import { t } from "@/i18n";
+import { t } from "@/i18n/server";
 import { getUserTeams, ensureTeamsTables, canUserCreateTeam, getInvitesForEmail } from "@/lib/db";
 import { getLimit } from "@/lib/entitlements";
 import { Users, Mail, ArrowRight, Crown, Shield, Pencil, Eye } from "lucide-react";

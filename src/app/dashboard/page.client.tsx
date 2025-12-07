@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAccount } from "@/hooks/useAccount";
 import { ENTITLEMENTS, type PlanId } from "@/lib/entitlements";
-import { t } from "@/i18n";
 import { GripVertical, Share2, Star } from "lucide-react";
 import ShareQrModal from "@/components/share/ShareQrModal";
 

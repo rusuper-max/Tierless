@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import { track } from "@/lib/track";
 import { ReactNode } from "react";
 
@@ -14,6 +14,7 @@ type Props = {
 };
 
 export default function UseTemplateButton({ slug, name, className, children, style }: Props) {
+    const t = useT();
     const href = `/editor/new?template=${encodeURIComponent(slug)}&name=${encodeURIComponent(name)}`;
 
     return (

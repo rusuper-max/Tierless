@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState, useRef } from "react";
 import { ChevronLeft, Eye, Sparkles, X, XCircle, Undo2, Redo2 } from "lucide-react";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import { useEditorStore, type CalcJson, type Mode } from "@/hooks/useEditorStore";
 import { useUndoRedoShortcuts } from "@/hooks/useUndoRedoShortcuts";
 import { HelpModeProvider, useHelpMode } from "@/hooks/useHelpMode";
@@ -51,6 +51,7 @@ function normalizeMode(input?: string | null): Mode {
 }
 
 function EditorContent({ slug, initialCalc, readOnly = false, teamRole }: Props) {
+  const t = useT();
   const { calc, init, isDirty, isSaving, setEditorMode, undo, redo, canUndo, canRedo } = useEditorStore();
   const { isActive: isHelpMode, hasSeenIntro, markIntroAsSeen, enableHelpMode, disableHelpMode, toggleHelpMode } = useHelpMode();
 
@@ -229,8 +230,8 @@ function EditorContent({ slug, initialCalc, readOnly = false, teamRole }: Props)
       } catch { }
       if (!r.ok) {
         console.error("SAVE /api/calculators ->", txt);
-        setToast(t("Save failed"));
-        setTimeout(() => setToast(null), 1300);
+        setToast(t("Save failed - please try again"));
+        setTimeout(() => setToast(null), 4000); // Show longer so user sees it
         return;
       }
       if (json) (useEditorStore as any).setState({ calc: json as CalcJson });
@@ -259,7 +260,8 @@ function EditorContent({ slug, initialCalc, readOnly = false, teamRole }: Props)
 
   /* ---------------- Autosave Logic ---------------- */
   useEffect(() => {
-    const autosaveEnabled = calc?.meta?.autosaveEnabled ?? false;
+    // Default to TRUE for better UX - users expect changes to be saved
+    const autosaveEnabled = calc?.meta?.autosaveEnabled ?? true;
     const autosaveInterval = (calc?.meta?.autosaveInterval ?? 60) * 1000;
 
     if (!autosaveEnabled || !calc) {
@@ -305,9 +307,16 @@ function EditorContent({ slug, initialCalc, readOnly = false, teamRole }: Props)
             isDirty: false,
             lastSaved: Date.now(),
           });
+        } else {
+          // Notify user of autosave failure
+          setToast(t("Autosave failed - click Save to retry"));
+          setTimeout(() => setToast(null), 4000);
         }
       } catch (error) {
         console.error("Autosave failed:", error);
+        // Notify user of autosave failure
+        setToast(t("Autosave failed - click Save to retry"));
+        setTimeout(() => setToast(null), 4000);
       } finally {
         (useEditorStore as any).setState({ isSaving: false });
       }
@@ -325,28 +334,39 @@ function EditorContent({ slug, initialCalc, readOnly = false, teamRole }: Props)
   /* ---------------- Save on page leave (beforeunload) ---------------- */
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Only save if autosave is enabled and there are unsaved changes
-      if (!calc?.meta?.autosaveEnabled || !isDirty || isSaving) {
+      // If no unsaved changes, do nothing
+      if (!isDirty || isSaving || !calc) {
         return;
       }
 
-      try {
-        const currentState = JSON.stringify(calc);
+      // Show browser warning for unsaved changes
+      e.preventDefault();
+      e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
 
-        // Use fetch with keepalive for reliable save on page unload
-        fetch(`/api/calculators/${encodeURIComponent(slug)}`, {
-          method: "PUT",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: currentState,
-          keepalive: true, // Ensures request completes even if page unloads
-        }).catch(err => {
-          console.error("Save on unload failed:", err);
-        });
-      } catch (error) {
-        console.error("Save on unload failed:", error);
+      // Attempt to save with keepalive (works even if user leaves)
+      // Default autosave to true for better UX
+      const autosaveEnabled = calc?.meta?.autosaveEnabled ?? true;
+      if (autosaveEnabled) {
+        try {
+          const currentState = JSON.stringify(calc);
+
+          // Use fetch with keepalive for reliable save on page unload
+          fetch(`/api/calculators/${encodeURIComponent(slug)}`, {
+            method: "PUT",
+            headers: {
+              "content-type": "application/json",
+            },
+            body: currentState,
+            keepalive: true, // Ensures request completes even if page unloads
+          }).catch(err => {
+            console.error("Save on unload failed:", err);
+          });
+        } catch (error) {
+          console.error("Save on unload failed:", error);
+        }
       }
+
+      return e.returnValue;
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -804,6 +824,7 @@ function ModeTile({
 
 // Wrap EditorContent with HelpModeProvider
 export default function EditorShell(props: Props) {
+  const t = useT();
   return (
     <HelpModeProvider>
       <EditorContent {...props} />

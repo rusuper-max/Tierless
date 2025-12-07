@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { X, HelpCircle, MousePointer, Sparkles } from "lucide-react";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 
 const BRAND_GRADIENT = "linear-gradient(135deg, #4F46E5 0%, #22D3EE 100%)";
 
@@ -15,6 +15,7 @@ type Props = {
 };
 
 export default function HelpModeIntro({ onClose, onDontShowAgain, onActivate, onStartTour }: Props) {
+    const t = useT();
     const [dontShow, setDontShow] = useState(false);
 
     const handleGotIt = () => {

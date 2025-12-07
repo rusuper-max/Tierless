@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
 import { getInvitesForEmailWithDetails } from "@/lib/db";
-import { t } from "@/i18n";
+import { t } from "@/i18n/server";
 import { Mail, Users, Clock, CheckCircle, XCircle } from "lucide-react";
 import { acceptInviteAction, declineInviteAction } from "@/actions/teams";
 import { revalidatePath } from "next/cache";

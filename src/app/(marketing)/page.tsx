@@ -25,7 +25,7 @@ import UseCasesGrid from "@/components/landing/UseCasesGrid";
 import StartHeader from "@/components/marketing/MarketingHeader";
 import Footer from "@/components/marketing/Footer";
 import GlowButton from "@/components/ui/GlowButton";
-import { useT } from "@/i18n/t";
+import { useT } from "@/i18n";
 
 // --- UTIL ---
 function cn(...classes: (string | undefined | null | false)[]) {

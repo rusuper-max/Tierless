@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 import {
   LayoutDashboard,
   BarChart3,
@@ -11,28 +12,30 @@ import {
   Settings,
   Trash2,
   User,
-  AlertTriangle,
 } from "lucide-react";
-import { t } from "@/i18n";
-
-const NAV = [
-  { href: "/dashboard", label: t("Pages"), icon: LayoutDashboard, exact: true },
-  { href: "/dashboard/stats", label: t("Stats"), icon: BarChart3 },
-  { href: "/dashboard/templates", label: t("Templates"), icon: LayoutGrid },
-  { href: "/dashboard/integrations", label: t("Integrations"), icon: Puzzle },
-  { href: "/dashboard/settings", label: t("Danger Zone"), icon: AlertTriangle },
-  { href: "/dashboard/trash", label: t("Trash"), icon: Trash2 },
-  { href: "/dashboard/account", label: t("Account"), icon: User },
-];
+import { useT } from "@/i18n";
 
 export default function DashboardTabs() {
+  const t = useT();
   const pathname = usePathname();
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname.startsWith(href);
+  const navItems = useMemo(
+    () => [
+      { href: "/dashboard", label: t("nav.pages"), icon: LayoutDashboard, exact: true },
+      { href: "/dashboard/stats", label: t("nav.stats"), icon: BarChart3 },
+      { href: "/dashboard/templates", label: t("nav.templates"), icon: LayoutGrid },
+      { href: "/dashboard/integrations", label: t("nav.integrations"), icon: Puzzle },
+      { href: "/dashboard/settings", label: t("nav.settings"), icon: Settings },
+      { href: "/dashboard/trash", label: t("nav.trash"), icon: Trash2 },
+      { href: "/dashboard/account", label: t("nav.account"), icon: User },
+    ],
+    [t]
+  );
 
   return (
     <nav className="flex overflow-x-auto gap-2 px-4 py-3">
-      {NAV.map((item) => {
+      {navItems.map((item) => {
         const active = isActive(item.href, item.exact);
         const Icon = item.icon;
         return (

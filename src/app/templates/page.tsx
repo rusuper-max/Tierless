@@ -1,7 +1,7 @@
 import React from "react";
 import { CALC_TEMPLATES } from "@/data/calcTemplates";
 import UseTemplateButton from "@/components/UseTemplateButton";
-import { t } from "@/i18n";
+import { t } from "@/i18n/server";
 
 export const runtime = "nodejs";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import { useEntitlement } from "@/hooks/useEntitlement";
 import type { UsageNeeds, PlanId } from "@/lib/entitlements";
 import { PLAN_ORDER } from "@/lib/entitlements";
@@ -32,6 +32,7 @@ export default function PublishGuardButton({
   planOverride = null,
   deeplinkInterval = "yearly",
 }: Props) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const { success, info, error } = useToast();
 

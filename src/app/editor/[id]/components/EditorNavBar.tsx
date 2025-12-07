@@ -24,7 +24,7 @@ import {
   Redo2,
 } from "lucide-react";
 import { useMemo, useRef, useState, useEffect } from "react";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import { useAccount } from "@/hooks/useAccount";
 import ThemeToggle from "@/components/nav/ThemeToggle";
 import { Button } from "@/components/ui/Button";
@@ -70,6 +70,42 @@ function PlanBadge({ plan }: { plan: PlanId }) {
             Dev
           </b>
         </span>
+      </div>
+    );
+  }
+
+  // Agency plan: Purple gradient style (between Pro and Growth)
+  if (key === "agency") {
+    return (
+      <div className="hidden xl:inline-flex relative items-center gap-2 rounded-full px-2.5 py-1 text-[11px] bg-[var(--card)]">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-full"
+          style={{
+            padding: 1.5,
+            background: "linear-gradient(90deg, #8B5CF6, #EC4899)",
+            WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+            WebkitMaskComposite: "xor" as any,
+            maskComposite: "exclude",
+          }}
+        />
+        <span
+          className="inline-block h-2 w-2 rounded-full"
+          style={{ background: "linear-gradient(90deg, #8B5CF6, #EC4899)" }}
+          aria-hidden
+        />
+        <b
+          className="uppercase font-medium tracking-wider"
+          style={{
+            backgroundImage: "linear-gradient(90deg, #8B5CF6, #EC4899)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+            WebkitTextFillColor: "transparent",
+          }}
+        >
+          Agency
+        </b>
       </div>
     );
   }
@@ -143,6 +179,7 @@ function PlanBadge({ plan }: { plan: PlanId }) {
 // STATUS INDICATOR
 // ============================================================================
 function StatusIndicator({ isDirty, isSaving }: { isDirty?: boolean; isSaving?: boolean }) {
+  const t = useT();
   if (isSaving) {
     return (
       <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-xs font-medium">
@@ -243,6 +280,7 @@ export default function EditorNavBar({
   // Read-only mode
   readOnly?: boolean;
 }) {
+  const t = useT();
   const [qrOpen, setQrOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hasClickedGuide, setHasClickedGuide] = useState(true); // default true to avoid flash

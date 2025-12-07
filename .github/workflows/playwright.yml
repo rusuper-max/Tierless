@@ -35,7 +35,6 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           # Session secret for auth tests
           SESSION_SECRET: "test_secret_min_32_chars_for_ci_testing_only"
-          IRON_SESSION_PASSWORD: "test_password_min_32_chars_for_ci_testing"
       
       - uses: actions/upload-artifact@v4
         if: always()

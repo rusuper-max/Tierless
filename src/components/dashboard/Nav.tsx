@@ -6,6 +6,7 @@ import { useState } from "react";
 import ThemeToggle from "@/components/nav/ThemeToggle";
 import TierlessLogo from "@/components/marketing/TierlessLogo";
 import { MoreVertical, HelpCircle, CreditCard, LogOut } from "lucide-react";
+import { useT } from "@/i18n";
 
 import { Button } from "@/components/ui/Button";
 
@@ -18,6 +19,7 @@ const LOGOUT_REDIRECT = "/signin";
 
 export default function Nav() {
   const router = useRouter();
+  const t = useT();
   const [loggingOut, setLoggingOut] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -75,23 +77,23 @@ export default function Nav() {
             <svg className="w-4 h-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span className="font-medium text-[var(--text)]">Dashboard</span>
+            <span className="font-medium text-[var(--text)]">{t("nav.dashboard")}</span>
           </div>
         </div>
 
         {/* --- DESKTOP NAVIGATION - All buttons visible --- */}
         <nav className="hidden sm:flex items-center gap-2 sm:gap-3 flex-wrap justify-end text-[color:var(--text)]">
           <ThemeToggle />
-          <Button size="xs" variant="brand" href="/faq" title="Open docs / FAQ">FAQ</Button>
-          <Button size="xs" variant="brand" href="/start" title="Manage your plan">View Plans</Button>
+          <Button size="xs" variant="brand" href="/faq" title={t("nav.faq")}>{t("nav.faq")}</Button>
+          <Button size="xs" variant="brand" href="/start" title={t("nav.viewPlans")}>{t("nav.viewPlans")}</Button>
           <Button
             size="xs"
             variant="danger"
             onClick={onLogout}
             disabled={loggingOut}
-            title="Sign out"
+            title={t("nav.signout")}
           >
-            {loggingOut ? "Signing out…" : "Logout"}
+            {loggingOut ? t("nav.signingOut") : t("nav.signout")}
           </Button>
         </nav>
 
@@ -126,7 +128,7 @@ export default function Nav() {
                     className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-[var(--surface)] transition-colors"
                   >
                     <HelpCircle className="size-4" />
-                    <span>FAQ</span>
+                    <span>{t("nav.faq")}</span>
                   </Link>
 
                   <Link
@@ -135,7 +137,7 @@ export default function Nav() {
                     className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-[var(--surface)] transition-colors"
                   >
                     <CreditCard className="size-4" />
-                    <span>View Plans</span>
+                    <span>{t("nav.viewPlans")}</span>
                   </Link>
 
                   <div className="h-px bg-[var(--border)] my-2" />
@@ -149,7 +151,7 @@ export default function Nav() {
                     className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-[var(--surface)] transition-colors text-red-600 dark:text-red-400 w-full text-left"
                   >
                     <LogOut className="size-4" />
-                    <span>{loggingOut ? "Signing out…" : "Logout"}</span>
+                    <span>{loggingOut ? t("nav.signingOut") : t("nav.signout")}</span>
                   </button>
                 </div>
               </>

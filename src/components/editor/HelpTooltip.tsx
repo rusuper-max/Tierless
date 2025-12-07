@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X, Info } from "lucide-react";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 
 const BRAND_GRADIENT = "linear-gradient(135deg, #4F46E5 0%, #22D3EE 100%)";
 
@@ -13,6 +13,7 @@ type Props = {
 };
 
 export default function HelpTooltip({ content, onClose }: Props) {
+    const t = useT();
     // Close on ESC
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {

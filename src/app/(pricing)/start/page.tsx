@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import StartHeader from "@/components/StartHeader";
 
 // --- TYPES & CONFIG ---
@@ -47,12 +47,12 @@ type Plan = {
   };
 };
 
-const PLANS: Plan[] = [
+const PLAN_BLUEPRINTS: Plan[] = [
   {
     id: "free",
     name: "Free",
     monthly: 0,
-    description: t("Perfect for testing the editor."),
+    description: "Perfect for testing the editor.",
     theme: {
       text: "text-slate-500 dark:text-slate-400",
       borderHover: "group-hover:border-slate-300 dark:group-hover:border-slate-600",
@@ -65,17 +65,17 @@ const PLANS: Plan[] = [
     },
     chips: [],
     perks: [
-      t("1 Published Page"),
-      t("15 Items limit"),
-      t("Tierless badge (Required)")
+      "1 Published Page",
+      "15 Items limit",
+      "Tierless badge (Required)"
     ],
-    caps: [t("Standard themes only"), t("2MB image limit"), t("No analytics")],
+    caps: ["Standard themes only", "2MB image limit", "No analytics"],
   },
   {
     id: "starter",
     name: "Starter",
     monthly: 9.99,
-    description: t("Perfect for freelancers and side projects."),
+    description: "Perfect for freelancers and side projects.",
     theme: {
       text: "text-teal-600 dark:text-teal-400",
       borderHover: "group-hover:border-teal-400 dark:group-hover:border-teal-500",
@@ -89,25 +89,25 @@ const PLANS: Plan[] = [
     chips: [
       {
         id: "ocr-import",
-        label: t("AI Scan"),
-        description: t("Scan your existing menu photo instantly."),
+        label: "AI Scan",
+        description: "Scan your existing menu photo instantly.",
         href: "/faq#ai-scan",
       },
     ],
     perks: [
-      t("AI Menu Scan (OCR)"),
-      t("Premium Fonts & Colors"),
-      t("Analytics Dashboard"),
-      t("50 Items limit"),
+      "AI Menu Scan (OCR)",
+      "Premium Fonts & Colors",
+      "Analytics Dashboard",
+      "50 Items limit",
     ],
-    caps: [t("3 Published Pages"), t("5MB image limit"), t("Badge visible")],
+    caps: ["3 Published Pages", "5MB image limit", "Badge visible"],
   },
   {
     id: "growth",
     name: "Growth",
     monthly: 19.99,
-    badge: t("Best Value"),
-    description: t("For small businesses and professionals."),
+    badge: "Best Value",
+    description: "For small businesses and professionals.",
     theme: {
       text: "text-rose-600 dark:text-rose-400",
       borderHover: "group-hover:border-rose-400 dark:group-hover:border-rose-500",
@@ -121,25 +121,25 @@ const PLANS: Plan[] = [
     chips: [
       {
         id: "embed",
-        label: t("Website Embed"),
-        description: t("Display your menu directly on your restaurant website."),
+        label: "Website Embed",
+        description: "Display your menu directly on your restaurant website.",
         href: "/faq#embed",
       },
     ],
     perks: [
-      t("Website Integration (Embed)"),
-      t("Remove Tierless badge"),
-      t("All Premium Themes"),
-      t("Background Video"),
-      t("100 Items limit"),
+      "Website Integration (Embed)",
+      "Remove Tierless badge",
+      "All Premium Themes",
+      "Background Video",
+      "100 Items limit",
     ],
-    caps: [t("5 Published Pages"), t("8MB image limit"), t("Priority Support")],
+    caps: ["5 Published Pages", "8MB image limit", "Priority Support"],
   },
   {
     id: "pro",
     name: "Pro",
     monthly: 39.99,
-    description: t("For serious businesses."),
+    description: "For serious businesses.",
     theme: {
       text: "text-purple-600 dark:text-purple-400",
       borderHover: "group-hover:border-purple-400 dark:group-hover:border-purple-500",
@@ -153,25 +153,25 @@ const PLANS: Plan[] = [
     chips: [
       {
         id: "domain",
-        label: t("Custom Domain"),
-        description: t("Use menu.your-restaurant.com"),
+        label: "Custom Domain",
+        description: "Use menu.your-restaurant.com",
         href: "/faq#custom-domain",
       },
     ],
     perks: [
-      t("3 Custom Domains (SSL)"),
-      t("Unlimited Items"),
-      t("10 Published Pages"),
-      t("Team Collaboration (15 seats)"),
-      t("Webhooks & API"),
+      "3 Custom Domains (SSL)",
+      "Unlimited Items",
+      "10 Published Pages",
+      "Team Collaboration (15 seats)",
+      "Webhooks & API",
     ],
-    caps: [t("50 Total Pages"), t("15MB image limit"), t("Dedicated Support")],
+    caps: ["50 Total Pages", "15MB image limit", "Dedicated Support"],
   },
   {
     id: "agency",
     name: "Agency",
     monthly: 99.99,
-    description: t("For agencies managing multiple clients."),
+    description: "For agencies managing multiple clients.",
     theme: {
       text: "text-indigo-600 dark:text-indigo-400",
       borderHover: "group-hover:border-indigo-400 dark:group-hover:border-indigo-500",
@@ -185,21 +185,38 @@ const PLANS: Plan[] = [
     chips: [
       {
         id: "client-workspaces",
-        label: t("Client Workspaces"),
-        description: t("Create up to 25 separate client workspaces with their own teams."),
+        label: "Client Workspaces",
+        description: "Create up to 25 separate client workspaces with their own teams.",
         href: "/faq#client-workspaces",
       },
     ],
     perks: [
-      t("10 Custom Domains (SSL)"),
-      t("50 Published Pages"),
-      t("25 Client Workspaces"),
-      t("50 Team Seats"),
-      t("Priority Support"),
+      "10 Custom Domains (SSL)",
+      "50 Published Pages",
+      "25 Client Workspaces",
+      "50 Team Seats",
+      "Priority Support",
     ],
-    caps: [t("200 Total Pages"), t("25MB image limit"), t("White Label")],
+    caps: ["200 Total Pages", "25MB image limit", "White Label"],
   },
 ];
+
+type TranslateFn = (key: string, vars?: Record<string, string | number>) => string;
+
+function localizePlans(base: Plan[], translate: TranslateFn): Plan[] {
+  return base.map((plan) => ({
+    ...plan,
+    name: translate(plan.name),
+    description: plan.description ? translate(plan.description) : plan.description,
+    perks: plan.perks.map((perk) => translate(perk)),
+    caps: plan.caps.map((cap) => translate(cap)),
+    chips: plan.chips?.map((chip) => ({
+      ...chip,
+      label: translate(chip.label),
+      description: translate(chip.description),
+    })),
+  }));
+}
 
 const PLAN_RANK: Record<PlanId, number> = {
   free: 0,
@@ -227,6 +244,7 @@ type InfoModalState = {
 
 // --- MAIN PAGE ---
 export default function StartPage() {
+  const t = useT();
   const [interval, setInterval] = useState<Interval>("monthly");
   const [authed, setAuthed] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<PlanId | null>(null);
@@ -235,6 +253,7 @@ export default function StartPage() {
     title: "",
     body: "",
   });
+  const plans = useMemo(() => localizePlans(PLAN_BLUEPRINTS, t), [t]);
 
   useEffect(() => {
     const fetchAuth = async () => {
@@ -384,7 +403,7 @@ export default function StartPage() {
 
           {/* Plans Grid - items-stretch ensures equal height */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 xl:gap-4 items-stretch relative z-10">
-            {PLANS.map((plan) => (
+            {plans.map((plan) => (
               <PlanCard
                 key={plan.id}
                 plan={plan}
@@ -428,6 +447,7 @@ function PlanCard({
   onPlanChange: (id: PlanId) => Promise<boolean | "redirect">;
 }) {
   const [busy, setBusy] = useState(false);
+  const t = useT();
   const isCurrent = authed && currentPlan === plan.id;
   const { effMonthlyLabel, perYearLabel } = getYearlyPricing(plan.monthly);
   
@@ -608,6 +628,7 @@ function PlanCard({
 }
 
 function InfoModal({ state, onClose }: { state: InfoModalState; onClose: () => void }) {
+  const t = useT();
   if (!state.open) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

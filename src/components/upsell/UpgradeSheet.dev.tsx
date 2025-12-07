@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import type { PlanId, UsageNeeds } from "@/lib/entitlements";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -25,6 +25,7 @@ function summarizeNeeds(n?: Partial<UsageNeeds>) {
 }
 
 export default function UpgradeSheetDev() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [requiredPlan, setRequiredPlan] = useState<PlanId>("pro");
   const [entrypoint, setEntrypoint] = useState<string>("limits");

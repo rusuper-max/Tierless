@@ -2,7 +2,7 @@
 "use client";
 
 import { Zap, Sparkles, X } from "lucide-react";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 
 const BRAND_GRADIENT = "linear-gradient(135deg, #4F46E5 0%, #22D3EE 100%)";
 
@@ -12,6 +12,7 @@ type Props = {
 };
 
 export default function OnboardingIntro({ onStartTour, onSkip }: Props) {
+    const t = useT();
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-3 sm:p-4 animate-in fade-in duration-200 overflow-y-auto">
             <div className="w-full max-w-2xl rounded-2xl sm:rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-2xl overflow-hidden my-auto">

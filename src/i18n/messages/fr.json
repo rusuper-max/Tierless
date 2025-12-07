@@ -5,12 +5,24 @@
     "nav": {
         "pages": "Pages",
         "templates": "Modèles",
+        "stats": "Statistiques",
+        "integrations": "Intégrations",
+        "trash": "Corbeille",
         "signin": "Se connecter",
         "signup": "S'inscrire",
         "account": "Compte",
         "billing": "Facturation",
         "signout": "Se déconnecter",
-        "dashboard": "Tableau de bord"
+        "signingOut": "Déconnexion…",
+        "dashboard": "Tableau de bord",
+        "faq": "FAQ",
+        "viewPlans": "Voir les plans",
+        "teams": "Équipes",
+        "settings": "Paramètres",
+        "user": "Utilisateur",
+        "needHelp": "Besoin d'aide?",
+        "docs": "Documentation",
+        "sidebarLabel": "Barre latérale du tableau de bord"
     },
     "hero": {
         "title": "Sautez le site web. Donnez à vos prix une page et un code QR",

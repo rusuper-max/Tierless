@@ -1,5 +1,7 @@
+"use client";
+
 import React from "react";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import { renderKindIcon } from "./utils";
 import type {
     AdvancedNode,
@@ -92,6 +94,7 @@ export function TierCard({
     selectedAddonIds,
     toggleAddon,
 }: TierCardProps) {
+    const t = useT();
     const accent = node.accentColor || "var(--brand-1,#4F46E5)";
     const isGradientAccent = typeof accent === "string" && accent.includes("gradient");
 

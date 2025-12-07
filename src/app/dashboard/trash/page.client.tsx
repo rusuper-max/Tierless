@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState, Fragment } from "react";
 import Link from "next/link";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import { GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import AnimatedCheckbox from "@/components/ui/AnimatedCheckbox";
@@ -79,6 +79,7 @@ function ConfirmForever({
   onConfirm: () => void;
   busy?: boolean;
 }) {
+  const t = useT();
   const [typed, setTyped] = useState("");
   useEffect(() => {
     if (open) setTyped("");
@@ -119,6 +120,7 @@ function ConfirmForever({
 /* Page                                                                */
 /* ------------------------------------------------------------------ */
 export default function TrashPageClient() {
+  const t = useT();
   const [rows, setRows] = useState<TrashRow[]>([]);
   const [ttl, setTtl] = useState<number>(30);
   const [loading, setLoading] = useState(true);

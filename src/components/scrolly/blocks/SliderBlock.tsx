@@ -1,5 +1,7 @@
+"use client";
+
 import React from "react";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import { renderKindIcon } from "./utils";
 import type {
     AdvancedNode,
@@ -25,6 +27,7 @@ export function SliderBlock({
     sliderSolidColor,
     compact = false, // Default to false
 }: SliderBlockProps) {
+    const t = useT();
     const min = typeof node.min === "number" ? node.min : 0;
     const max = typeof node.max === "number" ? node.max : 100;
     const step = typeof node.step === "number" && node.step > 0 ? node.step : 1;

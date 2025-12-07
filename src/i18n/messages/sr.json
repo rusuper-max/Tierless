@@ -5,12 +5,24 @@
     "nav": {
         "pages": "Stranice",
         "templates": "Šabloni",
+        "stats": "Statistika",
+        "integrations": "Integracije",
+        "trash": "Korpa",
         "signin": "Prijavi se",
         "signup": "Registruj se",
         "account": "Nalog",
         "billing": "Plaćanje",
         "signout": "Odjavi se",
-        "dashboard": "Kontrolna tabla"
+        "signingOut": "Odjavljivanje…",
+        "dashboard": "Kontrolna tabla",
+        "faq": "Česta pitanja",
+        "viewPlans": "Pogledaj planove",
+        "teams": "Timovi",
+        "settings": "Podešavanja",
+        "user": "Korisnik",
+        "needHelp": "Treba ti pomoć?",
+        "docs": "Dokumentacija",
+        "sidebarLabel": "Bočna traka kontrolne table"
     },
     "hero": {
         "title": "Preskoči sajt. Daj svojim cenama stranicu i QR kod",

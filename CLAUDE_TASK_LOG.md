@@ -396,5 +396,119 @@ Dodati Lemon Squeezy variant IDs za Agency plan:
 
 ---
 
-<!-- Novi unosi će biti dodati ovde -->
+### [2025-12-06] - SEO Implementation (Launch Ready)
+- **Status:** Completed
+- **Fajlovi:**
+  - `public/robots.txt` (novi fajl)
+  - `src/app/sitemap.ts` (novi fajl)
+  - `src/app/layout.tsx` (ažuriran)
+- **Opis:**
 
+**robots.txt:**
+- Dozvoljava crawling svih javnih stranica
+- Blokira privatne rute: /api/, /dashboard/, /editor/, /settings/, /signin, /signup
+- Uključuje link ka sitemap.xml
+
+**Dynamic Sitemap (sitemap.ts):**
+- Statičke stranice: /, /start, /faq, /privacy, /terms, /examples
+- Dinamičke stranice: sve published calculators iz baze
+- Prioriteti: homepage (1.0), pricing (0.9), examples (0.8), FAQ (0.7), legal (0.3), calcs (0.6)
+- Limiti na 1000 published calcs
+
+**Metadata u layout.tsx:**
+- Title template: "%s | Tierless"
+- Description: SEO optimizovan tekst
+- Keywords: price list, digital menu, restaurant menu, QR code menu, etc.
+- Open Graph tags (type, locale, siteName, images)
+- Twitter Card tags (summary_large_image)
+- Robots directives (index, follow, googleBot config)
+
+**JSON-LD Structured Data:**
+- @type: SoftwareApplication
+- applicationCategory: BusinessApplication
+- AggregateOffer: $0 - $99.99 (5 plans)
+- Organization creator sa logo i sameAs
+- featureList: Digital menu creation, QR code generation, etc.
+
+**Napomena:**
+- Potrebno kreirati `public/og-image.png` (1200x630px) za social sharing
+
+---
+
+### [2025-12-06] - Security Fixes & GDPR Compliance
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/lib/db.ts` (SHA256 token hashing)
+  - `src/middleware.ts` (JWT verification)
+  - `src/lib/consent.ts` (novi fajl)
+  - `src/components/CookieConsent.tsx` (novi fajl)
+  - `src/lib/analytics.ts` (consent check)
+  - `src/app/(marketing)/cookies/page.tsx` (novi fajl)
+  - `src/app/layout.tsx` (CookieConsent component)
+  - `src/app/sitemap.ts` (import fix + cookies page)
+- **Opis:**
+
+**Security Fixes:**
+1. **Auth Token Hashing:**
+   - Magic link tokens sada koriste SHA256 hash za storage
+   - Raw token se šalje korisniku, hash se čuva u bazi
+   - Ako je baza kompromitovana, tokeni su beskorisni
+
+2. **Middleware JWT Verification:**
+   - Middleware sada VERIFIKUJE JWT token, ne samo proverava da li postoji
+   - Koristi `jwtVerify` iz jose biblioteke
+   - Invalid/expired cookies se automatski brišu
+
+3. **Dead Code Cleanup - iron-session:**
+   - Obrisani: `src/lib/session.ts`, `src/app/api/signup/route.ts`, `src/app/api/_session-selftest/`
+   - Uklonjen `iron-session` iz package.json
+   - Uklonjen `IRON_SESSION_PASSWORD` iz CI workflows
+
+**GDPR Cookie Consent:**
+1. **Consent System:**
+   - `src/lib/consent.ts` - getter/setter za localStorage
+   - `src/components/CookieConsent.tsx` - banner na dnu stranice
+   - Accept/Decline dugmad, link ka /cookies
+
+2. **Analytics Integration:**
+   - `trackEvent()` sada proverava `hasConsent()` pre slanja
+   - `beforeunload` handler takođe proverava consent
+   - Bez consenta = nema tracking
+
+3. **Cookie Policy Page:**
+   - Nova `/cookies` stranica sa detaljnim objašnjenjem
+   - Lista essential i analytics cookies
+   - Objašnjenje šta se trackuje i kako upravljati
+
+**Dead Code Cleanup:**
+- Obrisano 17 nekorišćenih fajlova:
+  - `src/lib/founder.ts`, `src/lib/logoutClient.ts`, `src/lib/ocrLimits.ts`
+  - `src/actions/profile.ts`
+  - `src/components/dashboard/SettingsForm.tsx`, `src/components/dashboard/TeamSwitcher.tsx`
+  - `src/components/landing/GlowingGrid.tsx`, `src/components/landing/InteractiveGridPattern.tsx`
+  - `src/components/landing/MorphingParticles.tsx`, `src/components/landing/TiltCard.tsx`
+  - `src/components/landing/ParticlesBackground.tsx`
+  - `src/components/scrolly/*` (4 fajla), `src/components/ui/FlowingLines.tsx`
+- Uklonjene nekorišćene dependencies:
+  - `@react-three/drei`, `@react-three/fiber`, `@types/three`, `three`
+  - `@vercel/blob`, `simplex-noise`
+- Očišćeni prazni direktorijumi
+
+**Bugfix:**
+- `src/app/sitemap.ts` - Ispravljeno `@/lib/pool` → `@/lib/db`
+- Dodata validacija za `updated_at` timestamp
+
+---
+
+### [2025-12-06] - Global i18n wiring • Phase 1
+- **Status:** Completed
+- **Fajlovi:** `src/i18n/{client.ts,dictionaries.ts,index.ts,LanguageProvider.tsx,locales.ts,server.ts,translate.ts}`, `src/app/layout.tsx`, `src/components/{AdvancedPublicRenderer.tsx,UseTemplateButton.tsx,share/ShareQrModal.tsx,dashboard/Sidebar.tsx,dashboard/DashboardTabs.tsx,gate/Gate.tsx,publish/PublishGuardButton.tsx,upsell/UpgradeSheet.dev.tsx,editor/HelpModeIntro.tsx,editor/HelpTooltip.tsx,editor/GuidedTour.tsx,editor/OnboardingIntro.tsx,scrolly/blocks/{TierCard.tsx,AddonCard.tsx,SliderBlock.tsx}}`, `src/app/(pricing)/start/page.tsx`, `src/app/dashboard/{page.client.tsx,trash/page.client.tsx}`, `src/app/editor/[id]/{EditorShell.tsx,components/EditorNavBar.tsx,panels/SimpleListPanel.tsx}`, `src/i18n/messages/en.json`
+- **Opis:**
+  - Dodata kompletna i18n infrastruktura (shared dictionaries, translate helper, server-side `t` sa cookie podrškom i client `useT` hook). `LanguageProvider` sada prihvata `initialLocale`, sinhronizuje localStorage/cookie (`tierless_locale`) i ažurira `<html lang>`.
+  - `app/layout` čita željeni jezik iz Vercel cookies API-ja i prosleđuje ga LanguageProvider-u kako bi SSR odmah renderovao pravi jezik.
+  - Refaktorisani svi klijentski moduli koji su koristili stari `t` helper (Sidebar, DashboardTabs, Gate, QR modal, Publish guard, Upgrade sheet, editor shell/paneli, Tier/Addon/Slider blokovi itd.) da koriste `useT`, čime UI reaguje na promenu jezika bez reloada.
+  - Pricing start stranica dobila lokalizacijski pipeline: planovi se sada zasnivaju na blueprint-u i prolaze kroz `localizePlans`, a `PlanCard`/UI koristi `useT`. Ovo čuva postojeći dizajn dugmadi i omogućava kasniji unos prevoda u JSON fajlove.
+  - Dodati novi nav ključevi (`nav.stats`, `nav.integrations`, `nav.trash`) u `en.json` i sređene helper funkcije kako bi fallback logika vraćala english ključ tek ako ne postoji prevod.
+  - Dodat cookie persistence znači da izbor jezika iz marketing header-a ili Account settingsa sada “zakucava” ceo sajt (landing + dashboard) čak i pri reloadu/rutiranju.
+
+<!-- Novi unosi će biti dodati ovde -->

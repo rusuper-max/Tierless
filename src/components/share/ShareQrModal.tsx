@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 
 type Props = {
   open: boolean;
@@ -12,6 +12,7 @@ type Props = {
 };
 
 export default function ShareQrModal({ open, url, onClose, loading }: Props) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
 
   const qrUrl = useMemo(() => {

@@ -3,7 +3,7 @@
 import React, { useState, useRef, ChangeEvent, useEffect, useMemo } from "react";
 import ReactDOM from "react-dom";
 import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle, LayoutList, ScrollText, Share2, Globe, Percent, MessageCircle, ArrowUp, ArrowDown, Pencil, Send } from "lucide-react";
-import { t } from "@/i18n";
+import { useT } from "@/i18n";
 import { useEditorStore, type SimpleSection, type BrandTheme } from "@/hooks/useEditorStore";
 import { useAccount } from "@/hooks/useAccount";
 import { ENTITLEMENTS, canFeature, getLimit } from "@/lib/entitlements";
@@ -192,6 +192,7 @@ type SimpleListPanelProps = {
 };
 
 export default function SimpleListPanel({ readOnly = false }: SimpleListPanelProps) {
+  const t = useT();
   const { calc, updateCalc, addItem, updateItem, removeItem, moveItem, setMeta } = useEditorStore();
   const { plan } = useAccount();
   const { openUpsell } = useEntitlement({ feature: "ocrImport" });
