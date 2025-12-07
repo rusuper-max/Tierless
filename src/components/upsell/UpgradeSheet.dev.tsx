@@ -57,20 +57,37 @@ export default function UpgradeSheetDev() {
   const needPairs = useMemo(() => summarizeNeeds(needs), [needs]);
 
   async function handleUpgrade() {
+    // SECURITY FIX: Redirect to Lemon Squeezy checkout instead of directly changing plan
+    // The plan will be updated via webhook after successful payment
     try {
       setLoading(true);
-      const res = await fetch("/api/me/plan", {
-        method: "PUT",
+
+      // Build the plan key for checkout (e.g., "starter_yearly", "growth_monthly")
+      const planKey = `${requiredPlan}_${interval}`;
+
+      const res = await fetch("/api/integrations/lemon/checkout", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: requiredPlan }),
+        body: JSON.stringify({
+          planKey,
+          successUrl: `${window.location.origin}/dashboard?upgraded=true`,
+        }),
       });
 
       if (!res.ok) {
-        throw new Error("upgrade_failed");
+        const errorData = await res.json().catch(() => ({}));
+        console.error("Checkout creation failed:", errorData);
+        throw new Error(errorData?.error || "checkout_failed");
       }
 
-      window.dispatchEvent(new Event("TL_AUTH_CHANGED"));
-      setOpen(false);
+      const data = await res.json();
+
+      if (data.url) {
+        // Redirect to Lemon Squeezy checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
     } catch (e) {
       console.error("Upgrade failed:", e);
       // Fallback: redirect to pricing page

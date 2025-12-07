@@ -1,9 +1,9 @@
 // src/app/api/me/plan/route.ts
 import { NextResponse } from "next/server";
 import type { Plan } from "@/lib/auth";
-import { coercePlan, getUserIdFromRequest, getUserPlan } from "@/lib/auth";
+import { coercePlan, getUserIdFromRequest, getUserPlan, isFounder } from "@/lib/auth";
 import { getPool } from "@/lib/db";
-import { getPublishedCap, type PlanId } from "@/lib/entitlements";
+import { getPublishedCap, PLAN_RANK, type PlanId } from "@/lib/entitlements";
 import * as calcsStore from "@/lib/calcsStore";
 
 export const runtime = "nodejs";
@@ -101,6 +101,28 @@ export async function PUT(req: Request) {
 
   const hasPlanChange = typeof payload.plan === "string";
   const nextPlan = hasPlanChange ? (coercePlan(payload.plan as Plan) as PlanId) : currentPlan;
+
+  // SECURITY: Block direct upgrades via API - upgrades must go through Lemon Squeezy webhook
+  // Only allow: downgrades to lower plans, or founders setting tierless
+  if (hasPlanChange) {
+    const currentRank = PLAN_RANK[currentPlan] ?? 0;
+    const nextRank = PLAN_RANK[nextPlan] ?? 0;
+    const isUpgrade = nextRank > currentRank;
+
+    if (isUpgrade) {
+      // Only founders can set tierless directly
+      if (nextPlan === "tierless" && isFounder(id)) {
+        // Allow founder upgrade
+      } else {
+        // Block upgrade attempt - must go through payment
+        console.warn(`[api/me/plan] Blocked direct upgrade attempt: ${id} tried ${currentPlan} -> ${nextPlan}`);
+        return NextResponse.json(
+          { error: "Upgrades must go through checkout. Please use the upgrade button." },
+          { status: 403 }
+        );
+      }
+    }
+  }
 
   const renewsOnProvided = Object.prototype.hasOwnProperty.call(payload, "renewsOn");
   let renewsOn: Date | null | undefined = undefined;
