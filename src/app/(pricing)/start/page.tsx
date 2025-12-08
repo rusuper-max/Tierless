@@ -449,6 +449,18 @@ function PlanCard({
   const [busy, setBusy] = useState(false);
   const t = useT();
   const isCurrent = authed && currentPlan === plan.id;
+
+  // Reset busy state when user returns to page (e.g., browser back button from checkout)
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible" && busy) {
+        setBusy(false);
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [busy]);
+
   const { effMonthlyLabel, perYearLabel } = getYearlyPricing(plan.monthly);
   
   // Highlight "Best Value" plans (Growth) visually

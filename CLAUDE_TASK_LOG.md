@@ -511,4 +511,199 @@ Dodati Lemon Squeezy variant IDs za Agency plan:
   - Dodati novi nav ključevi (`nav.stats`, `nav.integrations`, `nav.trash`) u `en.json` i sređene helper funkcije kako bi fallback logika vraćala english ključ tek ako ne postoji prevod.
   - Dodat cookie persistence znači da izbor jezika iz marketing header-a ili Account settingsa sada “zakucava” ceo sajt (landing + dashboard) čak i pri reloadu/rutiranju.
 
+### [2025-12-07] - Analytics UI Improvements
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/lib/countries.ts` (novi fajl)
+  - `src/app/dashboard/stats/page.tsx`
+- **Opis:**
+
+**Country Flags in Analytics:**
+- Novi helper fajl `countries.ts` sa:
+  - `countryCodeToFlag()` - konvertuje country code u flag emoji (SR → 🇷🇸)
+  - `getCountryName()` - vraća puno ime države (SR → Serbia)
+  - `getCountryDisplay()` - kombinuje flag i ime
+- Stats page sada prikazuje zastavice pored država
+- "Unknown" prikazuje 🌐 emoji sa objašnjenjem (VPN/proxy/localhost)
+
+---
+
+### [2025-12-07] - Mobile UseCasesGrid Fix
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/components/landing/UseCasesGrid.tsx`
+- **Opis:**
+
+**Problem:**
+- "One tool, endless possibilities" sekcija je bila broken na mobilnom
+- 8x6 grid sa apsolutnim pozicioniranjem nije radio na manjim ekranima
+
+**Rešenje:**
+- Dodat responsive dizajn sa odvojenim layoutima:
+  - Mobile (`md:hidden`): Jednostavan 2x2 grid sa 4 featured kartice
+  - Desktop (`hidden md:block`): Originalni ClickUp-style 8x6 grid
+
+---
+
+### [2025-12-07] - Editor Save Bug Investigation & Fixes
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/app/editor/[id]/EditorShell.tsx`
+- **Opis:**
+
+**Pronađeni problemi (Reddit claim "nije mi sačuvalo stranicu"):**
+1. Autosave je bio DISABLED po defaultu (`autosaveEnabled ?? false`)
+2. `beforeunload` handler nije prikazivao browser warning
+3. Save failure toast trajao samo 1.3 sekunde
+4. Autosave failures nisu imale notifikaciju
+
+**Implementirana rešenja:**
+1. **Autosave default TRUE** - Korisnici očekuju da se promene čuvaju
+2. **Browser warning** - `e.preventDefault()` + `e.returnValue` za "Leave site?" dijalog
+3. **Duži toast** - 4 sekunde umesto 1.3 za save failures
+4. **Autosave failure notification** - Toast poruka "Autosave failed - click Save to retry"
+
+---
+
+### [2025-12-07] - Agency Plan Badge (Sidebar & EditorNavBar)
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/components/dashboard/Sidebar.tsx`
+  - `src/app/editor/[id]/components/EditorNavBar.tsx`
+- **Opis:**
+
+**Problem:**
+- Agency plan nije imao svoj badge dizajn
+- Fallback na "Free" stil zbog `configs[key] || configs.free`
+
+**Rešenje:**
+- Dodat purple/pink gradient stil za Agency plan u oba fajla:
+  - Gradient: `linear-gradient(90deg, #8B5CF6, #EC4899)`
+  - Isti stil kao Pro (gradient border) ali sa drugačijim bojama
+
+**Plan Display Summary:**
+| Plan | Stil |
+|------|------|
+| free | Slate (gray) |
+| starter | Emerald (green) |
+| growth | Rose (pink) |
+| pro | Indigo→Cyan gradient |
+| agency | Purple→Pink gradient |
+| tierless | Spinning gradient + "Dev" label |
+
+---
+
+### [2025-12-07] - 🚨 CRITICAL: Payment Bypass Security Fix
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/components/upsell/UpgradeSheet.dev.tsx`
+  - `src/app/api/me/plan/route.ts`
+- **Opis:**
+
+**KRITIČAN BUG PRONAĐEN:**
+- UpgradeSheet je direktno pozivao `PUT /api/me/plan` sa novim planom
+- Korisnici su mogli dobiti plaćene planove (Starter, Growth, Pro) BESPLATNO!
+- Primer: Free user klikne "Upgrade to Starter" → odmah dobije Starter bez plaćanja
+
+**Fix 1 - UpgradeSheet.dev.tsx:**
+```tsx
+// BEFORE (BUG):
+fetch("/api/me/plan", { body: { plan: requiredPlan } })
+
+// AFTER (FIX):
+fetch("/api/integrations/lemon/checkout", { planKey: "starter_yearly" })
+→ Redirect na Lemon Squeezy checkout
+→ Webhook menja plan NAKON uspešnog plaćanja
+```
+
+**Fix 2 - /api/me/plan endpoint:**
+- Dodata provera `PLAN_RANK` za upgrade detection
+- Blokira direktne upgrade-ove sa 403 greškom
+- Dozvoljeno: downgrades, founder tierless, webhook updates
+
+**Dozvoljeno:**
+- ✅ Downgrade (Pro → Free)
+- ✅ Founders postavljaju tierless direktno
+- ✅ Webhook postavlja bilo koji plan
+
+**Blokirano:**
+- ❌ Direktan upgrade preko API-ja bez plaćanja
+
+---
+
+### [2025-12-07] - Subscription Downgrade Flow Fix
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/app/api/me/plan/route.ts`
+- **Opis:**
+
+**Problem:**
+- Kad korisnik otkaže pretplatu, plan se odmah menjao na Free
+- Korisnik je platio do određenog datuma, treba da ima pristup do tada
+
+**Rešenje:**
+- Ako korisnik ima aktivnu pretplatu (`renews_on > now`):
+  - Plan OSTAJE isti
+  - `cancelAtPeriodEnd = true`
+  - Poruka: "Your plan will change to free on [datum]"
+- Webhook `subscription_expired` tada menja plan na Free
+
+**Flow za otkazivanje:**
+1. User klikne "Cancel subscription"
+2. API: `cancelAtPeriodEnd = true`, plan ostaje (npr. Pro)
+3. User koristi Pro do isteka pretplate
+4. Lemon webhook `subscription_expired` → plan = Free
+
+**API Response:**
+```json
+{
+  "ok": true,
+  "plan": "pro",           // Ostaje Pro!
+  "renewsOn": "2025-01-15",
+  "cancelAtPeriodEnd": true,
+  "message": "Your plan will change to free on 1/15/2025"
+}
+```
+
+---
+
+### [2025-12-07] - Lemon Squeezy Customer Portal Integration
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/app/api/integrations/lemon/portal/route.ts` (novi fajl)
+  - `src/app/dashboard/account/page.tsx`
+  - `src/i18n/messages/dashboard-{en,sr,es,fr,de,ru}.json`
+- **Opis:**
+
+**Nova API ruta za Customer Portal:**
+- `GET /api/integrations/lemon/portal` - vraća Lemon Squeezy customer portal URL
+- Preuzima `lemon_customer_id` iz `user_profiles` tabele
+- Poziva Lemon API: `/v1/customers/{id}/customer-portal`
+- Fallback na `/start` ako korisnik nema Lemon customer ID
+
+**Account Page Improvements:**
+- "Manage Subscription" dugme sada koristi portal za plaćene korisnike
+- Free korisnici i dalje idu na `/start` (pricing page)
+- Dodat loading state sa Loader2 animacijom
+- Dodata nova i18n ključeva:
+  - `account.billing.upgradePlan` - "Upgrade Plan"
+  - `account.billing.loading` - "Loading..."
+  - `account.billing.planNames.agency` - "Agency"
+
+**Subscription Management Flow:**
+- Free user: Dugme "Upgrade Plan" → `/start`
+- Paid user: Dugme "Manage Subscription" → Lemon Customer Portal
+- U Lemon portalu korisnik može:
+  - Promeniti payment method
+  - Upgrade/downgrade plan
+  - Otkazati pretplatu
+  - Videti invoice history
+
+**Kako Lemon upravlja downgrades:**
+- Korisnik zadržava viši plan do kraja billing perioda
+- Bez refunda - fer za obe strane
+- Lemon webhook ažurira plan kada se billing period završi
+
+---
+
 <!-- Novi unosi će biti dodati ovde -->

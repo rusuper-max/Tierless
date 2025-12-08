@@ -54,6 +54,17 @@ export default function UpgradeSheetDev() {
     return () => window.removeEventListener("TL_UPSELL_OPEN", onOpen as EventListener, { capture: true } as any);
   }, []);
 
+  // Reset loading state when user returns to page (e.g., browser back button from checkout)
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible" && loading) {
+        setLoading(false);
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [loading]);
+
   const needPairs = useMemo(() => summarizeNeeds(needs), [needs]);
 
   async function handleUpgrade() {

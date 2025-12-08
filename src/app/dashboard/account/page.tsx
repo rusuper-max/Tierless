@@ -128,6 +128,7 @@ export default function AccountSettings() {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [showCancelPlan, setShowCancelPlan] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   const handleDeleteAccount = async () => {
     setDeleteBusy(true);
@@ -205,6 +206,35 @@ export default function AccountSettings() {
       console.error('Failed to update plan cancellation', error);
     } finally {
       setCancelBusy(false);
+    }
+  };
+
+  const openCustomerPortal = async () => {
+    if (plan === "free") {
+      // Free users go to pricing page
+      window.location.href = "/start";
+      return;
+    }
+
+    setPortalLoading(true);
+    try {
+      const res = await fetch('/api/integrations/lemon/portal');
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.redirect) {
+        // Fallback: user doesn't have a Lemon customer ID yet
+        window.location.href = data.redirect;
+      } else {
+        // Fallback to pricing page
+        window.location.href = "/start";
+      }
+    } catch (error) {
+      console.error('Failed to open customer portal:', error);
+      window.location.href = "/start";
+    } finally {
+      setPortalLoading(false);
     }
   };
 
@@ -500,16 +530,26 @@ export default function AccountSettings() {
                       )}
                     </div>
                     <div className="flex flex-col gap-3 min-w-[220px] w-full sm:w-auto">
-                      <a
-                        href="/start"
-                        className="group relative inline-flex h-11 w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-[var(--brand-1,#4F46E5)] to-[var(--brand-2,#22D3EE)] px-4 text-sm font-semibold text-white shadow-lg shadow-[var(--brand-2,#22D3EE)]/30 transition-all hover:scale-[1.01] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-1,#4F46E5)]"
+                      <button
+                        onClick={openCustomerPortal}
+                        disabled={portalLoading}
+                        className="group relative inline-flex h-11 w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-[var(--brand-1,#4F46E5)] to-[var(--brand-2,#22D3EE)] px-4 text-sm font-semibold text-white shadow-lg shadow-[var(--brand-2,#22D3EE)]/30 transition-all hover:scale-[1.01] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-1,#4F46E5)] disabled:opacity-70 disabled:cursor-wait"
                       >
                         <span className="absolute inset-0 bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                         <span className="relative flex items-center gap-2">
-                          {t('account.billing.manageSubscription')}
-                          <ExternalLink size={14} />
+                          {portalLoading ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin" />
+                              {t('account.billing.loading')}
+                            </>
+                          ) : (
+                            <>
+                              {plan === "free" ? t('account.billing.upgradePlan') : t('account.billing.manageSubscription')}
+                              <ExternalLink size={14} />
+                            </>
+                          )}
                         </span>
-                      </a>
+                      </button>
                       {canCancelPlan && !cancelAtPeriodEnd && (
                         <div className="flex flex-col gap-2">
                           <button

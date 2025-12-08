@@ -31,11 +31,14 @@
             "renewsUnknown": "Дата пока не определена",
             "freePlanInfo": "Бесплатный тариф не имеет даты продления.",
             "manageSubscription": "Управление подпиской",
+            "upgradePlan": "Улучшить план",
+            "loading": "Загрузка...",
             "planNames": {
                 "free": "Free Tier",
                 "starter": "Starter",
                 "growth": "Growth",
                 "pro": "Pro",
+                "agency": "Agency",
                 "tierless": "Tierless"
             },
             "cancel": {

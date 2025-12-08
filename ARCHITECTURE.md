@@ -312,6 +312,53 @@ UPSTASH_REDIS_REST_TOKEN=...
 
 ---
 
+## Billing & Subscription Flow
+
+### Plans
+| Plan | Rank | Features |
+|------|------|----------|
+| free | 0 | 1 page, basic features |
+| starter | 1 | 3 pages, OCR |
+| growth | 2 | 10 pages, embed code |
+| pro | 3 | 50 pages, custom domain, API |
+| agency | 4 | Unlimited, client workspaces |
+| tierless | 999 | Founder plan (all features) |
+
+### Plan Change Flows
+
+**Upgrade (Free → Paid or Lower → Higher):**
+1. User clicks upgrade → `/api/integrations/lemon/checkout`
+2. Redirect to Lemon Squeezy checkout
+3. User pays
+4. Lemon sends `subscription_created` webhook
+5. Webhook updates `user_plans` table
+
+**Downgrade (Paid → Paid):**
+- User uses Lemon Squeezy customer portal
+- Lemon handles proration
+- `subscription_updated` webhook updates plan
+
+**Cancel (Paid → Free):**
+1. User clicks "Cancel subscription" in Account
+2. API sets `cancelAtPeriodEnd = true`, plan stays same
+3. User keeps access until `renews_on` date
+4. Lemon sends `subscription_expired` webhook
+5. Webhook sets plan to "free"
+
+### Security
+- Direct upgrades via API are **blocked** (403)
+- Only allowed: downgrades, founder tierless, webhook updates
+- `PLAN_RANK` comparison prevents payment bypass
+
+### Key Files
+- `src/lib/entitlements.ts` - Plan features & limits
+- `src/lib/lemon-config.ts` - Variant ID mapping
+- `src/app/api/me/plan/route.ts` - Plan API (with security)
+- `src/app/api/webhooks/lemon/route.ts` - Webhook handler
+- `src/components/upsell/UpgradeSheet.dev.tsx` - Upsell modal
+
+---
+
 ## Related Documentation
 
 - [CLAUDE_TASK_LOG.md](./CLAUDE_TASK_LOG.md) - Evidencija svih izmena

@@ -31,11 +31,14 @@
             "renewsUnknown": "Fecha pendiente",
             "freePlanInfo": "El plan gratuito no tiene fecha de renovación.",
             "manageSubscription": "Gestionar suscripción",
+            "upgradePlan": "Mejorar plan",
+            "loading": "Cargando...",
             "planNames": {
                 "free": "Free Tier",
                 "starter": "Starter",
                 "growth": "Growth",
                 "pro": "Pro",
+                "agency": "Agency",
                 "tierless": "Tierless"
             },
             "cancel": {

@@ -31,11 +31,14 @@
             "renewsUnknown": "Termin steht noch aus",
             "freePlanInfo": "Der Free-Tier-Plan besitzt kein Verlängerungsdatum.",
             "manageSubscription": "Abonnement verwalten",
+            "upgradePlan": "Plan upgraden",
+            "loading": "Wird geladen...",
             "planNames": {
                 "free": "Free Tier",
                 "starter": "Starter",
                 "growth": "Growth",
                 "pro": "Pro",
+                "agency": "Agency",
                 "tierless": "Tierless"
             },
             "cancel": {

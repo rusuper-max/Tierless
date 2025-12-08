@@ -102,12 +102,14 @@ export async function PUT(req: Request) {
   const hasPlanChange = typeof payload.plan === "string";
   const nextPlan = hasPlanChange ? (coercePlan(payload.plan as Plan) as PlanId) : currentPlan;
 
-  // SECURITY: Block direct upgrades via API - upgrades must go through Lemon Squeezy webhook
-  // Only allow: downgrades to lower plans, or founders setting tierless
+  // SECURITY: Block direct plan changes via API
+  // - Upgrades must go through Lemon Squeezy checkout + webhook
+  // - Downgrades should set cancelAtPeriodEnd, not immediately change plan
   if (hasPlanChange) {
     const currentRank = PLAN_RANK[currentPlan] ?? 0;
     const nextRank = PLAN_RANK[nextPlan] ?? 0;
     const isUpgrade = nextRank > currentRank;
+    const isDowngrade = nextRank < currentRank;
 
     if (isUpgrade) {
       // Only founders can set tierless directly
@@ -121,6 +123,31 @@ export async function PUT(req: Request) {
           { status: 403 }
         );
       }
+    }
+
+    if (isDowngrade && currentRank > 0) {
+      // User is on a paid plan and wants to downgrade
+      // Don't immediately change plan - they paid for this period!
+      // Instead, set cancelAtPeriodEnd and keep current plan until renewsOn
+      const hasActiveSubscription = currentRow?.renews_on && new Date(currentRow.renews_on) > new Date();
+
+      if (hasActiveSubscription) {
+        // Keep current plan, just mark for cancellation at period end
+        await db.query(
+          `UPDATE user_plans SET cancel_at_period_end = true WHERE user_id = $1`,
+          [id]
+        );
+
+        return NextResponse.json({
+          ok: true,
+          id,
+          plan: currentPlan, // Keep current plan!
+          renewsOn: serializeDate(currentRow.renews_on),
+          cancelAtPeriodEnd: true,
+          message: `Your plan will change to ${nextPlan} on ${new Date(currentRow.renews_on).toLocaleDateString()}`,
+        });
+      }
+      // If no active subscription (renewsOn passed or null), allow immediate downgrade to free
     }
   }
 

@@ -315,11 +315,17 @@ export default function ParticlesBackgroundLight() {
     window.addEventListener("touchmove", updateMouse, { passive: true });
     window.addEventListener("mouseleave", resetMouse);
 
-    // --- RENDER LOOP ---
-    // Since we discard most fragments when not hovering, 
-    // full framerate is fine - GPU work is minimal
+    // --- RENDER LOOP with visibility check ---
+    // Pauses when not visible to save GPU cycles
     let reqId: number;
+    let isVisible = true;
+
     function update(t: number) {
+      if (!isVisible) {
+        reqId = requestAnimationFrame(update);
+        return;
+      }
+
       reqId = requestAnimationFrame(update);
       const time = (t * 0.001) % 10000;
 
@@ -331,12 +337,22 @@ export default function ParticlesBackgroundLight() {
     }
     reqId = requestAnimationFrame(update);
 
+    // Pause when scrolled out of view
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+      },
+      { threshold: 0 }
+    );
+    observer.observe(container);
+
     return () => {
       window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", updateMouse);
       window.removeEventListener("touchmove", updateMouse);
       window.removeEventListener("mouseleave", resetMouse);
       cancelAnimationFrame(reqId);
+      observer.disconnect();
       if (container && container.contains(gl.canvas)) {
         container.removeChild(gl.canvas);
       }
@@ -347,6 +363,7 @@ export default function ParticlesBackgroundLight() {
     <div
       ref={containerRef}
       className="absolute inset-0 w-full h-full pointer-events-none"
+      style={{ contain: 'strict' }} // Isolate repaints to this container
     />
   );
 }

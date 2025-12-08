@@ -38,11 +38,14 @@
             "renewsUnknown": "Date to be determined",
             "freePlanInfo": "Free Tier does not have a renewal date.",
             "manageSubscription": "Manage Subscription",
+            "upgradePlan": "Upgrade Plan",
+            "loading": "Loading...",
             "planNames": {
                 "free": "Free Tier",
                 "starter": "Starter",
                 "growth": "Growth",
                 "pro": "Pro",
+                "agency": "Agency",
                 "tierless": "Tierless"
             },
             "cancel": {

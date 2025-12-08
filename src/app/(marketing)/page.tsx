@@ -770,11 +770,12 @@ function FloatingPrice({
 
     return (
         <motion.span
-            className="absolute text-white/[0.08] font-bold text-3xl md:text-5xl lg:text-6xl select-none whitespace-nowrap"
+            className="absolute text-white/[0.08] font-bold text-3xl md:text-5xl lg:text-6xl select-none whitespace-nowrap will-change-transform"
             style={{
                 left: `${baseX}%`,
                 top: `${baseY}%`,
                 y,
+                transform: 'translateZ(0)', // GPU acceleration
             }}
         >
             {price}
@@ -801,11 +802,11 @@ function ScrollRevealCTA({ t }: { t: (key: string) => string }) {
     const contentOpacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.3, 1, 1, 0.3]);
     const contentScale = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.95, 1, 1, 0.95]);
 
+    // Reduced from 16 to 9 for better performance on low-end devices
     const prices = [
-        "$9.99", "€15", "£20", "$49",
-        "€25", "$99", "Free", "/mo",
-        "$29", "€12", "₹499", "$19",
-        "€5", "100%", "$299", "€60"
+        "$9.99", "€15", "£20",
+        "$99", "Free", "/mo",
+        "$29", "₹499", "$299"
     ];
 
     return (

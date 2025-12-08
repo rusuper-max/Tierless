@@ -38,11 +38,14 @@
             "renewsUnknown": "Datum obnavljanja još nije postavljen",
             "freePlanInfo": "Besplatan plan se ne obnavlja.",
             "manageSubscription": "Upravljaj pretplatom",
+            "upgradePlan": "Nadogradi plan",
+            "loading": "Učitavanje...",
             "planNames": {
                 "free": "Free Tier",
                 "starter": "Starter",
                 "growth": "Growth",
                 "pro": "Pro",
+                "agency": "Agency",
                 "tierless": "Tierless"
             },
             "cancel": {
