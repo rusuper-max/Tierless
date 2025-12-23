@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
+import { useT } from '@/i18n/client';
 
 // --- Types ---
 
@@ -189,6 +190,7 @@ const AccordionItem = ({ item, isOpen, onClick }: { item: FAQItem; isOpen: boole
 // --- Main Page Component ---
 
 export default function FAQPage() {
+    const t = useT();
     const [activeCategory, setActiveCategory] = useState<Category | 'all'>('all');
     const [openIndex, setOpenIndex] = useState<number | null>(0);
     const { authenticated } = useAuthStatus();
@@ -223,14 +225,14 @@ export default function FAQPage() {
                 <div className="mb-6 flex items-center gap-4">
                     <Link href="/" className="inline-flex items-center gap-2 text-slate-600 hover:text-cyan-600 transition-colors group">
                         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                        <span className="font-medium">Back to Home</span>
+                        <span className="font-medium">{t("faq.backToHome")}</span>
                     </Link>
                     {authenticated && (
                         <>
                             <span className="text-slate-300">•</span>
                             <Link href="/dashboard" className="inline-flex items-center gap-2 text-slate-600 hover:text-cyan-600 transition-colors group">
                                 <LayoutDashboard className="w-4 h-4" />
-                                <span className="font-medium">Dashboard</span>
+                                <span className="font-medium">{t("faq.dashboard")}</span>
                             </Link>
                         </>
                     )}
@@ -239,10 +241,10 @@ export default function FAQPage() {
                 {/* Header Section - Compact, no redundant icon */}
                 <div className="text-center mb-10">
                     <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-cyan-500 mb-3">
-                        Frequently Asked Questions
+                        {t("faq.title")}
                     </h1>
                     <p className="text-base text-slate-600 max-w-xl mx-auto">
-                        Everything you need to know about creating beautiful price lists and digital menus.
+                        {t("faq.subtitle")}
                     </p>
                 </div>
 
@@ -252,31 +254,31 @@ export default function FAQPage() {
                         active={activeCategory === 'all'}
                         onClick={() => setActiveCategory('all')}
                         icon={HelpCircle}
-                        label="All Questions"
+                        label={t("faq.categories.all")}
                     />
                     <CategoryButton
                         active={activeCategory === 'general'}
                         onClick={() => setActiveCategory('general')}
                         icon={Zap}
-                        label="General"
+                        label={t("faq.categories.general")}
                     />
                     <CategoryButton
                         active={activeCategory === 'features'}
                         onClick={() => setActiveCategory('features')}
                         icon={Calculator}
-                        label="Features"
+                        label={t("faq.categories.features")}
                     />
                     <CategoryButton
                         active={activeCategory === 'pricing'}
                         onClick={() => setActiveCategory('pricing')}
                         icon={CreditCard}
-                        label="Pricing"
+                        label={t("faq.categories.pricing")}
                     />
                     <CategoryButton
                         active={activeCategory === 'technical'}
                         onClick={() => setActiveCategory('technical')}
                         icon={Code2}
-                        label="Technical"
+                        label={t("faq.categories.technical")}
                     />
                 </div>
 
@@ -293,7 +295,7 @@ export default function FAQPage() {
 
                     {filteredFaqs.length === 0 && (
                         <div className="text-center py-10 text-slate-500">
-                            No questions found for this category.
+                            {t("faq.noQuestions")}
                         </div>
                     )}
                 </div>
@@ -301,20 +303,20 @@ export default function FAQPage() {
                 {/* Bottom CTA */}
                 <div className="mt-16 text-center">
                     <p className="text-slate-600 mb-6 text-lg">
-                        Still have questions? We'd love to help!
+                        {t("faq.ctaQuestion")}
                     </p>
                     <div className="flex flex-wrap justify-center gap-4">
                         <Link
                             href="mailto:contact@tierless.net"
                             className="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-cyan-500 rounded-xl hover:shadow-lg transition-all duration-200"
                         >
-                            Contact Support
+                            {t("faq.contactSupport")}
                         </Link>
                         <Link
                             href="/dashboard"
                             className="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-slate-700 bg-white border-2 border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-md transition-all duration-200"
                         >
-                            Go to Dashboard
+                            {t("faq.goToDashboard")}
                         </Link>
                     </div>
                 </div>

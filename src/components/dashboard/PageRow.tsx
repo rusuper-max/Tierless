@@ -6,6 +6,7 @@ import { MoreHorizontal, Share2, Edit, Copy, Trash, ExternalLink, GripVertical, 
 import { Button } from "@/components/ui/Button";
 import AnimatedCheckbox from "@/components/ui/AnimatedCheckbox";
 import { FavoriteStar } from "./DashboardUI";
+import { useT } from "@/i18n/client";
 
 const fmtDateTime = (ts?: number) =>
     ts ? new Date(ts).toLocaleString([], { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
@@ -64,6 +65,7 @@ export default function PageRow({
     publishedLimit,
     onMove,
 }: PageRowProps) {
+    const t = useT();
     const { slug, name, favorite, createdAt } = row.meta;
     const published = !!(row.meta.published ?? row.meta.online);
     const [menuOpen, setMenuOpen] = useState(false);
@@ -116,7 +118,7 @@ export default function PageRow({
                             {name}
                         </span>
                         <span className="text-[10px] text-[var(--muted)] opacity-70">
-                            {published ? "Live on web" : "Draft (Private)"}
+                            {published ? t("dashboard.status.liveOnWeb") : t("dashboard.status.draft")}
                         </span>
                     </div>
                 </div>
@@ -152,8 +154,8 @@ export default function PageRow({
                     disabled={toggleDisabled}
                     className="min-w-[80px]"
                 >
-                    <span className="block group-hover:hidden">{published ? "Online" : "Offline"}</span>
-                    <span className="hidden group-hover:block font-medium">{published ? "Stop" : "Publish"}</span>
+                    <span className="block group-hover:hidden">{published ? t("dashboard.status.online") : t("dashboard.status.offline")}</span>
+                    <span className="hidden group-hover:block font-medium">{published ? t("dashboard.actions.stop") : t("dashboard.actions.publish")}</span>
                 </Button>
             </td>
 
@@ -167,7 +169,7 @@ export default function PageRow({
                             size="xs"
                             onClick={() => onEdit(slug)}
                         >
-                            Edit
+                            {t("dashboard.actions.edit")}
                         </Button>
 
                         {/* Public Link Button */}
@@ -228,20 +230,20 @@ export default function PageRow({
                                         style={{ top: menuPos.top, left: menuPos.left, position: 'absolute' }}
                                     >
                                         <button onClick={() => { onShare(slug); setMenuOpen(false); }} disabled={!published} className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-left disabled:opacity-50 cursor-pointer transition-colors">
-                                            <Share2 className="size-4" /> Share / QR
+                                            <Share2 className="size-4" /> {t("dashboard.actions.share")}
                                         </button>
                                         <button onClick={() => { onRenameStart(slug, name); setMenuOpen(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-left cursor-pointer transition-colors">
-                                            <Edit className="size-4" /> Rename
+                                            <Edit className="size-4" /> {t("dashboard.actions.rename")}
                                         </button>
                                         <button onClick={() => { onDuplicate(slug, name); setMenuOpen(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-left cursor-pointer transition-colors">
-                                            <Copy className="size-4" /> Duplicate
+                                            <Copy className="size-4" /> {t("dashboard.actions.duplicate")}
                                         </button>
                                         <button onClick={() => { onMove(slug); setMenuOpen(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-left cursor-pointer transition-colors">
-                                            <ArrowRightLeft className="size-4" /> Move to team
+                                            <ArrowRightLeft className="size-4" /> {t("dashboard.actions.moveToTeam")}
                                         </button>
                                         <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
                                         <button onClick={() => { onDelete(slug, name); setMenuOpen(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-left cursor-pointer transition-colors">
-                                            <Trash className="size-4" /> Delete
+                                            <Trash className="size-4" /> {t("dashboard.actions.delete")}
                                         </button>
                                     </div>
                                 </>,

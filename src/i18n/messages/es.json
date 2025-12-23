@@ -314,5 +314,276 @@
         "contact": "Contáctanos",
         "rights": "Todos los derechos reservados.",
         "madeWith": "Hecho con ❤️ para constructores."
+    },
+    "start": {
+        "header": {
+            "backToSite": "Volver al sitio",
+            "dashboard": "Panel de control",
+            "signIn": "Iniciar sesión",
+            "openDashboard": "Abrir panel"
+        },
+        "title": "Precios simples",
+        "subtitle": "Elige un plan. Cambia cuando quieras.",
+        "subtitleHint": "Empieza pequeño y crece a medida que avanzas.",
+        "monthly": "Mensual",
+        "yearly": "Anual",
+        "billedYearly": "Facturado {price} anualmente",
+        "getStarted": "Comenzar",
+        "currentPlan": "Plan actual",
+        "upgrade": "Mejorar",
+        "downgrade": "Reducir plan",
+        "startFree": "Empezar gratis",
+        "processing": "Procesando...",
+        "noCardNeeded": "No se necesita tarjeta",
+        "cancelAnytime": "Cancela cuando quieras",
+        "highlights": "Destacados",
+        "learnMore": "Más información",
+        "enterpriseCta": "¿Necesitas una solución empresarial personalizada?",
+        "contactUs": "Contáctanos",
+        "paymentNotConfigured": "Pago no configurado. Contacta con soporte.",
+        "checkoutFailed": "Error al iniciar el pago. Intenta de nuevo.",
+        "plans": {
+            "free": {
+                "name": "Gratis",
+                "description": "Perfecto para probar el editor.",
+                "perks": [
+                    "1 Página Publicada",
+                    "Límite de 15 ítems",
+                    "Insignia Tierless (Requerido)"
+                ],
+                "caps": [
+                    "Solo temas estándar",
+                    "Límite de 2MB por imagen",
+                    "Sin analíticas"
+                ]
+            },
+            "starter": {
+                "name": "Starter",
+                "description": "Perfecto para freelancers y proyectos secundarios.",
+                "perks": [
+                    "Escaneo con IA (OCR)",
+                    "Fuentes y Colores Premium",
+                    "Panel de Analíticas",
+                    "Límite de 50 ítems"
+                ],
+                "caps": [
+                    "3 Páginas Publicadas",
+                    "Límite de 5MB por imagen",
+                    "Insignia visible"
+                ],
+                "chips": {
+                    "ocr-import": {
+                        "label": "Escaneo IA",
+                        "description": "Escanea la foto de tu menú al instante."
+                    }
+                }
+            },
+            "growth": {
+                "name": "Growth",
+                "badge": "Mejor Valor",
+                "description": "Para pequeñas empresas y profesionales.",
+                "perks": [
+                    "Integración web (Embed)",
+                    "Eliminar insignia Tierless",
+                    "Todos los temas Premium",
+                    "Video de fondo",
+                    "Límite de 100 ítems"
+                ],
+                "caps": [
+                    "5 Páginas Publicadas",
+                    "Límite de 8MB por imagen",
+                    "Soporte Prioritario"
+                ],
+                "chips": {
+                    "embed": {
+                        "label": "Embed Web",
+                        "description": "Muestra tu menú directamente en tu web."
+                    }
+                }
+            },
+            "pro": {
+                "name": "Pro",
+                "description": "Para negocios serios.",
+                "perks": [
+                    "3 Dominios Personalizados (SSL)",
+                    "Ítems Ilimitados",
+                    "10 Páginas Publicadas",
+                    "Colaboración en equipo (15 asientos)",
+                    "Webhooks y API"
+                ],
+                "caps": [
+                    "50 Páginas Totales",
+                    "Límite de 15MB por imagen",
+                    "Soporte Dedicado"
+                ],
+                "chips": {
+                    "domain": {
+                        "label": "Dominio Personalizado",
+                        "description": "Usa menu.tu-restaurante.com"
+                    }
+                }
+            },
+            "agency": {
+                "name": "Agencia",
+                "description": "Para agencias que gestionan múltiples clientes.",
+                "perks": [
+                    "10 Dominios Personalizados (SSL)",
+                    "50 Páginas Publicadas",
+                    "25 Espacios de trabajo",
+                    "50 Asientos de equipo",
+                    "Soporte Prioritario"
+                ],
+                "caps": [
+                    "200 Páginas Totales",
+                    "Límite de 25MB por imagen",
+                    "Marca Blanca"
+                ],
+                "chips": {
+                    "client-workspaces": {
+                        "label": "Espacios de trabajo",
+                        "description": "Crea hasta 25 espacios separados."
+                    }
+                }
+            }
+        }
+    },
+    "examples": {
+        "badge": "Vitrina",
+        "title": "Creado con",
+        "subtitle": "Descubre páginas de precios reales de la comunidad. Encuentra diseños que se adapten a tu negocio.",
+        "backToHome": "Volver al inicio",
+        "officialShowcase": "Vitrina Oficial",
+        "officialShowcaseDesc": "Páginas seleccionadas para demostrar lo que es posible.",
+        "trendingCommunity": "Tendencias de la Comunidad",
+        "trendingCommunityDesc": "Páginas públicas mejor valoradas (el propietario optó por participar).",
+        "topRatedPages": "Páginas Mejor Valoradas",
+        "noCommunityPages": "Aún no hay páginas de la comunidad.",
+        "loadMore": "Cargar más ejemplos",
+        "emptySpot": "Lugar vacío",
+        "waitingForYou": "Esperando por ti",
+        "availableSpot": "Lugar disponible",
+        "viewPage": "Ver página",
+        "visitPage": "Visitar página",
+        "unknown": "Desconocido",
+        "ctaTitle": "Crea tu propia página de precios",
+        "ctaSubtitle": "Únete a los creadores que construyen con Tierless.",
+        "ctaButton": "Comenzar gratis"
+    },
+    "faq": {
+        "title": "Preguntas Frecuentes",
+        "subtitle": "Todo lo que necesitas saber sobre crear hermosas listas de precios y menús digitales.",
+        "backToHome": "Volver al inicio",
+        "dashboard": "Panel de control",
+        "noQuestions": "No se encontraron preguntas para esta categoría.",
+        "ctaQuestion": "¿Todavía tienes preguntas? ¡Estaremos encantados de ayudar!",
+        "contactSupport": "Contactar soporte",
+        "goToDashboard": "Ir al panel",
+        "categories": {
+            "all": "Todas las preguntas",
+            "general": "General",
+            "features": "Características",
+            "pricing": "Precios",
+            "technical": "Técnico"
+        }
+    },
+    "dashboard": {
+        "status": {
+            "online": "En línea",
+            "offline": "Sin conexión",
+            "liveOnWeb": "En vivo en la web",
+            "draft": "Borrador (Privado)"
+        },
+        "actions": {
+            "edit": "Editar",
+            "delete": "Eliminar",
+            "duplicate": "Duplicar",
+            "rename": "Renombrar",
+            "share": "Compartir / QR",
+            "moveToTeam": "Mover a equipo",
+            "publish": "Publicar",
+            "stop": "Detener",
+            "public": "Público",
+            "reorder": "Reordenar",
+            "newPage": "Nueva página",
+            "selectAll": "Seleccionar todo",
+            "deselectAll": "Deseleccionar todo",
+            "deleteSelected": "Eliminar seleccionados",
+            "cancel": "Cancelar",
+            "confirm": "Confirmar",
+            "search": "Buscar páginas...",
+            "copyLink": "Copiar enlace"
+        },
+        "table": {
+            "name": "Nombre",
+            "team": "Equipo",
+            "share": "Compartir",
+            "created": "Creado",
+            "status": "Estado",
+            "actions": "Acciones",
+            "order": "Orden"
+        },
+        "filters": {
+            "all": "Todos",
+            "online": "En línea",
+            "offline": "Sin conexión",
+            "favorites": "Favoritos"
+        },
+        "sort": {
+            "created": "Creado",
+            "name": "Nombre",
+            "status": "Estado",
+            "manual": "Manual"
+        },
+        "messages": {
+            "copied": "¡Copiado!",
+            "couldNotCreate": "No se pudo crear la página. Inténtalo de nuevo.",
+            "untitledPage": "Página sin título",
+            "planLimitReached": "Has alcanzado el límite de páginas de tu plan. Gestiona tu plan en Cuenta.",
+            "overLimitMessage": "Has superado el límite de páginas de tu plan. Elimina páginas o mejora tu plan.",
+            "publishFirst": "Publica esta página desde el panel para compartirla.",
+            "couldNotPrepareLink": "No se pudo preparar el enlace para compartir.",
+            "deleteConfirmTitle": "¿Eliminar esta página?",
+            "deleteConfirmMessage": "Esto moverá la página a la papelera. Puedes restaurarla más tarde.",
+            "noPagesYet": "Aún no hay páginas",
+            "createFirstPage": "Crea tu primera página para comenzar.",
+            "noMatchingPages": "No hay páginas que coincidan"
+        },
+        "empty": {
+            "title": "Aún no hay páginas",
+            "description": "Crea tu primera página para comenzar.",
+            "noResults": "No hay páginas que coincidan"
+        }
+    },
+    "auth": {
+        "welcomeBack": "Bienvenido de nuevo",
+        "enterEmail": "Ingresa tu correo para acceder al panel",
+        "emailAddress": "Correo electrónico",
+        "emailPlaceholder": "nombre@empresa.com",
+        "sendMagicLink": "Enviar enlace mágico",
+        "sendingLink": "Enviando enlace...",
+        "checkEmail": "Revisa tu correo",
+        "magicLinkSent": "Te enviamos un enlace mágico de inicio de sesión a",
+        "tryAnotherEmail": "Probar otro correo",
+        "somethingWentWrong": "Algo salió mal. Por favor, inténtalo de nuevo.",
+        "termsNotice": "Al iniciar sesión, aceptas nuestros Términos de Servicio y Política de Privacidad."
+    },
+    "errors": {
+        "pageNotFound": "Página no encontrada",
+        "pageNotFoundDesc": "La página que buscas no existe o ha sido movida. Volvamos al camino correcto.",
+        "backToHome": "Volver al inicio",
+        "goToDashboard": "Ir al panel",
+        "needHelp": "¿Necesitas ayuda?",
+        "checkFaq": "Consulta nuestras preguntas frecuentes",
+        "somethingWrong": "Algo salió mal",
+        "tryAgain": "Intentar de nuevo",
+        "goBack": "Volver"
+    },
+    "cookies": {
+        "banner": {
+            "description": "Usamos cookies para mejorar tu experiencia y analizar el uso del sitio.",
+            "learnMore": "Más información",
+            "decline": "Rechazar",
+            "accept": "Aceptar"
+        }
     }
 }

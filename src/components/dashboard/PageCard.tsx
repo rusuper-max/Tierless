@@ -3,6 +3,7 @@
 import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { FavoriteStar } from "./DashboardUI";
+import { useT } from "@/i18n/client";
 
 type MiniCalc = {
     meta: {
@@ -53,6 +54,7 @@ export default function PageCard({
     moveBy,
     onMove,
 }: PageCardProps) {
+    const t = useT();
     const { slug, name, favorite, createdAt } = row.meta;
     const published = !!(row.meta.published ?? row.meta.online);
     const dateStr = createdAt ? new Date(createdAt).toLocaleDateString() : "—";
@@ -91,21 +93,21 @@ export default function PageCard({
                     disabled={toggleDisabled}
                     className="min-w-[96px]"
                 >
-                    <span className="block group-hover:hidden">{published ? "Online" : "Offline"}</span>
-                    <span className="hidden group-hover:block font-medium">{published ? "Stop" : "Publish"}</span>
+                    <span className="block group-hover:hidden">{published ? t("dashboard.status.online") : t("dashboard.status.offline")}</span>
+                    <span className="hidden group-hover:block font-medium">{published ? t("dashboard.actions.stop") : t("dashboard.actions.publish")}</span>
                 </Button>
 
-                <Button title="Edit" onClick={() => onEdit(slug)} variant="brand" size="xs">Edit</Button>
+                <Button title={t("dashboard.actions.edit")} onClick={() => onEdit(slug)} variant="brand" size="xs">{t("dashboard.actions.edit")}</Button>
 
                 {/* Simplified mobile actions - others can be added if needed */}
-                {published && <Button title="Public" onClick={() => onOpenPublic(row)} variant="neutral" size="xs">Public</Button>}
-                <Button title="Delete" onClick={() => onDelete(slug, name)} disabled={busySlug === slug} variant="danger" size="xs">Delete</Button>
+                {published && <Button title={t("dashboard.actions.public")} onClick={() => onOpenPublic(row)} variant="neutral" size="xs">{t("dashboard.actions.public")}</Button>}
+                <Button title={t("dashboard.actions.delete")} onClick={() => onDelete(slug, name)} disabled={busySlug === slug} variant="danger" size="xs">{t("dashboard.actions.delete")}</Button>
             </div>
 
             <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
                 <Button variant="neutral" size="xs" onClick={() => moveBy(slug, -1)} className="w-9 h-9 p-0 rounded-full">‹</Button>
                 <Button variant="neutral" size="xs" onClick={() => moveBy(slug, 1)} className="w-9 h-9 p-0 rounded-full">›</Button>
-                <span>Reorder</span>
+                <span>{t("dashboard.actions.reorder")}</span>
             </div>
         </div>
     );

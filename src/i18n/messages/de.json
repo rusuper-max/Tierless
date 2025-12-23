@@ -314,5 +314,276 @@
         "contact": "Kontakt",
         "rights": "Alle Rechte vorbehalten.",
         "madeWith": "Gemacht mit ❤️ für Macher."
+    },
+    "start": {
+        "header": {
+            "backToSite": "Zurück zur Seite",
+            "dashboard": "Dashboard",
+            "signIn": "Anmelden",
+            "openDashboard": "Dashboard öffnen"
+        },
+        "title": "Einfache Preise",
+        "subtitle": "Wählen Sie einen Plan. Wechseln Sie jederzeit.",
+        "subtitleHint": "Fangen Sie klein an und wachsen Sie mit.",
+        "monthly": "Monatlich",
+        "yearly": "Jährlich",
+        "billedYearly": "{price} jährlich abgerechnet",
+        "getStarted": "Loslegen",
+        "currentPlan": "Aktueller Plan",
+        "upgrade": "Upgraden",
+        "downgrade": "Downgraden",
+        "startFree": "Kostenlos starten",
+        "processing": "Verarbeitung...",
+        "noCardNeeded": "Keine Karte erforderlich",
+        "cancelAnytime": "Jederzeit kündbar",
+        "highlights": "Highlights",
+        "learnMore": "Mehr erfahren",
+        "enterpriseCta": "Brauchen Sie eine individuelle Enterprise-Lösung?",
+        "contactUs": "Kontaktieren Sie uns",
+        "paymentNotConfigured": "Zahlung nicht konfiguriert. Bitte kontaktieren Sie den Support.",
+        "checkoutFailed": "Checkout konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
+        "plans": {
+            "free": {
+                "name": "Kostenlos",
+                "description": "Perfekt zum Testen des Editors.",
+                "perks": [
+                    "1 Veröffentlichte Seite",
+                    "15 Artikel Limit",
+                    "Tierless Badge (Erforderlich)"
+                ],
+                "caps": [
+                    "Nur Standard-Themes",
+                    "2MB Bildlimit",
+                    "Keine Analytics"
+                ]
+            },
+            "starter": {
+                "name": "Starter",
+                "description": "Perfekt für Freelancer und Nebenprojekte.",
+                "perks": [
+                    "KI-Scan (OCR)",
+                    "Premium Schriftarten & Farben",
+                    "Analytics Dashboard",
+                    "50 Artikel Limit"
+                ],
+                "caps": [
+                    "3 Veröffentlichte Seiten",
+                    "5MB Bildlimit",
+                    "Badge sichtbar"
+                ],
+                "chips": {
+                    "ocr-import": {
+                        "label": "KI-Scan",
+                        "description": "Scannen Sie Ihr Menüfoto sofort."
+                    }
+                }
+            },
+            "growth": {
+                "name": "Growth",
+                "badge": "Bester Wert",
+                "description": "Für kleine Unternehmen und Profis.",
+                "perks": [
+                    "Website-Integration (Embed)",
+                    "Tierless Badge entfernen",
+                    "Alle Premium-Themes",
+                    "Hintergrundvideo",
+                    "100 Artikel Limit"
+                ],
+                "caps": [
+                    "5 Veröffentlichte Seiten",
+                    "8MB Bildlimit",
+                    "Prioritäts-Support"
+                ],
+                "chips": {
+                    "embed": {
+                        "label": "Website Embed",
+                        "description": "Zeigen Sie Ihr Menü direkt auf Ihrer Website an."
+                    }
+                }
+            },
+            "pro": {
+                "name": "Pro",
+                "description": "Für ernsthafte Unternehmen.",
+                "perks": [
+                    "3 Eigene Domains (SSL)",
+                    "Unbegrenzte Artikel",
+                    "10 Veröffentlichte Seiten",
+                    "Team-Kollaboration (15 Plätze)",
+                    "Webhooks & API"
+                ],
+                "caps": [
+                    "50 Seiten Insgesamt",
+                    "15MB Bildlimit",
+                    "Dedizierter Support"
+                ],
+                "chips": {
+                    "domain": {
+                        "label": "Eigene Domain",
+                        "description": "Nutzen Sie menu.ihr-restaurant.de"
+                    }
+                }
+            },
+            "agency": {
+                "name": "Agentur",
+                "description": "Für Agenturen, die mehrere Kunden verwalten.",
+                "perks": [
+                    "10 Eigene Domains (SSL)",
+                    "50 Veröffentlichte Seiten",
+                    "25 Kunden-Arbeitsbereiche",
+                    "50 Team-Plätze",
+                    "Prioritäts-Support"
+                ],
+                "caps": [
+                    "200 Seiten Insgesamt",
+                    "25MB Bildlimit",
+                    "White Label"
+                ],
+                "chips": {
+                    "client-workspaces": {
+                        "label": "Kunden-Workspaces",
+                        "description": "Erstellen Sie bis zu 25 separate Bereiche."
+                    }
+                }
+            }
+        }
+    },
+    "examples": {
+        "badge": "Schaufenster",
+        "title": "Erstellt mit",
+        "subtitle": "Entdecken Sie echte Preisseiten aus der Community. Finden Sie Designs, die zu Ihrem Geschäft passen.",
+        "backToHome": "Zurück zur Startseite",
+        "officialShowcase": "Offizielles Schaufenster",
+        "officialShowcaseDesc": "Handverlesene Seiten, die zeigen, was möglich ist.",
+        "trendingCommunity": "Trending in der Community",
+        "trendingCommunityDesc": "Bestbewertete öffentliche Seiten (Besitzer hat zugestimmt).",
+        "topRatedPages": "Bestbewertete Seiten",
+        "noCommunityPages": "Noch keine Community-Seiten.",
+        "loadMore": "Mehr Beispiele laden",
+        "emptySpot": "Leerer Platz",
+        "waitingForYou": "Wartet auf Sie",
+        "availableSpot": "Verfügbarer Platz",
+        "viewPage": "Seite ansehen",
+        "visitPage": "Seite besuchen",
+        "unknown": "Unbekannt",
+        "ctaTitle": "Erstellen Sie Ihre eigene Preisseite",
+        "ctaSubtitle": "Treten Sie den Machern bei, die mit Tierless bauen.",
+        "ctaButton": "Kostenlos starten"
+    },
+    "faq": {
+        "title": "Häufig Gestellte Fragen",
+        "subtitle": "Alles, was Sie über die Erstellung schöner Preislisten und digitaler Menüs wissen müssen.",
+        "backToHome": "Zurück zur Startseite",
+        "dashboard": "Dashboard",
+        "noQuestions": "Keine Fragen für diese Kategorie gefunden.",
+        "ctaQuestion": "Noch Fragen? Wir helfen gerne!",
+        "contactSupport": "Support kontaktieren",
+        "goToDashboard": "Zum Dashboard",
+        "categories": {
+            "all": "Alle Fragen",
+            "general": "Allgemein",
+            "features": "Funktionen",
+            "pricing": "Preise",
+            "technical": "Technisch"
+        }
+    },
+    "dashboard": {
+        "status": {
+            "online": "Online",
+            "offline": "Offline",
+            "liveOnWeb": "Live im Web",
+            "draft": "Entwurf (Privat)"
+        },
+        "actions": {
+            "edit": "Bearbeiten",
+            "delete": "Löschen",
+            "duplicate": "Duplizieren",
+            "rename": "Umbenennen",
+            "share": "Teilen / QR",
+            "moveToTeam": "Zum Team verschieben",
+            "publish": "Veröffentlichen",
+            "stop": "Stoppen",
+            "public": "Öffentlich",
+            "reorder": "Neu anordnen",
+            "newPage": "Neue Seite",
+            "selectAll": "Alle auswählen",
+            "deselectAll": "Auswahl aufheben",
+            "deleteSelected": "Ausgewählte löschen",
+            "cancel": "Abbrechen",
+            "confirm": "Bestätigen",
+            "search": "Seiten suchen...",
+            "copyLink": "Link kopieren"
+        },
+        "table": {
+            "name": "Name",
+            "team": "Team",
+            "share": "Teilen",
+            "created": "Erstellt",
+            "status": "Status",
+            "actions": "Aktionen",
+            "order": "Reihenfolge"
+        },
+        "filters": {
+            "all": "Alle",
+            "online": "Online",
+            "offline": "Offline",
+            "favorites": "Favoriten"
+        },
+        "sort": {
+            "created": "Erstellt",
+            "name": "Name",
+            "status": "Status",
+            "manual": "Manuell"
+        },
+        "messages": {
+            "copied": "Kopiert!",
+            "couldNotCreate": "Seite konnte nicht erstellt werden. Bitte erneut versuchen.",
+            "untitledPage": "Unbenannte Seite",
+            "planLimitReached": "Sie haben das Seitenlimit Ihres Plans erreicht. Verwalten Sie Ihren Plan unter Konto.",
+            "overLimitMessage": "Sie haben das Seitenlimit Ihres Plans überschritten. Löschen Sie Seiten oder upgraden Sie Ihren Plan.",
+            "publishFirst": "Veröffentlichen Sie diese Seite vom Dashboard aus, um sie zu teilen.",
+            "couldNotPrepareLink": "Freigabelink konnte nicht vorbereitet werden.",
+            "deleteConfirmTitle": "Diese Seite löschen?",
+            "deleteConfirmMessage": "Dies verschiebt die Seite in den Papierkorb. Sie können sie später wiederherstellen.",
+            "noPagesYet": "Noch keine Seiten",
+            "createFirstPage": "Erstellen Sie Ihre erste Seite, um zu beginnen.",
+            "noMatchingPages": "Keine passenden Seiten"
+        },
+        "empty": {
+            "title": "Noch keine Seiten",
+            "description": "Erstellen Sie Ihre erste Seite, um zu beginnen.",
+            "noResults": "Keine passenden Seiten"
+        }
+    },
+    "auth": {
+        "welcomeBack": "Willkommen zurück",
+        "enterEmail": "Geben Sie Ihre E-Mail ein, um auf Ihr Dashboard zuzugreifen",
+        "emailAddress": "E-Mail-Adresse",
+        "emailPlaceholder": "name@firma.de",
+        "sendMagicLink": "Magic Link senden",
+        "sendingLink": "Link wird gesendet...",
+        "checkEmail": "Überprüfen Sie Ihre E-Mails",
+        "magicLinkSent": "Wir haben einen magischen Anmeldelink gesendet an",
+        "tryAnotherEmail": "Andere E-Mail versuchen",
+        "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+        "termsNotice": "Mit der Anmeldung akzeptieren Sie unsere Nutzungsbedingungen und Datenschutzrichtlinie."
+    },
+    "errors": {
+        "pageNotFound": "Seite nicht gefunden",
+        "pageNotFoundDesc": "Die gesuchte Seite existiert nicht oder wurde verschoben. Lassen Sie uns Sie zurück auf den richtigen Weg bringen.",
+        "backToHome": "Zurück zur Startseite",
+        "goToDashboard": "Zum Dashboard",
+        "needHelp": "Brauchen Sie Hilfe?",
+        "checkFaq": "Siehe unsere FAQ",
+        "somethingWrong": "Etwas ist schiefgelaufen",
+        "tryAgain": "Erneut versuchen",
+        "goBack": "Zurück"
+    },
+    "cookies": {
+        "banner": {
+            "description": "Wir verwenden Cookies, um Ihre Erfahrung zu verbessern und die Nutzung der Website zu analysieren.",
+            "learnMore": "Mehr erfahren",
+            "decline": "Ablehnen",
+            "accept": "Akzeptieren"
+        }
     }
 }

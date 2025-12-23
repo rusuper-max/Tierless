@@ -461,9 +461,18 @@ export function AdvancedSettingsPanel({
                     </div>
 
                     {/* BRANDING & MEDIA CARD */}
-                    <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-5 lg:col-span-2">
+                    <div className={`p-6 rounded-2xl border bg-[var(--card)] space-y-5 lg:col-span-2 ${isLocked ? "border-amber-500/30 relative overflow-hidden" : "border-[var(--border)]"}`}>
+                        {/* Locked overlay */}
+                        {isLocked && (
+                            <div className="absolute inset-0 bg-[var(--bg)]/80 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center">
+                                <Lock className="w-8 h-8 text-amber-500 mb-2" />
+                                <span className="text-sm font-medium text-[var(--muted)]">{t("Media locked by template")}</span>
+                            </div>
+                        )}
+
                         <h3 className="text-sm font-bold text-[var(--text)] uppercase tracking-wide flex items-center gap-2">
                             <Camera className="w-4 h-4 text-cyan-500" /> {t("Branding & Media")}
+                            {isLocked && <Lock className="w-3 h-3 text-amber-500" />}
                         </h3>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

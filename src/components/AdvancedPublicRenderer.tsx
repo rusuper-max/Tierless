@@ -217,7 +217,13 @@ function useCurrencyFormat(calc?: CalcJson) {
 /* Main renderer                                                              */
 /* -------------------------------------------------------------------------- */
 
-export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
+type AdvancedPublicRendererProps = {
+  calc: CalcJson;
+  embedMode?: boolean;
+  hideBadge?: boolean;
+};
+
+export default function AdvancedPublicRenderer({ calc, embedMode, hideBadge }: AdvancedPublicRendererProps) {
   // Get site-wide theme instead of page theme
   // Use mounted to prevent hydration mismatch (server renders light, client might have dark)
   const { theme: siteTheme, mounted } = useTheme();
@@ -328,7 +334,7 @@ export default function AdvancedPublicRenderer({ calc }: { calc: CalcJson }) {
   const fontClass = publicFont === "serif" ? "font-serif" : publicFont === "mono" ? "font-mono" : "font-sans";
 
   const showPoweredBy: boolean =
-    (metaRaw as any).showPoweredBy ?? true;
+    hideBadge ? false : ((metaRaw as any).showPoweredBy ?? true);
 
   const allowRating: boolean = (metaRaw as any).allowRating ?? false;
   const pageId: string = (metaRaw as any).slug || calc?.id || "unknown";

@@ -206,14 +206,15 @@ type TranslateFn = (key: string, vars?: Record<string, string | number>) => stri
 function localizePlans(base: Plan[], translate: TranslateFn): Plan[] {
   return base.map((plan) => ({
     ...plan,
-    name: translate(plan.name),
-    description: plan.description ? translate(plan.description) : plan.description,
-    perks: plan.perks.map((perk) => translate(perk)),
-    caps: plan.caps.map((cap) => translate(cap)),
+    name: translate(`start.plans.${plan.id}.name`),
+    description: plan.description ? translate(`start.plans.${plan.id}.description`) : plan.description,
+    badge: plan.badge ? translate(`start.plans.${plan.id}.badge`) : undefined,
+    perks: plan.perks.map((_, i) => translate(`start.plans.${plan.id}.perks.${i}`)),
+    caps: plan.caps.map((_, i) => translate(`start.plans.${plan.id}.caps.${i}`)),
     chips: plan.chips?.map((chip) => ({
       ...chip,
-      label: translate(chip.label),
-      description: translate(chip.description),
+      label: translate(`start.plans.${plan.id}.chips.${chip.id}.label`),
+      description: translate(`start.plans.${plan.id}.chips.${chip.id}.description`),
     })),
   }));
 }
@@ -307,7 +308,7 @@ export default function StartPage() {
     const variantId = interval === "yearly" ? variantConfig?.yearly : variantConfig?.monthly;
 
     if (!variantId) {
-      alert(t("Payment not configured. Please contact support."));
+      alert(t("start.paymentNotConfigured"));
       return false;
     }
 
@@ -323,7 +324,7 @@ export default function StartPage() {
       });
 
       if (!res.ok) {
-        alert(t("Failed to start checkout. Please try again."));
+        alert(t("start.checkoutFailed"));
         return false;
       }
 
@@ -334,7 +335,7 @@ export default function StartPage() {
       }
       return false;
     } catch (err) {
-      alert(t("Failed to start checkout. Please try again."));
+      alert(t("start.checkoutFailed"));
       return false;
     }
   };
@@ -344,7 +345,7 @@ export default function StartPage() {
       <StartHeader />
 
       <div className="min-h-screen bg-slate-50/50 dark:bg-black text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-500/20">
-        
+
         {/* Ambient Background Glows */}
         <div className="fixed top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-indigo-50/50 to-transparent dark:from-indigo-950/10 pointer-events-none" />
         <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/5 blur-[120px] rounded-full pointer-events-none" />
@@ -355,11 +356,11 @@ export default function StartPage() {
           {/* Header Section */}
           <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-6">
-              {t("Simple pricing")}
+              {t("start.title")}
             </h1>
             <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-              {t("Choose a plan. Switch anytime.")} <br className="hidden sm:block" />
-              <span className="opacity-70">Start small and scale as you grow.</span>
+              {t("start.subtitle")} <br className="hidden sm:block" />
+              <span className="opacity-70">{t("start.subtitleHint")}</span>
             </p>
 
             {/* Gradient Toggle Switch (Restored) */}
@@ -375,7 +376,7 @@ export default function StartPage() {
                     }
                   `}
                 >
-                  {t("Monthly")}
+                  {t("start.monthly")}
                 </button>
 
                 <button
@@ -388,12 +389,11 @@ export default function StartPage() {
                     }
                   `}
                 >
-                  {t("Yearly")}
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded transition-colors ${
-                    interval === 'yearly'
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400"
-                      : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                  }`}>
+                  {t("start.yearly")}
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded transition-colors ${interval === 'yearly'
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400"
+                    : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                    }`}>
                     -30%
                   </span>
                 </button>
@@ -417,9 +417,9 @@ export default function StartPage() {
           </div>
 
           <div className="mt-16 text-center">
-             <p className="text-sm text-slate-500 dark:text-slate-500">
-               Need a custom enterprise solution? <a href="mailto:contact@tierless.net" className="text-slate-900 dark:text-white underline underline-offset-4 hover:text-indigo-500">Contact us</a>
-             </p>
+            <p className="text-sm text-slate-500 dark:text-slate-500">
+              {t("start.enterpriseCta")} <a href="mailto:contact@tierless.net" className="text-slate-900 dark:text-white underline underline-offset-4 hover:text-indigo-500">{t("start.contactUs")}</a>
+            </p>
           </div>
 
           <InfoModal state={info} onClose={() => setInfo({ ...info, open: false })} />
@@ -462,17 +462,17 @@ function PlanCard({
   }, [busy]);
 
   const { effMonthlyLabel, perYearLabel } = getYearlyPricing(plan.monthly);
-  
+
   // Highlight "Best Value" plans (Growth) visually
   const isFeatured = plan.id === 'growth';
 
-  let ctaText = t("Get Started");
+  let ctaText = t("start.getStarted");
   if (authed) {
-    if (isCurrent) ctaText = t("Current Plan");
-    else if (currentPlan && PLAN_RANK[plan.id] > PLAN_RANK[currentPlan]) ctaText = t("Upgrade");
-    else if (currentPlan) ctaText = t("Downgrade");
+    if (isCurrent) ctaText = t("start.currentPlan");
+    else if (currentPlan && PLAN_RANK[plan.id] > PLAN_RANK[currentPlan]) ctaText = t("start.upgrade");
+    else if (currentPlan) ctaText = t("start.downgrade");
   }
-  if (plan.id === "free" && !authed) ctaText = t("Start Free");
+  if (plan.id === "free" && !authed) ctaText = t("start.startFree");
 
   const ctaHref = isCurrent ? "#" : `/signup?plan=${plan.id}&interval=${interval}`;
 
@@ -524,7 +524,7 @@ function PlanCard({
       <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${plan.theme.bgHover}`} />
 
       <div className="relative p-5 xl:p-4 flex-1 flex flex-col z-10">
-        
+
         {/* Card Header */}
         <div className="mb-6">
           <h3 className={`text-lg font-bold transition-colors ${plan.theme.text} flex items-center gap-2`}>
@@ -543,7 +543,7 @@ function PlanCard({
           <div className="h-6 mt-1">
             {interval === "yearly" && plan.monthly > 0 && (
               <p className="text-xs text-slate-500 font-medium bg-slate-100 dark:bg-slate-800/50 inline-block px-1.5 py-0.5 rounded">
-                {t("Billed {price} yearly", { price: perYearLabel })}
+                {t("start.billedYearly", { price: perYearLabel })}
               </p>
             )}
           </div>
@@ -570,15 +570,15 @@ function PlanCard({
             `}
           >
             {busy ? (
-               <span className="flex items-center justify-center gap-2">
-                 <span className="size-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                 {t("Processing...")}
-               </span>
+              <span className="flex items-center justify-center gap-2">
+                <span className="size-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                {t("start.processing")}
+              </span>
             ) : ctaText}
           </Link>
-          
+
           <p className="mt-2 text-[10px] text-center text-slate-400 dark:text-slate-600 font-medium">
-             {plan.id === "free" ? "No card needed" : "Cancel anytime"}
+            {plan.id === "free" ? t("start.noCardNeeded") : t("start.cancelAnytime")}
           </p>
         </div>
 
@@ -588,7 +588,7 @@ function PlanCard({
         {/* Chips (Special Features) */}
         {plan.chips && plan.chips.length > 0 && (
           <div className="mb-6">
-            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Highlights</p>
+            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">{t("start.highlights")}</p>
             <div className="flex flex-wrap gap-2">
               {plan.chips.map((chip) => (
                 <button
@@ -623,7 +623,7 @@ function PlanCard({
                 <span>{perk}</span>
               </li>
             ))}
-             {plan.caps.map((cap, i) => (
+            {plan.caps.map((cap, i) => (
               <li key={`cap-${i}`} className="text-[13px] flex items-start gap-3 text-slate-500 dark:text-slate-500 leading-snug">
                 <div className="size-4 flex items-center justify-center shrink-0 mt-0.5">
                   <div className="size-1 rounded-full bg-slate-300 dark:bg-slate-600" />
@@ -654,7 +654,7 @@ function InfoModal({ state, onClose }: { state: InfoModalState; onClose: () => v
         <div className="mt-6 flex justify-end gap-3">
           {state.href && (
             <Link href={state.href} className="w-full text-center px-4 py-2.5 text-sm font-semibold bg-slate-900 dark:bg-white text-white dark:text-black rounded-xl hover:opacity-90 transition-opacity">
-              {t("Learn more")}
+              {t("start.learnMore")}
             </Link>
           )}
         </div>
@@ -668,7 +668,7 @@ function InfoModal({ state, onClose }: { state: InfoModalState; onClose: () => v
 function CheckIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M7.75 12.75L10 15.25L16.25 8.75" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M7.75 12.75L10 15.25L16.25 8.75" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

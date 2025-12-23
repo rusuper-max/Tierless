@@ -355,5 +355,276 @@
     "contact": "Contact Us",
     "rights": "All rights reserved.",
     "madeWith": "Made with ❤️ for builders."
+  },
+  "start": {
+    "header": {
+      "backToSite": "Back to site",
+      "dashboard": "Dashboard",
+      "signIn": "Sign in",
+      "openDashboard": "Open dashboard"
+    },
+    "title": "Simple pricing",
+    "subtitle": "Choose a plan. Switch anytime.",
+    "subtitleHint": "Start small and scale as you grow.",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "billedYearly": "Billed {price} yearly",
+    "getStarted": "Get Started",
+    "currentPlan": "Current Plan",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "startFree": "Start Free",
+    "processing": "Processing...",
+    "noCardNeeded": "No card needed",
+    "cancelAnytime": "Cancel anytime",
+    "highlights": "Highlights",
+    "learnMore": "Learn more",
+    "enterpriseCta": "Need a custom enterprise solution?",
+    "contactUs": "Contact us",
+    "paymentNotConfigured": "Payment not configured. Please contact support.",
+    "checkoutFailed": "Failed to start checkout. Please try again.",
+    "plans": {
+      "free": {
+        "name": "Free",
+        "description": "Perfect for testing the editor.",
+        "perks": [
+          "1 Published Page",
+          "15 Items limit",
+          "Tierless badge (Required)"
+        ],
+        "caps": [
+          "Standard themes only",
+          "2MB image limit",
+          "No analytics"
+        ]
+      },
+      "starter": {
+        "name": "Starter",
+        "description": "Perfect for freelancers and side projects.",
+        "perks": [
+          "AI Menu Scan (OCR)",
+          "Premium Fonts & Colors",
+          "Analytics Dashboard",
+          "50 Items limit"
+        ],
+        "caps": [
+          "3 Published Pages",
+          "5MB image limit",
+          "Badge visible"
+        ],
+        "chips": {
+          "ocr-import": {
+            "label": "AI Scan",
+            "description": "Scan your existing menu photo instantly."
+          }
+        }
+      },
+      "growth": {
+        "name": "Growth",
+        "badge": "Best Value",
+        "description": "For small businesses and professionals.",
+        "perks": [
+          "Website Integration (Embed)",
+          "Remove Tierless badge",
+          "All Premium Themes",
+          "Background Video",
+          "100 Items limit"
+        ],
+        "caps": [
+          "5 Published Pages",
+          "8MB image limit",
+          "Priority Support"
+        ],
+        "chips": {
+          "embed": {
+            "label": "Website Embed",
+            "description": "Display your menu directly on your restaurant website."
+          }
+        }
+      },
+      "pro": {
+        "name": "Pro",
+        "description": "For serious businesses.",
+        "perks": [
+          "3 Custom Domains (SSL)",
+          "Unlimited Items",
+          "10 Published Pages",
+          "Team Collaboration (15 seats)",
+          "Webhooks & API"
+        ],
+        "caps": [
+          "50 Total Pages",
+          "15MB image limit",
+          "Dedicated Support"
+        ],
+        "chips": {
+          "domain": {
+            "label": "Custom Domain",
+            "description": "Use menu.your-restaurant.com"
+          }
+        }
+      },
+      "agency": {
+        "name": "Agency",
+        "description": "For agencies managing multiple clients.",
+        "perks": [
+          "10 Custom Domains (SSL)",
+          "50 Published Pages",
+          "25 Client Workspaces",
+          "50 Team Seats",
+          "Priority Support"
+        ],
+        "caps": [
+          "200 Total Pages",
+          "25MB image limit",
+          "White Label"
+        ],
+        "chips": {
+          "client-workspaces": {
+            "label": "Client Workspaces",
+            "description": "Create up to 25 separate client workspaces with their own teams."
+          }
+        }
+      }
+    }
+  },
+  "examples": {
+    "badge": "Showcase",
+    "title": "Made with",
+    "subtitle": "See real price pages from the community. Discover designs that fit your business.",
+    "backToHome": "Back to Home",
+    "officialShowcase": "Official Showcase",
+    "officialShowcaseDesc": "Hand-picked pages to demonstrate what's possible.",
+    "trendingCommunity": "Trending Community",
+    "trendingCommunityDesc": "Top rated public pages (owner opted in).",
+    "topRatedPages": "Top Rated Pages",
+    "noCommunityPages": "No community pages yet.",
+    "loadMore": "Load More Examples",
+    "emptySpot": "Empty Spot",
+    "waitingForYou": "Waiting for you",
+    "availableSpot": "Available Spot",
+    "viewPage": "View Page",
+    "visitPage": "Visit Page",
+    "unknown": "Unknown",
+    "ctaTitle": "Build your own pricing page",
+    "ctaSubtitle": "Join creators building with Tierless.",
+    "ctaButton": "Start for Free"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything you need to know about creating beautiful price lists and digital menus.",
+    "backToHome": "Back to Home",
+    "dashboard": "Dashboard",
+    "noQuestions": "No questions found for this category.",
+    "ctaQuestion": "Still have questions? We'd love to help!",
+    "contactSupport": "Contact Support",
+    "goToDashboard": "Go to Dashboard",
+    "categories": {
+      "all": "All Questions",
+      "general": "General",
+      "features": "Features",
+      "pricing": "Pricing",
+      "technical": "Technical"
+    }
+  },
+  "dashboard": {
+    "status": {
+      "online": "Online",
+      "offline": "Offline",
+      "liveOnWeb": "Live on web",
+      "draft": "Draft (Private)"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "duplicate": "Duplicate",
+      "rename": "Rename",
+      "share": "Share / QR",
+      "moveToTeam": "Move to team",
+      "publish": "Publish",
+      "stop": "Stop",
+      "public": "Public",
+      "reorder": "Reorder",
+      "newPage": "New Page",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "deleteSelected": "Delete selected",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "search": "Search pages...",
+      "copyLink": "Copy link"
+    },
+    "table": {
+      "name": "Name",
+      "team": "Team",
+      "share": "Share",
+      "created": "Created",
+      "status": "Status",
+      "actions": "Actions",
+      "order": "Order"
+    },
+    "filters": {
+      "all": "All",
+      "online": "Online",
+      "offline": "Offline",
+      "favorites": "Favorites"
+    },
+    "sort": {
+      "created": "Created",
+      "name": "Name",
+      "status": "Status",
+      "manual": "Manual"
+    },
+    "messages": {
+      "copied": "Copied!",
+      "couldNotCreate": "Could not create page. Try again.",
+      "untitledPage": "Untitled Page",
+      "planLimitReached": "You've reached the pages limit for your plan. Manage plan in Account.",
+      "overLimitMessage": "You're over the page limit for your plan. Resolve it by deleting pages or upgrading your plan.",
+      "publishFirst": "Publish this page from the dashboard to share it.",
+      "couldNotPrepareLink": "Could not prepare share link.",
+      "deleteConfirmTitle": "Delete this page?",
+      "deleteConfirmMessage": "This will move the page to trash. You can restore it later.",
+      "noPagesYet": "No pages yet",
+      "createFirstPage": "Create your first page to get started.",
+      "noMatchingPages": "No matching pages"
+    },
+    "empty": {
+      "title": "No pages yet",
+      "description": "Create your first page to get started.",
+      "noResults": "No matching pages"
+    }
+  },
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "enterEmail": "Enter your email to access your dashboard",
+    "emailAddress": "Email address",
+    "emailPlaceholder": "name@company.com",
+    "sendMagicLink": "Send Magic Link",
+    "sendingLink": "Sending link...",
+    "checkEmail": "Check your email",
+    "magicLinkSent": "We sent a magic login link to",
+    "tryAnotherEmail": "Try another email",
+    "somethingWentWrong": "Something went wrong. Please try again.",
+    "termsNotice": "By signing in, you agree to our Terms of Service and Privacy Policy."
+  },
+  "errors": {
+    "pageNotFound": "Page Not Found",
+    "pageNotFoundDesc": "The page you're looking for doesn't exist or has been moved. Let's get you back on track.",
+    "backToHome": "Back to Home",
+    "goToDashboard": "Go to Dashboard",
+    "needHelp": "Need help?",
+    "checkFaq": "Check our FAQ",
+    "somethingWrong": "Something went wrong",
+    "tryAgain": "Try again",
+    "goBack": "Go back"
+  },
+  "cookies": {
+    "banner": {
+      "description": "We use cookies to improve your experience and analyze site usage.",
+      "learnMore": "Learn more",
+      "decline": "Decline",
+      "accept": "Accept"
+    }
   }
 }

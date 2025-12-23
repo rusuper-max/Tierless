@@ -95,6 +95,8 @@ type SimpleSection = {
 type PublicRendererProps = {
   calc: any;
   scrollContainer?: RefObject<HTMLElement | null>;
+  embedMode?: boolean;
+  hideBadge?: boolean;
 };
 
 // --- THEME DEFINITIONS ---
@@ -631,7 +633,7 @@ function RatingWidgetThemed({ pageId, initialAvg, initialCount, initialUserScore
   );
 }
 
-export default function PublicRenderer({ calc, scrollContainer }: PublicRendererProps) {
+export default function PublicRenderer({ calc, scrollContainer, embedMode, hideBadge }: PublicRendererProps) {
   const meta = calc?.meta || {};
   const i18n = calc?.i18n || {};
   const items: ItemRow[] = calc?.items || [];
@@ -670,7 +672,7 @@ export default function PublicRenderer({ calc, scrollContainer }: PublicRenderer
     : (meta.simpleFont === "mono" ? "font-mono" : meta.simpleFont === "rounded" ? "font-sans rounded-none" : "font-sans");
 
   const spacingMode = meta.simpleSpacing || "cozy";
-  const showBadge = meta.simpleShowBadge ?? true;
+  const showBadge = hideBadge ? false : (meta.simpleShowBadge ?? true);
   const allowSelection = meta.simpleAllowSelection ?? false;
   const enableCalculations = meta.simpleEnableCalculations ?? false;
   const addCheckout = meta.simpleAddCheckout ?? false;

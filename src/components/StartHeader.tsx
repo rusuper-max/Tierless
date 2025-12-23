@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import CTAButton from "@/components/marketing/CTAButton";
 import ThemeToggle from "@/components/nav/ThemeToggle";
+import { useT } from "@/i18n";
 
 export default function StartHeader() {
+  const t = useT();
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
@@ -37,8 +40,8 @@ export default function StartHeader() {
           pill
           hairlineOutline
           fx="none"
-          label="Back to site"
-          ariaLabel="Back to site"
+          label={t("start.header.backToSite")}
+          ariaLabel={t("start.header.backToSite")}
         />
       </div>
       <div className="pointer-events-auto flex items-center gap-2">
@@ -49,8 +52,8 @@ export default function StartHeader() {
           pill
           hairlineOutline
           fx="none"
-          label={authed ? "Dashboard" : "Sign in"}
-          ariaLabel={authed ? "Open dashboard" : "Sign in"}
+          label={authed ? t("start.header.dashboard") : t("start.header.signIn")}
+          ariaLabel={authed ? t("start.header.openDashboard") : t("start.header.signIn")}
         />
         <ThemeToggle />
       </div>

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import MarketingHeader from "@/components/marketing/MarketingHeader";
 import Footer from "@/components/marketing/Footer";
+import { useT } from "@/i18n/client";
 
 // Cloudinary optimization helper
 function optimizeCloudinaryUrl(url: string | null, width: number = 600): string | null {
@@ -53,6 +54,7 @@ type TopPageRow = {
 };
 
 export default function ExamplesPage() {
+    const t = useT();
     const [featured, setFeatured] = useState<ShowcaseCard[]>([]);
     const [community, setCommunity] = useState<ShowcaseCard[]>([]);
     const [topPages, setTopPages] = useState<TopPageRow[]>([]);
@@ -88,7 +90,7 @@ export default function ExamplesPage() {
             <div className="relative pt-32 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gradient-to-b from-slate-50 to-white">
                 {/* Subtle grid pattern */}
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-                
+
                 <div className="relative z-10 max-w-5xl mx-auto text-center">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -96,7 +98,7 @@ export default function ExamplesPage() {
                         className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 mb-6"
                     >
                         <span className="flex h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
-                        Showcase
+                        {t("examples.badge")}
                     </motion.div>
 
                     <motion.h1
@@ -105,7 +107,7 @@ export default function ExamplesPage() {
                         transition={{ delay: 0.1 }}
                         className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-slate-900"
                     >
-                        Made with{" "}
+                        {t("examples.title")}{" "}
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-cyan-500 to-teal-400">
                             Tierless
                         </span>
@@ -117,7 +119,7 @@ export default function ExamplesPage() {
                         transition={{ delay: 0.2 }}
                         className="text-lg text-slate-600 max-w-2xl mx-auto mb-8"
                     >
-                        See real price pages from the community. Discover designs that fit your business.
+                        {t("examples.subtitle")}
                     </motion.p>
 
                 </div>
@@ -137,7 +139,7 @@ export default function ExamplesPage() {
                         className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-indigo-300 hover:text-indigo-600 hover:shadow-md"
                     >
                         <ArrowLeft size={16} />
-                        Back to Home
+                        {t("examples.backToHome")}
                     </Link>
                 </motion.div>
 
@@ -149,8 +151,8 @@ export default function ExamplesPage() {
                                 <Star className="text-amber-600 w-5 h-5 fill-amber-500" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900">Official Showcase</h2>
-                                <p className="text-slate-500 text-sm">Hand-picked pages to demonstrate what's possible.</p>
+                                <h2 className="text-2xl font-bold text-slate-900">{t("examples.officialShowcase")}</h2>
+                                <p className="text-slate-500 text-sm">{t("examples.officialShowcaseDesc")}</p>
                             </div>
                         </div>
 
@@ -172,8 +174,8 @@ export default function ExamplesPage() {
                                     <TrendingUp className="text-indigo-600 w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold text-slate-900">Trending Community</h2>
-                                    <p className="text-slate-500 text-sm">Top rated public pages (owner opted in).</p>
+                                    <h2 className="text-2xl font-bold text-slate-900">{t("examples.trendingCommunity")}</h2>
+                                    <p className="text-slate-500 text-sm">{t("examples.trendingCommunityDesc")}</p>
                                 </div>
                             </div>
                         </div>
@@ -186,7 +188,7 @@ export default function ExamplesPage() {
                                     <Card key={ex.slug} card={ex} />
                                 ))}
                                 {community.length === 0 && (
-                                    <EmptyState text="No community pages yet." />
+                                    <EmptyState text={t("examples.noCommunityPages")} />
                                 )}
                             </div>
                         )}
@@ -198,7 +200,7 @@ export default function ExamplesPage() {
                                     onClick={handleLoadMore}
                                     className="group flex items-center gap-2 px-6 py-3 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 hover:border-slate-300 transition-all text-sm font-medium text-slate-600 hover:text-slate-900"
                                 >
-                                    <span>Load More Examples</span>
+                                    <span>{t("examples.loadMore")}</span>
                                     <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
                                 </button>
                             </div>
@@ -211,7 +213,7 @@ export default function ExamplesPage() {
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
                                 <div className="flex items-center gap-3 mb-6">
                                     <Trophy className="text-amber-500 w-5 h-5" />
-                                    <h3 className="font-bold text-slate-900">Top Rated Pages</h3>
+                                    <h3 className="font-bold text-slate-900">{t("examples.topRatedPages")}</h3>
                                 </div>
 
                                 {loading ? (
@@ -277,13 +279,13 @@ export default function ExamplesPage() {
 
                 {/* CTA */}
                 <div className="mt-24 text-center">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-4">Build your own pricing page</h2>
-                    <p className="text-slate-600 mb-8">Join creators building with Tierless.</p>
+                    <h2 className="text-2xl font-bold text-slate-900 mb-4">{t("examples.ctaTitle")}</h2>
+                    <p className="text-slate-600 mb-8">{t("examples.ctaSubtitle")}</p>
                     <Link
                         href="/login"
                         className="group inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold text-lg transition-all hover:shadow-lg hover:shadow-cyan-500/30 hover:scale-105"
                     >
-                        Start for Free
+                        {t("examples.ctaButton")}
                         <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                     </Link>
                 </div>
@@ -358,7 +360,7 @@ function Card({ card, tall = false }: { card: ShowcaseCard; tall?: boolean }) {
                         </span>
                         <span className="truncate max-w-[80px]">{card.author || "Unknown"}</span>
                     </div>
-                    <Link 
+                    <Link
                         href={`/p/${card.slug}`}
                         className="flex items-center gap-1 text-xs font-medium text-cyan-600 hover:text-cyan-700 hover:underline"
                     >

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CSSProperties, useState, useEffect, useRef } from "react";
 import { Star } from "lucide-react";
+import { useT } from "@/i18n/client";
 
 /* --- Styles --- */
 export type BtnVariant = "brand" | "neutral" | "danger";
@@ -190,6 +191,7 @@ export function SortDropdown({
     value: SortId;
     onChange: (next: SortId) => void;
 }) {
+    const t = useT();
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement | null>(null);
 
@@ -201,11 +203,15 @@ export function SortDropdown({
         return () => document.removeEventListener("mousedown", onDoc);
     }, []);
 
-    const label =
-        value === "created_desc" ? "Date created (newest)"
-            : value === "name_asc" ? "Name A–Z"
-                : value === "status" ? "Status (Online first)"
-                    : "Manual (your order)";
+    const sortOptions: { id: SortId; labelKey: string }[] = [
+        { id: "created_desc", labelKey: "dashboard.sort.created" },
+        { id: "name_asc", labelKey: "dashboard.sort.name" },
+        { id: "status", labelKey: "dashboard.sort.status" },
+        { id: "manual", labelKey: "dashboard.sort.manual" },
+    ];
+
+    const currentOption = sortOptions.find(opt => opt.id === value);
+    const label = currentOption ? t(currentOption.labelKey) : t("dashboard.sort.created");
 
     return (
         <div className="relative" ref={ref}>
@@ -224,18 +230,13 @@ export function SortDropdown({
                 <>
                     <div className="fixed inset-0 z-[90]" onClick={() => setOpen(false)} />
                     <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-[var(--border)] bg-white dark:bg-slate-900 text-black dark:text-slate-100 shadow-xl p-1 z-[100]">
-                        {[
-                            ["created_desc", "Date created (newest)"],
-                            ["name_asc", "Name A–Z"],
-                            ["status", "Status (Online first)"],
-                            ["manual", "Manual (your order)"],
-                        ].map(([v, l]) => (
+                        {sortOptions.map((opt) => (
                             <button
-                                key={v}
+                                key={opt.id}
                                 className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-sm"
-                                onClick={() => { onChange(v as SortId); setOpen(false); }}
+                                onClick={() => { onChange(opt.id); setOpen(false); }}
                             >
-                                {l}
+                                {t(opt.labelKey)}
                             </button>
                         ))}
                     </div>
@@ -258,16 +259,17 @@ export function ConfirmDeleteModal({
     onConfirm: () => void;
     busy?: boolean;
 }) {
+    const t = useT();
     if (!open) return null;
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center" role="dialog" aria-modal="true">
             <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
             <div className="relative z-[101] card w-[92vw] max-w-md p-5 bg-[var(--card)] rounded-xl border border-[var(--border)] shadow-2xl">
-                <div className="text-lg font-semibold text-[var(--text)]">Move “{name}” to Trash?</div>
-                <p className="mt-2 text-sm text-[var(--muted)]">You can restore it from Trash within 30 days.</p>
+                <div className="text-lg font-semibold text-[var(--text)]">{t("dashboard.messages.deleteConfirmTitle")}</div>
+                <p className="mt-2 text-sm text-[var(--muted)]">{t("dashboard.messages.deleteConfirmMessage")}</p>
                 <div className="mt-5 flex items-center justify-end gap-2">
-                    <ActionButton label="Cancel" onClick={onCancel} disabled={busy} variant="neutral" />
-                    <ActionButton label={busy ? "Moving…" : "Move to Trash"} onClick={onConfirm} disabled={busy} variant="danger" />
+                    <ActionButton label={t("dashboard.actions.cancel")} onClick={onCancel} disabled={busy} variant="neutral" />
+                    <ActionButton label={busy ? "..." : t("dashboard.actions.delete")} onClick={onConfirm} disabled={busy} variant="danger" />
                 </div>
             </div>
         </div>

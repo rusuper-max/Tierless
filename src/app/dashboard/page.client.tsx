@@ -6,9 +6,10 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAccount } from "@/hooks/useAccount";
-import { ENTITLEMENTS, type PlanId } from "@/lib/entitlements";
+import { ENTITLEMENTS, type PlanId, hasFeature, coercePlan } from "@/lib/entitlements";
 import { GripVertical, Share2, Star } from "lucide-react";
 import ShareQrModal from "@/components/share/ShareQrModal";
+import { useT } from "@/i18n/client";
 
 // --- Refactored Components ---
 import {
@@ -87,6 +88,7 @@ export default function DashboardPageClient({
   teamName?: string;
   teamRole?: string;
 }) {
+  const t = useT();
   const account = useAccount();
   const router = useRouter();
 
@@ -378,6 +380,7 @@ export default function DashboardPageClient({
   }, []);
 
   const [shareSlug, setShareSlug] = useState<string | null>(null);
+  const [sharePageId, setSharePageId] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string>("");
   const [shareLoading, setShareLoading] = useState(false);
 
@@ -579,6 +582,7 @@ export default function DashboardPageClient({
       }
       try {
         setShareSlug(slug);
+        setSharePageId(target?.meta?.id || null);
         setShareUrl("");
         setShareLoading(true);
         const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -588,6 +592,7 @@ export default function DashboardPageClient({
         console.error("openShareModal failed:", err);
         showToast("Could not prepare share link.");
         setShareSlug(null);
+        setSharePageId(null);
         setShareUrl("");
       } finally {
         setShareLoading(false);
@@ -598,6 +603,7 @@ export default function DashboardPageClient({
 
   const closeShareModal = useCallback(() => {
     setShareSlug(null);
+    setSharePageId(null);
     setShareUrl("");
   }, []);
 
@@ -684,7 +690,7 @@ export default function DashboardPageClient({
       .replace(/^copy of\s+/i, "")
       .replace(/\(\d+\)$/g, "")
       .trim();
-    const base = `Copy of ${stripped || "Untitled Page"}`.trim();
+    const base = `Copy of ${stripped || t("dashboard.messages.untitledPage")}`.trim();
     if (!existing.has(base.toLowerCase())) return base;
     for (let i = 2; i < 9999; i++) {
       const cand = `${base} (${i})`;
@@ -715,7 +721,7 @@ export default function DashboardPageClient({
   /* --------------------- CRUD helpers --------------------- */
   async function createBlank() {
     if (!canCreate) {
-      alert("You've reached the pages limit for your plan. Manage plan in Account.");
+      alert(t("dashboard.messages.planLimitReached"));
       return;
     }
 
@@ -747,7 +753,7 @@ export default function DashboardPageClient({
         }
 
         console.error("CREATE /api/calculators ->", payloadText || r.statusText);
-        showToast("Could not create page. Try again.");
+        showToast(t("dashboard.messages.couldNotCreate"));
         return;
       }
 
@@ -755,7 +761,7 @@ export default function DashboardPageClient({
       if (json?.slug) {
         setRows((prev) => [
           ...prev,
-          { meta: { name: "Untitled Page", slug: json.slug!, published: false, createdAt: now, updatedAt: now } },
+          { meta: { name: t("dashboard.messages.untitledPage"), slug: json.slug!, published: false, createdAt: now, updatedAt: now } },
         ]);
         setCreatedLS(json.slug!, now);
         window.location.href = `/editor/${json.slug}`;
@@ -769,7 +775,7 @@ export default function DashboardPageClient({
 
   async function duplicate(slug: string, name: string) {
     if (!canCreate) {
-      alert("You've reached the pages limit for your plan. Manage plan in Account.");
+      alert(t("dashboard.messages.planLimitReached"));
       return;
     }
     setBusy(slug);
@@ -785,7 +791,7 @@ export default function DashboardPageClient({
       const payload = await r.text();
       if (!r.ok) {
         console.warn("DUP /api/calculators ->", payload);
-        alert("You reached your pages limit. Manage plan in Account.");
+        alert(t("dashboard.messages.planLimitReached"));
         return;
       }
       const json = JSON.parse(payload) as { slug?: string };
@@ -1134,12 +1140,11 @@ export default function DashboardPageClient({
               {teamName ? `${teamName} Pages` : "Pages"}
             </h1>
             {teamRole && (
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                teamRole === "owner" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" :
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${teamRole === "owner" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" :
                 teamRole === "admin" ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" :
-                teamRole === "editor" ? "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400" :
-                "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-              }`}>
+                  teamRole === "editor" ? "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400" :
+                    "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                }`}>
                 {teamRole.charAt(0).toUpperCase() + teamRole.slice(1)}
               </span>
             )}
@@ -1262,10 +1267,10 @@ export default function DashboardPageClient({
 
           <div className="flex items-center justify-between flex-wrap gap-3 relative z-0">
             <div className="flex flex-wrap items-center gap-2">
-              <FilterChip label="All" active={activeFilter === "all"} onClick={() => setActiveFilter("all")} />
-              <FilterChip label="Online" active={activeFilter === "online"} onClick={() => setActiveFilter("online")} />
-              <FilterChip label="Offline" active={activeFilter === "offline"} onClick={() => setActiveFilter("offline")} />
-              <FilterChip label="Favorites" active={activeFilter === "favorites"} onClick={() => setActiveFilter("favorites")} />
+              <FilterChip label={t("dashboard.filters.all")} active={activeFilter === "all"} onClick={() => setActiveFilter("all")} />
+              <FilterChip label={t("dashboard.filters.online")} active={activeFilter === "online"} onClick={() => setActiveFilter("online")} />
+              <FilterChip label={t("dashboard.filters.offline")} active={activeFilter === "offline"} onClick={() => setActiveFilter("offline")} />
+              <FilterChip label={t("dashboard.filters.favorites")} active={activeFilter === "favorites"} onClick={() => setActiveFilter("favorites")} />
             </div>
 
             <div className="flex items-center gap-2">
@@ -1282,7 +1287,7 @@ export default function DashboardPageClient({
           <div className="flex items-center gap-4 text-sm bg-[var(--card)] border-2 border-[var(--border)] rounded-2xl px-6 py-3 shadow-2xl backdrop-blur-sm">
             <div className="font-semibold text-[var(--text)]">{selected.size} selected</div>
             <div className="h-4 w-px bg-[var(--border)]" />
-            <ActionButton label="Delete" onClick={bulkDelete} variant="danger" />
+            <ActionButton label={t("dashboard.actions.delete")} onClick={bulkDelete} variant="danger" />
           </div>
         </div>
       )}
@@ -1564,6 +1569,10 @@ export default function DashboardPageClient({
         url={shareUrl}
         loading={shareLoading && !shareUrl}
         onClose={closeShareModal}
+        pageId={sharePageId || undefined}
+        slug={shareSlug || undefined}
+        canEmbed={hasFeature(coercePlan(plan), "canEmbed")}
+        onUpgrade={() => window.location.href = "/start"}
       />
 
       {/* Scoped theme tokens + effects */}

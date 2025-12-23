@@ -5,6 +5,8 @@ import { useEffect, useState, useRef } from "react";
 import { ChevronLeft, Eye, Sparkles, X, XCircle, Undo2, Redo2 } from "lucide-react";
 import { useT } from "@/i18n";
 import { useEditorStore, type CalcJson, type Mode } from "@/hooks/useEditorStore";
+import { useAccount } from "@/hooks/useAccount";
+import { hasFeature, coercePlan } from "@/lib/entitlements";
 import { useUndoRedoShortcuts } from "@/hooks/useUndoRedoShortcuts";
 import { HelpModeProvider, useHelpMode } from "@/hooks/useHelpMode";
 import EditorNavBar from "./components/EditorNavBar";
@@ -54,6 +56,7 @@ function EditorContent({ slug, initialCalc, readOnly = false, teamRole }: Props)
   const t = useT();
   const { calc, init, isDirty, isSaving, setEditorMode, undo, redo, canUndo, canRedo } = useEditorStore();
   const { isActive: isHelpMode, hasSeenIntro, markIntroAsSeen, enableHelpMode, disableHelpMode, toggleHelpMode } = useHelpMode();
+  const { plan } = useAccount();
 
   // Enable keyboard shortcuts for Undo/Redo
   useUndoRedoShortcuts();
@@ -619,6 +622,11 @@ function EditorContent({ slug, initialCalc, readOnly = false, teamRole }: Props)
         canRedo={canRedo()}
         // Read-only mode for viewers
         readOnly={readOnly}
+        // Embed feature
+        pageId={calc?.id as string | undefined}
+        slug={calc?.meta?.slug as string | undefined}
+        canEmbed={hasFeature(coercePlan(plan), "canEmbed")}
+        onUpgrade={() => window.location.href = "/start"}
       />
 
       {/* Read-Only Banner for Viewers - positioned below navbar */}

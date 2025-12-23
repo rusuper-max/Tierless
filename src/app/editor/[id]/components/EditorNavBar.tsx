@@ -22,6 +22,7 @@ import {
   Sparkles,
   Undo2,
   Redo2,
+  Code,
 } from "lucide-react";
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useT } from "@/i18n";
@@ -29,6 +30,7 @@ import { useAccount } from "@/hooks/useAccount";
 import ThemeToggle from "@/components/nav/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import ShareQrModal from "@/components/share/ShareQrModal";
+import EmbedCodeModal from "@/components/share/EmbedCodeModal";
 import type { Mode } from "@/hooks/useEditorStore";
 import type { PlanId } from "@/lib/entitlements";
 
@@ -256,6 +258,11 @@ export default function EditorNavBar({
   canRedo = false,
   // Read-only mode for viewers
   readOnly = false,
+  // Embed feature
+  pageId,
+  slug,
+  canEmbed = false,
+  onUpgrade,
 }: {
   calcName?: string;
   showBack?: boolean;
@@ -279,9 +286,15 @@ export default function EditorNavBar({
   canRedo?: boolean;
   // Read-only mode
   readOnly?: boolean;
+  // Embed feature
+  pageId?: string;
+  slug?: string;
+  canEmbed?: boolean;
+  onUpgrade?: () => void;
 }) {
   const t = useT();
   const [qrOpen, setQrOpen] = useState(false);
+  const [embedOpen, setEmbedOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hasClickedGuide, setHasClickedGuide] = useState(true); // default true to avoid flash
   const [guideMenuOpen, setGuideMenuOpen] = useState(false);
@@ -644,6 +657,21 @@ export default function EditorNavBar({
                       <QrCode className="w-3.5 h-3.5" />
                       {t("QR code")}
                     </button>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setEmbedOpen(true);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--text)] hover:bg-white/5"
+                    >
+                      <Code className="w-3.5 h-3.5" />
+                      {t("Embed code")}
+                      {!canEmbed && (
+                        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 text-indigo-400 font-medium">
+                          Growth+
+                        </span>
+                      )}
+                    </button>
                     <a
                       href={fullPublicUrl}
                       target="_blank"
@@ -694,6 +722,22 @@ export default function EditorNavBar({
                   >
                     <Share2 className="w-4 h-4" />
                     {t("Share Link")}
+                  </button>
+
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-[var(--text)] hover:bg-white/5 text-left"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setEmbedOpen(true);
+                    }}
+                  >
+                    <Code className="w-4 h-4" />
+                    {t("Embed code")}
+                    {!canEmbed && (
+                      <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 text-indigo-400 font-medium">
+                        Growth+
+                      </span>
+                    )}
                   </button>
 
                   <div className="h-px bg-[var(--border)] my-1" />
@@ -748,6 +792,14 @@ export default function EditorNavBar({
       </nav>
 
       <ShareQrModal open={qrOpen} onClose={() => setQrOpen(false)} url={fullPublicUrl} />
+      <EmbedCodeModal
+        open={embedOpen}
+        onClose={() => setEmbedOpen(false)}
+        pageId={pageId || ""}
+        slug={slug}
+        canEmbed={canEmbed}
+        onUpgrade={onUpgrade}
+      />
     </>
   );
 }

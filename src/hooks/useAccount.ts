@@ -35,7 +35,11 @@ export function setDevPlanOverride(plan: Plan | null) {
 }
 
 // Whitelist of emails with Dev access
-const DEV_EMAILS = ["rusuper@gmail.com"];
+const DEV_EMAILS = [
+  "rusuper@gmail.com",
+  "jstevanoviic@gmail.com",
+  "stevanovic.jelena55@gmail.com",
+];
 
 export function isDevUser(email: string | null): boolean {
   // Dev mode only on localhost AND for whitelisted emails

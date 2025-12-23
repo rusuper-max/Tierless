@@ -317,5 +317,276 @@
         "contact": "Kontaktirajte nas",
         "rights": "Sva prava zadržana.",
         "madeWith": "Napravljeno sa ❤️ za graditelje."
+    },
+    "start": {
+        "header": {
+            "backToSite": "Nazad na sajt",
+            "dashboard": "Kontrolna tabla",
+            "signIn": "Prijavi se",
+            "openDashboard": "Otvori kontrolnu tablu"
+        },
+        "title": "Jednostavne cene",
+        "subtitle": "Izaberite plan. Promenite kad god želite.",
+        "subtitleHint": "Počnite malo i rastite kako napredujete.",
+        "monthly": "Mesečno",
+        "yearly": "Godišnje",
+        "billedYearly": "Naplaćuje se {price} godišnje",
+        "getStarted": "Započni",
+        "currentPlan": "Trenutni plan",
+        "upgrade": "Nadogradi",
+        "downgrade": "Vrati na niži plan",
+        "startFree": "Počni besplatno",
+        "processing": "Obrađuje se...",
+        "noCardNeeded": "Nije potrebna kartica",
+        "cancelAnytime": "Otkažite bilo kad",
+        "highlights": "Istaknuto",
+        "learnMore": "Saznaj više",
+        "enterpriseCta": "Treba vam prilagođeno rešenje za preduzeće?",
+        "contactUs": "Kontaktirajte nas",
+        "paymentNotConfigured": "Plaćanje nije konfigurisano. Kontaktirajte podršku.",
+        "checkoutFailed": "Nije uspelo pokretanje plaćanja. Pokušajte ponovo.",
+        "plans": {
+            "free": {
+                "name": "Besplatan",
+                "description": "Savršeno za testiranje editora.",
+                "perks": [
+                    "1 Objavljena stranica",
+                    "Limit od 15 stavki",
+                    "Tierless oznaka (Obavezno)"
+                ],
+                "caps": [
+                    "Samo standardne teme",
+                    "2MB limit za slike",
+                    "Nema analitike"
+                ]
+            },
+            "starter": {
+                "name": "Starter",
+                "description": "Savršeno za frilensere i sporedne projekte.",
+                "perks": [
+                    "AI Skeniranje menija (OCR)",
+                    "Premium fontovi i boje",
+                    "Analitička tabla",
+                    "Limit od 50 stavki"
+                ],
+                "caps": [
+                    "3 Objavljene stranice",
+                    "5MB limit za slike",
+                    "Oznaka vidljiva"
+                ],
+                "chips": {
+                    "ocr-import": {
+                        "label": "AI Skeniranje",
+                        "description": "Skenirajte sliku vašeg menija trenutno."
+                    }
+                }
+            },
+            "growth": {
+                "name": "Growth",
+                "badge": "Najbolja vrednost",
+                "description": "Za mala preduzeća i profesionalce.",
+                "perks": [
+                    "Integracija sa sajtom (Embed)",
+                    "Uklonite Tierless oznaku",
+                    "Sve premium teme",
+                    "Pozadinski video",
+                    "Limit od 100 stavki"
+                ],
+                "caps": [
+                    "5 Objavljenih stranica",
+                    "8MB limit za slike",
+                    "Prioritetna podrška"
+                ],
+                "chips": {
+                    "embed": {
+                        "label": "Embed na sajt",
+                        "description": "Prikažite meni direktno na sajtu vašeg restorana."
+                    }
+                }
+            },
+            "pro": {
+                "name": "Pro",
+                "description": "Za ozbiljna preduzeća.",
+                "perks": [
+                    "3 Prilagođena domena (SSL)",
+                    "Neograničen broj stavki",
+                    "10 Objavljenih stranica",
+                    "Tim saradnja (15 mesta)",
+                    "Webhooks i API"
+                ],
+                "caps": [
+                    "50 Ukupno stranica",
+                    "15MB limit za slike",
+                    "Posvećena podrška"
+                ],
+                "chips": {
+                    "domain": {
+                        "label": "Prilagođen domen",
+                        "description": "Koristite menu.vas-restoran.com"
+                    }
+                }
+            },
+            "agency": {
+                "name": "Agencija",
+                "description": "Za agencije koje upravljaju sa više klijenata.",
+                "perks": [
+                    "10 Prilagođenih domena (SSL)",
+                    "50 Objavljenih stranica",
+                    "25 Klijent radnih prostora",
+                    "50 Timskih mesta",
+                    "Prioritetna podrška"
+                ],
+                "caps": [
+                    "200 Ukupno stranica",
+                    "25MB limit za slike",
+                    "White Label"
+                ],
+                "chips": {
+                    "client-workspaces": {
+                        "label": "Klijent radni prostori",
+                        "description": "Napravite do 25 odvojenih prostora za klijente sa njihovim timovima."
+                    }
+                }
+            }
+        }
+    },
+    "examples": {
+        "badge": "Vitrina",
+        "title": "Napravljeno sa",
+        "subtitle": "Pogledajte stvarne stranice sa cenama iz zajednice. Otkrijte dizajne koji odgovaraju vašem poslu.",
+        "backToHome": "Nazad na početnu",
+        "officialShowcase": "Zvanična vitrina",
+        "officialShowcaseDesc": "Ručno odabrane stranice koje pokazuju šta je sve moguće.",
+        "trendingCommunity": "Trending iz zajednice",
+        "trendingCommunityDesc": "Najbolje ocenjene javne stranice (vlasnik se priključio).",
+        "topRatedPages": "Najbolje ocenjene stranice",
+        "noCommunityPages": "Još uvek nema stranica iz zajednice.",
+        "loadMore": "Učitaj još primera",
+        "emptySpot": "Prazno mesto",
+        "waitingForYou": "Čeka vas",
+        "availableSpot": "Dostupno mesto",
+        "viewPage": "Pogledaj stranicu",
+        "visitPage": "Poseti stranicu",
+        "unknown": "Nepoznato",
+        "ctaTitle": "Napravi svoju stranicu sa cenama",
+        "ctaSubtitle": "Pridruži se kreatorima koji grade sa Tierless.",
+        "ctaButton": "Počni besplatno"
+    },
+    "faq": {
+        "title": "Često Postavljana Pitanja",
+        "subtitle": "Sve što trebate znati o kreiranju prelepih cenovnika i digitalnih menija.",
+        "backToHome": "Nazad na početnu",
+        "dashboard": "Kontrolna tabla",
+        "noQuestions": "Nema pitanja za ovu kategoriju.",
+        "ctaQuestion": "Još uvek imate pitanja? Rado ćemo pomoći!",
+        "contactSupport": "Kontaktirajte podršku",
+        "goToDashboard": "Idi na kontrolnu tablu",
+        "categories": {
+            "all": "Sva pitanja",
+            "general": "Opšte",
+            "features": "Funkcije",
+            "pricing": "Cene",
+            "technical": "Tehničko"
+        }
+    },
+    "dashboard": {
+        "status": {
+            "online": "Online",
+            "offline": "Offline",
+            "liveOnWeb": "Uživo na webu",
+            "draft": "Nacrt (Privatno)"
+        },
+        "actions": {
+            "edit": "Uredi",
+            "delete": "Obriši",
+            "duplicate": "Dupliraj",
+            "rename": "Preimenuj",
+            "share": "Podeli / QR",
+            "moveToTeam": "Premesti u tim",
+            "publish": "Objavi",
+            "stop": "Zaustavi",
+            "public": "Javno",
+            "reorder": "Presloži",
+            "newPage": "Nova stranica",
+            "selectAll": "Izaberi sve",
+            "deselectAll": "Poništi izbor",
+            "deleteSelected": "Obriši izabrano",
+            "cancel": "Otkaži",
+            "confirm": "Potvrdi",
+            "search": "Pretraži stranice...",
+            "copyLink": "Kopiraj link"
+        },
+        "table": {
+            "name": "Naziv",
+            "team": "Tim",
+            "share": "Podeli",
+            "created": "Kreirano",
+            "status": "Status",
+            "actions": "Akcije",
+            "order": "Redosled"
+        },
+        "filters": {
+            "all": "Sve",
+            "online": "Online",
+            "offline": "Offline",
+            "favorites": "Omiljeno"
+        },
+        "sort": {
+            "created": "Kreirano",
+            "name": "Naziv",
+            "status": "Status",
+            "manual": "Ručno"
+        },
+        "messages": {
+            "copied": "Kopirano!",
+            "couldNotCreate": "Nije moguće kreirati stranicu. Pokušaj ponovo.",
+            "untitledPage": "Neimenovana stranica",
+            "planLimitReached": "Dostigli ste limit stranica za vaš plan. Upravljajte planom u Nalogu.",
+            "overLimitMessage": "Prekoračili ste limit stranica za vaš plan. Rešite to brisanjem stranica ili nadogradnjom plana.",
+            "publishFirst": "Objavite ovu stranicu sa kontrolne table da biste je podelili.",
+            "couldNotPrepareLink": "Nije moguće pripremiti link za deljenje.",
+            "deleteConfirmTitle": "Obrisati ovu stranicu?",
+            "deleteConfirmMessage": "Ovo će premestiti stranicu u korpu. Možete je kasnije vratiti.",
+            "noPagesYet": "Još uvek nema stranica",
+            "createFirstPage": "Kreirajte prvu stranicu da biste počeli.",
+            "noMatchingPages": "Nema odgovarajućih stranica"
+        },
+        "empty": {
+            "title": "Još uvek nema stranica",
+            "description": "Kreirajte prvu stranicu da biste počeli.",
+            "noResults": "Nema odgovarajućih stranica"
+        }
+    },
+    "auth": {
+        "welcomeBack": "Dobrodošli nazad",
+        "enterEmail": "Unesite email za pristup kontrolnoj tabli",
+        "emailAddress": "Email adresa",
+        "emailPlaceholder": "ime@firma.com",
+        "sendMagicLink": "Pošalji čarobni link",
+        "sendingLink": "Slanje linka...",
+        "checkEmail": "Proverite email",
+        "magicLinkSent": "Poslali smo vam čarobni link za prijavu na",
+        "tryAnotherEmail": "Probaj drugi email",
+        "somethingWentWrong": "Nešto je pošlo naopako. Pokušajte ponovo.",
+        "termsNotice": "Prijavom prihvatate naše Uslove korišćenja i Politiku privatnosti."
+    },
+    "errors": {
+        "pageNotFound": "Stranica nije pronađena",
+        "pageNotFoundDesc": "Stranica koju tražite ne postoji ili je premeštena. Vratimo vas na pravi put.",
+        "backToHome": "Nazad na početnu",
+        "goToDashboard": "Idi na kontrolnu tablu",
+        "needHelp": "Treba vam pomoć?",
+        "checkFaq": "Pogledajte naša česta pitanja",
+        "somethingWrong": "Nešto je pošlo naopako",
+        "tryAgain": "Pokušaj ponovo",
+        "goBack": "Nazad"
+    },
+    "cookies": {
+        "banner": {
+            "description": "Koristimo kolačiće da bismo poboljšali vaše iskustvo i analizirali korišćenje sajta.",
+            "learnMore": "Saznaj više",
+            "decline": "Odbij",
+            "accept": "Prihvati"
+        }
     }
 }
