@@ -56,6 +56,46 @@ export default function ShareQrModal({
     return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encoded}`;
   }, [url]);
 
+  // Embed code generation - must be BEFORE early return to maintain hooks order
+  const idOrSlug = slug || pageId || "";
+  const embedUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (theme !== "auto") params.set("theme", theme);
+    if (!showBadge) params.set("badge", "0");
+    if (transparent) params.set("bg", "transparent");
+    if (radius !== "md") params.set("radius", radius);
+    const query = params.toString();
+    return `${BASE_URL}/p/${idOrSlug}/embed${query ? `?${query}` : ""}`;
+  }, [idOrSlug, theme, showBadge, transparent, radius]);
+
+  const iframeCode = useMemo(() => {
+    const radiusPx = radius === "0" ? "0" : radius === "sm" ? "8px" : radius === "md" ? "12px" : radius === "lg" ? "16px" : "24px";
+    return `<iframe
+  src="${embedUrl}"
+  width="${width}"
+  height="${height}"
+  frameborder="0"
+  style="border:none;border-radius:${radiusPx};"
+  loading="lazy"
+></iframe>`;
+  }, [embedUrl, width, height, radius]);
+
+  const widgetCode = useMemo(() => {
+    return `<div id="tierless-${idOrSlug}"></div>
+<script
+  src="${BASE_URL}/embed.js"
+  data-tierless-page="${idOrSlug}"
+  data-tierless-container="tierless-${idOrSlug}"
+  data-tierless-theme="${theme}"
+  data-tierless-badge="${showBadge ? "1" : "0"}"
+  data-tierless-bg="${transparent ? "transparent" : "inherit"}"
+  data-tierless-radius="${radius}"
+  async
+></script>`;
+  }, [idOrSlug, theme, showBadge, transparent, radius]);
+
+  const embedCode = embedType === "iframe" ? iframeCode : widgetCode;
+
   useEffect(() => {
     if (!open) {
       setCopied(false);
@@ -146,49 +186,9 @@ export default function ShareQrModal({
     w.onafterprint = () => {
       try {
         w.close();
-      } catch {}
+      } catch { }
     };
   };
-
-  // Embed code generation
-  const idOrSlug = slug || pageId || "";
-  const embedUrl = useMemo(() => {
-    const params = new URLSearchParams();
-    if (theme !== "auto") params.set("theme", theme);
-    if (!showBadge) params.set("badge", "0");
-    if (transparent) params.set("bg", "transparent");
-    if (radius !== "md") params.set("radius", radius);
-    const query = params.toString();
-    return `${BASE_URL}/p/${idOrSlug}/embed${query ? `?${query}` : ""}`;
-  }, [idOrSlug, theme, showBadge, transparent, radius]);
-
-  const iframeCode = useMemo(() => {
-    const radiusPx = radius === "0" ? "0" : radius === "sm" ? "8px" : radius === "md" ? "12px" : radius === "lg" ? "16px" : "24px";
-    return `<iframe
-  src="${embedUrl}"
-  width="${width}"
-  height="${height}"
-  frameborder="0"
-  style="border:none;border-radius:${radiusPx};"
-  loading="lazy"
-></iframe>`;
-  }, [embedUrl, width, height, radius]);
-
-  const widgetCode = useMemo(() => {
-    return `<div id="tierless-${idOrSlug}"></div>
-<script
-  src="${BASE_URL}/embed.js"
-  data-tierless-page="${idOrSlug}"
-  data-tierless-container="tierless-${idOrSlug}"
-  data-tierless-theme="${theme}"
-  data-tierless-badge="${showBadge ? "1" : "0"}"
-  data-tierless-bg="${transparent ? "transparent" : "inherit"}"
-  data-tierless-radius="${radius}"
-  async
-></script>`;
-  }, [idOrSlug, theme, showBadge, transparent, radius]);
-
-  const embedCode = embedType === "iframe" ? iframeCode : widgetCode;
 
   const handleCopyEmbed = async () => {
     try {
@@ -237,11 +237,10 @@ export default function ShareQrModal({
             <button
               type="button"
               onClick={() => setTab("share")}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-md transition-all cursor-pointer ${
-                tab === "share"
-                  ? "bg-[var(--card)] text-[var(--text)] shadow-sm"
-                  : "text-[var(--muted)] hover:text-[var(--text)]"
-              }`}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-md transition-all cursor-pointer ${tab === "share"
+                ? "bg-[var(--card)] text-[var(--text)] shadow-sm"
+                : "text-[var(--muted)] hover:text-[var(--text)]"
+                }`}
             >
               <QrCode className="w-3.5 h-3.5" />
               {t("Share & QR")}
@@ -249,11 +248,10 @@ export default function ShareQrModal({
             <button
               type="button"
               onClick={() => setTab("embed")}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-md transition-all cursor-pointer ${
-                tab === "embed"
-                  ? "bg-[var(--card)] text-[var(--text)] shadow-sm"
-                  : "text-[var(--muted)] hover:text-[var(--text)]"
-              }`}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-md transition-all cursor-pointer ${tab === "embed"
+                ? "bg-[var(--card)] text-[var(--text)] shadow-sm"
+                : "text-[var(--muted)] hover:text-[var(--text)]"
+                }`}
             >
               <Code className="w-3.5 h-3.5" />
               {t("Embed")}
@@ -373,11 +371,10 @@ export default function ShareQrModal({
                       key={type}
                       type="button"
                       onClick={() => setEmbedType(type)}
-                      className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-all cursor-pointer ${
-                        embedType === type
-                          ? "bg-[var(--card)] text-[var(--text)] shadow-sm"
-                          : "text-[var(--muted)] hover:text-[var(--text)]"
-                      }`}
+                      className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-all cursor-pointer ${embedType === type
+                        ? "bg-[var(--card)] text-[var(--text)] shadow-sm"
+                        : "text-[var(--muted)] hover:text-[var(--text)]"
+                        }`}
                     >
                       {type === "iframe" ? "iframe" : t("JavaScript Widget")}
                     </button>

@@ -85,19 +85,50 @@ export default async function IntegrationsPage() {
           </div>
         </div>
 
-        {/* Webhooks - Coming Soon */}
-        <div className="group rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 transition-colors hover:border-[var(--brand-1)]">
-          <div className="font-medium text-[var(--text)] flex items-center gap-2">
-            Webhooks
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--brand-1)] bg-[var(--brand-1)]/10 px-1.5 py-0.5 rounded">{t("Coming Soon")}</span>
-          </div>
-          <p className="text-sm text-[var(--muted)] mt-1.5 leading-relaxed">
-            {t("Send calculation data to your backend or automation tools like Zapier and Make.com in real-time.")}
-          </p>
-          <div className="mt-4">
-            <button className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] text-sm font-medium cursor-not-allowed opacity-60" disabled>
-              {t("Join Waitlist")}
-            </button>
+        {/* Webhooks - Active (Pro+) */}
+        <div className="group rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 transition-colors hover:border-[var(--brand-1)] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-cyan-500/10 blur-2xl -z-0" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 flex items-center justify-center">
+                <Code className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div>
+                <div className="font-medium text-[var(--text)] flex items-center gap-2">
+                  Webhooks
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                    {t("Active")}
+                  </span>
+                  {!hasFeature(coercePlan(user.plan), "webhooks") && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 text-indigo-400 px-1.5 py-0.5 rounded">
+                      Pro+
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-[var(--muted)] leading-relaxed">
+              {t("Send real-time notifications when visitors view your pages or leave ratings. Connect to Zapier, Make.com, or your own backend.")}
+            </p>
+            <div className="mt-4">
+              {hasFeature(coercePlan(user.plan), "webhooks") ? (
+                <Link
+                  href="/dashboard/integrations/webhooks"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 transition-all"
+                >
+                  {t("Configure Webhooks")}
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              ) : (
+                <Link
+                  href="/start"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 transition-all"
+                >
+                  {t("Upgrade to Pro")}
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>

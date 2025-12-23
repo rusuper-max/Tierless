@@ -134,6 +134,28 @@ const faqs: FAQItem[] = [
         category: 'technical',
         question: 'Are my pages mobile-friendly?',
         answer: 'Yes! All pages are fully responsive and optimized for mobile, tablet, and desktop. Your customers will have a seamless experience on any device, especially when scanning QR codes with their phones.'
+    },
+    {
+        id: 'webhooks',
+        category: 'technical',
+        question: 'What are Webhooks and how can I use them?',
+        answer: (
+            <div>
+                <p className="mb-2">Webhooks are automatic notifications that Tierless sends to your server whenever something happens on your pages.</p>
+                <p className="mb-2"><strong>Available events:</strong></p>
+                <ul className="list-disc list-inside mb-3 text-sm">
+                    <li><strong>Page View</strong> — Get notified when someone views your menu (includes country, device type)</li>
+                    <li><strong>Rating</strong> — Get notified when someone leaves a star rating</li>
+                </ul>
+                <p className="mb-2"><strong>Use cases:</strong></p>
+                <ul className="list-disc list-inside mb-3 text-sm">
+                    <li>Get Slack/Discord alerts when your menu is viewed</li>
+                    <li>Log views to Google Sheets via Zapier or Make.com</li>
+                    <li>Sync data to your CRM or analytics dashboard</li>
+                </ul>
+                <p className="text-sm">Webhooks are available on Pro plan and above. Configure them in Dashboard → Integrations → Webhooks.</p>
+            </div>
+        )
     }
 ];
 

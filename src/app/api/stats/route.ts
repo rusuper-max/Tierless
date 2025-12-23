@@ -8,6 +8,7 @@ import { getSessionUser } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import * as fullStore from "@/lib/fullStore";
 import { checkRateLimit, getClientIP, rateLimitHeaders, STATS_LIMIT } from "@/lib/rateLimit";
+import { dispatchWebhooks } from "@/lib/webhookDispatcher";
 
 // Event types we track
 type EventType =
@@ -270,7 +271,7 @@ export async function POST(req: NextRequest) {
     // Rate Limiting - 100 requests per minute per IP
     const clientIP = getClientIP(req);
     const rateResult = checkRateLimit(clientIP, STATS_LIMIT);
-    
+
     if (!rateResult.success) {
       // Don't log every rate limit hit for stats (could be noisy)
       return NextResponse.json(
@@ -325,9 +326,75 @@ export async function POST(req: NextRequest) {
       [types, pageIds, timestamps, sessionIds, clientIds, propsList]
     );
 
+    // --- WEBHOOK DISPATCH (non-blocking) ---
+    // Dispatch webhooks for page_view events
+    // This runs in background and doesn't delay the response
+    const pageViewEvents = events.filter(e => e.type === "page_view");
+    if (pageViewEvents.length > 0) {
+      // Fire and forget - don't await
+      dispatchPageViewWebhooks(pageViewEvents, pool, country).catch((err) => {
+        console.error("[webhooks] Dispatch error:", err);
+      });
+    }
+    // -----------------------------------------
+
     return NextResponse.json({ ok: true, recorded: events.length });
   } catch (error) {
     console.error("[stats] POST Error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
+}
+
+/**
+ * Dispatch webhooks for page view events.
+ * This is fire-and-forget to not block the analytics response.
+ */
+async function dispatchPageViewWebhooks(
+  events: AnalyticsEvent[],
+  pool: any,
+  country: string
+): Promise<void> {
+  // Get unique page IDs
+  const uniquePageIds = [...new Set(events.map(e => e.pageId))];
+
+  // Look up owners for these pages (bulk query)
+  const { rows } = await pool.query(
+    `SELECT slug, user_id FROM calculators WHERE slug = ANY($1)`,
+    [uniquePageIds]
+  );
+
+  // Create pageId -> userId map
+  const pageOwners: Record<string, string> = {};
+  rows.forEach((r: any) => {
+    if (r.user_id) pageOwners[r.slug] = r.user_id;
+  });
+
+  // Dispatch webhooks for each unique owner
+  const ownerEvents: Record<string, AnalyticsEvent[]> = {};
+  for (const event of events) {
+    const owner = pageOwners[event.pageId];
+    if (owner) {
+      if (!ownerEvents[owner]) ownerEvents[owner] = [];
+      ownerEvents[owner].push(event);
+    }
+  }
+
+  // Dispatch in parallel
+  await Promise.allSettled(
+    Object.entries(ownerEvents).map(([userId, userEvents]) =>
+      Promise.allSettled(
+        userEvents.map((event) =>
+          dispatchWebhooks(userId, "page_view", {
+            pageId: event.pageId,
+            slug: event.pageId,
+            country,
+            device: event.props?.device || "unknown",
+            referrer: event.props?.referrer || "direct",
+            sessionId: event.sessionId,
+            timestamp: event.ts,
+          })
+        )
+      )
+    )
+  );
 }

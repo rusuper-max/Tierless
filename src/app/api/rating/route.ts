@@ -4,13 +4,14 @@ import { upsertRating } from "@/lib/ratingsStore";
 import { findMiniInAllUsers } from "@/lib/calcsStore";
 import * as fullStore from "@/lib/fullStore";
 import { checkRateLimit, getClientIP, rateLimitHeaders, RATING_LIMIT } from "@/lib/rateLimit";
+import { dispatchWebhooks } from "@/lib/webhookDispatcher";
 
 export async function POST(req: NextRequest) {
     try {
         // Rate Limiting - 10 ratings per minute per IP
         const clientIP = getClientIP(req);
         const rateResult = checkRateLimit(clientIP, RATING_LIMIT);
-        
+
         if (!rateResult.success) {
             return NextResponse.json(
                 { error: "Too many rating requests. Please slow down." },
@@ -69,7 +70,19 @@ export async function POST(req: NextRequest) {
         // 4. Upsert rating
         const result = await upsertRating(pageId, voterKey, score, ipHash, userId);
 
-        // 5. Return response with cookie if needed
+        // 5. Dispatch webhook (fire-and-forget)
+        dispatchWebhooks(calcUserId, "rating", {
+            pageId,
+            slug: pageId,
+            score,
+            voterKey,
+            isUpdate: (result as any).updated ?? false,
+            timestamp: Date.now(),
+        }).catch((err) => {
+            console.error("[webhooks] Rating dispatch error:", err);
+        });
+
+        // 6. Return response with cookie if needed
         const res = NextResponse.json({ ok: true, ...result });
 
         // If user is anonymous, ensure they get the cookie

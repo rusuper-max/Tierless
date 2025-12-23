@@ -561,9 +561,14 @@ export default function DashboardPageClient({
   const isOverPagesLimit = typeof pagesLimit === "number" && totalPages > pagesLimit;
   const overLimitMessage =
     "You're over the page limit for your plan. Resolve it by deleting pages or upgrading your plan.";
+
+  // Check if user is over their PUBLISHED pages limit (e.g. after downgrade)
+  const isOverPublishedLimit = Number.isFinite(publishedLimitNum) && publishedCount > publishedLimitNum;
+  const overPublishedLimitMessage = `You have ${publishedCount} published pages but your plan only allows ${publishedLimitNum}. Please unpublish ${publishedCount - publishedLimitNum} page(s) or upgrade your plan.`;
+
   useEffect(() => {
-    if (isOverPagesLimit) bumpLimitPulse();
-  }, [isOverPagesLimit, bumpLimitPulse]);
+    if (isOverPagesLimit || isOverPublishedLimit) bumpLimitPulse();
+  }, [isOverPagesLimit, isOverPublishedLimit, bumpLimitPulse]);
   const guardOverLimit = useCallback(() => {
     if (!isOverPagesLimit) return false;
     showToast(overLimitMessage);
@@ -1239,17 +1244,55 @@ export default function DashboardPageClient({
 
             {/* Published pill */}
             <span
-              className={`inline-flex items-center rounded-full border px-3 py-1 text-sm shadow-sm transition-colors duration-300 ${isOverPagesLimit && limitPulse
-                ? "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
-                : "border-[var(--border)] bg-[var(--card)] text-[var(--text)]"
+              className={`inline-flex items-center rounded-full border px-3 py-1 text-sm shadow-sm transition-colors duration-300 ${(isOverPagesLimit || isOverPublishedLimit) && limitPulse
+                ? "border-amber-400 bg-amber-500/10 text-amber-300 dark:border-amber-500 dark:bg-amber-900/30 dark:text-amber-300"
+                : isOverPublishedLimit
+                  ? "border-amber-400 bg-amber-500/10 text-amber-300"
+                  : "border-[var(--border)] bg-[var(--card)] text-[var(--text)]"
                 }`}
-              title="Published pages in your plan"
+              title={isOverPublishedLimit ? "You're over your published pages limit!" : "Published pages in your plan"}
             >
               {publishedCount} / {Number.isFinite(publishedLimitNum) ? publishedLimitNum : "∞"} published
             </span>
           </div>
         </div>
       </section>
+
+      {/* Warning banner when over published limit */}
+      {isOverPublishedLimit && (
+        <div className="rounded-xl border border-amber-500/50 bg-amber-500/10 p-4 flex items-start gap-3">
+          <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div className="flex-1">
+            <p className="font-medium text-amber-200">Published Pages Over Limit</p>
+            <p className="text-sm text-amber-200/80 mt-1">
+              {overPublishedLimitMessage}
+            </p>
+            <div className="flex gap-3 mt-3">
+              <Link
+                href="/start"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 transition-all"
+              >
+                Upgrade Plan
+              </Link>
+              <button
+                onClick={() => {
+                  setActiveFilter("online");
+                  showToast(`Showing ${publishedCount} published pages. Click "Online" → "Stop" to unpublish.`);
+                  // Scroll to table
+                  setTimeout(() => {
+                    tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }, 100);
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-amber-200 border border-amber-500/50 hover:bg-amber-500/20 transition-colors"
+              >
+                View Published Pages
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search + Filters + Sort (hide when there are no pages) */}
       {totalPages > 0 && (
