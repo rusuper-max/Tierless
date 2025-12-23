@@ -2,14 +2,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount, setDevPlanOverride, isDevUser } from "@/hooks/useAccount";
-import { Bug, ChevronDown, ChevronUp, X } from "lucide-react";
+import { useAccount, setDevPlanOverride, isDevUser, isProductionEnv } from "@/hooks/useAccount";
+import { Bug, ChevronDown, ChevronUp, X, AlertTriangle } from "lucide-react";
 import type { Plan } from "@/lib/entitlements.adapter";
 
 const PLANS: { id: Plan; label: string; color: string }[] = [
   { id: "free", label: "Free", color: "#6B7280" },
   { id: "starter", label: "Starter", color: "#10B981" },
   { id: "growth", label: "Growth", color: "#3B82F6" },
+  { id: "agency", label: "Agency", color: "#EC4899" },
   { id: "pro", label: "Pro", color: "#8B5CF6" },
   { id: "tierless", label: "Tierless", color: "#F59E0B" },
 ];
@@ -28,8 +29,10 @@ export default function DevPlanSwitcher() {
   // Don't render anything on server or before mount
   if (!mounted) return null;
 
-  // Only show for dev users (localhost only)
+  // Only show for dev users (now works in production too)
   if (!isDevUser(email)) return null;
+
+  const isProd = isProductionEnv();
 
   const currentPlan = PLANS.find((p) => p.id === plan) || PLANS[0];
   const hasOverride = typeof window !== "undefined" && localStorage.getItem("tierless_dev_plan_override");
@@ -54,6 +57,12 @@ export default function DevPlanSwitcher() {
         <div className="flex items-center gap-2">
           <Bug className="w-4 h-4 text-amber-400" />
           <span className="font-bold text-xs uppercase tracking-wide text-amber-400">Dev Mode</span>
+          {isProd && (
+            <span className="text-[9px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-bold flex items-center gap-0.5">
+              <AlertTriangle className="w-2.5 h-2.5" />
+              PROD
+            </span>
+          )}
         </div>
         <button
           onClick={() => setIsMinimized(true)}
@@ -97,9 +106,8 @@ export default function DevPlanSwitcher() {
                 setDevPlanOverride(p.id);
                 setIsOpen(false);
               }}
-              className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-800 transition-colors ${
-                plan === p.id ? "bg-gray-800" : ""
-              }`}
+              className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-800 transition-colors ${plan === p.id ? "bg-gray-800" : ""
+                }`}
             >
               <div
                 className="w-3 h-3 rounded-full"

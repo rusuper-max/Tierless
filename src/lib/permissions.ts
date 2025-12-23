@@ -3,6 +3,12 @@
 
 import { getPool, getUserTeamRole, type TeamRole, hasTeamPermission } from "@/lib/db";
 import * as calcsStore from "@/lib/calcsStore";
+import {
+  type FeatureKey,
+  hasFeature,
+  firstPlanWithFeature,
+  coercePlan
+} from "@/lib/entitlements";
 
 // ============================================================================
 // TYPES
@@ -35,7 +41,7 @@ export async function requireTeamMember(
   minRole: TeamRole = "viewer"
 ): Promise<PermissionResult> {
   const userRole = await getUserTeamRole(userId, teamId);
-  
+
   if (!userRole) {
     return {
       allowed: false,
@@ -43,7 +49,7 @@ export async function requireTeamMember(
       status: 403,
     };
   }
-  
+
   if (!hasTeamPermission(userRole, minRole)) {
     return {
       allowed: false,
@@ -63,20 +69,20 @@ export async function getCalcOwnership(
   slug: string
 ): Promise<CalcOwnership | null> {
   const pool = getPool();
-  
+
   // First check in calculators table
   const { rows } = await pool.query(
     `SELECT user_id, team_id FROM calculators WHERE user_id = $1 AND slug = $2 LIMIT 1`,
     [userId, slug]
   );
-  
+
   if (rows[0]) {
     return {
       userId: rows[0].user_id,
       teamId: rows[0].team_id || null,
     };
   }
-  
+
   return null;
 }
 
@@ -96,7 +102,7 @@ export async function requireCanView(
   if (userId === ownerUserId) {
     return { allowed: true };
   }
-  
+
   // Check if calculator belongs to a team the user is in
   const pool = getPool();
   const { rows } = await pool.query(
@@ -106,14 +112,14 @@ export async function requireCanView(
      LIMIT 1`,
     [ownerUserId, slug]
   );
-  
+
   if (rows[0]?.team_id) {
     const teamCheck = await requireTeamMember(userId, rows[0].team_id, "viewer");
     if (teamCheck.allowed) {
       return { allowed: true };
     }
   }
-  
+
   return {
     allowed: false,
     reason: "You don't have access to this calculator",
@@ -137,7 +143,7 @@ export async function requireCanEdit(
   if (userId === ownerUserId) {
     return { allowed: true };
   }
-  
+
   // Check if calculator belongs to a team the user can edit in
   const pool = getPool();
   const { rows } = await pool.query(
@@ -147,7 +153,7 @@ export async function requireCanEdit(
      LIMIT 1`,
     [ownerUserId, slug]
   );
-  
+
   if (rows[0]?.team_id) {
     const teamCheck = await requireTeamMember(userId, rows[0].team_id, "editor");
     if (teamCheck.allowed) {
@@ -155,7 +161,7 @@ export async function requireCanEdit(
     }
     return teamCheck; // Return the specific error
   }
-  
+
   return {
     allowed: false,
     reason: "You don't have permission to edit this calculator",
@@ -180,7 +186,7 @@ export async function requireCanPublish(
   if (userId === ownerUserId) {
     return { allowed: true };
   }
-  
+
   // Check if calculator belongs to a team the user can publish in
   const pool = getPool();
   const { rows } = await pool.query(
@@ -190,14 +196,14 @@ export async function requireCanPublish(
      LIMIT 1`,
     [ownerUserId, slug]
   );
-  
+
   if (rows[0]?.team_id) {
     // Need admin role to publish
     const teamCheck = await requireTeamMember(userId, rows[0].team_id, "admin");
     if (teamCheck.allowed) {
       return { allowed: true };
     }
-    
+
     // Check if user is at least an editor (for better error message)
     const editorCheck = await requireTeamMember(userId, rows[0].team_id, "editor");
     if (editorCheck.allowed) {
@@ -207,10 +213,10 @@ export async function requireCanPublish(
         status: 403,
       };
     }
-    
+
     return teamCheck;
   }
-  
+
   return {
     allowed: false,
     reason: "You don't have permission to publish this calculator",
@@ -235,7 +241,7 @@ export async function requireCanDelete(
   if (userId === ownerUserId) {
     return { allowed: true };
   }
-  
+
   // Check if calculator belongs to a team the user can delete in
   const pool = getPool();
   const { rows } = await pool.query(
@@ -245,7 +251,7 @@ export async function requireCanDelete(
      LIMIT 1`,
     [ownerUserId, slug]
   );
-  
+
   if (rows[0]?.team_id) {
     // Need admin role to delete
     const teamCheck = await requireTeamMember(userId, rows[0].team_id, "admin");
@@ -258,7 +264,7 @@ export async function requireCanDelete(
       status: 403,
     };
   }
-  
+
   return {
     allowed: false,
     reason: "You don't have permission to delete this calculator",
@@ -276,19 +282,19 @@ export async function requireCanDelete(
  */
 export async function findCalcBySlug(slug: string): Promise<CalcOwnership | null> {
   const pool = getPool();
-  
+
   const { rows } = await pool.query(
     `SELECT user_id, team_id FROM calculators WHERE slug = $1 LIMIT 1`,
     [slug]
   );
-  
+
   if (rows[0]) {
     return {
       userId: rows[0].user_id,
       teamId: rows[0].team_id || null,
     };
   }
-  
+
   return null;
 }
 
@@ -304,20 +310,20 @@ export async function findAccessibleCalc(
   minPermission: "view" | "edit" | "publish" | "delete" = "view"
 ): Promise<{ ownerUserId: string; teamId: string | null } | null> {
   const pool = getPool();
-  
+
   // First, try to find as direct owner
   const ownCheck = await pool.query(
     `SELECT user_id, team_id FROM calculators WHERE user_id = $1 AND slug = $2 LIMIT 1`,
     [userId, slug]
   );
-  
+
   if (ownCheck.rows[0]) {
     return {
       ownerUserId: userId,
       teamId: ownCheck.rows[0].team_id || null,
     };
   }
-  
+
   // Not direct owner, check if it's a team calculator we have access to
   const teamCalcCheck = await pool.query(
     `SELECT c.user_id, c.team_id, tm.role
@@ -327,10 +333,10 @@ export async function findAccessibleCalc(
      LIMIT 1`,
     [slug, userId]
   );
-  
+
   if (teamCalcCheck.rows[0]) {
     const { user_id: ownerUserId, team_id: teamId, role } = teamCalcCheck.rows[0];
-    
+
     // Check if role is sufficient
     const roleMap: Record<string, TeamRole> = {
       view: "viewer",
@@ -338,13 +344,13 @@ export async function findAccessibleCalc(
       publish: "admin",
       delete: "admin",
     };
-    
+
     const requiredRole = roleMap[minPermission];
     if (hasTeamPermission(role as TeamRole, requiredRole)) {
       return { ownerUserId, teamId };
     }
   }
-  
+
   return null;
 }
 
@@ -353,15 +359,38 @@ export async function findAccessibleCalc(
 // ============================================================================
 
 /**
- * Check if user's plan allows a specific action.
+ * Check if user's plan allows a specific feature.
  * This wraps the entitlements logic for cleaner API usage.
+ * 
+ * @param userId - The user ID to check
+ * @param feature - The feature key to check access for
+ * @returns PermissionResult indicating if the feature is allowed
  */
 export async function requirePlanFeature(
   userId: string,
-  feature: string
+  feature: FeatureKey
 ): Promise<PermissionResult> {
-  // TODO: Implement when entitlements are moved to DB
-  // For now, always allow (entitlements are checked elsewhere)
+  const pool = getPool();
+
+  // Look up user's plan from user_plans table
+  const { rows } = await pool.query(
+    `SELECT plan FROM user_plans WHERE user_id = $1 LIMIT 1`,
+    [userId]
+  );
+
+  // Default to free plan if not found
+  const plan = coercePlan(rows[0]?.plan);
+  const allowed = hasFeature(plan, feature);
+
+  if (!allowed) {
+    const requiredPlan = firstPlanWithFeature(feature);
+    return {
+      allowed: false,
+      reason: `This feature requires the ${requiredPlan} plan or higher. Your current plan: ${plan}`,
+      status: 403,
+    };
+  }
+
   return { allowed: true };
 }
 

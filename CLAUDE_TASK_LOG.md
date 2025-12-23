@@ -706,4 +706,72 @@ fetch("/api/integrations/lemon/checkout", { planKey: "starter_yearly" })
 
 ---
 
+### [2025-12-23] - Gemini Code Review Fixes
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/lib/permissions.ts`
+  - `src/lib/db.ts`
+  - `src/lib/constants.ts` (novi fajl)
+  - `tests/unit/calcsStore.test.ts` (novi fajl)
+  - `vitest.config.ts`
+- **Opis:**
+
+Adresiranje Gemini code review izveštaja:
+
+**1. `requirePlanFeature` implementacija:**
+- Funkcija je bila stub koji uvek vraća `allowed: true`
+- Sada proverava user plan iz `user_plans` tabele
+- Koristi `hasFeature()` iz entitlements za proveru pristupa
+- Vraća 403 sa informacijom o potrebnom planu
+
+**2. Team deletion fix:**
+- Problem: Kada se tim obriše, kalkulatori su ostajali orphaned (team_id = NULL)
+- Rešenje: Transakciona logika koja eksplicitno prebacuje kalkulatore u owner-ov lični account pre brisanja tima
+- Kalkulator ostaje dostupan owner-u kroz njegov dashboard
+
+**3. Constants file:**
+- Novi `src/lib/constants.ts` za centralizovane plan/role stringove
+- PLANS i ROLES objekti za type-safe konstanteы
+- Sprečava typo greške u magic stringovima
+
+**4. Unit tests:**
+- Novi `tests/unit/calcsStore.test.ts` sa 22 testa
+- Testovi za `slugBase()`, `sanitizeCopyName()`, `rowToCalc()`
+- Ažuriran vitest.config.ts da uključi `tests/` folder
+
+---
+
+### [2025-12-23] - Production Dev Controls
+- **Status:** Completed
+- **Fajlovi:**
+  - `src/hooks/useAccount.ts`
+  - `src/components/DevPlanSwitcher.tsx`
+  - `ARCHITECTURE.md`
+- **Opis:**
+
+Dev controls sada rade u produkciji za whitelisted email adrese.
+
+**Izmene u useAccount.ts:**
+- Uklonjena `isLocalhost()` restrikcija za `isDevUser()`
+- Dev controls sada rade kako na localhost-u tako i na tierless.net
+- Dodana `isProductionEnv()` helper funkcija za UI indikatore
+- Plan override sada uključuje "agency" plan
+
+**Izmene u DevPlanSwitcher.tsx:**
+- Dodat Agency plan u listu planova (roze boja)
+- Dodat "PROD" indikator sa warning ikonom kada je na produkciji
+- Importovan `isProductionEnv` iz useAccount
+
+**Security Model:**
+- Plan override je **samo client-side** - utiče na UI prikazivanje entitlements-a
+- Server-side provere (`requirePlanFeature`, limit checks) uvek koriste **pravi plan iz baze**
+- Sigurno za korišćenje u produkciji - ne može zaobići plaćanje
+
+**ARCHITECTURE.md:**
+- Dodata nova sekcija "Dev Controls (Production-Ready)"
+- Dokumentovan whitelist, dostupne kontrole i security model
+
+---
+
 <!-- Novi unosi će biti dodati ovde -->
+

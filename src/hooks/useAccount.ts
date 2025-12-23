@@ -7,24 +7,35 @@ import { entitlementsFor, type Plan } from "@/lib/entitlements.adapter";
 // --- DEV PLAN OVERRIDE ---
 const DEV_PLAN_KEY = "tierless_dev_plan_override";
 
-// Dev mode ONLY works on localhost - never in production
+// Whitelist of emails with Dev access (works in both localhost AND production)
+const DEV_EMAILS = [
+  "rusuper@gmail.com",
+  "jstevanoviic@gmail.com",
+  "stevanovic.jelena55@gmail.com",
+];
+
+// Check if currently on localhost (for UI indicators)
 function isLocalhost(): boolean {
   if (typeof window === "undefined") return false;
   const hostname = window.location.hostname;
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.");
 }
 
+// Check if plan override is enabled (now works in production for dev users)
 function getDevPlanOverride(): Plan | null {
-  if (!isLocalhost()) return null;
+  // Plan override works everywhere - server-side limits still enforced
+  if (typeof window === "undefined") return null;
   const override = localStorage.getItem(DEV_PLAN_KEY);
-  if (override && ["free", "starter", "growth", "pro", "tierless"].includes(override)) {
+  if (override && ["free", "starter", "growth", "pro", "agency", "tierless"].includes(override)) {
     return override as Plan;
   }
   return null;
 }
 
 export function setDevPlanOverride(plan: Plan | null) {
-  if (!isLocalhost()) return;
+  // Works in production too - this only affects client-side UI
+  // Server-side entitlement checks still use real plan from DB
+  if (typeof window === "undefined") return;
   if (plan) {
     localStorage.setItem(DEV_PLAN_KEY, plan);
   } else {
@@ -34,18 +45,20 @@ export function setDevPlanOverride(plan: Plan | null) {
   window.dispatchEvent(new CustomEvent("TL_DEV_PLAN_CHANGED"));
 }
 
-// Whitelist of emails with Dev access
-const DEV_EMAILS = [
-  "rusuper@gmail.com",
-  "jstevanoviic@gmail.com",
-  "stevanovic.jelena55@gmail.com",
-];
-
+/**
+ * Check if user is a dev user (whitelisted email).
+ * Dev users can access dev controls in BOTH localhost AND production.
+ * This is safe because plan override only affects client-side UI,
+ * not server-side entitlement enforcement.
+ */
 export function isDevUser(email: string | null): boolean {
-  // Dev mode only on localhost AND for whitelisted emails
-  if (!isLocalhost()) return false;
   if (!email) return false;
   return DEV_EMAILS.includes(email.toLowerCase());
+}
+
+/** Check if we're in production (for UI indicators) */
+export function isProductionEnv(): boolean {
+  return !isLocalhost();
 }
 
 export type AccountSnapshot = {

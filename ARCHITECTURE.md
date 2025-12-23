@@ -312,6 +312,39 @@ UPSTASH_REDIS_REST_TOKEN=...
 
 ---
 
+## Dev Controls (Production-Ready)
+
+Dev controls su dostupni whitelisted email adresama kako na localhost-u tako i u produkciji.
+
+### Whitelist
+```typescript
+// src/hooks/useAccount.ts
+const DEV_EMAILS = [
+  "rusuper@gmail.com",
+  "jstevanoviic@gmail.com",
+  "stevanovic.jelena55@gmail.com",
+];
+```
+
+### Available Controls
+
+| Control | Description | Scope |
+|---------|-------------|-------|
+| **Plan Override** | Switch between any plan for UI testing | Client-side only |
+| **Dev Panel** | Floating UI at bottom-right | Shows on dashboard/editor |
+
+### Security Model
+- Plan override is **client-side only** - affects UI entitlement display
+- Server-side checks (`requirePlanFeature`, `canPublish`, etc.) always use **real plan from DB**
+- Safe to use in production - cannot bypass payment
+
+### Key Files
+- `src/hooks/useAccount.ts` - Dev user check, plan override logic
+- `src/components/DevPlanSwitcher.tsx` - Floating dev panel UI
+- `src/lib/permissions.ts` - Server-side entitlement enforcement
+
+---
+
 ## Billing & Subscription Flow
 
 ### Plans

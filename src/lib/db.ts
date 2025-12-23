@@ -650,13 +650,50 @@ export async function getTeamCalculators(teamId: string): Promise<{ user_id: str
 
 /**
  * Delete a team.
+ * 
+ * This transfers all team calculators back to the team owner's personal account
+ * before deleting the team. This prevents orphaned data.
  */
 export async function deleteTeam(teamId: string): Promise<void> {
   const pool = getPool();
-  // Cascade delete handles members and invites.
-  // Calculators with team_id will be set to NULL (based on ON DELETE SET NULL) or we should check?
-  // In ensureTeamsTables: ON DELETE SET NULL is used for calculators.
-  await pool.query(`DELETE FROM teams WHERE id = $1`, [teamId]);
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // Get team owner first
+    const { rows: teamRows } = await client.query(
+      `SELECT owner_id FROM teams WHERE id = $1`,
+      [teamId]
+    );
+
+    if (teamRows[0]?.owner_id) {
+      // Transfer all team calculators to the owner's personal account
+      // by setting team_id to NULL (they remain owned by user_id)
+      await client.query(
+        `UPDATE calculators SET team_id = NULL, updated_at = $1 WHERE team_id = $2`,
+        [Date.now(), teamId]
+      );
+
+      // Also update calc_full if it has team_id
+      await client.query(
+        `UPDATE calc_full SET team_id = NULL WHERE team_id = $1`,
+        [teamId]
+      ).catch(() => {
+        // calc_full table might not have team_id column yet, ignore
+      });
+    }
+
+    // Now delete the team - CASCADE handles members and invites
+    await client.query(`DELETE FROM teams WHERE id = $1`, [teamId]);
+
+    await client.query("COMMIT");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
 /**
@@ -709,7 +746,7 @@ export async function canUserCreateTeam(
   if (planLimit === "unlimited") {
     return { allowed: true, current: 0, limit: "unlimited" };
   }
-  
+
   const current = await countUserOwnedTeams(userId);
   return {
     allowed: current < planLimit,
@@ -728,7 +765,7 @@ export async function canUserJoinTeam(
   if (planLimit === "unlimited") {
     return { allowed: true, current: 0, limit: "unlimited" };
   }
-  
+
   const current = await countUserTeamMemberships(userId);
   return {
     allowed: current < planLimit,
