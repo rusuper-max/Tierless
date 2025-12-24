@@ -248,25 +248,40 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
   const slug = await extractSlug(req, ctx);
   if (!slug) return jsonNoCache({ error: "bad_slug" }, 400);
 
-  // Check ownership - personal or team
+  // Check ownership - FIRST check if current user owns this slug directly
   let effectiveOwner = userId;
   const { findCalcBySlug, requireTeamMember } = await import("@/lib/permissions");
-  const ownership = await findCalcBySlug(slug);
 
-  if (!ownership) {
-    return jsonNoCache({ error: "not_found" }, 404);
-  }
+  // 1. First check if current user personally owns this slug
+  const personalCalc = await calcsStore.get(userId, slug);
 
-  // If it's a team calculator, verify edit permission
-  if (ownership.teamId) {
-    const perm = await requireTeamMember(userId, ownership.teamId, "editor");
-    if (!perm.allowed) {
-      return jsonNoCache({ error: "forbidden", reason: perm.reason }, 403);
+  if (personalCalc) {
+    // User owns this personally - use their userId as owner
+    effectiveOwner = userId;
+  } else {
+    // 2. Fallback: Check if it's a team calculator they have access to
+    const ownership = await findCalcBySlug(slug);
+
+    if (!ownership) {
+      return jsonNoCache({ error: "not_found" }, 404);
     }
-    effectiveOwner = ownership.userId;
-  } else if (ownership.userId !== userId) {
-    // Personal calculator but not owned by current user
-    return jsonNoCache({ error: "forbidden" }, 403);
+
+    if (ownership.teamId) {
+      // It's a team calculator - verify edit permission
+      const perm = await requireTeamMember(userId, ownership.teamId, "editor");
+      if (!perm.allowed) {
+        return jsonNoCache({ error: "forbidden", reason: perm.reason }, 403);
+      }
+      effectiveOwner = ownership.userId;
+    } else {
+      // Not a team calc and user doesn't own it personally - forbidden
+      console.error("[EDITOR PUT] FORBIDDEN - user doesn't own this slug:", {
+        requestUserId: userId,
+        ownerUserId: ownership.userId,
+        slug,
+      });
+      return jsonNoCache({ error: "forbidden" }, 403);
+    }
   }
 
   // ========== OPTIMISTIC LOCKING ==========
@@ -279,7 +294,7 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
 
   try {
     const rawBody = await req.json();
-    
+
     // ========== ZOD VALIDATION ==========
     const validation = validateBody(rawBody, CalcJsonSchema);
     if (!validation.success) {
@@ -288,7 +303,7 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
     }
     const body = validation.data;
     // =====================================
-    
+
     if (!body?.meta?.slug || body.meta.slug !== slug) {
       return jsonNoCache({ error: "slug_mismatch" }, 400);
     }
@@ -338,7 +353,7 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
       newName ? { name: newName } : undefined,
       expectedVersion
     );
-    
+
     if (!saveResult.success) {
       if (saveResult.error === "VERSION_CONFLICT") {
         return jsonNoCache({
@@ -369,24 +384,24 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
         const listInExamples = normalized.meta?.listInExamples === true;
         await calcsStore.setIsExample(effectiveOwner, slug, listInExamples);
         console.log(`[EDITOR PUT] Synced is_example: ${listInExamples} for slug=${slug}`);
-        
+
         // Revalidate all possible URL formats
         revalidatePath(`/p/${slug}`);
         if (calcId) {
           revalidatePath(`/p/${calcId}-${slug}`); // Canonical format
           revalidatePath(`/p/${calcId}`);         // ID-only format
         }
-        
+
         // Also revalidate the API routes (for any external consumers)
         revalidatePath(`/api/public/${slug}`);
         if (calcId) {
           revalidatePath(`/api/public/${calcId}-${slug}`);
         }
-        
+
         // Revalidate examples page when is_example changes
         revalidatePath(`/examples`);
         revalidatePath(`/api/examples`);
-        
+
         console.log(`[EDITOR PUT] Revalidated paths for slug=${slug}, id=${calcId}`);
       }
     } catch (err) {
@@ -408,7 +423,7 @@ export async function PUT(req: Request, ctx: { params?: { slug?: string } }) {
         currentVersion: e.currentVersion,
       }, 409);
     }
-    
+
     console.error("PUT full error:", e);
     return jsonNoCache({ error: "invalid_payload", detail: e?.stack ?? String(e) }, 400);
   }

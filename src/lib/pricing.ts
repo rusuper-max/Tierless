@@ -7,6 +7,8 @@ export type PricingItem = {
   badge?: string;
   discountPercent?: number;
   unit?: string;
+  /** Slug of another page to link to (for inter-page navigation) */
+  linkSlug?: string;
 };
 
 export type PricingAddon = {
@@ -26,7 +28,7 @@ export function calculateDiscountedPrice(
   if (discountPercent <= 0 || discountPercent > 100) {
     return originalPrice;
   }
-  
+
   const rawDiscounted = originalPrice * (1 - discountPercent / 100);
   // Floor to 2 decimal places
   return Math.floor(rawDiscounted * 100) / 100;
@@ -37,11 +39,11 @@ export function calculateDiscountedPrice(
  */
 export function getItemFinalPrice(item: PricingItem): number {
   const basePrice = Number(item.price) || 0;
-  
+
   if (item.badge === 'sale' && item.discountPercent && item.discountPercent > 0) {
     return calculateDiscountedPrice(basePrice, item.discountPercent);
   }
-  
+
   return basePrice;
 }
 
@@ -59,7 +61,7 @@ export function calculateOrderTotal(
   for (const item of items) {
     const qty = quantities[item.id] || 0;
     if (qty <= 0) continue;
-    
+
     const finalPrice = getItemFinalPrice(item);
     total += finalPrice * qty;
   }
@@ -89,7 +91,7 @@ export function formatPriceValue(
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
-  
+
   return currency ? `${formatted} ${currency}` : formatted;
 }
 

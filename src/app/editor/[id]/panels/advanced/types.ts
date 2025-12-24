@@ -263,6 +263,12 @@ export interface AdvancedNode {
   ctaUrl?: string | null;
   ctaKind?: AdvancedTierCtaKind | null;
 
+  /**
+   * Internal page link - slug of another Tierless page to navigate to.
+   * When set, clicking this tier/card opens the linked page.
+   */
+  linkSlug?: string | null;
+
   /* ------------------------ Misc – proširenja u budućnosti --------------- */
 
   /**

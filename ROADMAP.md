@@ -1,6 +1,6 @@
 # Tierless Roadmap
 
-**Last Updated:** December 23, 2025
+**Last Updated:** December 24, 2024
 
 ---
 
@@ -89,14 +89,9 @@
 ## 🚧 In Progress / Partial
 
 ### Templates
-- [x] More template designs (12 exist now: Neon, Wedding, Coffee, Trainer, Web Agency, Cleaning, SaaS, Hair Salon, Restaurant, Photographer, Dental, Yoga, DJ)
+- [x] More template designs (12 templates: Neon, Wedding, Coffee, Trainer, Web Agency, Cleaning, SaaS, Hair Salon, Restaurant, Photographer, Dental, Yoga, DJ)
 - [ ] "Save as Template" feature for users
 - [ ] Template search/filter
-
-### Custom Domains
-- [ ] Full implementation (middleware routing exists, but no UI/SSL)
-- [ ] Domain verification flow
-- [ ] SSL certificate provisioning (Cloudflare/Caddy)
 
 ### Translations
 - [ ] Complete all locale files (many keys still in English)
@@ -124,6 +119,11 @@
 - [ ] User-created templates ("Save as Template")
 - [ ] Template sharing (public/private)
 - [ ] More built-in templates (20+ target)
+
+#### Inter-Page Linking (NEW)
+- [ ] Link items/tiers to other Tierless pages
+- [ ] Support both Simple and Advanced editors
+- [ ] Handle custom domains in links
 
 ---
 

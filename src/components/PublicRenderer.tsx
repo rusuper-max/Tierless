@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect, useState, RefObject, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Facebook, Instagram, Youtube, Globe, MessageCircle, Star, Send } from "lucide-react";
+import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Facebook, Instagram, Youtube, Globe, MessageCircle, Star, Send, ChevronRight, ExternalLink } from "lucide-react";
 import { trackPageView, trackInteraction, trackCheckout, trackSectionOpen, trackSearch, initAnalytics, startTimeTracking } from "@/lib/analytics";
 
 import Image, { ImageLoaderProps } from "next/image";
@@ -82,6 +82,7 @@ type ItemRow = {
   actionLabel?: string;
   duration?: string; // e.g. "30 min", "1h", etc.
   pricePrefix?: string; // e.g. "from", "starting at"
+  linkSlug?: string; // Link to another page
 };
 
 type SimpleSection = {
@@ -1825,6 +1826,7 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
   // Step logic: pcs=1, kg/l=0.1 (100g/ml), g/ml=1, custom=1
   const step = item.unit === "pcs" || !item.unit ? 1 : (item.unit === "kg" || item.unit === "l") ? 0.1 : 1;
   const hasImage = !!item.imageUrl;
+  const hasLink = !!item.linkSlug;
 
   // Discount Logic - Explicit number conversion to avoid type issues
   const discountPercent = Number(item.discountPercent) || 0;
@@ -1846,9 +1848,19 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
     onQuickAdd(item.id, step, e);
   };
 
+  // Handle clicks - linked items navigate, others open modal
+  const handleClick = () => {
+    if (hasLink) {
+      // Navigate to the linked page
+      window.location.href = `/p/${item.linkSlug}`;
+      return;
+    }
+    if (onClick) onClick();
+  };
+
   // Interaction Logic
-  // If calculations are disabled, the card is purely visual (no click, no quick add)
-  const canInteract = enableCalculations;
+  // If calculations are disabled AND no link, the card is purely visual
+  const canInteract = enableCalculations || hasLink;
 
   // Use global layout setting (strict separation of design and content)
   const effectiveLayout = globalImageLayout || 'cover';
@@ -1861,7 +1873,7 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
 
     return (
       <div
-        onClick={canInteract ? onClick : undefined}
+        onClick={canInteract ? handleClick : undefined}
         className={`group relative flex items-center gap-3 md:gap-4 ${rowPadding} px-1 transition-all duration-200 ${minRowHeight} ${canInteract ? 'cursor-pointer hover:bg-[var(--surface)]' : ''} ${item.soldOut ? 'opacity-50' : ''}`}
       >
         {/* Left: Thumbnail Image (only if exists) */}
@@ -1894,6 +1906,13 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
             {item.soldOut && !hasImage && (
               <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-red-100 text-red-600 border border-red-200">
                 Sold Out
+              </span>
+            )}
+            {/* Link indicator */}
+            {hasLink && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium text-[var(--brand-1)] bg-[var(--bg)]">
+                <ExternalLink className="w-2.5 h-2.5" />
+                View
               </span>
             )}
           </div>
@@ -1977,7 +1996,7 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
   if (!hasImage) {
     return (
       <div
-        onClick={canInteract ? onClick : undefined}
+        onClick={canInteract ? handleClick : undefined}
         className={`group relative flex flex-col justify-between p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)] transition-all duration-300 min-h-[140px] ${canInteract ? 'cursor-pointer hover:shadow-lg hover:border-[var(--brand-1)]/30 hover:-translate-y-0.5' : ''}`}
       >
         <div>
@@ -2051,7 +2070,7 @@ function ItemCard({ item, formatPrice, formatQuantityDisplay, quantity, onClick,
   // --- STANDARD LAYOUT (With Image) ---
   return (
     <div
-      onClick={canInteract ? onClick : undefined}
+      onClick={canInteract ? handleClick : undefined}
       className={`group relative flex flex-col overflow-hidden rounded-3xl transition-all duration-300 bg-[var(--card)] border border-[var(--border)] ${canInteract ? 'cursor-pointer hover:shadow-xl hover:border-[var(--brand-1)]/30 hover:-translate-y-1' : ''}`}
       style={{
         minHeight: "280px",

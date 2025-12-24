@@ -190,6 +190,23 @@ export default function AdvancedPanelInner({ readOnly = false }: AdvancedPanelIn
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingUploadNodeId = useRef<string | null>(null);
 
+  // User pages for inter-page linking
+  const [userPages, setUserPages] = useState<{ slug: string; name: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/calculators")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.rows) {
+          setUserPages(
+            data.rows
+              .filter((c: any) => c.meta?.slug !== calc?.meta?.slug)
+              .map((c: any) => ({ slug: c.meta?.slug, name: c.meta?.name || c.meta?.slug }))
+          );
+        }
+      })
+      .catch(() => { });
+  }, [calc?.meta?.slug]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -482,6 +499,7 @@ export default function AdvancedPanelInner({ readOnly = false }: AdvancedPanelIn
           currency={currency}
           nodes={nodes}
           readOnly={readOnly}
+          userPages={userPages}
         />
 
       </div>

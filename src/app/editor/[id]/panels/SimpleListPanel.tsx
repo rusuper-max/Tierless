@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, ChangeEvent, useEffect, useMemo } from "react";
 import ReactDOM from "react-dom";
-import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle, LayoutList, ScrollText, Share2, Globe, Percent, MessageCircle, ArrowUp, ArrowDown, Pencil, Send } from "lucide-react";
+import { Search, MapPin, Clock, Plus, Minus, ShoppingBag, Wifi, Phone, Mail, ChevronUp, ChevronDown, X, Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical, MoreHorizontal, Ban, Lock, ScanLine, List, Sparkles, ChevronRight, Tag, Store, Check, Palette, Settings, AlertTriangle, LayoutList, ScrollText, Share2, Globe, Percent, MessageCircle, ArrowUp, ArrowDown, Pencil, Send, Link2 } from "lucide-react";
 import { useT } from "@/i18n";
 import { useEditorStore, type SimpleSection, type BrandTheme } from "@/hooks/useEditorStore";
 import { useAccount } from "@/hooks/useAccount";
@@ -256,6 +256,24 @@ export default function SimpleListPanel({ readOnly = false }: SimpleListPanelPro
   // Search
   const [searchQuery, setSearchQuery] = useState("");
 
+  // User pages for inter-page linking
+  const [userPages, setUserPages] = useState<{ slug: string; name: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/calculators")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        // API returns { rows: [...], __debug: {...} }
+        if (data?.rows) {
+          setUserPages(
+            data.rows
+              .filter((c: any) => c.meta?.slug !== calc?.meta?.slug) // Exclude current page
+              .map((c: any) => ({ slug: c.meta?.slug, name: c.meta?.name || c.meta?.slug }))
+          );
+        }
+      })
+      .catch(() => { });
+  }, [calc?.meta?.slug]);
+
   // --- Config Getters ---
   const simpleTitle: string = meta.simpleTitle ?? "";
   const currency: string = typeof i18n.currency === "string" ? (i18n.currency as string) : "";
@@ -428,19 +446,19 @@ export default function SimpleListPanel({ readOnly = false }: SimpleListPanelPro
       form.append("file", file);
       const res = await fetch("/api/ocr-menu", { method: "POST", body: form });
       const data = await res.json();
-      
+
       // Refresh usage counter regardless of result
       refreshOcrUsage();
-      
-      if (!res.ok) { 
+
+      if (!res.ok) {
         // Show upgrade message if limit exceeded
         if (data?.requiresUpgrade) {
           openUpsell({ feature: "ocrImport" });
           setOcrOpen(false);
           return;
         }
-        setOcrError(data?.error || t("Failed to scan.")); 
-        return; 
+        setOcrError(data?.error || t("Failed to scan."));
+        return;
       }
       const rawItems = (data?.items ?? []) as any[];
       if (!rawItems.length) { setOcrError(t("No items found.")); return; }
@@ -574,13 +592,14 @@ export default function SimpleListPanel({ readOnly = false }: SimpleListPanelPro
   };
 
   /* ---------------- Advanced Service Panel (Collapsible) ---------------- */
-  const AdvancedServicePanel = ({ item, updateItem, isOverLimit, t }: any) => {
+  const AdvancedServicePanel = ({ item, updateItem, isOverLimit, t, userPages }: any) => {
     const [isOpen, setIsOpen] = useState(false);
 
     // Check if any advanced options are filled
     const hasDuration = !!item.duration;
     const hasPricePrefix = !!item.pricePrefix;
-    const hasAnyOption = hasDuration || hasPricePrefix;
+    const hasLinkSlug = !!item.linkSlug;
+    const hasAnyOption = hasDuration || hasPricePrefix || hasLinkSlug;
 
     return (
       <div className="mt-2">
@@ -612,6 +631,12 @@ export default function SimpleListPanel({ readOnly = false }: SimpleListPanelPro
                 {hasPricePrefix && (
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[var(--border)]/50 text-[9px] font-medium text-[var(--muted)]">
                     {item.pricePrefix}
+                  </span>
+                )}
+                {hasLinkSlug && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[var(--border)]/50 text-[9px] font-medium text-[var(--muted)]">
+                    <Link2 className="w-2.5 h-2.5" />
+                    Link
                   </span>
                 )}
               </div>
@@ -664,6 +689,32 @@ export default function SimpleListPanel({ readOnly = false }: SimpleListPanelPro
                 />
               </div>
             </div>
+
+            {/* Link to Page */}
+            <div className="mt-3 pt-3 border-t border-[var(--border)]">
+              <label className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wide flex items-center gap-1 mb-1">
+                <Link2 className="w-3 h-3" />
+                {t("Link to Page")}
+              </label>
+              <select
+                value={item.linkSlug || ""}
+                onChange={(e) => updateItem(item.id, { linkSlug: e.target.value || undefined })}
+                disabled={isOverLimit}
+                className="w-full bg-[var(--bg)] border border-[var(--border)] text-xs rounded-lg px-2.5 py-1.5 outline-none focus:border-[#22D3EE] transition-colors text-[var(--text)]"
+              >
+                <option value="">{t("No link")}</option>
+                {userPages.map((page: any) => (
+                  <option key={page.slug} value={page.slug}>
+                    {page.name}
+                  </option>
+                ))}
+              </select>
+              {item.linkSlug && (
+                <p className="text-[9px] text-[var(--muted)] mt-1">
+                  {t("Clicking this item will open")} /{item.linkSlug}
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -682,7 +733,8 @@ export default function SimpleListPanel({ readOnly = false }: SimpleListPanelPro
     triggerGenericUpload,
     openUpsell,
     t,
-    canUseImages
+    canUseImages,
+    userPages
   }: any) => {
     const {
       attributes,
@@ -898,6 +950,7 @@ export default function SimpleListPanel({ readOnly = false }: SimpleListPanelPro
             updateItem={updateItem}
             isOverLimit={isOverLimit}
             t={t}
+            userPages={userPages}
           />
         </div>
 
@@ -965,10 +1018,12 @@ export default function SimpleListPanel({ readOnly = false }: SimpleListPanelPro
       prevProps.item.actionLabel === nextProps.item.actionLabel &&
       prevProps.item.duration === nextProps.item.duration &&
       prevProps.item.pricePrefix === nextProps.item.pricePrefix &&
+      prevProps.item.linkSlug === nextProps.item.linkSlug &&
       prevProps.index === nextProps.index &&
       prevProps.uploadingId === nextProps.uploadingId &&
       prevProps.currency === nextProps.currency &&
-      prevProps.maxItems === nextProps.maxItems
+      prevProps.maxItems === nextProps.maxItems &&
+      prevProps.userPages === nextProps.userPages
     );
   });
 
@@ -1186,9 +1241,8 @@ export default function SimpleListPanel({ readOnly = false }: SimpleListPanelPro
                   <button
                     onClick={readOnly ? undefined : handleOcrClick}
                     disabled={readOnly}
-                    className={`h-9 cursor-default flex items-center gap-2 px-3 rounded-lg border border-[var(--border)] transition shrink-0 ${
-                      readOnly ? "opacity-50 cursor-not-allowed text-[var(--muted)]" : (!ocrAllowed || !ocrCanScan ? "text-[var(--muted)] hover:bg-[var(--surface)]" : "text-[#22D3EE] hover:bg-[var(--surface)]")
-                    }`}
+                    className={`h-9 cursor-default flex items-center gap-2 px-3 rounded-lg border border-[var(--border)] transition shrink-0 ${readOnly ? "opacity-50 cursor-not-allowed text-[var(--muted)]" : (!ocrAllowed || !ocrCanScan ? "text-[var(--muted)] hover:bg-[var(--surface)]" : "text-[#22D3EE] hover:bg-[var(--surface)]")
+                      }`}
                     title={readOnly ? t("View-only mode") : (ocrDisplayText || t("Scan Document / Menu"))}
                     data-help={readOnly ? "View-only mode" : "Upload a photo of your existing menu and our AI will automatically extract all items!"}
                   >
@@ -1271,6 +1325,7 @@ export default function SimpleListPanel({ readOnly = false }: SimpleListPanelPro
                         openUpsell={openUpsell}
                         t={t}
                         canUseImages={canUseImages}
+                        userPages={userPages}
                       />
                     ))}
                   </div>
@@ -1396,6 +1451,7 @@ export default function SimpleListPanel({ readOnly = false }: SimpleListPanelPro
                               openUpsell={openUpsell}
                               t={t}
                               canUseImages={canUseImages}
+                              userPages={userPages}
                             />
                           ))}
                         </div>
@@ -2199,11 +2255,10 @@ export default function SimpleListPanel({ readOnly = false }: SimpleListPanelPro
                 <p className="text-sm text-[var(--muted)]">{t("Upload a photo to auto-magically extract items.")}</p>
                 {/* OCR Usage Counter */}
                 {ocrUsage && ocrUsage.limit < 9999 && (
-                  <div className={`mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                    ocrUsage.remaining > 0 
-                      ? "bg-[#22D3EE]/10 text-[#22D3EE]" 
-                      : "bg-red-500/10 text-red-500"
-                  }`}>
+                  <div className={`mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${ocrUsage.remaining > 0
+                    ? "bg-[#22D3EE]/10 text-[#22D3EE]"
+                    : "bg-red-500/10 text-red-500"
+                    }`}>
                     <ScanLine className="w-3 h-3" />
                     {ocrUsage.isLifetimeTrial ? (
                       <span>{ocrUsage.used}/{ocrUsage.limit} {t("trial scans used")}</span>

@@ -52,6 +52,36 @@ function normalizeMode(input?: string | null): Mode {
   return "setup";
 }
 
+/**
+ * Infer editor mode from page content for old pages that don't have editorMode saved
+ */
+function inferModeFromContent(calc: CalcJson | null): Mode | null {
+  if (!calc) return null;
+
+  // Check for advanced mode indicators: packages, fields, or advancedNodes
+  const hasPackages = Array.isArray(calc.packages) && calc.packages.length > 0;
+  const hasFields = Array.isArray(calc.fields) && calc.fields.length > 0;
+  const hasAdvancedNodes = Array.isArray((calc.meta as any)?.advancedNodes) &&
+    (calc.meta as any).advancedNodes.length > 0;
+
+  if (hasPackages || hasFields || hasAdvancedNodes) {
+    return "advanced";
+  }
+
+  // Check for simple mode indicators: items with content
+  const hasItems = Array.isArray(calc.items) && calc.items.length > 0;
+  const hasSimpleSections = Array.isArray((calc.meta as any)?.simpleSections) &&
+    (calc.meta as any).simpleSections.length > 0;
+  const hasSimpleTitle = !!(calc.meta as any)?.simpleTitle;
+
+  if (hasItems || hasSimpleSections || hasSimpleTitle) {
+    return "simple";
+  }
+
+  // No content - can't infer
+  return null;
+}
+
 function EditorContent({ slug, initialCalc, readOnly = false, teamRole }: Props) {
   const t = useT();
   const { calc, init, isDirty, isSaving, setEditorMode, undo, redo, canUndo, canRedo } = useEditorStore();
@@ -181,6 +211,22 @@ function EditorContent({ slug, initialCalc, readOnly = false, teamRole }: Props)
       }
     } catch {
       // ignore
+    }
+
+    // 🆕 FALLBACK: Infer mode from content for old pages without editorMode saved
+    if (!stored || stored === "setup") {
+      const inferred = inferModeFromContent(initialCalc);
+      if (inferred) {
+        console.log("[EditorShell] Inferred editor mode from content:", inferred);
+        setUiMode(inferred);
+        setEditorMode(inferred);
+        try {
+          window.localStorage.setItem(key, inferred);
+        } catch {
+          // ignore
+        }
+        return;
+      }
     }
 
     const start: Mode = stored || "setup";
