@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-import { getSlugFromDomain } from "@/lib/domains";
+import { getSlugFromDomain } from "@/lib/domains.edge";
 
 // JWT verification setup - must match auth.ts
 const SESSION_SECRET = process.env.SESSION_SECRET;
@@ -84,7 +84,7 @@ export default async function middleware(req: NextRequest) {
 
   // 2. Custom Domain (e.g. menu.bistro.com)
   // We rewrite to /p/[slug] based on the domain
-  const slug = await getSlugFromDomain(hostname);
+  const slug = await getSlugFromDomain(hostname, req.nextUrl.origin);
 
   if (slug) {
     // Rewrite to the public pricing page

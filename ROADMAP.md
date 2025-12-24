@@ -89,7 +89,7 @@
 ## 🚧 In Progress / Partial
 
 ### Templates
-- [ ] More template designs (only ~10 exist)
+- [x] More template designs (12 exist now: Neon, Wedding, Coffee, Trainer, Web Agency, Cleaning, SaaS, Hair Salon, Restaurant, Photographer, Dental, Yoga, DJ)
 - [ ] "Save as Template" feature for users
 - [ ] Template search/filter
 
@@ -114,11 +114,11 @@
 - [x] Webhook logs in dashboard
 - [x] HMAC signature for security
 
-#### Custom Domains (Pro+ feature)
-- [ ] Domain settings UI in dashboard
-- [ ] Domain verification (TXT/CNAME)
-- [ ] SSL provisioning (Cloudflare for SaaS or custom Caddy)
-- [ ] Multi-domain support per account
+#### ✅ Custom Domains (Pro+ feature) - COMPLETED
+- [x] Domain settings UI in dashboard
+- [x] Domain verification (TXT record)
+- [x] Middleware routing for custom domains
+- [ ] SSL provisioning (manual via Cloudflare for now)
 
 #### Template Improvements
 - [ ] User-created templates ("Save as Template")

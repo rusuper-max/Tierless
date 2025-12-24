@@ -21,11 +21,11 @@ export type PricingTemplate = {
   defaultName?: string;
   description?: string;
   mode: "packages" | "list" | "advanced";
-  
+
   // Template type
   isPremium: boolean;  // true = locked style, false = basic (fully editable)
   lockedStyle?: LockedStyle;  // Only used when isPremium: true
-  
+
   config: any;
 };
 
@@ -69,6 +69,19 @@ export const LOCKED_STYLES: Record<string, LockedStyle> = {
     borderRadius: "2xl",
     headerStyle: "centered",
     animations: "neon", // Special animation type
+  },
+  // 🦷 DENTAL CLINIC - Clean, professional, trustworthy
+  "dental-clinic": {
+    theme: "light",
+    fontFamily: "'Inter', sans-serif",
+    accentColor: "#0ea5e9",
+    accentGradient: "linear-gradient(135deg, #0ea5e9 0%, #22d3ee 100%)",
+    backgroundColor: "#f8fafc",
+    backgroundGradient: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
+    cardStyle: "solid",
+    borderRadius: "xl",
+    headerStyle: "minimal",
+    animations: "fade",
   },
 };
 
@@ -627,6 +640,406 @@ export const CALC_TEMPLATES: PricingTemplate[] = [
         { id: "addon_2", label: "Priority Support", price: 49, note: "/month" },
         { id: "addon_3", label: "Custom Development", price: 150, note: "/hour" },
         { id: "addon_4", label: "Training Session", price: 200, note: "2 hours" },
+      ],
+      fields: [],
+      items: [],
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 7. HAIR SALON (Basic, List mode)
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    slug: "hair-salon-pricelist",
+    name: "💇 Hair Salon",
+    defaultName: "Salon Price List",
+    description: "Complete hair salon menu with cuts, coloring, and treatments.",
+    mode: "list",
+    isPremium: false,
+    config: {
+      pricingMode: "list",
+      i18n: { currency: "EUR" },
+      branding: { theme: "light", accent: "#ec4899", layout: "list" },
+      meta: {
+        editorMode: "simple",
+        simpleEnableCalculations: true,
+        allowRating: true,
+        listInExamples: true,
+        simpleSections: [
+          { id: "sec_cuts", label: "✂️ Haircuts", collapsed: false },
+          { id: "sec_color", label: "🎨 Coloring", collapsed: false },
+          { id: "sec_treatments", label: "✨ Treatments", collapsed: false },
+          { id: "sec_styling", label: "💫 Styling", collapsed: false },
+        ],
+        business: {
+          name: "Bella Hair Studio",
+          tagline: "Where beauty meets style",
+        },
+      },
+      items: [
+        // Haircuts
+        { id: "item_1", label: "Women's Cut & Style", price: 45, simpleSectionId: "sec_cuts", badge: "popular" },
+        { id: "item_2", label: "Men's Cut", price: 25, simpleSectionId: "sec_cuts" },
+        { id: "item_3", label: "Kids Cut (under 12)", price: 18, simpleSectionId: "sec_cuts" },
+        { id: "item_4", label: "Fringe Trim", price: 10, simpleSectionId: "sec_cuts" },
+        { id: "item_5", label: "Buzz Cut", price: 15, simpleSectionId: "sec_cuts" },
+        // Coloring
+        { id: "item_6", label: "Full Color", price: 75, simpleSectionId: "sec_color", note: "Single process" },
+        { id: "item_7", label: "Highlights (Full)", price: 120, simpleSectionId: "sec_color", badge: "popular" },
+        { id: "item_8", label: "Highlights (Partial)", price: 85, simpleSectionId: "sec_color" },
+        { id: "item_9", label: "Balayage", price: 150, simpleSectionId: "sec_color", note: "Hand-painted", badge: "new" },
+        { id: "item_10", label: "Root Touch Up", price: 55, simpleSectionId: "sec_color" },
+        { id: "item_11", label: "Color Correction", price: 200, simpleSectionId: "sec_color", note: "Consultation required" },
+        // Treatments
+        { id: "item_12", label: "Deep Conditioning", price: 35, simpleSectionId: "sec_treatments" },
+        { id: "item_13", label: "Keratin Treatment", price: 180, simpleSectionId: "sec_treatments", note: "Smoothing, 3hr", badge: "premium" },
+        { id: "item_14", label: "Olaplex Treatment", price: 45, simpleSectionId: "sec_treatments" },
+        { id: "item_15", label: "Scalp Treatment", price: 40, simpleSectionId: "sec_treatments" },
+        // Styling
+        { id: "item_16", label: "Blowout", price: 35, simpleSectionId: "sec_styling" },
+        { id: "item_17", label: "Updo / Formal Style", price: 65, simpleSectionId: "sec_styling", note: "Special events" },
+        { id: "item_18", label: "Bridal Hair", price: 150, simpleSectionId: "sec_styling", note: "Includes trial", badge: "premium" },
+      ],
+      addons: [],
+      fields: [],
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 8. RESTAURANT MENU (Basic, List mode)
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    slug: "restaurant-full-menu",
+    name: "🍽️ Restaurant Menu",
+    defaultName: "Restaurant Menu",
+    description: "Full restaurant menu with starters, mains, desserts, and drinks.",
+    mode: "list",
+    isPremium: false,
+    config: {
+      pricingMode: "list",
+      i18n: { currency: "EUR" },
+      branding: { theme: "dark", accent: "#f59e0b", layout: "list" },
+      meta: {
+        editorMode: "simple",
+        simpleEnableCalculations: true,
+        allowRating: true,
+        listInExamples: true,
+        simpleSections: [
+          { id: "sec_starters", label: "🥗 Starters", collapsed: false },
+          { id: "sec_mains", label: "🍖 Main Courses", collapsed: false },
+          { id: "sec_pizza", label: "🍕 Pizza", collapsed: false },
+          { id: "sec_desserts", label: "🍰 Desserts", collapsed: false },
+          { id: "sec_drinks", label: "🍷 Drinks", collapsed: false },
+        ],
+        business: {
+          name: "La Taverna",
+          tagline: "Authentic Italian Cuisine",
+        },
+      },
+      items: [
+        // Starters
+        { id: "item_1", label: "Bruschetta", price: 8, simpleSectionId: "sec_starters", note: "Tomato, basil, garlic" },
+        { id: "item_2", label: "Caprese Salad", price: 12, simpleSectionId: "sec_starters", note: "Mozzarella, tomatoes, basil" },
+        { id: "item_3", label: "Arancini", price: 10, simpleSectionId: "sec_starters", note: "Crispy risotto balls", badge: "popular" },
+        { id: "item_4", label: "Soup of the Day", price: 7, simpleSectionId: "sec_starters" },
+        // Mains
+        { id: "item_5", label: "Spaghetti Carbonara", price: 16, simpleSectionId: "sec_mains", badge: "popular" },
+        { id: "item_6", label: "Penne Arrabbiata", price: 14, simpleSectionId: "sec_mains", note: "Spicy tomato sauce" },
+        { id: "item_7", label: "Risotto ai Funghi", price: 18, simpleSectionId: "sec_mains", note: "Wild mushrooms" },
+        { id: "item_8", label: "Grilled Sea Bass", price: 24, simpleSectionId: "sec_mains", note: "With roasted vegetables" },
+        { id: "item_9", label: "Ossobuco", price: 26, simpleSectionId: "sec_mains", note: "Slow-braised veal shank", badge: "premium" },
+        // Pizza
+        { id: "item_10", label: "Margherita", price: 12, simpleSectionId: "sec_pizza" },
+        { id: "item_11", label: "Quattro Formaggi", price: 15, simpleSectionId: "sec_pizza", note: "Four cheeses" },
+        { id: "item_12", label: "Diavola", price: 14, simpleSectionId: "sec_pizza", note: "Spicy salami", badge: "popular" },
+        { id: "item_13", label: "Prosciutto e Rucola", price: 16, simpleSectionId: "sec_pizza" },
+        // Desserts
+        { id: "item_14", label: "Tiramisu", price: 8, simpleSectionId: "sec_desserts", badge: "popular" },
+        { id: "item_15", label: "Panna Cotta", price: 7, simpleSectionId: "sec_desserts" },
+        { id: "item_16", label: "Affogato", price: 6, simpleSectionId: "sec_desserts", note: "Espresso + gelato" },
+        // Drinks
+        { id: "item_17", label: "House Red Wine", price: 6, simpleSectionId: "sec_drinks", note: "Glass" },
+        { id: "item_18", label: "Spritz Aperol", price: 9, simpleSectionId: "sec_drinks" },
+        { id: "item_19", label: "Espresso", price: 3, simpleSectionId: "sec_drinks" },
+        { id: "item_20", label: "Limoncello", price: 5, simpleSectionId: "sec_drinks" },
+      ],
+      addons: [],
+      fields: [],
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 9. PHOTOGRAPHER PACKAGES (Basic, Packages mode)
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    slug: "photographer-packages",
+    name: "📷 Photographer Packages",
+    defaultName: "Photography Packages",
+    description: "Portrait, event, and product photography packages.",
+    mode: "packages",
+    isPremium: false,
+    config: {
+      pricingMode: "packages",
+      i18n: { currency: "USD" },
+      branding: { theme: "dark", accent: "#64748b", layout: "cards" },
+      meta: {
+        editorMode: "simple",
+        simpleEnableCalculations: true,
+        allowRating: true,
+        listInExamples: true,
+        business: {
+          name: "Capture Studios",
+          tagline: "Moments frozen in time",
+        },
+      },
+      packages: [
+        {
+          id: "pkg_mini",
+          label: "Mini Session",
+          description: "Quick portraits for social media.",
+          basePrice: 150,
+          featured: false,
+          covers: [
+            { text: "30 minutes" },
+            { text: "1 location" },
+            { text: "10 edited photos" },
+            { text: "Online gallery" },
+          ],
+        },
+        {
+          id: "pkg_standard",
+          label: "Standard",
+          description: "Perfect for families and couples.",
+          basePrice: 350,
+          featured: true,
+          covers: [
+            { text: "90 minutes", premium: true },
+            { text: "2 locations" },
+            { text: "40 edited photos", premium: true },
+            { text: "Print release" },
+            { text: "Online gallery" },
+          ],
+        },
+        {
+          id: "pkg_premium",
+          label: "Premium",
+          description: "Complete coverage for special occasions.",
+          basePrice: 600,
+          featured: false,
+          covers: [
+            { text: "Full day (8 hours)", premium: true },
+            { text: "Multiple locations", premium: true },
+            { text: "100+ edited photos", premium: true },
+            { text: "Second shooter" },
+            { text: "Print release" },
+            { text: "Prints package included" },
+          ],
+        },
+      ],
+      addons: [
+        { id: "addon_1", label: "Extra Hour", price: 100, note: "On-site" },
+        { id: "addon_2", label: "Rush Editing", price: 75, note: "48h delivery" },
+        { id: "addon_3", label: "Photo Album", price: 200, note: "20 pages" },
+        { id: "addon_4", label: "Canvas Print", price: 150, note: "24×36 inch" },
+      ],
+      fields: [],
+      items: [],
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 10. DENTAL CLINIC (Premium, List mode)
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    slug: "dental-clinic-prices",
+    name: "🦷 Dental Clinic ✨",
+    defaultName: "Dental Price List",
+    description: "Premium dental clinic template with clean, trustworthy styling.",
+    mode: "list",
+    isPremium: true,
+    lockedStyle: {
+      theme: "light",
+      fontFamily: "'Inter', sans-serif",
+      accentColor: "#0ea5e9",
+      accentGradient: "linear-gradient(135deg, #0ea5e9 0%, #22d3ee 100%)",
+      backgroundColor: "#f8fafc",
+      backgroundGradient: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
+      cardStyle: "solid",
+      borderRadius: "xl",
+      headerStyle: "minimal",
+      animations: "fade",
+    },
+    config: {
+      pricingMode: "list",
+      i18n: { currency: "USD" },
+      branding: { theme: "light", accent: "#0ea5e9", layout: "list" },
+      meta: {
+        editorMode: "simple",
+        templateLocked: true,
+        templateStyleId: "dental-clinic",
+        simpleEnableCalculations: true,
+        allowRating: true,
+        listInExamples: true,
+        simpleSections: [
+          { id: "sec_general", label: "🔍 General Dentistry", collapsed: false },
+          { id: "sec_cosmetic", label: "✨ Cosmetic", collapsed: false },
+          { id: "sec_surgical", label: "🏥 Surgical", collapsed: false },
+        ],
+        business: {
+          name: "Pure Smile Dental",
+          tagline: "Your smile, our priority",
+        },
+      },
+      items: [
+        // General
+        { id: "item_1", label: "Consultation", price: 50, simpleSectionId: "sec_general", note: "30 min" },
+        { id: "item_2", label: "Dental Cleaning", price: 120, simpleSectionId: "sec_general", badge: "popular" },
+        { id: "item_3", label: "X-Ray (Digital)", price: 35, simpleSectionId: "sec_general" },
+        { id: "item_4", label: "Filling (Composite)", price: 180, simpleSectionId: "sec_general", note: "Per tooth" },
+        { id: "item_5", label: "Root Canal", price: 650, simpleSectionId: "sec_general", note: "Single tooth" },
+        // Cosmetic
+        { id: "item_6", label: "Teeth Whitening", price: 350, simpleSectionId: "sec_cosmetic", badge: "popular" },
+        { id: "item_7", label: "Veneer (Porcelain)", price: 950, simpleSectionId: "sec_cosmetic", note: "Per tooth" },
+        { id: "item_8", label: "Bonding", price: 300, simpleSectionId: "sec_cosmetic", note: "Per tooth" },
+        { id: "item_9", label: "Invisalign Consultation", price: 0, simpleSectionId: "sec_cosmetic", note: "Free", badge: "new" },
+        // Surgical
+        { id: "item_10", label: "Tooth Extraction (Simple)", price: 150, simpleSectionId: "sec_surgical" },
+        { id: "item_11", label: "Wisdom Tooth Removal", price: 350, simpleSectionId: "sec_surgical", note: "Per tooth" },
+        { id: "item_12", label: "Dental Implant", price: 2500, simpleSectionId: "sec_surgical", note: "Including crown", badge: "premium" },
+      ],
+      addons: [],
+      fields: [],
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 11. YOGA STUDIO (Basic, List mode)
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    slug: "yoga-studio-classes",
+    name: "🧘 Yoga Studio",
+    defaultName: "Yoga Classes",
+    description: "Yoga studio with classes, packages, and private sessions.",
+    mode: "list",
+    isPremium: false,
+    config: {
+      pricingMode: "list",
+      i18n: { currency: "USD" },
+      branding: { theme: "light", accent: "#8b5cf6", layout: "list" },
+      meta: {
+        editorMode: "simple",
+        simpleEnableCalculations: true,
+        allowRating: true,
+        listInExamples: true,
+        simpleSections: [
+          { id: "sec_drop", label: "🌅 Drop-In Classes", collapsed: false },
+          { id: "sec_packs", label: "📦 Class Packages", collapsed: false },
+          { id: "sec_private", label: "🧘 Private Sessions", collapsed: false },
+          { id: "sec_workshops", label: "🌿 Workshops & Retreats", collapsed: false },
+        ],
+        business: {
+          name: "Serenity Yoga",
+          tagline: "Find your balance",
+        },
+      },
+      items: [
+        // Drop-In
+        { id: "item_1", label: "Single Class", price: 20, simpleSectionId: "sec_drop", note: "60 min" },
+        { id: "item_2", label: "First Class Free", price: 0, simpleSectionId: "sec_drop", badge: "new" },
+        { id: "item_3", label: "Student Drop-In", price: 15, simpleSectionId: "sec_drop", note: "With valid ID" },
+        // Packages
+        { id: "item_4", label: "5-Class Pack", price: 90, simpleSectionId: "sec_packs", note: "Valid 2 months" },
+        { id: "item_5", label: "10-Class Pack", price: 160, simpleSectionId: "sec_packs", note: "Valid 4 months", badge: "popular" },
+        { id: "item_6", label: "Monthly Unlimited", price: 120, simpleSectionId: "sec_packs", note: "All classes", badge: "popular" },
+        { id: "item_7", label: "Annual Membership", price: 999, simpleSectionId: "sec_packs", note: "Best value", badge: "premium" },
+        // Private
+        { id: "item_8", label: "Private Session (1 person)", price: 80, simpleSectionId: "sec_private", note: "60 min" },
+        { id: "item_9", label: "Private Session (2 ppl)", price: 120, simpleSectionId: "sec_private", note: "60 min" },
+        { id: "item_10", label: "Corporate Session", price: 200, simpleSectionId: "sec_private", note: "Up to 10 people" },
+        // Workshops
+        { id: "item_11", label: "Weekend Workshop", price: 85, simpleSectionId: "sec_workshops", note: "3 hours" },
+        { id: "item_12", label: "Meditation Intro", price: 40, simpleSectionId: "sec_workshops", note: "2 hours" },
+        { id: "item_13", label: "Yoga Retreat (Day)", price: 150, simpleSectionId: "sec_workshops", note: "Full day, meals included", badge: "new" },
+      ],
+      addons: [],
+      fields: [],
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 12. DJ / EVENT SERVICES (Basic, Packages mode)
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    slug: "dj-event-services",
+    name: "🎧 DJ & Event Services",
+    defaultName: "DJ Packages",
+    description: "Event DJ packages for weddings, corporate events, and parties.",
+    mode: "packages",
+    isPremium: false,
+    config: {
+      pricingMode: "packages",
+      i18n: { currency: "USD" },
+      branding: { theme: "dark", accent: "#f43f5e", layout: "cards" },
+      meta: {
+        editorMode: "simple",
+        simpleEnableCalculations: true,
+        allowRating: true,
+        listInExamples: true,
+        business: {
+          name: "BeatDrop Entertainment",
+          tagline: "Your party, our passion",
+        },
+      },
+      packages: [
+        {
+          id: "pkg_basic",
+          label: "Party Starter",
+          description: "Perfect for small gatherings and birthday parties.",
+          basePrice: 400,
+          featured: false,
+          covers: [
+            { text: "3 hours" },
+            { text: "DJ + sound system" },
+            { text: "Basic lighting" },
+            { text: "Music planning call" },
+          ],
+        },
+        {
+          id: "pkg_pro",
+          label: "Pro Event",
+          description: "Ideal for corporate events and mid-size celebrations.",
+          basePrice: 800,
+          featured: true,
+          covers: [
+            { text: "5 hours", premium: true },
+            { text: "Premium sound system", premium: true },
+            { text: "LED dance floor lighting" },
+            { text: "Wireless microphone" },
+            { text: "Custom playlist curation" },
+          ],
+        },
+        {
+          id: "pkg_wedding",
+          label: "Wedding Package",
+          description: "Complete wedding entertainment experience.",
+          basePrice: 1500,
+          featured: false,
+          covers: [
+            { text: "8 hours (ceremony + reception)", premium: true },
+            { text: "Premium sound + backup", premium: true },
+            { text: "Intelligent lighting design", premium: true },
+            { text: "2 wireless mics" },
+            { text: "MC services" },
+            { text: "Coordination with vendors" },
+          ],
+        },
+      ],
+      addons: [
+        { id: "addon_1", label: "Extra Hour", price: 150 },
+        { id: "addon_2", label: "Fog Machine", price: 75 },
+        { id: "addon_3", label: "Photo Booth", price: 350, note: "3 hours, props included" },
+        { id: "addon_4", label: "Live Musician", price: 400, note: "Saxophone or violin" },
+        { id: "addon_5", label: "Uplighting (10 fixtures)", price: 200 },
       ],
       fields: [],
       items: [],

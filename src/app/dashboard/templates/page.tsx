@@ -80,6 +80,44 @@ const TEMPLATE_META: Record<string, TemplateMeta> = {
         accentColor: "bg-cyan-400",
         features: ["locked-style", "custom-animations", "tier-based", "custom-theme"],
     },
+    // New templates
+    "hair-salon-pricelist": {
+        category: "services",
+        categoryLabel: "Beauty",
+        imageColor: "from-pink-500 to-rose-600",
+        accentColor: "bg-pink-400",
+    },
+    "restaurant-full-menu": {
+        category: "hospitality",
+        categoryLabel: "Restaurant",
+        imageColor: "from-amber-600 to-orange-700",
+        accentColor: "bg-amber-400",
+    },
+    "photographer-packages": {
+        category: "wedding",
+        categoryLabel: "Photography",
+        imageColor: "from-slate-700 to-zinc-800",
+        accentColor: "bg-slate-400",
+    },
+    "dental-clinic-prices": {
+        category: "services",
+        categoryLabel: "Medical",
+        imageColor: "from-sky-400 to-cyan-500",
+        accentColor: "bg-sky-300",
+        features: ["locked-style"],
+    },
+    "yoga-studio-classes": {
+        category: "services",
+        categoryLabel: "Fitness",
+        imageColor: "from-violet-500 to-purple-600",
+        accentColor: "bg-violet-400",
+    },
+    "dj-event-services": {
+        category: "services",
+        categoryLabel: "Events",
+        imageColor: "from-rose-500 to-red-600",
+        accentColor: "bg-rose-400",
+    },
 };
 
 // Placeholder templates to fill the grid (Coming Soon)

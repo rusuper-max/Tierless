@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Code, ExternalLink } from "lucide-react";
 import { getSessionUser } from "@/lib/auth";
 import { t } from "@/i18n/server";
-import { hasFeature, coercePlan } from "@/lib/entitlements";
+import { hasFeature, coercePlan, getLimit } from "@/lib/entitlements";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -117,6 +117,55 @@ export default async function IntegrationsPage() {
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 transition-all"
                 >
                   {t("Configure Webhooks")}
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              ) : (
+                <Link
+                  href="/start"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 transition-all"
+                >
+                  {t("Upgrade to Pro")}
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Custom Domains - Active (Pro+) */}
+        <div className="group rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 transition-colors hover:border-[var(--brand-1)] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-cyan-500/10 blur-2xl -z-0" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 flex items-center justify-center">
+                <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+              </div>
+              <div>
+                <div className="font-medium text-[var(--text)] flex items-center gap-2">
+                  Custom Domains
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                    {t("Active")}
+                  </span>
+                  {getLimit(coercePlan(user.plan), "customDomains") === 0 && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 text-indigo-400 px-1.5 py-0.5 rounded">
+                      Pro+
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-[var(--muted)] leading-relaxed">
+              {t("Connect your own domain (e.g., menu.yourbusiness.com) to your pricing pages. Professional branding with custom URLs.")}
+            </p>
+            <div className="mt-4">
+              {getLimit(coercePlan(user.plan), "customDomains") !== 0 ? (
+                <Link
+                  href="/dashboard/domains"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 transition-all"
+                >
+                  {t("Manage Domains")}
                   <ExternalLink className="w-3.5 h-3.5" />
                 </Link>
               ) : (
